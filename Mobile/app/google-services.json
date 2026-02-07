@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "805170604242",
+    "project_id": "clearchain-c9ae6",
+    "storage_bucket": "clearchain-c9ae6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805170604242:android:1421d141beae738d7f650b",
+        "android_client_info": {
+          "package_name": "com.clearchain.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB1u4TdHfo6BDoR8cFQZHE40-iJvVOPGs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805170604242:android:09c90ab90b4fc5f77f650b",
+        "android_client_info": {
+          "package_name": "com.example.clearchain"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB1u4TdHfo6BDoR8cFQZHE40-iJvVOPGs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

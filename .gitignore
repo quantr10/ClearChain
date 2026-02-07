@@ -1,0 +1,11 @@
+bin/ 
+obj/ 
+.env 
+*.user 
+.vs/ 
+node_modules/ 
+.gradle/ 
+build/ 
+local.properties 
+*.iml 
+.idea/ 
