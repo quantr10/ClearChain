@@ -1,11 +1,86 @@
-bin/ 
-obj/ 
-.env 
-*.user 
-.vs/ 
-node_modules/ 
-.gradle/ 
-build/ 
-local.properties 
-*.iml 
-.idea/ 
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.cache
+*.dll
+*.exe
+*.pdb
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Environment files
+.env
+*.env
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# Rider
+.idea/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+local.properties
+.gradle/
+build/
+captures/
+.externalNativeBuild
+.cxx
+*.iml
+.idea/
+*.hprof
+google-services.json
+
+# Kotlin
+*.kotlin_module
+
+# Generated files
+.navigation/
+*.hprof
+
+# Keystore files
+*.jks
+*.keystore
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
