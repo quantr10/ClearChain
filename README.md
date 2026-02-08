@@ -1,4 +1,4 @@
-\# 🍎 ClearChain
+# 🍎 ClearChain
 
 
 
@@ -6,113 +6,112 @@ Surplus food clearance platform connecting grocery stores with NGOs to reduce fo
 
 
 
-\## 📱 Project Overview
+## 📱 Project Overview
 
 
 
-\*\*ClearChain\*\* helps grocery stores donate surplus food to NGOs instead of throwing it away.
+**ClearChain** helps grocery stores donate surplus food to NGOs instead of throwing it away.
 
 
 
-\### Tech Stack
+### Tech Stack
 
 
 
-\*\*Backend (.NET 8)\*\*
+**Backend (.NET 8)**
 
-\- ASP.NET Core Web API
+- ASP.NET Core Web API
 
-\- PostgreSQL (Supabase)
+- PostgreSQL (Supabase)
 
-\- JWT Authentication
+- JWT Authentication
 
-\- BCrypt password hashing
+- BCrypt password hashing
 
-\- SignalR (realtime)
+- SignalR (realtime)
 
-\- Hangfire (background jobs)
-
-
-
-\*\*Mobile (Kotlin)\*\*
-
-\- Jetpack Compose
-
-\- MVVM + Clean Architecture
-
-\- Hilt DI
-
-\- Retrofit
-
-\- Room (offline-first)
-
-\- Firebase Cloud Messaging
+- Hangfire (background jobs)
 
 
 
-\*\*Database\*\*
+**Mobile (Kotlin)**
 
-\- Supabase PostgreSQL
+- Jetpack Compose
 
-\- Supabase Storage (images)
+- MVVM + Clean Architecture
 
-\- 7 tables (lowercase naming)
+- Hilt DI
 
+- Retrofit
 
+- Room (offline-first)
 
-\## 🚀 Features
-
-
-
-\### Week 1-2 (Completed)
-
-\- ✅ Project setup
-
-\- ✅ Database schema
-
-\- ✅ Authentication API (register, login, refresh)
-
-\- ✅ Organization management
-
-\- ✅ Admin verification system
-
-\- ✅ Error handling middleware
-
-\- ✅ Audit logging
+- Firebase Cloud Messaging
 
 
 
-\### Upcoming
+**Database**
 
-\- 🔄 Listing CRUD (groceries)
+- Supabase PostgreSQL
 
-\- 🔄 Pickup request flow
+- Supabase Storage (images)
 
-\- 🔄 Inventory management (NGOs)
-
-\- 🔄 Android app UI
-
-\- 🔄 Real-time updates
-
-\- 🔄 Push notifications
+- 7 tables (lowercase naming)
 
 
 
-\## 📦 Installation
+## 🚀 Features
 
 
 
-\### Backend
+### Week 1-2 (Completed)
+
+- ✅ Project setup
+
+- ✅ Database schema
+
+- ✅ Authentication API (register, login, refresh)
+
+- ✅ Organization management
+
+- ✅ Admin verification system
+
+- ✅ Error handling middleware
+
+- ✅ Audit logging
+
+
+
+### Upcoming
+
+- 🔄 Listing CRUD (groceries)
+
+- 🔄 Pickup request flow
+
+- 🔄 Inventory management (NGOs)
+
+- 🔄 Android app UI
+
+- 🔄 Real-time updates
+
+- 🔄 Push notifications
+
+
+
+## 📦 Installation
+
+
+
+### Backend
 
 ```bash
 
 cd Backend/ClearChain.API
 
 
+# Create .env file (copy from .env.example)
 
-\# Create .env file (copy from .env.example)
-
-\# Add your Supabase credentials
+# Add your Supabase credentials
 
 
 
@@ -126,15 +125,15 @@ dotnet run
 
 
 
-\*\*API runs on:\*\* http://localhost:5000
+**API runs on:** http://localhost:5000
 
 
 
-\*\*Swagger:\*\* http://localhost:5000/swagger
+**Swagger:** http://localhost:5000/swagger
 
 
 
-\### Android
+### Android
 
 
 
@@ -150,69 +149,69 @@ Sync Gradle and run
 
 
 
-\## 🗄️ Database Schema
+## 🗄️ Database Schema
 
 
 
-\*\*Tables:\*\*
+**Tables:**
 
-\- `organizations` - Users (grocery, ngo, admin)
+- `organizations` - Users (grocery, ngo, admin)
 
-\- `clearancelistings` - Food listings
+- `clearancelistings` - Food listings
 
-\- `pickuprequests` - Pickup requests
+- `pickuprequests` - Pickup requests
 
-\- `pickuprequestlistings` - Junction table
+- `pickuprequestlistings` - Junction table
 
-\- `distributeditems` - NGO inventory
+- `distributeditems` - NGO inventory
 
-\- `refreshtokens` - JWT refresh tokens
+- `refreshtokens` - JWT refresh tokens
 
-\- `auditlogs` - Action tracking
-
-
-
-\## 🔐 Authentication
+- `auditlogs` - Action tracking
 
 
 
-\*\*JWT-based authentication\*\*
+## 🔐 Authentication
 
 
 
-\*\*Endpoints:\*\*
-
-\- `POST /api/auth/register` - Register organization
-
-\- `POST /api/auth/login` - Login
-
-\- `POST /api/auth/refresh` - Refresh access token
-
-\- `POST /api/auth/logout` - Logout
-
-\- `GET /api/auth/me` - Get current user
-
-\- `POST /api/auth/change-password` - Change password
+**JWT-based authentication**
 
 
 
-\## 👤 User Roles
+**Endpoints:**
+
+- `POST /api/auth/register` - Register organization
+
+- `POST /api/auth/login` - Login
+
+- `POST /api/auth/refresh` - Refresh access token
+
+- `POST /api/auth/logout` - Logout
+
+- `GET /api/auth/me` - Get current user
+
+- `POST /api/auth/change-password` - Change password
 
 
 
-1\. \*\*Grocery/Mall\*\* - Create listings, manage pickups
-
-2\. \*\*NGO\*\* - Browse listings, request pickups, manage inventory
-
-3\. \*\*Admin\*\* - Verify organizations, monitor system
+## 👤 User Roles
 
 
 
-\## 📝 Environment Variables
+1. **Grocery/Mall** - Create listings, manage pickups
+
+2. **NGO** - Browse listings, request pickups, manage inventory
+
+3. **Admin** - Verify organizations, monitor system
 
 
 
-\### Backend (.env)
+## 📝 Environment Variables
+
+
+
+### Backend (.env)
 
 ```env
 
@@ -238,7 +237,7 @@ REFRESH\_TOKEN\_EXPIRY\_DAYS=7
 
 
 
-\### Android (local.properties)
+### Android (local.properties)
 
 ```properties
 
@@ -254,27 +253,27 @@ SUPABASE\_ANON\_KEY=your\_anon\_key
 
 
 
-\## 🛠️ Development Timeline
+## 🛠️ Development Timeline
 
 
 
-\*\*Month 1 (Week 1-4):\*\* MVP Core
+**Month 1 (Week 1-4):** MVP Core
 
-\- Week 1: Setup \& Infrastructure ✅
+- Week 1: Setup \& Infrastructure ✅
 
-\- Week 2: Authentication ✅
+- Week 2: Authentication ✅
 
-\- Week 3-4: Core Features (in progress)
-
-
-
-\*\*Month 2 (Week 5-8):\*\* Advanced Features
-
-\*\*Month 3 (Week 9-12):\*\* Polish \& Production
+- Week 3-4: Core Features (in progress)
 
 
 
-\## 📄 API Documentation
+**Month 2 (Week 5-8):** Advanced Features
+
+**Month 3 (Week 9-12):** Polish \& Production
+
+
+
+## 📄 API Documentation
 
 
 
@@ -282,11 +281,11 @@ Full API documentation available at `/swagger` when running the backend.
 
 
 
-\## 🧪 Testing
+## 🧪 Testing
 
 
 
-\*\*Backend:\*\*
+**Backend:**
 
 ```bash
 
@@ -298,7 +297,7 @@ dotnet test
 
 
 
-\*\*Android:\*\*
+**Android:**
 
 ```bash
 
@@ -308,7 +307,7 @@ dotnet test
 
 
 
-\## 📞 Support
+## 📞 Support
 
 
 
@@ -316,7 +315,7 @@ For issues or questions, please open an issue on GitHub.
 
 
 
-\## 📜 License
+## 📜 License
 
 
 
