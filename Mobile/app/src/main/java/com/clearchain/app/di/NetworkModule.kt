@@ -1,10 +1,8 @@
 package com.clearchain.app.di
 
 import com.clearchain.app.BuildConfig
-import com.clearchain.app.data.local.dao.AuthTokenDao
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
-import com.clearchain.app.data.remote.interceptor.TokenAuthenticator
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -48,13 +46,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
-        loggingInterceptor: HttpLoggingInterceptor,
-        tokenAuthenticator: TokenAuthenticator
+        loggingInterceptor: HttpLoggingInterceptor
+        // tokenAuthenticator: TokenAuthenticator  // REMOVED
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
-            .authenticator(tokenAuthenticator)
+            // .authenticator(tokenAuthenticator)  // REMOVED
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
