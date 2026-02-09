@@ -2,6 +2,7 @@ package com.clearchain.app.di
 
 import com.clearchain.app.BuildConfig
 import com.clearchain.app.data.remote.api.AuthApi
+import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -77,5 +78,11 @@ object NetworkModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideListingApi(retrofit: Retrofit): ListingApi {
+        return retrofit.create(ListingApi::class.java)
     }
 }

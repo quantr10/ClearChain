@@ -1,6 +1,8 @@
 package com.clearchain.app.presentation.navigation
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,6 +14,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.clearchain.app.presentation.auth.login.LoginScreen
 import com.clearchain.app.presentation.auth.register.RegisterScreen
+import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
+import com.clearchain.app.presentation.grocery.createlisting.CreateListingScreen
+import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 
 @Composable
@@ -37,11 +42,26 @@ fun NavGraph(
             RegisterScreen(navController = navController)
         }
 
-        // Grocery Dashboard (Placeholder)
+        // Grocery Dashboard
         composable(route = Screen.GroceryDashboard.route) {
-            PlaceholderDashboard(
-                title = "Grocery Dashboard",
-                userType = "Grocery Store",
+            GroceryDashboardScreen(navController = navController)
+        }
+
+        // Create Listing
+        composable(route = Screen.CreateListing.route) {
+            CreateListingScreen(navController = navController)
+        }
+
+        // My Listings
+        composable(route = Screen.MyListings.route) {
+            MyListingsScreen(navController = navController)
+        }
+
+        // Pickup Requests (Placeholder for now)
+        composable(route = Screen.PickupRequests.route) {
+            PlaceholderScreen(
+                title = "Pickup Requests",
+                message = "Coming soon!",
                 navController = navController
             )
         }
@@ -62,6 +82,51 @@ fun NavGraph(
                 userType = "Admin",
                 navController = navController
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PlaceholderScreen(
+    title: String,
+    message: String,
+    navController: NavHostController
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,  // FIXED
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "🚧",
+                    style = MaterialTheme.typography.displayLarge
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         }
     }
 }
@@ -131,7 +196,7 @@ fun PlaceholderDashboard(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Login and registration are fully functional. Dashboard features coming soon!",
+                        text = "Dashboard features coming soon!",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -141,7 +206,6 @@ fun PlaceholderDashboard(
 
             Button(
                 onClick = {
-                    // TODO: Implement logout
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
