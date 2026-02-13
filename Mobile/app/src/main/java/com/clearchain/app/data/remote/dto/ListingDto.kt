@@ -55,6 +55,7 @@ data class ListingData(
 )
 
 // Extension function to convert DTO to Domain model
+// Extension function to convert DTO to Domain model
 fun ListingData.toDomain(): Listing {
     return Listing(
         id = id,
@@ -62,15 +63,15 @@ fun ListingData.toDomain(): Listing {
         groceryName = groceryName,
         title = title,
         description = description,
-        category = when (category.lowercase()) {
-            "fruits" -> FoodCategory.FRUITS
-            "vegetables" -> FoodCategory.VEGETABLES
-            "dairy" -> FoodCategory.DAIRY
-            "bakery" -> FoodCategory.BAKERY
-            "meat" -> FoodCategory.MEAT
-            "seafood" -> FoodCategory.SEAFOOD
-            "packaged" -> FoodCategory.PACKAGED
-            "beverages" -> FoodCategory.BEVERAGES
+        category = when (category.uppercase()) {
+            "FRUITS" -> FoodCategory.FRUITS
+            "VEGETABLES" -> FoodCategory.VEGETABLES
+            "DAIRY" -> FoodCategory.DAIRY
+            "BAKERY" -> FoodCategory.BAKERY
+            "MEAT" -> FoodCategory.MEAT
+            "SEAFOOD" -> FoodCategory.SEAFOOD
+            "PACKAGED" -> FoodCategory.PACKAGED
+            "BEVERAGES" -> FoodCategory.BEVERAGES
             else -> FoodCategory.OTHER
         },
         quantity = quantity,
@@ -79,7 +80,7 @@ fun ListingData.toDomain(): Listing {
         pickupTimeStart = pickupTimeStart,
         pickupTimeEnd = pickupTimeEnd,
         status = when (status.lowercase()) {
-            "available" -> ListingStatus.AVAILABLE
+            "open" -> ListingStatus.AVAILABLE
             "reserved" -> ListingStatus.RESERVED
             "completed" -> ListingStatus.COMPLETED
             "expired" -> ListingStatus.EXPIRED
