@@ -18,6 +18,8 @@ import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
 import com.clearchain.app.presentation.grocery.createlisting.CreateListingScreen
 import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
 import com.clearchain.app.presentation.splash.SplashScreen
+import com.clearchain.app.presentation.ngo.NgoDashboardScreen
+import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
 
 @Composable
 fun NavGraph(
@@ -80,6 +82,44 @@ fun NavGraph(
             PlaceholderDashboard(
                 title = "Admin Dashboard",
                 userType = "Admin",
+                navController = navController
+            )
+        }
+
+        // NGO Dashboard
+        composable(route = Screen.NgoDashboard.route) {
+            NgoDashboardScreen(navController = navController)
+        }
+
+// Browse Listings
+        composable(route = Screen.BrowseListings.route) {
+            BrowseListingsScreen(navController = navController)
+        }
+
+// Request Pickup (Placeholder for now)
+        composable(route = "request_pickup/{listingId}") { backStackEntry ->
+            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
+            PlaceholderScreen(
+                title = "Request Pickup",
+                message = "Coming in next step!",
+                navController = navController
+            )
+        }
+
+// My Requests/Deliveries (Placeholder)
+        composable(route = Screen.Deliveries.route) {
+            PlaceholderScreen(
+                title = "My Requests",
+                message = "Coming soon!",
+                navController = navController
+            )
+        }
+
+// Inventory (Placeholder)
+        composable(route = Screen.Inventory.route) {
+            PlaceholderScreen(
+                title = "Inventory",
+                message = "Coming soon!",
                 navController = navController
             )
         }
