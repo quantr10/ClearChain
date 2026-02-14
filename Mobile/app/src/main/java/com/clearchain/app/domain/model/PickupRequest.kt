@@ -26,15 +26,17 @@ data class PickupRequest(
 enum class PickupRequestStatus {
     PENDING,
     APPROVED,
+    READY,
     REJECTED,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
 }
 
 fun PickupRequestStatus.displayName(): String {
     return when (this) {
         PickupRequestStatus.PENDING -> "Pending"
         PickupRequestStatus.APPROVED -> "Approved"
+        PickupRequestStatus.READY -> "Ready for Pickup"
         PickupRequestStatus.REJECTED -> "Rejected"
         PickupRequestStatus.COMPLETED -> "Completed"
         PickupRequestStatus.CANCELLED -> "Cancelled"

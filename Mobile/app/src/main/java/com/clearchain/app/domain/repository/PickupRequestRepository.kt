@@ -24,4 +24,12 @@ interface PickupRequestRepository {
     ): Result<PickupRequest>
 
     suspend fun cancelPickupRequest(id: String): Result<PickupRequest>
+
+    suspend fun approvePickupRequest(id: String): Result<PickupRequest>
+
+    suspend fun rejectPickupRequest(id: String): Result<PickupRequest>
+
+    suspend fun markReadyForPickup(id: String): Result<PickupRequest>
+
+    suspend fun markPickedUp(id: String): Result<PickupRequest>
 }

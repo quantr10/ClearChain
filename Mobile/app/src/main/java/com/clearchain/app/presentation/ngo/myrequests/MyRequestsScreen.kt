@@ -162,6 +162,7 @@ private fun StatusFilterRow(
         "All" to null,
         "Pending" to "PENDING",
         "Approved" to "APPROVED",
+        "Ready" to "READY", 
         "Rejected" to "REJECTED",
         "Completed" to "COMPLETED"
     )
@@ -330,6 +331,11 @@ private fun StatusBadge(status: PickupRequestStatus) {
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.onPrimaryContainer,
             "Approved"
+        )
+        PickupRequestStatus.READY -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            "Ready for Pickup"
         )
         PickupRequestStatus.REJECTED -> Triple(
             MaterialTheme.colorScheme.errorContainer,
