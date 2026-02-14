@@ -1,4 +1,4 @@
-package com.clearchain.app.presentation.ngo.myrequests
+package com.clearchain.app.presentation.grocery.managerequests
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,9 +19,9 @@ import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyRequestsScreen(
+fun ManageRequestsScreen(
     onNavigateBack: () -> Unit,
-    viewModel: MyRequestsViewModel = hiltViewModel()
+    viewModel: ManageRequestsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -43,7 +43,7 @@ fun MyRequestsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Requests") },
+                title = { Text("Manage Requests") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -51,7 +51,7 @@ fun MyRequestsScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
+                        onClick = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
                     ) {
                         if (state.isRefreshing) {
                             CircularProgressIndicator(
@@ -79,7 +79,7 @@ fun MyRequestsScreen(
                 StatusFilterRow(
                     selectedStatus = state.selectedStatus,
                     onStatusSelected = { status ->
-                        viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(status))
+                        viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(status))
                     }
                 )
 
@@ -106,7 +106,7 @@ fun MyRequestsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                             IconButton(
-                                onClick = { viewModel.onEvent(MyRequestsEvent.ClearError) }
+                                onClick = { viewModel.onEvent(ManageRequestsEvent.ClearError) }
                             ) {
                                 Icon(
                                     Icons.Default.Close,
@@ -142,8 +142,17 @@ fun MyRequestsScreen(
                     else -> {
                         RequestsList(
                             requests = state.filteredRequests,
-                            onCancelRequest = { requestId ->
-                                viewModel.onEvent(MyRequestsEvent.CancelRequest(requestId))
+                            onApprove = { requestId ->
+                                viewModel.onEvent(ManageRequestsEvent.ApproveRequest(requestId))
+                            },
+                            onReject = { requestId ->
+                                viewModel.onEvent(ManageRequestsEvent.RejectRequest(requestId))
+                            },
+                            onMarkReady = { requestId ->
+                                viewModel.onEvent(ManageRequestsEvent.MarkReady(requestId))
+                            },
+                            onMarkPickedUp = { requestId ->
+                                viewModel.onEvent(ManageRequestsEvent.MarkPickedUp(requestId))
                             }
                         )
                     }
@@ -162,9 +171,9 @@ private fun StatusFilterRow(
         "All" to null,
         "Pending" to "PENDING",
         "Approved" to "APPROVED",
-        "Ready" to "READY", 
-        "Rejected" to "REJECTED",
-        "Completed" to "COMPLETED"
+        "Ready" to "READY",
+        "Completed" to "COMPLETED",
+        "Rejected" to "REJECTED"
     )
 
     LazyRow(
@@ -186,7 +195,10 @@ private fun StatusFilterRow(
 @Composable
 private fun RequestsList(
     requests: List<PickupRequest>,
-    onCancelRequest: (String) -> Unit
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit,
+    onMarkReady: (String) -> Unit,
+    onMarkPickedUp: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -204,7 +216,10 @@ private fun RequestsList(
         items(requests) { request ->
             RequestCard(
                 request = request,
-                onCancelRequest = onCancelRequest
+                onApprove = onApprove,
+                onReject = onReject,
+                onMarkReady = onMarkReady,
+                onMarkPickedUp = onMarkPickedUp
             )
         }
     }
@@ -213,9 +228,15 @@ private fun RequestsList(
 @Composable
 private fun RequestCard(
     request: PickupRequest,
-    onCancelRequest: (String) -> Unit
+    onApprove: (String) -> Unit,
+    onReject: (String) -> Unit,
+    onMarkReady: (String) -> Unit,
+    onMarkPickedUp: (String) -> Unit
 ) {
-    var showCancelDialog by remember { mutableStateOf(false) }
+    var showApproveDialog by remember { mutableStateOf(false) }
+    var showRejectDialog by remember { mutableStateOf(false) }
+    var showReadyDialog by remember { mutableStateOf(false) }
+    var showPickedUpDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -237,7 +258,7 @@ private fun RequestCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = request.groceryName,
+                        text = "Requested by: ${request.ngoName}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -275,44 +296,168 @@ private fun RequestCard(
                 )
             }
 
-            // Actions
-            if (request.status == PickupRequestStatus.PENDING) {
-                HorizontalDivider()
+            // Actions based on status
+            when (request.status) {
+                PickupRequestStatus.PENDING -> {
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { showApproveDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Approve")
+                        }
 
-                Button(
-                    onClick = { showCancelDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Cancel, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cancel Request")
+                        OutlinedButton(
+                            onClick = { showRejectDialog = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Reject")
+                        }
+                    }
+                }
+
+                PickupRequestStatus.APPROVED -> {
+                    HorizontalDivider()
+                    Button(
+                        onClick = { showReadyDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    ) {
+                        Icon(Icons.Default.Done, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Mark Ready for Pickup")
+                    }
+                }
+
+                PickupRequestStatus.READY -> {
+                    HorizontalDivider()
+                    Button(
+                        onClick = { showPickedUpDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
+                    ) {
+                        Icon(Icons.Default.LocalShipping, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Mark as Picked Up")
+                    }
+                }
+
+                else -> {
+                    // No actions for COMPLETED, REJECTED, CANCELLED
                 }
             }
         }
     }
 
-    // Cancel Confirmation Dialog
-    if (showCancelDialog) {
+    // Approve Dialog
+    if (showApproveDialog) {
         AlertDialog(
-            onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Request?") },
-            text = { Text("Are you sure you want to cancel this pickup request?") },
+            onDismissRequest = { showApproveDialog = false },
+            title = { Text("Approve Request?") },
+            text = { Text("Approve pickup request from ${request.ngoName} for ${request.requestedQuantity} items?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onCancelRequest(request.id)
-                        showCancelDialog = false
+                        onApprove(request.id)
+                        showApproveDialog = false
                     }
                 ) {
-                    Text("Cancel Request", color = MaterialTheme.colorScheme.error)
+                    Text("Approve")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) {
-                    Text("Keep")
+                TextButton(onClick = { showApproveDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Reject Dialog
+    if (showRejectDialog) {
+        AlertDialog(
+            onDismissRequest = { showRejectDialog = false },
+            title = { Text("Reject Request?") },
+            text = { Text("Reject pickup request from ${request.ngoName}? The quantity will be restored to the listing.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onReject(request.id)
+                        showRejectDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reject")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRejectDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Ready Dialog
+    if (showReadyDialog) {
+        AlertDialog(
+            onDismissRequest = { showReadyDialog = false },
+            title = { Text("Mark Ready?") },
+            text = { Text("Mark this request as ready for pickup? The NGO will be notified.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onMarkReady(request.id)
+                        showReadyDialog = false
+                    }
+                ) {
+                    Text("Mark Ready")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReadyDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Picked Up Dialog
+    if (showPickedUpDialog) {
+        AlertDialog(
+            onDismissRequest = { showPickedUpDialog = false },
+            title = { Text("Confirm Pickup?") },
+            text = { Text("Confirm that ${request.ngoName} has picked up the items?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onMarkPickedUp(request.id)
+                        showPickedUpDialog = false
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPickedUpDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )
@@ -335,7 +480,7 @@ private fun StatusBadge(status: PickupRequestStatus) {
         PickupRequestStatus.READY -> Triple(
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
-            "Ready for Pickup"
+            "Ready"
         )
         PickupRequestStatus.REJECTED -> Triple(
             MaterialTheme.colorScheme.errorContainer,

@@ -24,6 +24,7 @@ import com.clearchain.app.presentation.ngo.NgoDashboardScreen
 import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
 import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
+import com.clearchain.app.presentation.grocery.managerequests.ManageRequestsScreen
 
 @Composable
 fun NavGraph(
@@ -63,12 +64,10 @@ fun NavGraph(
             MyListingsScreen(navController = navController)
         }
 
-        // Pickup Requests (Placeholder for now)
+        // Pickup Requests
         composable(route = Screen.PickupRequests.route) {
-            PlaceholderScreen(
-                title = "Pickup Requests",
-                message = "Coming soon!",
-                navController = navController
+            ManageRequestsScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 

@@ -85,4 +85,40 @@ class PickupRequestRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun approvePickupRequest(id: String): Result<PickupRequest> {
+        return try {
+            val response = pickupRequestApi.approvePickupRequest(id)
+            Result.success(response.data.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun rejectPickupRequest(id: String): Result<PickupRequest> {
+        return try {
+            val response = pickupRequestApi.rejectPickupRequest(id)
+            Result.success(response.data.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markReadyForPickup(id: String): Result<PickupRequest> {
+        return try {
+            val response = pickupRequestApi.markReadyForPickup(id)
+            Result.success(response.data.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markPickedUp(id: String): Result<PickupRequest> {
+        return try {
+            val response = pickupRequestApi.markPickedUp(id)
+            Result.success(response.data.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

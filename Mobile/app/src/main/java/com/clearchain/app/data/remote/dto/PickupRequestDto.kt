@@ -66,6 +66,7 @@ fun PickupRequestData.toDomain(): PickupRequest {
         status = when (status.lowercase()) {
             "pending" -> PickupRequestStatus.PENDING
             "approved" -> PickupRequestStatus.APPROVED
+            "ready" -> PickupRequestStatus.READY
             "rejected" -> PickupRequestStatus.REJECTED
             "completed" -> PickupRequestStatus.COMPLETED
             "cancelled" -> PickupRequestStatus.CANCELLED
