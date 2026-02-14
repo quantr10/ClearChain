@@ -1,0 +1,414 @@
+package com.clearchain.app.presentation.ngo.myrequests
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.util.UiEvent
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyRequestsScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: MyRequestsViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Requests") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
+                    ) {
+                        if (state.isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Refresh, "Refresh")
+                        }
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Status Filter
+                StatusFilterRow(
+                    selectedStatus = state.selectedStatus,
+                    onStatusSelected = { status ->
+                        viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(status))
+                    }
+                )
+
+                // Error Message
+                state.error?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = error,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { viewModel.onEvent(MyRequestsEvent.ClearError) }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Content
+                when {
+                    state.isLoading && state.requests.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    state.filteredRequests.isEmpty() && !state.isLoading -> {
+                        EmptyState(
+                            message = if (state.selectedStatus != null) {
+                                "No ${state.selectedStatus?.lowercase()} requests"
+                            } else {
+                                "No pickup requests yet"
+                            }
+                        )
+                    }
+
+                    else -> {
+                        RequestsList(
+                            requests = state.filteredRequests,
+                            onCancelRequest = { requestId ->
+                                viewModel.onEvent(MyRequestsEvent.CancelRequest(requestId))
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusFilterRow(
+    selectedStatus: String?,
+    onStatusSelected: (String?) -> Unit
+) {
+    val statuses = listOf(
+        "All" to null,
+        "Pending" to "PENDING",
+        "Approved" to "APPROVED",
+        "Rejected" to "REJECTED",
+        "Completed" to "COMPLETED"
+    )
+
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(statuses) { (label, status) ->
+            FilterChip(
+                selected = selectedStatus == status,
+                onClick = { onStatusSelected(status) },
+                label = { Text(label) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RequestsList(
+    requests: List<PickupRequest>,
+    onCancelRequest: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text(
+                text = "${requests.size} request${if (requests.size != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        items(requests) { request ->
+            RequestCard(
+                request = request,
+                onCancelRequest = onCancelRequest
+            )
+        }
+    }
+}
+
+@Composable
+private fun RequestCard(
+    request: PickupRequest,
+    onCancelRequest: (String) -> Unit
+) {
+    var showCancelDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = request.listingTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = request.groceryName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                StatusBadge(status = request.status)
+            }
+
+            HorizontalDivider()
+
+            // Details
+            DetailRow(
+                icon = Icons.Default.ShoppingCart,
+                label = "Quantity",
+                value = "${request.requestedQuantity}"
+            )
+
+            DetailRow(
+                icon = Icons.Default.DateRange,
+                label = "Pickup Date",
+                value = request.pickupDate
+            )
+
+            DetailRow(
+                icon = Icons.Default.Schedule,
+                label = "Pickup Time",
+                value = request.pickupTime
+            )
+
+            request.notes?.let { notes ->
+                DetailRow(
+                    icon = Icons.Default.Info,
+                    label = "Notes",
+                    value = notes
+                )
+            }
+
+            // Actions
+            if (request.status == PickupRequestStatus.PENDING) {
+                HorizontalDivider()
+
+                Button(
+                    onClick = { showCancelDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Cancel, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Cancel Request")
+                }
+            }
+        }
+    }
+
+    // Cancel Confirmation Dialog
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            title = { Text("Cancel Request?") },
+            text = { Text("Are you sure you want to cancel this pickup request?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onCancelRequest(request.id)
+                        showCancelDialog = false
+                    }
+                ) {
+                    Text("Cancel Request", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelDialog = false }) {
+                    Text("Keep")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun StatusBadge(status: PickupRequestStatus) {
+    val (backgroundColor, textColor, label) = when (status) {
+        PickupRequestStatus.PENDING -> Triple(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer,
+            "Pending"
+        )
+        PickupRequestStatus.APPROVED -> Triple(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            "Approved"
+        )
+        PickupRequestStatus.REJECTED -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            "Rejected"
+        )
+        PickupRequestStatus.COMPLETED -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            "Completed"
+        )
+        PickupRequestStatus.CANCELLED -> Triple(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            "Cancelled"
+        )
+    }
+
+    Surface(
+        color = backgroundColor,
+        shape = MaterialTheme.shapes.small
+    ) {
+        Text(
+            text = label,
+            color = textColor,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun DetailRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "$label:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun EmptyState(message: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "📋",
+                style = MaterialTheme.typography.displayMedium
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
