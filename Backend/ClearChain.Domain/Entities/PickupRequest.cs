@@ -5,6 +5,7 @@ public class PickupRequest
     public Guid Id { get; set; }
     public Guid NgoId { get; set; }
     public Guid GroceryId { get; set; }
+    public Guid? ListingId { get; set; }  // ✅ ADD THIS
     public DateTime PickupDate { get; set; }
     public string Status { get; set; } = "pending";
     
@@ -14,6 +15,9 @@ public class PickupRequest
     public DateTime? ConfirmedReceivedAt { get; set; }
     
     public string? ProofPhotoUrl { get; set; }
+    public int? RequestedQuantity { get; set; }
+    public string? PickupTime { get; set; }
+    public string? Notes { get; set; }
     
     // Navigation properties
     public Organization? Ngo { get; set; }

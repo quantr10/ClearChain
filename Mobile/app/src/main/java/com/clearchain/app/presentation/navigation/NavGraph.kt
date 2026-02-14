@@ -10,8 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.clearchain.app.presentation.auth.login.LoginScreen
 import com.clearchain.app.presentation.auth.register.RegisterScreen
 import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
@@ -20,6 +22,8 @@ import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 import com.clearchain.app.presentation.ngo.NgoDashboardScreen
 import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
+import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
+import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
 
 @Composable
 fun NavGraph(
@@ -68,11 +72,44 @@ fun NavGraph(
             )
         }
 
-        // NGO Dashboard (Placeholder)
+        // NGO Dashboard
         composable(route = Screen.NgoDashboard.route) {
-            PlaceholderDashboard(
-                title = "NGO Dashboard",
-                userType = "NGO",
+            NgoDashboardScreen(navController = navController)
+        }
+
+        // Browse Listings
+        composable(route = Screen.BrowseListings.route) {
+            BrowseListingsScreen(navController = navController)
+        }
+
+        // Request Pickup
+        composable(
+            route = "request_pickup/{listingId}",
+            arguments = listOf(
+                navArgument("listingId") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
+            RequestPickupScreen(
+                listingId = listingId,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // My Requests/Deliveries
+        composable(route = Screen.Deliveries.route) {
+            MyRequestsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // Inventory (Placeholder)
+        composable(route = Screen.Inventory.route) {
+            PlaceholderScreen(
+                title = "Inventory",
+                message = "Coming soon!",
                 navController = navController
             )
         }
@@ -82,44 +119,6 @@ fun NavGraph(
             PlaceholderDashboard(
                 title = "Admin Dashboard",
                 userType = "Admin",
-                navController = navController
-            )
-        }
-
-        // NGO Dashboard
-        composable(route = Screen.NgoDashboard.route) {
-            NgoDashboardScreen(navController = navController)
-        }
-
-// Browse Listings
-        composable(route = Screen.BrowseListings.route) {
-            BrowseListingsScreen(navController = navController)
-        }
-
-// Request Pickup (Placeholder for now)
-        composable(route = "request_pickup/{listingId}") { backStackEntry ->
-            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
-            PlaceholderScreen(
-                title = "Request Pickup",
-                message = "Coming in next step!",
-                navController = navController
-            )
-        }
-
-// My Requests/Deliveries (Placeholder)
-        composable(route = Screen.Deliveries.route) {
-            PlaceholderScreen(
-                title = "My Requests",
-                message = "Coming soon!",
-                navController = navController
-            )
-        }
-
-// Inventory (Placeholder)
-        composable(route = Screen.Inventory.route) {
-            PlaceholderScreen(
-                title = "Inventory",
-                message = "Coming soon!",
                 navController = navController
             )
         }
@@ -140,7 +139,7 @@ fun PlaceholderScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,  // FIXED
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }

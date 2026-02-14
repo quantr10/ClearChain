@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,7 +65,7 @@ class BrowseListingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            val result = getAllListingsUseCase(status = "available")
+            val result = getAllListingsUseCase(status = "open")
 
             result.fold(
                 onSuccess = { listings ->
@@ -94,7 +93,7 @@ class BrowseListingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
 
-            val result = getAllListingsUseCase(status = "available")
+            val result = getAllListingsUseCase(status = "open")
 
             result.fold(
                 onSuccess = { listings ->

@@ -17,6 +17,12 @@ data class CreatePickupRequestRequest(
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
+data class UpdatePickupRequestStatusRequest(
+    val status: String
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 data class PickupRequestResponse(
     val message: String,
     val data: PickupRequestData
@@ -42,19 +48,13 @@ data class PickupRequestData(
     val requestedQuantity: Int,
     val pickupDate: String,
     val pickupTime: String,
-    val notes: String? = null,
+    val notes: String?,
     val listingTitle: String,
     val listingCategory: String,
     val createdAt: String
 )
 
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class UpdatePickupRequestStatusRequest(
-    val status: String
-)
-
-// Extension function to convert DTO to Domain model
+// Extension function
 fun PickupRequestData.toDomain(): PickupRequest {
     return PickupRequest(
         id = id,
