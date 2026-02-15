@@ -1,6 +1,7 @@
 package com.clearchain.app.di
 
 import com.clearchain.app.BuildConfig
+import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
@@ -91,5 +92,11 @@ object NetworkModule {
     @Singleton
     fun providePickupRequestApi(retrofit: Retrofit): PickupRequestApi {
         return retrofit.create(PickupRequestApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAdminApi(retrofit: Retrofit): AdminApi {
+        return retrofit.create(AdminApi::class.java)
     }
 }

@@ -25,6 +25,10 @@ import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
 import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
 import com.clearchain.app.presentation.grocery.managerequests.ManageRequestsScreen
+import com.clearchain.app.presentation.admin.AdminDashboardScreen
+import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
+import com.clearchain.app.presentation.admin.statistics.StatisticsScreen
+import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 
 @Composable
 fun NavGraph(
@@ -113,12 +117,29 @@ fun NavGraph(
             )
         }
 
-        // Admin Dashboard (Placeholder)
+        // Admin Dashboard
         composable(route = Screen.AdminDashboard.route) {
-            PlaceholderDashboard(
-                title = "Admin Dashboard",
-                userType = "Admin",
-                navController = navController
+            AdminDashboardScreen(navController = navController)
+        }
+
+        // Add Verification Queue route:
+        composable(route = "admin/verification") {
+            VerificationQueueScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // Add Statistics:
+        composable(route = "admin/statistics") {
+            StatisticsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // Add Transactions:
+        composable(route = "admin/transactions") {
+            TransactionsScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }
