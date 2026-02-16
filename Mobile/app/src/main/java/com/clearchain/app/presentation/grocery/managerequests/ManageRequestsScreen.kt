@@ -236,7 +236,6 @@ private fun RequestCard(
     var showApproveDialog by remember { mutableStateOf(false) }
     var showRejectDialog by remember { mutableStateOf(false) }
     var showReadyDialog by remember { mutableStateOf(false) }
-    var showPickedUpDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -342,20 +341,37 @@ private fun RequestCard(
                     }
                 }
 
-                PickupRequestStatus.READY -> {
-                    HorizontalDivider()
-                    Button(
-                        onClick = { showPickedUpDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        )
-                    ) {
-                        Icon(Icons.Default.LocalShipping, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mark as Picked Up")
-                    }
-                }
+                // In RequestCard function, replace the READY case:
+
+PickupRequestStatus.READY -> {
+    // ✅ CHANGED: Show info message instead of button
+    HorizontalDivider()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = "Waiting for ${request.ngoName} to confirm pickup",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
 
                 else -> {
                     // No actions for COMPLETED, REJECTED, CANCELLED
@@ -433,30 +449,6 @@ private fun RequestCard(
             },
             dismissButton = {
                 TextButton(onClick = { showReadyDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Picked Up Dialog
-    if (showPickedUpDialog) {
-        AlertDialog(
-            onDismissRequest = { showPickedUpDialog = false },
-            title = { Text("Confirm Pickup?") },
-            text = { Text("Confirm that ${request.ngoName} has picked up the items?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onMarkPickedUp(request.id)
-                        showPickedUpDialog = false
-                    }
-                ) {
-                    Text("Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPickedUpDialog = false }) {
                     Text("Cancel")
                 }
             }

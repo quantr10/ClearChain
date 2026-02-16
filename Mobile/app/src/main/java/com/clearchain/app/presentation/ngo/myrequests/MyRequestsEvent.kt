@@ -5,5 +5,6 @@ sealed class MyRequestsEvent {
     object RefreshRequests : MyRequestsEvent()
     data class StatusFilterChanged(val status: String?) : MyRequestsEvent()
     data class CancelRequest(val requestId: String) : MyRequestsEvent()
+    data class ConfirmPickup(val requestId: String) : MyRequestsEvent()
     object ClearError : MyRequestsEvent()
 }

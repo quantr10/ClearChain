@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.ngo.myrequests
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
+import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase  // ✅ NEW
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MyRequestsViewModel @Inject constructor(
     private val getMyPickupRequestsUseCase: GetMyPickupRequestsUseCase,
-    private val cancelPickupRequestUseCase: CancelPickupRequestUseCase
+    private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
+    private val confirmPickupUseCase: ConfirmPickupUseCase  // ✅ NEW
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyRequestsState())
@@ -38,6 +40,7 @@ class MyRequestsViewModel @Inject constructor(
             }
 
             is MyRequestsEvent.CancelRequest -> cancelRequest(event.requestId)
+            is MyRequestsEvent.ConfirmPickup -> confirmPickup(event.requestId)  // ✅ NEW
 
             MyRequestsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -128,6 +131,30 @@ class MyRequestsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             error = error.message ?: "Failed to cancel request",
+                            isLoading = false
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    // ✅ NEW METHOD
+    private fun confirmPickup(requestId: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            val result = confirmPickupUseCase(requestId)
+
+            result.fold(
+                onSuccess = {
+                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup confirmed! Thank you for reducing food waste."))
+                    loadRequests() // Reload list
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            error = error.message ?: "Failed to confirm pickup",
                             isLoading = false
                         )
                     }

@@ -619,72 +619,75 @@ public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid
     }
 
     // PUT: api/pickuprequests/{id}/picked-up
-    [HttpPut("{id}/picked-up")]
-    public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
+[HttpPut("{id}/picked-up")]
+public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
+{
+    try
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var pr = await _context.PickupRequests
-                .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
-
-            if (pr == null)
-            {
-                return NotFound(new { message = "Pickup request not found" });
-            }
-
-            if (pr.Status != "ready")
-            {
-                return BadRequest(new { message = $"Can only mark ready requests as picked up. Current status: {pr.Status}" });
-            }
-
-            pr.Status = "completed";
-            pr.MarkedPickedUpAt = DateTime.UtcNow;
-            pr.ConfirmedReceivedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            // Get related data for response
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
-            var listing = pr.ListingId.HasValue 
-                ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
-                : null;
-
-            var responseData = new PickupRequestData
-            {
-                Id = pr.Id.ToString(),
-                ListingId = pr.ListingId?.ToString() ?? "",
-                NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
-                GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
-                Status = pr.Status,
-                RequestedQuantity = pr.RequestedQuantity ?? 0,
-                PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-                PickupTime = pr.PickupTime ?? "09:00",
-                Notes = pr.Notes ?? "",
-                ListingTitle = listing?.ProductName ?? "",
-                ListingCategory = listing?.Category ?? "",
-                CreatedAt = pr.RequestedAt.ToString("o")
-            };
-
-            return Ok(new PickupRequestResponse
-            {
-                Message = "Pickup completed successfully",
-                Data = responseData
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        // ✅ CHANGED: Allow BOTH grocery AND ngo to complete
+        var pickupRequest = await _context.PickupRequests
+            .FirstOrDefaultAsync(pr => pr.Id == id && 
+                (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));  // ✅ ALLOW NGO TOO
+
+        if (pickupRequest == null)
         {
-            _logger.LogError(ex, "Error marking as picked up");
-            return StatusCode(500, new { message = ex.Message });
+            return NotFound(new { message = "Pickup request not found" });
         }
+
+        // Validate status
+        if (pickupRequest.Status != "ready")
+        {
+            return BadRequest(new { message = "Can only mark ready requests as picked up" });
+        }
+
+        pickupRequest.Status = "completed";
+        pickupRequest.MarkedPickedUpAt = DateTime.UtcNow;
+        pickupRequest.ConfirmedReceivedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var ngo = await _context.Organizations.FindAsync(pickupRequest.NgoId);
+        var grocery = await _context.Organizations.FindAsync(pickupRequest.GroceryId);
+        var listing = pickupRequest.ListingId.HasValue 
+            ? await _context.ClearanceListings.FindAsync(pickupRequest.ListingId.Value)
+            : null;
+
+        var responseData = new PickupRequestData
+        {
+            Id = pickupRequest.Id.ToString(),
+            ListingId = pickupRequest.ListingId?.ToString() ?? "",
+            NgoId = pickupRequest.NgoId.ToString(),
+            NgoName = ngo?.Name ?? "",
+            GroceryId = pickupRequest.GroceryId.ToString(),
+            GroceryName = grocery?.Name ?? "",
+            Status = pickupRequest.Status ?? "completed",
+            RequestedQuantity = pickupRequest.RequestedQuantity ?? 0,
+            PickupDate = pickupRequest.PickupDate.ToString("yyyy-MM-dd"),
+            PickupTime = pickupRequest.PickupTime ?? "09:00",
+            Notes = pickupRequest.Notes ?? "",
+            ListingTitle = listing?.ProductName ?? "",
+            ListingCategory = listing?.Category ?? "",
+            CreatedAt = pickupRequest.RequestedAt.ToString("o")
+        };
+
+        return Ok(new PickupRequestResponse
+        {
+            Message = "Pickup completed successfully",
+            Data = responseData
+        });
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error marking pickup as completed");
+        return StatusCode(500, new { message = "An error occurred while marking the pickup as completed" });
+    }
+}
 
 
 
