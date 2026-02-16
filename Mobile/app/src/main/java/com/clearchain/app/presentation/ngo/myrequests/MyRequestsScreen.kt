@@ -144,6 +144,9 @@ fun MyRequestsScreen(
                             requests = state.filteredRequests,
                             onCancelRequest = { requestId ->
                                 viewModel.onEvent(MyRequestsEvent.CancelRequest(requestId))
+                            },
+                            onConfirmPickup = { requestId ->  // ✅ NEW
+                                viewModel.onEvent(MyRequestsEvent.ConfirmPickup(requestId))
                             }
                         )
                     }
@@ -186,7 +189,8 @@ private fun StatusFilterRow(
 @Composable
 private fun RequestsList(
     requests: List<PickupRequest>,
-    onCancelRequest: (String) -> Unit
+    onCancelRequest: (String) -> Unit,
+    onConfirmPickup: (String) -> Unit  // ✅ NEW
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -204,7 +208,8 @@ private fun RequestsList(
         items(requests) { request ->
             RequestCard(
                 request = request,
-                onCancelRequest = onCancelRequest
+                onCancelRequest = onCancelRequest,
+                onConfirmPickup = onConfirmPickup  // ✅ NEW
             )
         }
     }
@@ -213,9 +218,11 @@ private fun RequestsList(
 @Composable
 private fun RequestCard(
     request: PickupRequest,
-    onCancelRequest: (String) -> Unit
+    onCancelRequest: (String) -> Unit,
+    onConfirmPickup: (String) -> Unit  // ✅ NEW
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }  // ✅ NEW
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -275,20 +282,40 @@ private fun RequestCard(
                 )
             }
 
-            // Actions
-            if (request.status == PickupRequestStatus.PENDING) {
-                HorizontalDivider()
+            // ✅ UPDATED: Actions based on status
+            when (request.status) {
+                PickupRequestStatus.PENDING -> {
+                    HorizontalDivider()
+                    Button(
+                        onClick = { showCancelDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Cancel, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cancel Request")
+                    }
+                }
 
-                Button(
-                    onClick = { showCancelDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Cancel, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cancel Request")
+                PickupRequestStatus.READY -> {  // ✅ NEW
+                    HorizontalDivider()
+                    Button(
+                        onClick = { showConfirmDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Confirm Pickup")
+                    }
+                }
+
+                else -> {
+                    // No action for APPROVED, COMPLETED, REJECTED, CANCELLED
                 }
             }
         }
@@ -313,6 +340,32 @@ private fun RequestCard(
             dismissButton = {
                 TextButton(onClick = { showCancelDialog = false }) {
                     Text("Keep")
+                }
+            }
+        )
+    }
+
+    // ✅ NEW: Confirm Pickup Dialog
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Confirm Pickup?") },
+            text = { 
+                Text("Confirm that you have picked up the food from ${request.groceryName}?") 
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onConfirmPickup(request.id)
+                        showConfirmDialog = false
+                    }
+                ) {
+                    Text("Confirm Pickup")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )
