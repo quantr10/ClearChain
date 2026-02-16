@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<DistributedItem> DistributedItems { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public DbSet<Inventory> Inventories { get; set; } = null!;  // ✅ ADD THIS
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,19 +30,20 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<DistributedItem>().ToTable("distributeditems");
         modelBuilder.Entity<RefreshToken>().ToTable("refreshtokens");
         modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
+        modelBuilder.Entity<Inventory>().ToTable("inventory");  // ✅ ADD THIS
 
         // Configure PickupRequest - Listing many-to-many
         modelBuilder.Entity<PickupRequest>()
             .HasMany(pr => pr.Listings)
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
-                "pickuprequestlistings",  // lowercase
+                "pickuprequestlistings",
                 j => j.HasOne<ClearanceListing>()
                       .WithMany()
-                      .HasForeignKey("listingid"),  // lowercase
+                      .HasForeignKey("listingid"),
                 j => j.HasOne<PickupRequest>()
                       .WithMany()
-                      .HasForeignKey("pickuprequestid")  // lowercase
+                      .HasForeignKey("pickuprequestid")
             );
 
         // Map all column names to lowercase

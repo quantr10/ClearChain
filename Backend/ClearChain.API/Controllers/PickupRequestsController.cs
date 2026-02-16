@@ -618,7 +618,7 @@ public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid
         }
     }
 
-    // PUT: api/pickuprequests/{id}/picked-up
+// PUT: api/pickuprequests/{id}/picked-up
 [HttpPut("{id}/picked-up")]
 public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
 {
@@ -630,17 +630,15 @@ public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
             return Unauthorized(new { message = "User not authenticated" });
         }
 
-        // ✅ CHANGED: Allow BOTH grocery AND ngo to complete
         var pickupRequest = await _context.PickupRequests
             .FirstOrDefaultAsync(pr => pr.Id == id && 
-                (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));  // ✅ ALLOW NGO TOO
+                (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));
 
         if (pickupRequest == null)
         {
             return NotFound(new { message = "Pickup request not found" });
         }
 
-        // Validate status
         if (pickupRequest.Status != "ready")
         {
             return BadRequest(new { message = "Can only mark ready requests as picked up" });
@@ -650,13 +648,41 @@ public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
         pickupRequest.MarkedPickedUpAt = DateTime.UtcNow;
         pickupRequest.ConfirmedReceivedAt = DateTime.UtcNow;
 
+        // ✅ NEW: Create inventory item when NGO confirms pickup
+        var listing = pickupRequest.ListingId.HasValue 
+            ? await _context.ClearanceListings.FindAsync(pickupRequest.ListingId.Value)
+            : null;
+
+        if (listing != null)
+        {
+            // ✅ FIX: Convert expiry date to UTC
+            var expiryDate = listing.ExpirationDate.HasValue 
+                ? DateTime.SpecifyKind(listing.ExpirationDate.Value, DateTimeKind.Utc)
+                : DateTime.UtcNow.AddDays(7);
+
+            var inventoryItem = new Inventory
+            {
+                Id = Guid.NewGuid(),
+                NgoId = pickupRequest.NgoId,
+                PickupRequestId = pickupRequest.Id,
+                ProductName = listing.ProductName,
+                Category = listing.Category,
+                Quantity = pickupRequest.RequestedQuantity ?? 0,
+                Unit = listing.Unit,
+                ExpiryDate = expiryDate,  // ✅ FIXED
+                Status = "active",
+                ReceivedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Inventories.Add(inventoryItem);
+        }
+
         await _context.SaveChangesAsync();
 
         var ngo = await _context.Organizations.FindAsync(pickupRequest.NgoId);
         var grocery = await _context.Organizations.FindAsync(pickupRequest.GroceryId);
-        var listing = pickupRequest.ListingId.HasValue 
-            ? await _context.ClearanceListings.FindAsync(pickupRequest.ListingId.Value)
-            : null;
 
         var responseData = new PickupRequestData
         {
@@ -688,7 +714,6 @@ public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
         return StatusCode(500, new { message = "An error occurred while marking the pickup as completed" });
     }
 }
-
 
 
     // Helper method to check and update expired requests

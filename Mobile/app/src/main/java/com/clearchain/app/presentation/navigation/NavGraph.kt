@@ -29,6 +29,7 @@ import com.clearchain.app.presentation.admin.AdminDashboardScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
 import com.clearchain.app.presentation.admin.statistics.StatisticsScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
+import com.clearchain.app.presentation.ngo.inventory.InventoryScreen
 
 @Composable
 fun NavGraph(
@@ -108,12 +109,10 @@ fun NavGraph(
             )
         }
 
-        // Inventory (Placeholder)
+        // Inventory
         composable(route = Screen.Inventory.route) {
-            PlaceholderScreen(
-                title = "Inventory",
-                message = "Coming soon!",
-                navController = navController
+            InventoryScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 
