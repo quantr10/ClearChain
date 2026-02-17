@@ -35,4 +35,6 @@ interface AuthRepository {
     suspend fun isLoggedIn(): Boolean
 
     suspend fun clearUserData()
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
 }

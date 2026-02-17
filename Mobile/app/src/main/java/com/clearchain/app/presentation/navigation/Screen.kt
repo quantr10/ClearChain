@@ -22,4 +22,7 @@ sealed class Screen(val route: String) {
     object AdminDashboard : Screen("admin_dashboard")
     object Verification : Screen("verification")
     object Transactions : Screen("transactions")
+    
+    // Profile (shared by all roles)
+    object Profile : Screen("profile")  // ✅ ADD THIS
 }

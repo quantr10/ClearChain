@@ -14,16 +14,30 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.domain.model.AdminStats
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
     navController: NavController,
-    viewModel: AdminDashboardViewModel = hiltViewModel()
+    viewModel: AdminDashboardViewModel = hiltViewModel(),
+    getCurrentUserUseCase: GetCurrentUserUseCase = viewModel.getCurrentUserUseCase
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var userName by remember { mutableStateOf("Admin") }
+
+    LaunchedEffect(key1 = true) {
+        scope.launch {
+            getCurrentUserUseCase().first()?.let { user ->
+                userName = user.name
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -46,12 +60,31 @@ fun AdminDashboardScreen(
                     Column {
                         Text("ClearChain")
                         Text(
-                            "ADMIN PANEL",
-                            style = MaterialTheme.typography.labelSmall
+                            text = userName,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 actions = {
+                    // Profile Icon Button
+                    IconButton(
+                        onClick = {
+                            navController.navigate("profile")
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            "Profile",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                    // Refresh Button
                     IconButton(
                         onClick = { viewModel.onEvent(AdminDashboardEvent.RefreshStats) }
                     ) {
@@ -65,6 +98,8 @@ fun AdminDashboardScreen(
                             Icon(Icons.Default.Refresh, "Refresh")
                         }
                     }
+
+                    // Logout Button
                     IconButton(
                         onClick = {
                             navController.navigate("login") {
@@ -74,12 +109,7 @@ fun AdminDashboardScreen(
                     ) {
                         Icon(Icons.Default.Logout, "Logout")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

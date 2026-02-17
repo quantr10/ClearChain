@@ -67,6 +67,19 @@ data class RefreshTokenRequest(
     val refreshToken: String
 )
 
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class MessageResponse(
+    val message: String
+)
+
 // Extension functions to convert DTOs to Domain models
 fun OrganizationDto.toDomain(): Organization {
     return Organization(

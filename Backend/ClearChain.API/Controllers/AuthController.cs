@@ -98,29 +98,29 @@ public class AuthController : ControllerBase
     }
 
    [Authorize]
-[HttpGet("me")]
-public IActionResult GetCurrentUser()  // Remove 'async Task'
-{
-    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-              ?? User.FindFirst("sub")?.Value;
-
-    if (userId == null)
+    [HttpGet("me")]
+    public IActionResult GetCurrentUser()  // Remove 'async Task'
     {
-        return Unauthorized(new { message = "Invalid token" });
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "Invalid token" });
+        }
+
+        // You can fetch full user details from database here
+        var userInfo = new
+        {
+            id = userId,
+            email = User.FindFirst(ClaimTypes.Email)?.Value,
+            name = User.FindFirst(ClaimTypes.Name)?.Value,
+            type = User.FindFirst("type")?.Value,
+            verified = User.FindFirst("verified")?.Value
+        };
+
+        return Ok(new { data = userInfo });
     }
-
-    // You can fetch full user details from database here
-    var userInfo = new
-    {
-        id = userId,
-        email = User.FindFirst(ClaimTypes.Email)?.Value,
-        name = User.FindFirst(ClaimTypes.Name)?.Value,
-        type = User.FindFirst("type")?.Value,
-        verified = User.FindFirst("verified")?.Value
-    };
-
-    return Ok(new { data = userInfo });
-}
 
     [Authorize]
     [HttpPost("change-password")]

@@ -10,6 +10,7 @@ import com.clearchain.app.data.remote.dto.LoginRequest
 import com.clearchain.app.data.remote.dto.RefreshTokenRequest
 import com.clearchain.app.data.remote.dto.RegisterRequest
 import com.clearchain.app.data.remote.dto.toDomain
+import com.clearchain.app.data.remote.dto.ChangePasswordRequest
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
@@ -50,6 +51,7 @@ class AuthRepositoryImpl @Inject constructor(
             val (organization, tokens) = response.data.toDomain()
 
             // Save to local database
+            userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
             tokenDao.saveTokens(
                 AuthTokenEntity(
@@ -81,6 +83,7 @@ class AuthRepositoryImpl @Inject constructor(
             val (organization, tokens) = response.data.toDomain()
 
             // Save to local database
+            userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
             tokenDao.saveTokens(
                 AuthTokenEntity(
@@ -149,6 +152,7 @@ class AuthRepositoryImpl @Inject constructor(
             val (organization, _) = response.data.toDomain()
 
             // Update local cache
+            userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
 
             Result.success(organization)
@@ -181,5 +185,22 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun clearUserData() {
         userDao.clearUsers()
         tokenDao.clearTokens()
+    }
+
+    override suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String
+    ): Result<Unit> {
+        return try {
+            authApi.changePassword(
+                ChangePasswordRequest(
+                    currentPassword = currentPassword,
+                    newPassword = newPassword
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
