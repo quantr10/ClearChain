@@ -30,6 +30,8 @@ import com.clearchain.app.presentation.admin.verification.VerificationQueueScree
 import com.clearchain.app.presentation.admin.statistics.StatisticsScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.ngo.inventory.InventoryScreen
+import com.clearchain.app.presentation.profile.ProfileScreen
+import com.clearchain.app.presentation.navigation.Screen
 
 @Composable
 fun NavGraph(
@@ -139,6 +141,18 @@ fun NavGraph(
         composable(route = "admin/transactions") {
             TransactionsScreen(
                 onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // Profile
+        composable(route = Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
     }

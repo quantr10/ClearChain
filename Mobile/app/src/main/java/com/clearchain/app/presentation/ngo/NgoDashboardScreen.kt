@@ -51,6 +51,19 @@ fun NgoDashboardScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    // ✅ ADD: Profile Icon Button
+                    IconButton(
+                        onClick = {
+                            navController.navigate(Screen.Profile.route)
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
                     IconButton(onClick = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }

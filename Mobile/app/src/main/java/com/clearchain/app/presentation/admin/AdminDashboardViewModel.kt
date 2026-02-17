@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.domain.model.AdminStats
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AdminDashboardViewModel @Inject constructor(
-    private val adminApi: AdminApi
+    private val adminApi: AdminApi,
+    val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AdminDashboardState())
@@ -44,23 +46,23 @@ class AdminDashboardViewModel @Inject constructor(
                 val statsResponse = adminApi.getStatistics()
                 val stats = statsResponse.data.let {
                     AdminStats(
-        totalOrganizations = it.totalOrganizations,
-        totalGroceries = it.totalGroceries,
-        totalNgos = it.totalNgos,
-        verifiedOrganizations = it.verifiedOrganizations,
-        unverifiedOrganizations = it.unverifiedOrganizations,
-        totalListings = it.totalListings,
-        activeListings = it.activeListings,
-        reservedListings = it.reservedListings,
-        totalPickupRequests = it.totalPickupRequests,
-        pendingRequests = it.pendingRequests,
-        approvedRequests = it.approvedRequests,
-        readyRequests = it.readyRequests,           // ✅ ADD
-        rejectedRequests = it.rejectedRequests,     // ✅ ADD
-        completedRequests = it.completedRequests,
-        cancelledRequests = it.cancelledRequests,   // ✅ ADD
-        totalFoodSaved = it.totalFoodSaved
-    )
+                        totalOrganizations = it.totalOrganizations,
+                        totalGroceries = it.totalGroceries,
+                        totalNgos = it.totalNgos,
+                        verifiedOrganizations = it.verifiedOrganizations,
+                        unverifiedOrganizations = it.unverifiedOrganizations,
+                        totalListings = it.totalListings,
+                        activeListings = it.activeListings,
+                        reservedListings = it.reservedListings,
+                        totalPickupRequests = it.totalPickupRequests,
+                        pendingRequests = it.pendingRequests,
+                        approvedRequests = it.approvedRequests,
+                        readyRequests = it.readyRequests,
+                        rejectedRequests = it.rejectedRequests,
+                        completedRequests = it.completedRequests,
+                        cancelledRequests = it.cancelledRequests,
+                        totalFoodSaved = it.totalFoodSaved
+                    )
                 }
 
                 _state.update {
@@ -88,23 +90,23 @@ class AdminDashboardViewModel @Inject constructor(
                 val statsResponse = adminApi.getStatistics()
                 val stats = statsResponse.data.let {
                     AdminStats(
-        totalOrganizations = it.totalOrganizations,
-        totalGroceries = it.totalGroceries,
-        totalNgos = it.totalNgos,
-        verifiedOrganizations = it.verifiedOrganizations,
-        unverifiedOrganizations = it.unverifiedOrganizations,
-        totalListings = it.totalListings,
-        activeListings = it.activeListings,
-        reservedListings = it.reservedListings,
-        totalPickupRequests = it.totalPickupRequests,
-        pendingRequests = it.pendingRequests,
-        approvedRequests = it.approvedRequests,
-        readyRequests = it.readyRequests,           // ✅ ADD
-        rejectedRequests = it.rejectedRequests,     // ✅ ADD
-        completedRequests = it.completedRequests,
-        cancelledRequests = it.cancelledRequests,   // ✅ ADD
-        totalFoodSaved = it.totalFoodSaved
-    )
+                        totalOrganizations = it.totalOrganizations,
+                        totalGroceries = it.totalGroceries,
+                        totalNgos = it.totalNgos,
+                        verifiedOrganizations = it.verifiedOrganizations,
+                        unverifiedOrganizations = it.unverifiedOrganizations,
+                        totalListings = it.totalListings,
+                        activeListings = it.activeListings,
+                        reservedListings = it.reservedListings,
+                        totalPickupRequests = it.totalPickupRequests,
+                        pendingRequests = it.pendingRequests,
+                        approvedRequests = it.approvedRequests,
+                        readyRequests = it.readyRequests,
+                        rejectedRequests = it.rejectedRequests,
+                        completedRequests = it.completedRequests,
+                        cancelledRequests = it.cancelledRequests,
+                        totalFoodSaved = it.totalFoodSaved
+                    )
                 }
 
                 _state.update {
