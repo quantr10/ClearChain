@@ -22,5 +22,5 @@ public class OrganizationDto
     public string VerificationStatus { get; set; } = string.Empty;
     public string? Hours { get; set; }
     public string? ProfilePictureUrl { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public string CreatedAt { get; set; } = string.Empty;
 }

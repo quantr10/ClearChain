@@ -113,7 +113,7 @@ class RequestPickupViewModel @Inject constructor(
         return
     }
 
-    // ✅ Validate pickup date
+    // Validate pickup date
     try {
         val pickupDate = java.time.LocalDate.parse(_state.value.pickupDate)
         val today = java.time.LocalDate.now()

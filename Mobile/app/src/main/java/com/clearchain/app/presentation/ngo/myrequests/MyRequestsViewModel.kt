@@ -3,7 +3,7 @@ package com.clearchain.app.presentation.ngo.myrequests
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
-import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase  // ✅ NEW
+import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +16,7 @@ import javax.inject.Inject
 class MyRequestsViewModel @Inject constructor(
     private val getMyPickupRequestsUseCase: GetMyPickupRequestsUseCase,
     private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
-    private val confirmPickupUseCase: ConfirmPickupUseCase  // ✅ NEW
+    private val confirmPickupUseCase: ConfirmPickupUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyRequestsState())
@@ -40,7 +40,7 @@ class MyRequestsViewModel @Inject constructor(
             }
 
             is MyRequestsEvent.CancelRequest -> cancelRequest(event.requestId)
-            is MyRequestsEvent.ConfirmPickup -> confirmPickup(event.requestId)  // ✅ NEW
+            is MyRequestsEvent.ConfirmPickup -> confirmPickup(event.requestId)
 
             MyRequestsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -139,7 +139,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    // ✅ NEW METHOD
     private fun confirmPickup(requestId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }

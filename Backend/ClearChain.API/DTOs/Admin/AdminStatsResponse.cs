@@ -21,10 +21,10 @@ public class AdminStatsData
     public int TotalPickupRequests { get; set; }
     public int PendingRequests { get; set; }
     public int ApprovedRequests { get; set; }
-    public int ReadyRequests { get; set; }        // ✅ ADD
-    public int RejectedRequests { get; set; }     // ✅ ADD
+    public int ReadyRequests { get; set; }
+    public int RejectedRequests { get; set; }
     public int CompletedRequests { get; set; }
-    public int CancelledRequests { get; set; }    // ✅ ADD
+    public int CancelledRequests { get; set; }
     
     public decimal TotalFoodSaved { get; set; }
 }

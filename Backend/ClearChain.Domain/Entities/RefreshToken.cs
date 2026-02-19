@@ -9,7 +9,5 @@ public class RefreshToken
     public DateTime CreatedAt { get; set; }
     public DateTime? RevokedAt { get; set; }
     public bool IsRevoked { get; set; }
-    
-    // ADD THIS NAVIGATION PROPERTY
     public Organization? Organization { get; set; }
 }

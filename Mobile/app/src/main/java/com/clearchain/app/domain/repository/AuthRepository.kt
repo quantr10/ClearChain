@@ -36,5 +36,8 @@ interface AuthRepository {
 
     suspend fun clearUserData()
 
-    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
+    suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String
+    ): Result<Unit>
 }

@@ -27,10 +27,17 @@ data class RegisterRequest(
     val hours: String? = null
 )
 
+// Used for login / register / refresh responses
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class AuthResponse(
     val message: String,
+    val data: AuthData
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class MeResponse(
     val data: AuthData
 )
 
@@ -80,16 +87,17 @@ data class MessageResponse(
     val message: String
 )
 
-// Extension functions to convert DTOs to Domain models
+// ─── Extension functions ───────────────────────────────────────────────────────
+
 fun OrganizationDto.toDomain(): Organization {
     return Organization(
         id = id,
         name = name,
         type = when (type.lowercase()) {
             "grocery" -> com.clearchain.app.domain.model.OrganizationType.GROCERY
-            "ngo" -> com.clearchain.app.domain.model.OrganizationType.NGO
-            "admin" -> com.clearchain.app.domain.model.OrganizationType.ADMIN
-            else -> com.clearchain.app.domain.model.OrganizationType.GROCERY
+            "ngo"     -> com.clearchain.app.domain.model.OrganizationType.NGO
+            "admin"   -> com.clearchain.app.domain.model.OrganizationType.ADMIN
+            else      -> com.clearchain.app.domain.model.OrganizationType.GROCERY
         },
         email = email,
         phone = phone,
@@ -99,7 +107,7 @@ fun OrganizationDto.toDomain(): Organization {
         verificationStatus = when (verificationStatus.lowercase()) {
             "approved" -> com.clearchain.app.domain.model.VerificationStatus.APPROVED
             "rejected" -> com.clearchain.app.domain.model.VerificationStatus.REJECTED
-            else -> com.clearchain.app.domain.model.VerificationStatus.PENDING
+            else       -> com.clearchain.app.domain.model.VerificationStatus.PENDING
         },
         hours = hours,
         profilePictureUrl = profilePictureUrl,
@@ -110,10 +118,10 @@ fun OrganizationDto.toDomain(): Organization {
 fun AuthData.toDomain(): Pair<Organization, AuthTokens> {
     val organization = user.toDomain()
     val tokens = AuthTokens(
-        accessToken = accessToken,
+        accessToken  = accessToken,
         refreshToken = refreshToken,
-        expiresIn = expiresIn,
-        tokenType = tokenType
+        expiresIn    = expiresIn,
+        tokenType    = tokenType
     )
     return Pair(organization, tokens)
 }

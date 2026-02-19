@@ -24,7 +24,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Services - UPDATED
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IOrganizationService, OrganizationService>();  // ADD THIS
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["JWT_SECRET_KEY"];

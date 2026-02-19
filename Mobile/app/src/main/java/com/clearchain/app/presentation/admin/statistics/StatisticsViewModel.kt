@@ -55,10 +55,10 @@ class StatisticsViewModel @Inject constructor(
         totalPickupRequests = it.totalPickupRequests,
         pendingRequests = it.pendingRequests,
         approvedRequests = it.approvedRequests,
-        readyRequests = it.readyRequests,           // ✅ ADD
-        rejectedRequests = it.rejectedRequests,     // ✅ ADD
+        readyRequests = it.readyRequests,
+        rejectedRequests = it.rejectedRequests,
         completedRequests = it.completedRequests,
-        cancelledRequests = it.cancelledRequests,   // ✅ ADD
+        cancelledRequests = it.cancelledRequests,
         totalFoodSaved = it.totalFoodSaved
     )
                 }
@@ -99,10 +99,10 @@ class StatisticsViewModel @Inject constructor(
         totalPickupRequests = it.totalPickupRequests,
         pendingRequests = it.pendingRequests,
         approvedRequests = it.approvedRequests,
-        readyRequests = it.readyRequests,           // ✅ ADD
-        rejectedRequests = it.rejectedRequests,     // ✅ ADD
+        readyRequests = it.readyRequests,
+        rejectedRequests = it.rejectedRequests,
         completedRequests = it.completedRequests,
-        cancelledRequests = it.cancelledRequests,   // ✅ ADD
+        cancelledRequests = it.cancelledRequests,
         totalFoodSaved = it.totalFoodSaved
     )
                 }

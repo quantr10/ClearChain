@@ -26,10 +26,12 @@ interface AuthApi {
     ): Unit
 
     @GET("auth/me")
-    suspend fun getCurrentUser(): AuthResponse
+    suspend fun getCurrentUser(): MeResponse
 
     @POST("auth/change-password")
-    suspend fun changePassword(@Body request: ChangePasswordRequest): MessageResponse
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequest
+    ): MessageResponse
 
     companion object {
         const val BASE_URL = "http://10.0.2.2:5000/api/"

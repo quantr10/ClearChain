@@ -14,7 +14,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val changePasswordUseCase: ChangePasswordUseCase  // ✅ ADD
+    private val changePasswordUseCase: ChangePasswordUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -30,13 +30,8 @@ class ProfileViewModel @Inject constructor(
     fun onEvent(event: ProfileEvent) {
         when (event) {
             ProfileEvent.LoadProfile -> loadProfile()
-            ProfileEvent.ClearError -> _state.update { it.copy(error = null) }
-
-            // ✅ ADD
-            is ProfileEvent.ChangePassword -> changePassword(
-                event.currentPassword,
-                event.newPassword
-            )
+            ProfileEvent.ClearError  -> _state.update { it.copy(error = null) }
+            is ProfileEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
         }
     }
 
@@ -52,7 +47,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ✅ ADD
     private fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
             _state.update { it.copy(isChangingPassword = true, error = null) }

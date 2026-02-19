@@ -344,7 +344,6 @@ private fun RequestCard(
                 // In RequestCard function, replace the READY case:
 
 PickupRequestStatus.READY -> {
-    // ✅ CHANGED: Show info message instead of button
     HorizontalDivider()
     Card(
         modifier = Modifier.fillMaxWidth(),

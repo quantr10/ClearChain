@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
-    private val adminApi: AdminApi  // ✅ CHANGED FROM pickupRequestApi
+    private val adminApi: AdminApi
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TransactionsState())
@@ -52,7 +52,6 @@ class TransactionsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // ✅ CHANGED: Use admin endpoint to get ALL requests
                 val response = adminApi.getAllPickupRequests()
                 val allRequests = response.data.map { it.toDomain() }
                     .sortedByDescending { it.createdAt }
@@ -80,7 +79,6 @@ class TransactionsViewModel @Inject constructor(
             _state.update { it.copy(isRefreshing = true, error = null) }
 
             try {
-                // ✅ CHANGED: Use admin endpoint
                 val response = adminApi.getAllPickupRequests()
                 val allRequests = response.data.map { it.toDomain() }
                     .sortedByDescending { it.createdAt }

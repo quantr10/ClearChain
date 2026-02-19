@@ -268,7 +268,7 @@ public class AuthService : IAuthService
             VerificationStatus = org.VerificationStatus,
             Hours = org.Hours,
             ProfilePictureUrl = org.ProfilePictureUrl,
-            CreatedAt = org.CreatedAt
+            CreatedAt = org.CreatedAt.ToString("o")
         };
     }
 }

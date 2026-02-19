@@ -50,7 +50,8 @@ class CreateListingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         unit = event.unit,
-                        showUnitDropdown = false
+                        showUnitDropdown = false,
+                        unitError = null
                     )
                 }
             }
@@ -131,6 +132,7 @@ class CreateListingViewModel @Inject constructor(
         }
     }
 
+    // ✅ ENHANCED: Add time format validation
     private fun validateInputs(): Boolean {
         val currentState = _state.value
         var isValid = true
@@ -169,19 +171,60 @@ class CreateListingViewModel @Inject constructor(
         if (currentState.expiryDate.isBlank()) {
             _state.update { it.copy(expiryDateError = "Expiry date is required") }
             isValid = false
+        } else if (!isValidDateFormat(currentState.expiryDate)) {
+            _state.update { it.copy(expiryDateError = "Invalid date format. Use YYYY-MM-DD") }
+            isValid = false
         }
 
-        // Validate pickup times
+        // ✅ ADD: Validate pickup start time
         if (currentState.pickupTimeStart.isBlank()) {
             _state.update { it.copy(pickupTimeStartError = "Pickup start time is required") }
             isValid = false
-        }
-
-        if (currentState.pickupTimeEnd.isBlank()) {
-            _state.update { it.copy(pickupTimeEndError = "Pickup end time is required") }
+        } else if (!isValidTimeFormat(currentState.pickupTimeStart)) {
+            _state.update { it.copy(pickupTimeStartError = "Invalid time format. Use HH:MM (e.g., 09:00)") }
             isValid = false
         }
 
+        // ✅ ADD: Validate pickup end time
+        if (currentState.pickupTimeEnd.isBlank()) {
+            _state.update { it.copy(pickupTimeEndError = "Pickup end time is required") }
+            isValid = false
+        } else if (!isValidTimeFormat(currentState.pickupTimeEnd)) {
+            _state.update { it.copy(pickupTimeEndError = "Invalid time format. Use HH:MM (e.g., 17:00)") }
+            isValid = false
+        }
+
+        // ✅ ADD: Validate end time is after start time
+        if (isValid && currentState.pickupTimeStart.isNotBlank() && currentState.pickupTimeEnd.isNotBlank()) {
+            if (!isEndTimeAfterStartTime(currentState.pickupTimeStart, currentState.pickupTimeEnd)) {
+                _state.update { it.copy(pickupTimeEndError = "End time must be after start time") }
+                isValid = false
+            }
+        }
+
         return isValid
+    }
+
+    // ✅ ADD: Time format validation (HH:MM)
+    private fun isValidTimeFormat(time: String): Boolean {
+        val timeRegex = Regex("^([0-1][0-9]|2[0-3]):[0-5][0-9]$")
+        return timeRegex.matches(time)
+    }
+
+    // ✅ ADD: Date format validation (YYYY-MM-DD)
+    private fun isValidDateFormat(date: String): Boolean {
+        val dateRegex = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+        return dateRegex.matches(date)
+    }
+
+    // ✅ ADD: Check end time is after start time
+    private fun isEndTimeAfterStartTime(startTime: String, endTime: String): Boolean {
+        return try {
+            val start = startTime.split(":").let { it[0].toInt() * 60 + it[1].toInt() }
+            val end = endTime.split(":").let { it[0].toInt() * 60 + it[1].toInt() }
+            end > start
+        } catch (e: Exception) {
+            false
+        }
     }
 }

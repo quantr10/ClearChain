@@ -1,21 +1,14 @@
 package com.clearchain.app.data.remote.dto
 
+import android.annotation.SuppressLint
+import com.clearchain.app.domain.model.AdminStats
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class OrganizationListResponse(
-    val message: String,
-    val data: List<OrganizationData>
-)
+// ─── Organization DTOs ─────────────────────────────────────────────────────────
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class OrganizationResponse(
-    val message: String,
-    val data: OrganizationData
-)
-
-@Serializable
-data class OrganizationData(
+data class AdminOrganizationDto(
     val id: String,
     val name: String,
     val email: String,
@@ -28,31 +21,76 @@ data class OrganizationData(
     val createdAt: String
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class AdminStatsResponse(
+data class OrganizationListResponse(
     val message: String,
-    val data: AdminStatsData
+    val data: List<AdminOrganizationDto>
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class AdminStatsData(
+data class OrganizationResponse(
+    val message: String,
+    val data: AdminOrganizationDto
+)
+
+// ─── Stats DTO ────────────────────────────────────────────────────────────────
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class AdminStatsDto(
+    // Organization stats
     val totalOrganizations: Int,
     val totalGroceries: Int,
     val totalNgos: Int,
     val verifiedOrganizations: Int,
     val unverifiedOrganizations: Int,
-    
+
+    // Listing stats
     val totalListings: Int,
     val activeListings: Int,
     val reservedListings: Int,
-    
+
+    // Pickup request stats
     val totalPickupRequests: Int,
     val pendingRequests: Int,
     val approvedRequests: Int,
-    val readyRequests: Int,        // ✅ ADD
-    val rejectedRequests: Int,     // ✅ ADD
+    val readyRequests: Int,
+    val rejectedRequests: Int,
     val completedRequests: Int,
-    val cancelledRequests: Int,    // ✅ ADD
-    
-    val totalFoodSaved: Int
+    val cancelledRequests: Int,
+
+    // Food saved
+    val totalFoodSaved: Double
 )
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class AdminStatsResponse(
+    val message: String,
+    val data: AdminStatsDto
+)
+
+// ─── Extension: DTO → Domain ──────────────────────────────────────────────────
+
+fun AdminStatsDto.toDomain(): AdminStats {
+    return AdminStats(
+        totalOrganizations    = totalOrganizations,
+        totalGroceries        = totalGroceries,
+        totalNgos             = totalNgos,
+        verifiedOrganizations = verifiedOrganizations,
+        unverifiedOrganizations = unverifiedOrganizations,
+        totalListings         = totalListings,
+        activeListings        = activeListings,
+        reservedListings      = reservedListings,
+        totalPickupRequests   = totalPickupRequests,
+        pendingRequests       = pendingRequests,
+        approvedRequests      = approvedRequests,
+        readyRequests         = readyRequests,
+        rejectedRequests      = rejectedRequests,
+        completedRequests     = completedRequests,
+        cancelledRequests     = cancelledRequests,
+        totalFoodSaved        = totalFoodSaved
+    )
+}

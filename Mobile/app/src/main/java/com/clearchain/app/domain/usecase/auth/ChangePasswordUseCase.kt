@@ -19,10 +19,14 @@ class ChangePasswordUseCase @Inject constructor(
         if (newPassword.length < 8) {
             return Result.failure(Exception("New password must be at least 8 characters"))
         }
-        if (!newPassword.any { it.isUpperCase() } ||
-            !newPassword.any { it.isLowerCase() } ||
-            !newPassword.any { it.isDigit() }) {
-            return Result.failure(Exception("Password must contain uppercase, lowercase, and number"))
+        if (!newPassword.any { it.isUpperCase() }) {
+            return Result.failure(Exception("Password must contain an uppercase letter"))
+        }
+        if (!newPassword.any { it.isLowerCase() }) {
+            return Result.failure(Exception("Password must contain a lowercase letter"))
+        }
+        if (!newPassword.any { it.isDigit() }) {
+            return Result.failure(Exception("Password must contain a number"))
         }
         if (currentPassword == newPassword) {
             return Result.failure(Exception("New password must be different from current password"))

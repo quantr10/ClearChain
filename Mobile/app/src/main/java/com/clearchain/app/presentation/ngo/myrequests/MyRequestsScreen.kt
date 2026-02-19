@@ -145,7 +145,7 @@ fun MyRequestsScreen(
                             onCancelRequest = { requestId ->
                                 viewModel.onEvent(MyRequestsEvent.CancelRequest(requestId))
                             },
-                            onConfirmPickup = { requestId ->  // ✅ NEW
+                            onConfirmPickup = { requestId ->
                                 viewModel.onEvent(MyRequestsEvent.ConfirmPickup(requestId))
                             }
                         )
@@ -190,7 +190,7 @@ private fun StatusFilterRow(
 private fun RequestsList(
     requests: List<PickupRequest>,
     onCancelRequest: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit  // ✅ NEW
+    onConfirmPickup: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -209,7 +209,7 @@ private fun RequestsList(
             RequestCard(
                 request = request,
                 onCancelRequest = onCancelRequest,
-                onConfirmPickup = onConfirmPickup  // ✅ NEW
+                onConfirmPickup = onConfirmPickup
             )
         }
     }
@@ -219,10 +219,10 @@ private fun RequestsList(
 private fun RequestCard(
     request: PickupRequest,
     onCancelRequest: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit  // ✅ NEW
+    onConfirmPickup: (String) -> Unit
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
-    var showConfirmDialog by remember { mutableStateOf(false) }  // ✅ NEW
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -282,7 +282,7 @@ private fun RequestCard(
                 )
             }
 
-            // ✅ UPDATED: Actions based on status
+            // Actions based on status
             when (request.status) {
                 PickupRequestStatus.PENDING -> {
                     HorizontalDivider()
@@ -299,7 +299,7 @@ private fun RequestCard(
                     }
                 }
 
-                PickupRequestStatus.READY -> {  // ✅ NEW
+                PickupRequestStatus.READY -> {
                     HorizontalDivider()
                     Button(
                         onClick = { showConfirmDialog = true },
@@ -345,7 +345,7 @@ private fun RequestCard(
         )
     }
 
-    // ✅ NEW: Confirm Pickup Dialog
+    // Confirm Pickup Dialog
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
