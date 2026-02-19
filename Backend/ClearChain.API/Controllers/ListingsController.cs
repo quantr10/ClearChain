@@ -61,8 +61,8 @@ public class ListingsController : ControllerBase
                 Quantity = (int)l.Quantity,
                 Unit = l.Unit,
                 ExpiryDate = l.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
-                PickupTimeStart = "09:00",
-                PickupTimeEnd = "17:00",
+                PickupTimeStart = l.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",  // ✅ Real value
+                PickupTimeEnd = l.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
                 Status = l.Status,
                 ImageUrl = l.PhotoUrl,
                 Location = l.Grocery?.Location ?? "",
@@ -112,8 +112,8 @@ public class ListingsController : ControllerBase
                 Quantity = (int)l.Quantity,
                 Unit = l.Unit,
                 ExpiryDate = l.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
-                PickupTimeStart = "09:00",
-                PickupTimeEnd = "17:00",
+                PickupTimeStart = l.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",  // ✅ Real value
+                PickupTimeEnd = l.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
                 Status = l.Status,
                 ImageUrl = l.PhotoUrl,
                 Location = l.Grocery?.Location ?? "",
@@ -160,6 +160,21 @@ public class ListingsController : ControllerBase
             var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
             var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
 
+            TimeSpan? pickupTimeStart = null;
+            TimeSpan? pickupTimeEnd = null;
+
+            if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
+                TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
+            {
+                pickupTimeStart = startTime;
+            }
+
+            if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
+                TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
+            {
+                pickupTimeEnd = endTime;
+            }
+
             var listing = new ClearanceListing
             {
                 Id = Guid.NewGuid(),
@@ -174,7 +189,9 @@ public class ListingsController : ControllerBase
                 Status = "open",
                 PhotoUrl = request.ImageUrl,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                PickupTimeStart = pickupTimeStart,
+                PickupTimeEnd = pickupTimeEnd,
             };
 
             _context.ClearanceListings.Add(listing);
@@ -191,8 +208,8 @@ public class ListingsController : ControllerBase
                 Quantity = (int)listing.Quantity,
                 Unit = listing.Unit,
                 ExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
-                PickupTimeStart = "09:00",
-                PickupTimeEnd = "17:00",
+                PickupTimeStart = listing.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",
+                PickupTimeEnd = listing.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
                 Status = listing.Status,
                 ImageUrl = listing.PhotoUrl,
                 Location = grocery.Location,
@@ -286,8 +303,8 @@ public class ListingsController : ControllerBase
             _context.ClearanceListings.Remove(listing);
             await _context.SaveChangesAsync();
 
-            return Ok(new 
-            { 
+            return Ok(new
+            {
                 message = "Listing deleted successfully",
                 data = new { id = id.ToString() }
             });

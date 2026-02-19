@@ -24,5 +24,5 @@ sealed class Screen(val route: String) {
     object Transactions : Screen("transactions")
     
     // Profile (shared by all roles)
-    object Profile : Screen("profile")  // ✅ ADD THIS
+    object Profile : Screen("profile")
 }

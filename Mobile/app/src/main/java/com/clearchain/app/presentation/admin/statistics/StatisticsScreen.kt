@@ -122,10 +122,10 @@ StatisticsCard(
         "Total Requests" to stats.totalPickupRequests.toString(),
         "Pending" to stats.pendingRequests.toString(),
         "Approved" to stats.approvedRequests.toString(),
-        "Ready" to stats.readyRequests.toString(),           // ✅ REAL COUNT
-        "Rejected" to stats.rejectedRequests.toString(),     // ✅ REAL COUNT
+        "Ready" to stats.readyRequests.toString(),
+        "Rejected" to stats.rejectedRequests.toString(),
         "Completed" to stats.completedRequests.toString(),
-        "Cancelled" to stats.cancelledRequests.toString()    // ✅ REAL COUNT
+        "Cancelled" to stats.cancelledRequests.toString()
     ),
     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
     contentColor = MaterialTheme.colorScheme.onTertiaryContainer

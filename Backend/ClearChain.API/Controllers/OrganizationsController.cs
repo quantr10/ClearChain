@@ -8,7 +8,7 @@ using ClearChain.API.DTOs.Common;
 namespace ClearChain.API.Controllers;
 
 [ApiController]
-[Route("api/organizations")]
+[Route("api/[controller]")]
 [Authorize]
 public class OrganizationsController : ControllerBase
 {

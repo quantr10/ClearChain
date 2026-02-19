@@ -14,10 +14,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Organization> Organizations { get; set; } = null!;
     public DbSet<ClearanceListing> ClearanceListings { get; set; } = null!;
     public DbSet<PickupRequest> PickupRequests { get; set; } = null!;
-    public DbSet<DistributedItem> DistributedItems { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
-    public DbSet<Inventory> Inventories { get; set; } = null!;  // ✅ ADD THIS
+    public DbSet<Inventory> Inventories { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,11 +26,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Organization>().ToTable("organizations");
         modelBuilder.Entity<ClearanceListing>().ToTable("clearancelistings");
         modelBuilder.Entity<PickupRequest>().ToTable("pickuprequests");
-        modelBuilder.Entity<DistributedItem>().ToTable("distributeditems");
         modelBuilder.Entity<RefreshToken>().ToTable("refreshtokens");
         modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
-        modelBuilder.Entity<Inventory>().ToTable("inventory");  // ✅ ADD THIS
-
+        modelBuilder.Entity<Inventory>().ToTable("inventory");
         // Configure PickupRequest - Listing many-to-many
         modelBuilder.Entity<PickupRequest>()
             .HasMany(pr => pr.Listings)

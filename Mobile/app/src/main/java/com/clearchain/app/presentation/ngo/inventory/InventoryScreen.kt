@@ -262,14 +262,14 @@ private fun InventoryItemCard(
             DetailRow(
                 icon = Icons.Default.Schedule,
                 label = "Received",
-                value = item.receivedAt.take(10) // ✅ YYYY-MM-DD format
+                value = item.receivedAt.take(10)
             )
 
             item.distributedAt?.let { distributedAt ->
                 DetailRow(
                     icon = Icons.Default.CheckCircle,
                     label = "Distributed",
-                    value = distributedAt.take(10) // ✅ YYYY-MM-DD format
+                    value = distributedAt.take(10)
                 )
             }
 

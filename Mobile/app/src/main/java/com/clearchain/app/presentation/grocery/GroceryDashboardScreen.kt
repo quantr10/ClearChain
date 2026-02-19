@@ -51,7 +51,6 @@ fun GroceryDashboardScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    // ✅ ADD: Profile Icon Button
                     IconButton(
                         onClick = {
                             navController.navigate(Screen.Profile.route)

@@ -6,11 +6,11 @@ import com.clearchain.app.data.local.entity.AuthTokenEntity
 import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.local.entity.toDomain
 import com.clearchain.app.data.remote.api.AuthApi
+import com.clearchain.app.data.remote.dto.ChangePasswordRequest
 import com.clearchain.app.data.remote.dto.LoginRequest
 import com.clearchain.app.data.remote.dto.RefreshTokenRequest
 import com.clearchain.app.data.remote.dto.RegisterRequest
 import com.clearchain.app.data.remote.dto.toDomain
-import com.clearchain.app.data.remote.dto.ChangePasswordRequest
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
@@ -50,15 +50,15 @@ class AuthRepositoryImpl @Inject constructor(
 
             val (organization, tokens) = response.data.toDomain()
 
-            // Save to local database
+            // Always clear old user before inserting new one
             userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
             tokenDao.saveTokens(
                 AuthTokenEntity(
-                    accessToken = tokens.accessToken,
+                    accessToken  = tokens.accessToken,
                     refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
+                    expiresIn    = tokens.expiresIn,
+                    tokenType    = tokens.tokenType
                 )
             )
 
@@ -82,15 +82,15 @@ class AuthRepositoryImpl @Inject constructor(
 
             val (organization, tokens) = response.data.toDomain()
 
-            // Save to local database
+            // Always clear old user before inserting new one
             userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
             tokenDao.saveTokens(
                 AuthTokenEntity(
-                    accessToken = tokens.accessToken,
+                    accessToken  = tokens.accessToken,
                     refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
+                    expiresIn    = tokens.expiresIn,
+                    tokenType    = tokens.tokenType
                 )
             )
 
@@ -125,18 +125,18 @@ class AuthRepositoryImpl @Inject constructor(
             )
 
             val newTokens = AuthTokens(
-                accessToken = response.data.accessToken,
+                accessToken  = response.data.accessToken,
                 refreshToken = response.data.refreshToken,
-                expiresIn = response.data.expiresIn,
-                tokenType = response.data.tokenType
+                expiresIn    = response.data.expiresIn,
+                tokenType    = response.data.tokenType
             )
 
             tokenDao.saveTokens(
                 AuthTokenEntity(
-                    accessToken = newTokens.accessToken,
+                    accessToken  = newTokens.accessToken,
                     refreshToken = newTokens.refreshToken,
-                    expiresIn = newTokens.expiresIn,
-                    tokenType = newTokens.tokenType
+                    expiresIn    = newTokens.expiresIn,
+                    tokenType    = newTokens.tokenType
                 )
             )
 
@@ -148,10 +148,10 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): Result<Organization> {
         return try {
-            val response = authApi.getCurrentUser()
-            val (organization, _) = response.data.toDomain()
+            val response = authApi.getCurrentUser() // Returns MeResponse
+            val (organization, _) = response.data.toDomain() // data is AuthData
 
-            // Update local cache
+            // Always clear old user before updating cache
             userDao.clearUsers()
             userDao.insertUser(organization.toEntity())
 
@@ -169,10 +169,10 @@ class AuthRepositoryImpl @Inject constructor(
         return tokenDao.getTokensFlow().map { tokenEntity ->
             tokenEntity?.let {
                 AuthTokens(
-                    accessToken = it.accessToken,
+                    accessToken  = it.accessToken,
                     refreshToken = it.refreshToken,
-                    expiresIn = it.expiresIn,
-                    tokenType = it.tokenType
+                    expiresIn    = it.expiresIn,
+                    tokenType    = it.tokenType
                 )
             }
         }
@@ -195,7 +195,7 @@ class AuthRepositoryImpl @Inject constructor(
             authApi.changePassword(
                 ChangePasswordRequest(
                     currentPassword = currentPassword,
-                    newPassword = newPassword
+                    newPassword     = newPassword
                 )
             )
             Result.success(Unit)

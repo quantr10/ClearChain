@@ -16,7 +16,7 @@ public class ClearanceListing
     public Guid? PickupRequestId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    
-    // Navigation properties
+    public TimeSpan? PickupTimeStart { get; set; }
+    public TimeSpan? PickupTimeEnd { get; set; }
     public Organization? Grocery { get; set; }
 }

@@ -262,7 +262,7 @@ fun PlaceholderDashboard(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "✅ Authentication Working!",
+                        text = "Authentication Working!",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
