@@ -1,9 +1,7 @@
 package com.clearchain.app.data.remote.dto
 
 import android.annotation.SuppressLint
-import com.clearchain.app.domain.model.FoodCategory
-import com.clearchain.app.domain.model.Listing
-import com.clearchain.app.domain.model.ListingStatus
+import com.clearchain.app.domain.model.*
 import kotlinx.serialization.Serializable
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -51,11 +49,35 @@ data class ListingData(
     val status: String,
     val imageUrl: String? = null,
     val location: String,
-    val createdAt: String
+    val createdAt: String,
+    
+    // NEW: ListingGroup tracking
+    val groupId: String? = null,
+    val splitReason: String = "new_listing",
+    val relatedRequestId: String? = null,
+    val splitIndex: Int = 0,
+    val groupSummary: ListingGroupSummaryDto? = null
 )
 
-// Extension function to convert DTO to Domain model
-// Extension function to convert DTO to Domain model
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ListingGroupSummaryDto(
+    val groupId: String,
+    val originalQuantity: Int,
+    val totalReserved: Int,
+    val totalAvailable: Int,
+    val childListingsCount: Int
+)
+
+// data/remote/dto/ListingDto.kt - Add this:
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class UpdateListingQuantityRequest(
+    val newQuantity: Int
+)
+
+// Updated mapping function
 fun ListingData.toDomain(): Listing {
     return Listing(
         id = id,
@@ -88,6 +110,21 @@ fun ListingData.toDomain(): Listing {
         },
         imageUrl = imageUrl,
         location = location,
-        createdAt = createdAt
+        createdAt = createdAt,
+        
+        // NEW: Map group fields
+        groupId = groupId,
+        splitReason = splitReason,
+        relatedRequestId = relatedRequestId,
+        splitIndex = splitIndex,
+        groupSummary = groupSummary?.let {
+            ListingGroupSummary(
+                groupId = it.groupId,
+                originalQuantity = it.originalQuantity,
+                totalReserved = it.totalReserved,
+                totalAvailable = it.totalAvailable,
+                childListingsCount = it.childListingsCount
+            )
+        }
     )
 }

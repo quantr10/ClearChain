@@ -69,7 +69,6 @@ fun PickupRequestData.toDomain(): PickupRequest {
             "ready" -> PickupRequestStatus.READY
             "rejected" -> PickupRequestStatus.REJECTED
             "completed" -> PickupRequestStatus.COMPLETED
-            "cancelled" -> PickupRequestStatus.CANCELLED
             else -> PickupRequestStatus.PENDING
         },
         requestedQuantity = requestedQuantity,

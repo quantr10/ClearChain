@@ -17,6 +17,9 @@ public class PickupRequest
     public int? RequestedQuantity { get; set; }
     public string? PickupTime { get; set; }
     public string? Notes { get; set; }
+    public string ListingTitle { get; set; }
+    public string ListingCategory { get; set; }
+    
     public Organization? Ngo { get; set; }
     public Organization? Grocery { get; set; }
     public List<ClearanceListing> Listings { get; set; } = new();

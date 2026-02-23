@@ -29,7 +29,6 @@ enum class PickupRequestStatus {
     READY,
     REJECTED,
     COMPLETED,
-    CANCELLED,
 }
 
 fun PickupRequestStatus.displayName(): String {
@@ -39,6 +38,5 @@ fun PickupRequestStatus.displayName(): String {
         PickupRequestStatus.READY -> "Ready for Pickup"
         PickupRequestStatus.REJECTED -> "Rejected"
         PickupRequestStatus.COMPLETED -> "Completed"
-        PickupRequestStatus.CANCELLED -> "Cancelled"
     }
 }

@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// InventoryViewModel.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo.inventory
 
 import androidx.lifecycle.ViewModel
@@ -15,8 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
     private val getMyInventoryUseCase: GetMyInventoryUseCase,
-    private val distributeItemUseCase: DistributeItemUseCase,
-    private val updateExpiredItemsUseCase: UpdateExpiredItemsUseCase
+    private val updateExpiredItemsUseCase: UpdateExpiredItemsUseCase,
+    private val distributeInventoryItemUseCase: DistributeItemUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(InventoryState())
@@ -33,10 +37,27 @@ class InventoryViewModel @Inject constructor(
         when (event) {
             InventoryEvent.LoadInventory -> loadInventory()
             InventoryEvent.RefreshInventory -> refreshInventory()
-            InventoryEvent.UpdateExpired -> updateExpired()
-
-            is InventoryEvent.StatusFilterChanged -> {
-                _state.update { it.copy(selectedStatus = event.status) }
+            InventoryEvent.UpdateExpired -> updateExpiredItems()
+            
+            // Search & Sort
+            is InventoryEvent.SearchQueryChanged -> {
+                _state.update { it.copy(searchQuery = event.query) }
+                applyFilters()
+            }
+            is InventoryEvent.SortOptionChanged -> {
+                _state.update { it.copy(selectedSort = event.option) }
+                applyFilters()
+            }
+            
+            // NEW: Status Tab (changed from chip)
+            is InventoryEvent.StatusTabChanged -> {
+                _state.update { it.copy(selectedStatusTab = event.status) }
+                applyFilters()
+            }
+            
+            // NEW: Category Filter (food categories)
+            is InventoryEvent.CategoryFilterChanged -> {
+                _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
             }
 
@@ -52,10 +73,9 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // First update expired items
+            // Update expired items first
             updateExpiredItemsUseCase()
 
-            // Then load inventory
             val result = getMyInventoryUseCase()
 
             result.fold(
@@ -63,10 +83,10 @@ class InventoryViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             allItems = items,
-                            filteredItems = items,
                             isLoading = false
                         )
                     }
+                    applyFilters()
                 },
                 onFailure = { error ->
                     _state.update {
@@ -84,10 +104,9 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
 
-            // Update expired items
+            // Update expired items first
             updateExpiredItemsUseCase()
 
-            // Reload inventory
             val result = getMyInventoryUseCase()
 
             result.fold(
@@ -113,19 +132,55 @@ class InventoryViewModel @Inject constructor(
         }
     }
 
-    private fun updateExpired() {
+    private fun updateExpiredItems() {
         viewModelScope.launch {
             updateExpiredItemsUseCase()
             loadInventory()
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // UPDATED: Filter and Sort Logic with Status TAB + Category CHIP
+    // ═══════════════════════════════════════════════════════════════════════════
+    
     private fun applyFilters() {
-        val currentState = _state.value
-        var filtered = currentState.allItems
+        val current = _state.value
+        var filtered = current.allItems
 
-        currentState.selectedStatus?.let { status ->
-            filtered = filtered.filter { it.status.name == status }
+        // Apply STATUS TAB filter (first priority)
+        current.selectedStatusTab?.let { status ->
+            filtered = filtered.filter { it.status == status }
+        }
+
+        // Apply search
+        if (current.searchQuery.isNotBlank()) {
+            val query = current.searchQuery.lowercase()
+            filtered = filtered.filter { item ->
+                item.productName.lowercase().contains(query) ||
+                item.category.lowercase().contains(query)
+            }
+        }
+
+        // Apply CATEGORY CHIP filter
+        current.selectedCategory?.let { category ->
+            filtered = filtered.filter { item ->
+                // Match by FoodCategory enum name
+                item.category.equals(category, ignoreCase = true) ||
+                // Or if category is stored as display name, try matching that too
+                item.category.lowercase().replace(" ", "_") == category.lowercase()
+            }
+        }
+
+        // Apply sort
+        filtered = when (current.selectedSort.value) {
+            "date_desc" -> filtered.sortedByDescending { it.receivedAt }
+            "date_asc" -> filtered.sortedBy { it.receivedAt }
+            "expiry_asc" -> filtered.sortedBy { it.expiryDate }
+            "expiry_desc" -> filtered.sortedByDescending { it.expiryDate }
+            "distributed_date" -> filtered.sortedByDescending { it.distributedAt ?: "" }
+            "name_asc" -> filtered.sortedBy { it.productName }
+            "name_desc" -> filtered.sortedByDescending { it.productName }
+            else -> filtered
         }
 
         _state.update { it.copy(filteredItems = filtered) }
@@ -135,7 +190,7 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            val result = distributeItemUseCase(itemId)
+            val result = distributeInventoryItemUseCase(itemId)
 
             result.fold(
                 onSuccess = {

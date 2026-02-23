@@ -1,28 +1,39 @@
 package com.clearchain.app.presentation.navigation
 
 sealed class Screen(val route: String) {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Auth Screens
+    // ═══════════════════════════════════════════════════════════════════════════
     object Splash : Screen("splash")
     object Login : Screen("login")
     object Register : Screen("register")
 
-    // Grocery screens
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Grocery Screens
+    // ═══════════════════════════════════════════════════════════════════════════
     object GroceryDashboard : Screen("grocery_dashboard")
     object CreateListing : Screen("create_listing")
     object MyListings : Screen("my_listings")
-    object PickupRequests : Screen("pickup_requests")
+    object PickupRequests : Screen("pickup_requests")  // ✅ FIXED: Added this
 
-    // NGO screens
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NGO Screens
+    // ═══════════════════════════════════════════════════════════════════════════
     object NgoDashboard : Screen("ngo_dashboard")
     object BrowseListings : Screen("browse_listings")
     object Cart : Screen("cart")
-    object Deliveries : Screen("deliveries")
+    object Deliveries : Screen("deliveries")  // ✅ FIXED: This is My Requests
     object Inventory : Screen("inventory")
 
-    // Admin screens
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Admin Screens
+    // ═══════════════════════════════════════════════════════════════════════════
     object AdminDashboard : Screen("admin_dashboard")
-    object Verification : Screen("verification")
-    object Transactions : Screen("transactions")
+    object Verification : Screen("admin/verification")  // ✅ FIXED: Added this
+    object Transactions : Screen("admin/transactions")
     
-    // Profile (shared by all roles)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Shared Screens
+    // ═══════════════════════════════════════════════════════════════════════════
     object Profile : Screen("profile")
 }

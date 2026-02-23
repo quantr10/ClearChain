@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.grocery.managerequests
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.presentation.components.FilterSection
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,12 +75,27 @@ fun ManageRequestsScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Status Filter
-                StatusFilterRow(
-                    selectedStatus = state.selectedStatus,
-                    onStatusSelected = { status ->
-                        viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(status))
-                    }
+                // ══════════════════════════════════════════════════════
+                // FILTER SECTION
+                // ══════════════════════════════════════════════════════
+                FilterSection(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = {
+                        viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it))
+                    },
+                    searchPlaceholder = "Search by item, NGO...",
+                    selectedSort = state.selectedSort,
+                    onSortSelected = {
+                        viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it))
+                    },
+                    sortOptions = state.availableSortOptions,
+                    filterChips = state.availableStatusFilters,
+                    selectedFilter = state.selectedStatus,
+                    onFilterSelected = {
+                        viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it))
+                    },
+                    resultsCount = state.filteredRequests.size,
+                    itemName = "request"
                 )
 
                 // Error Message
@@ -118,9 +133,11 @@ fun ManageRequestsScreen(
                     }
                 }
 
-                // Content
+                // ══════════════════════════════════════════════════════
+                // CONTENT
+                // ══════════════════════════════════════════════════════
                 when {
-                    state.isLoading && state.requests.isEmpty() -> {
+                    state.isLoading && state.allRequests.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -131,8 +148,8 @@ fun ManageRequestsScreen(
 
                     state.filteredRequests.isEmpty() && !state.isLoading -> {
                         EmptyState(
-                            message = if (state.selectedStatus != null) {
-                                "No ${state.selectedStatus?.lowercase()} requests"
+                            message = if (state.selectedStatus != null || state.searchQuery.isNotBlank()) {
+                                "No requests match your filters"
                             } else {
                                 "No pickup requests yet"
                             }
@@ -150,9 +167,6 @@ fun ManageRequestsScreen(
                             },
                             onMarkReady = { requestId ->
                                 viewModel.onEvent(ManageRequestsEvent.MarkReady(requestId))
-                            },
-                            onMarkPickedUp = { requestId ->
-                                viewModel.onEvent(ManageRequestsEvent.MarkPickedUp(requestId))
                             }
                         )
                     }
@@ -163,63 +177,23 @@ fun ManageRequestsScreen(
 }
 
 @Composable
-private fun StatusFilterRow(
-    selectedStatus: String?,
-    onStatusSelected: (String?) -> Unit
-) {
-    val statuses = listOf(
-        "All" to null,
-        "Pending" to "PENDING",
-        "Approved" to "APPROVED",
-        "Ready" to "READY",
-        "Completed" to "COMPLETED",
-        "Rejected" to "REJECTED"
-    )
-
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(statuses) { (label, status) ->
-            FilterChip(
-                selected = selectedStatus == status,
-                onClick = { onStatusSelected(status) },
-                label = { Text(label) }
-            )
-        }
-    }
-}
-
-@Composable
 private fun RequestsList(
     requests: List<PickupRequest>,
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
-    onMarkReady: (String) -> Unit,
-    onMarkPickedUp: (String) -> Unit
+    onMarkReady: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Text(
-                text = "${requests.size} request${if (requests.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
         items(requests) { request ->
             RequestCard(
                 request = request,
                 onApprove = onApprove,
                 onReject = onReject,
-                onMarkReady = onMarkReady,
-                onMarkPickedUp = onMarkPickedUp
+                onMarkReady = onMarkReady
             )
         }
     }
@@ -230,8 +204,7 @@ private fun RequestCard(
     request: PickupRequest,
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
-    onMarkReady: (String) -> Unit,
-    onMarkPickedUp: (String) -> Unit
+    onMarkReady: (String) -> Unit
 ) {
     var showApproveDialog by remember { mutableStateOf(false) }
     var showRejectDialog by remember { mutableStateOf(false) }
@@ -341,36 +314,34 @@ private fun RequestCard(
                     }
                 }
 
-                // In RequestCard function, replace the READY case:
-
-PickupRequestStatus.READY -> {
-    HorizontalDivider()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Text(
-                text = "Waiting for ${request.ngoName} to confirm pickup",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-    }
-}
+                PickupRequestStatus.READY -> {
+                    HorizontalDivider()
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Waiting for ${request.ngoName} to confirm pickup",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
 
                 else -> {
                     // No actions for COMPLETED, REJECTED, CANCELLED
@@ -482,11 +453,6 @@ private fun StatusBadge(status: PickupRequestStatus) {
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
             "Completed"
-        )
-        PickupRequestStatus.CANCELLED -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            "Cancelled"
         )
     }
 

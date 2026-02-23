@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// MyRequestsViewModel.kt - COMPLETE WITH SEARCH, SORT, FILTER
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo.myrequests
 
 import androidx.lifecycle.ViewModel
@@ -34,6 +38,15 @@ class MyRequestsViewModel @Inject constructor(
             MyRequestsEvent.LoadRequests -> loadRequests()
             MyRequestsEvent.RefreshRequests -> refreshRequests()
 
+            // NEW: Search, Sort, Filter handlers
+            is MyRequestsEvent.SearchQueryChanged -> {
+                _state.update { it.copy(searchQuery = event.query) }
+                applyFilters()
+            }
+            is MyRequestsEvent.SortOptionChanged -> {
+                _state.update { it.copy(selectedSort = event.option) }
+                applyFilters()
+            }
             is MyRequestsEvent.StatusFilterChanged -> {
                 _state.update { it.copy(selectedStatus = event.status) }
                 applyFilters()
@@ -58,11 +71,11 @@ class MyRequestsViewModel @Inject constructor(
                 onSuccess = { requests ->
                     _state.update {
                         it.copy(
-                            requests = requests.sortedByDescending { req -> req.createdAt },
-                            filteredRequests = requests.sortedByDescending { req -> req.createdAt },
+                            allRequests = requests,
                             isLoading = false
                         )
                     }
+                    applyFilters()
                 },
                 onFailure = { error ->
                     _state.update {
@@ -86,7 +99,7 @@ class MyRequestsViewModel @Inject constructor(
                 onSuccess = { requests ->
                     _state.update {
                         it.copy(
-                            requests = requests.sortedByDescending { req -> req.createdAt },
+                            allRequests = requests,
                             isRefreshing = false
                         )
                     }
@@ -105,12 +118,36 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    private fun applyFilters() {
-        val currentState = _state.value
-        var filtered = currentState.requests
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Filter and Sort Logic
+    // ═══════════════════════════════════════════════════════════════════════════
 
-        currentState.selectedStatus?.let { status ->
+    private fun applyFilters() {
+        val current = _state.value
+        var filtered = current.allRequests
+
+        // Apply search
+        if (current.searchQuery.isNotBlank()) {
+            val query = current.searchQuery.lowercase()
+            filtered = filtered.filter { request ->
+                request.listingTitle.lowercase().contains(query) ||
+                        request.groceryName.lowercase().contains(query) ||
+                        request.notes?.lowercase()?.contains(query) == true
+            }
+        }
+
+        // Apply status filter
+        current.selectedStatus?.let { status ->
             filtered = filtered.filter { it.status.name == status }
+        }
+
+        // Apply sort
+        filtered = when (current.selectedSort.value) {
+            "date_desc" -> filtered.sortedByDescending { it.createdAt }
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            "pickup_date_asc" -> filtered.sortedBy { it.pickupDate }
+            "pickup_date_desc" -> filtered.sortedByDescending { it.pickupDate }
+            else -> filtered
         }
 
         _state.update { it.copy(filteredRequests = filtered) }
@@ -147,7 +184,7 @@ class MyRequestsViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup confirmed! Thank you for reducing food waste."))
+                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup confirmed!"))
                     loadRequests() // Reload list
                 },
                 onFailure = { error ->

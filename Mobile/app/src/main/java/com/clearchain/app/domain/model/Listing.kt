@@ -20,28 +20,38 @@ data class Listing(
     val status: ListingStatus,
     val imageUrl: String? = null,
     val location: String,
-    val createdAt: String
+    val createdAt: String,
+    
+    // NEW: ListingGroup tracking fields
+    val groupId: String? = null,
+    val splitReason: String = "new_listing",
+    val relatedRequestId: String? = null,
+    val splitIndex: Int = 0,
+    
+    // OPTIONAL: Group summary for UI context
+    val groupSummary: ListingGroupSummary? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ListingGroupSummary(
+    val groupId: String,
+    val originalQuantity: Int,
+    val totalReserved: Int,
+    val totalAvailable: Int,
+    val childListingsCount: Int
+)
+
+// Existing enums remain unchanged
 @Serializable
 enum class FoodCategory {
-    FRUITS,
-    VEGETABLES,
-    DAIRY,
-    BAKERY,
-    MEAT,
-    SEAFOOD,
-    PACKAGED,
-    BEVERAGES,
-    OTHER
+    FRUITS, VEGETABLES, DAIRY, BAKERY, MEAT, SEAFOOD, 
+    PACKAGED, BEVERAGES, OTHER
 }
 
 @Serializable
 enum class ListingStatus {
-    AVAILABLE,
-    RESERVED,
-    COMPLETED,
-    EXPIRED
+    AVAILABLE, RESERVED, COMPLETED, EXPIRED
 }
 
 fun FoodCategory.displayName(): String {
