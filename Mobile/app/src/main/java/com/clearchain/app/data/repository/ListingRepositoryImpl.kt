@@ -5,6 +5,7 @@ import com.clearchain.app.data.remote.dto.CreateListingRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
+import com.clearchain.app.data.remote.dto.UpdateListingQuantityRequest
 import javax.inject.Inject
 
 class ListingRepositoryImpl @Inject constructor(
@@ -109,6 +110,21 @@ class ListingRepositoryImpl @Inject constructor(
         return try {
             listingApi.deleteListing(id)
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateListingQuantity(
+        listingId: String, 
+        newQuantity: Int
+    ): Result<Listing> {
+        return try {
+            val response = listingApi.updateListingQuantity(
+                listingId = listingId,
+                request = UpdateListingQuantityRequest(newQuantity)
+            )
+            Result.success(response.data.toDomain())
         } catch (e: Exception) {
             Result.failure(e)
         }

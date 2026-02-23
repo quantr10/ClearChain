@@ -15,8 +15,7 @@ class ManageRequestsViewModel @Inject constructor(
     private val getGroceryPickupRequestsUseCase: GetGroceryPickupRequestsUseCase,
     private val approvePickupRequestUseCase: ApprovePickupRequestUseCase,
     private val rejectPickupRequestUseCase: RejectPickupRequestUseCase,
-    private val markReadyForPickupUseCase: MarkReadyForPickupUseCase,
-    private val markPickedUpUseCase: MarkPickedUpUseCase
+    private val markReadyForPickupUseCase: MarkReadyForPickupUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ManageRequestsState())
@@ -34,6 +33,15 @@ class ManageRequestsViewModel @Inject constructor(
             ManageRequestsEvent.LoadRequests -> loadRequests()
             ManageRequestsEvent.RefreshRequests -> refreshRequests()
 
+            // NEW: Search, Sort, Filter handlers
+            is ManageRequestsEvent.SearchQueryChanged -> {
+                _state.update { it.copy(searchQuery = event.query) }
+                applyFilters()
+            }
+            is ManageRequestsEvent.SortOptionChanged -> {
+                _state.update { it.copy(selectedSort = event.option) }
+                applyFilters()
+            }
             is ManageRequestsEvent.StatusFilterChanged -> {
                 _state.update { it.copy(selectedStatus = event.status) }
                 applyFilters()
@@ -42,7 +50,6 @@ class ManageRequestsViewModel @Inject constructor(
             is ManageRequestsEvent.ApproveRequest -> approveRequest(event.requestId)
             is ManageRequestsEvent.RejectRequest -> rejectRequest(event.requestId)
             is ManageRequestsEvent.MarkReady -> markReady(event.requestId)
-            is ManageRequestsEvent.MarkPickedUp -> markPickedUp(event.requestId)
 
             ManageRequestsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -60,11 +67,11 @@ class ManageRequestsViewModel @Inject constructor(
                 onSuccess = { requests ->
                     _state.update {
                         it.copy(
-                            requests = requests.sortedByDescending { req -> req.createdAt },
-                            filteredRequests = requests.sortedByDescending { req -> req.createdAt },
+                            allRequests = requests,
                             isLoading = false
                         )
                     }
+                    applyFilters()
                 },
                 onFailure = { error ->
                     _state.update {
@@ -88,7 +95,7 @@ class ManageRequestsViewModel @Inject constructor(
                 onSuccess = { requests ->
                     _state.update {
                         it.copy(
-                            requests = requests.sortedByDescending { req -> req.createdAt },
+                            allRequests = requests,
                             isRefreshing = false
                         )
                     }
@@ -107,12 +114,36 @@ class ManageRequestsViewModel @Inject constructor(
         }
     }
 
-    private fun applyFilters() {
-        val currentState = _state.value
-        var filtered = currentState.requests
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Filter and Sort Logic
+    // ═══════════════════════════════════════════════════════════════════════════
 
-        currentState.selectedStatus?.let { status ->
+    private fun applyFilters() {
+        val current = _state.value
+        var filtered = current.allRequests
+
+        // Apply search
+        if (current.searchQuery.isNotBlank()) {
+            val query = current.searchQuery.lowercase()
+            filtered = filtered.filter { request ->
+                request.listingTitle.lowercase().contains(query) ||
+                        request.ngoName.lowercase().contains(query) ||
+                        request.notes?.lowercase()?.contains(query) == true
+            }
+        }
+
+        // Apply status filter
+        current.selectedStatus?.let { status ->
             filtered = filtered.filter { it.status.name == status }
+        }
+
+        // Apply sort
+        filtered = when (current.selectedSort.value) {
+            "date_desc" -> filtered.sortedByDescending { it.createdAt }
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            "pickup_date_asc" -> filtered.sortedBy { it.pickupDate }
+            "pickup_date_desc" -> filtered.sortedByDescending { it.pickupDate }
+            else -> filtered
         }
 
         _state.update { it.copy(filteredRequests = filtered) }
@@ -179,29 +210,6 @@ class ManageRequestsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             error = error.message ?: "Failed to mark as ready",
-                            isLoading = false
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    private fun markPickedUp(requestId: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = markPickedUpUseCase(requestId)
-
-            result.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup completed!"))
-                    loadRequests()
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: "Failed to mark as picked up",
                             isLoading = false
                         )
                     }

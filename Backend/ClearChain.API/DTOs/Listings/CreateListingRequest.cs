@@ -1,5 +1,3 @@
-// CreateListingRequest.cs
-
 using System.ComponentModel.DataAnnotations;
 
 namespace ClearChain.API.DTOs.Listings;
@@ -13,7 +11,7 @@ public class CreateListingRequest
     public string Description { get; set; } = string.Empty;
 
     [Required]
-    [RegularExpression("^(PRODUCE|BAKERY|DAIRY|MEAT|FROZEN|OTHER)$")]
+    [RegularExpression(@"^(FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|CANNED_GOODS|BEVERAGES|FROZEN_FOODS|GRAINS)$")]
     public string Category { get; set; } = string.Empty;
 
     [Required]

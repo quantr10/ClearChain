@@ -17,18 +17,32 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<Inventory> Inventories { get; set; } = null!;
+    
+    // NEW: ListingGroup DbSet
+    public DbSet<ListingGroup> ListingGroups { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // IMPORTANT: Map to lowercase table names (PostgreSQL convention)
+        // Map to lowercase table names
         modelBuilder.Entity<Organization>().ToTable("organizations");
         modelBuilder.Entity<ClearanceListing>().ToTable("clearancelistings");
         modelBuilder.Entity<PickupRequest>().ToTable("pickuprequests");
         modelBuilder.Entity<RefreshToken>().ToTable("refreshtokens");
         modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
         modelBuilder.Entity<Inventory>().ToTable("inventory");
+        
+        // NEW: ListingGroup table
+        modelBuilder.Entity<ListingGroup>().ToTable("listinggroups");
+        
+        // NEW: Configure ListingGroup - ClearanceListing relationship
+        modelBuilder.Entity<ListingGroup>()
+            .HasMany(lg => lg.ChildListings)
+            .WithOne(cl => cl.Group)
+            .HasForeignKey(cl => cl.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
         // Configure PickupRequest - Listing many-to-many
         modelBuilder.Entity<PickupRequest>()
             .HasMany(pr => pr.Listings)

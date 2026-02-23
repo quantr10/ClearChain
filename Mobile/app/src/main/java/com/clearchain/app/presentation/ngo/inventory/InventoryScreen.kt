@@ -1,8 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// InventoryScreen.kt - UPDATED WITH STATUS TABS + CATEGORY FILTERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo.inventory
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.InventoryItem
 import com.clearchain.app.domain.model.InventoryStatus
+import com.clearchain.app.presentation.components.FilterSection
+import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +48,7 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inventory") },
+                title = { Text("My Inventory") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -75,12 +80,39 @@ fun InventoryScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Status Filter
-                StatusFilterRow(
-                    selectedStatus = state.selectedStatus,
+                // ══════════════════════════════════════════════════════
+                // STATUS TABS (Above Search Bar)
+                // ══════════════════════════════════════════════════════
+                StatusTabs(
+                    selectedStatus = state.selectedStatusTab,
+                    statusCounts = state.getStatusCounts(),
                     onStatusSelected = { status ->
-                        viewModel.onEvent(InventoryEvent.StatusFilterChanged(status))
+                        viewModel.onEvent(InventoryEvent.StatusTabChanged(status))
                     }
+                )
+
+                // ══════════════════════════════════════════════════════
+                // FILTER SECTION (Search + Category Chips + Results/Sort)
+                // ══════════════════════════════════════════════════════
+                FilterSection(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = { 
+                        viewModel.onEvent(InventoryEvent.SearchQueryChanged(it)) 
+                    },
+                    searchPlaceholder = "Search by product name...",
+                    selectedSort = state.selectedSort,
+                    onSortSelected = { 
+                        viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) 
+                    },
+                    sortOptions = state.availableSortOptions,
+                    // CATEGORY CHIPS (Food Categories)
+                    filterChips = state.availableCategoryFilters,
+                    selectedFilter = state.selectedCategory,
+                    onFilterSelected = { 
+                        viewModel.onEvent(InventoryEvent.CategoryFilterChanged(it)) 
+                    },
+                    resultsCount = state.filteredItems.size,
+                    itemName = "item"
                 )
 
                 // Error Message
@@ -118,7 +150,9 @@ fun InventoryScreen(
                     }
                 }
 
-                // Content
+                // ══════════════════════════════════════════════════════
+                // CONTENT
+                // ══════════════════════════════════════════════════════
                 when {
                     state.isLoading && state.allItems.isEmpty() -> {
                         Box(
@@ -129,20 +163,18 @@ fun InventoryScreen(
                         }
                     }
 
-                    state.filteredItems.isEmpty() && !state.isLoading -> {
-                        EmptyState(
-                            message = if (state.selectedStatus != null) {
-                                "No ${state.selectedStatus?.lowercase()} items"
-                            } else {
-                                "No inventory items yet"
-                            }
-                        )
+                    state.allItems.isEmpty() && !state.isLoading -> {
+                        EmptyState(message = "No items in inventory yet")
+                    }
+
+                    state.filteredItems.isEmpty() -> {
+                        EmptyState(message = "No items match your filters")
                     }
 
                     else -> {
                         InventoryList(
                             items = state.filteredItems,
-                            onDistribute = { itemId ->
+                            onDistributeItem = { itemId ->
                                 viewModel.onEvent(InventoryEvent.DistributeItem(itemId))
                             }
                         )
@@ -153,56 +185,151 @@ fun InventoryScreen(
     }
 }
 
-@Composable
-private fun StatusFilterRow(
-    selectedStatus: String?,
-    onStatusSelected: (String?) -> Unit
-) {
-    val statuses = listOf(
-        "All" to null,
-        "Active" to "ACTIVE",
-        "Distributed" to "DISTRIBUTED",
-        "Expired" to "EXPIRED"
-    )
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW: STATUS TABS COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+@Composable
+private fun StatusTabs(
+    selectedStatus: InventoryStatus?,
+    statusCounts: Map<InventoryStatus?, Int>,
+    onStatusSelected: (InventoryStatus?) -> Unit
+) {
+    ScrollableTabRow(
+        selectedTabIndex = when (selectedStatus) {
+            null -> 0
+            InventoryStatus.ACTIVE -> 1
+            InventoryStatus.DISTRIBUTED -> 2
+            InventoryStatus.EXPIRED -> 3
+        },
+        edgePadding = 16.dp,
+        containerColor = MaterialTheme.colorScheme.surface,
+        divider = {}
     ) {
-        items(statuses) { (label, status) ->
-            FilterChip(
-                selected = selectedStatus == status,
-                onClick = { onStatusSelected(status) },
-                label = { Text(label) }
-            )
-        }
+        // All Tab
+        Tab(
+            selected = selectedStatus == null,
+            onClick = { onStatusSelected(null) },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "All",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selectedStatus == null) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = "${statusCounts[null] ?: 0}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedStatus == null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        )
+
+        // Active Tab
+        Tab(
+            selected = selectedStatus == InventoryStatus.ACTIVE,
+            onClick = { onStatusSelected(InventoryStatus.ACTIVE) },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Active",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selectedStatus == InventoryStatus.ACTIVE) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = "${statusCounts[InventoryStatus.ACTIVE] ?: 0}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedStatus == InventoryStatus.ACTIVE) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        )
+
+        // Distributed Tab
+        Tab(
+            selected = selectedStatus == InventoryStatus.DISTRIBUTED,
+            onClick = { onStatusSelected(InventoryStatus.DISTRIBUTED) },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Distributed",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selectedStatus == InventoryStatus.DISTRIBUTED) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = "${statusCounts[InventoryStatus.DISTRIBUTED] ?: 0}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedStatus == InventoryStatus.DISTRIBUTED) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        )
+
+        // Expired Tab
+        Tab(
+            selected = selectedStatus == InventoryStatus.EXPIRED,
+            onClick = { onStatusSelected(InventoryStatus.EXPIRED) },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Expired",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selectedStatus == InventoryStatus.EXPIRED) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = "${statusCounts[InventoryStatus.EXPIRED] ?: 0}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedStatus == InventoryStatus.EXPIRED) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun InventoryList(
     items: List<InventoryItem>,
-    onDistribute: (String) -> Unit
+    onDistributeItem: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Text(
-                text = "${items.size} item${if (items.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
         items(items) { item ->
             InventoryItemCard(
                 item = item,
-                onDistribute = onDistribute
+                onDistributeItem = onDistributeItem
             )
         }
     }
@@ -211,7 +338,7 @@ private fun InventoryList(
 @Composable
 private fun InventoryItemCard(
     item: InventoryItem,
-    onDistribute: (String) -> Unit
+    onDistributeItem: (String) -> Unit
 ) {
     var showDistributeDialog by remember { mutableStateOf(false) }
 
@@ -236,7 +363,7 @@ private fun InventoryItemCard(
                     )
                     Text(
                         text = item.category,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -253,30 +380,37 @@ private fun InventoryItemCard(
                 value = "${item.quantity} ${item.unit}"
             )
 
+//            DetailRow(
+//                icon = Icons.Default.Store,
+//                label = "From",
+//                value = item.sourceName
+//            )
+
             DetailRow(
                 icon = Icons.Default.DateRange,
-                label = "Expiry Date",
-                value = item.expiryDate
+                label = "Received",
+                value = DateTimeUtils.formatDate(item.receivedAt)
             )
 
             DetailRow(
-                icon = Icons.Default.Schedule,
-                label = "Received",
-                value = item.receivedAt.take(10)
+                icon = Icons.Default.CalendarToday,
+                label = "Expires",
+                value = DateTimeUtils.formatDate(item.expiryDate),
+                isWarning = item.status == InventoryStatus.ACTIVE
             )
 
+            // Distributed date if applicable
             item.distributedAt?.let { distributedAt ->
                 DetailRow(
                     icon = Icons.Default.CheckCircle,
                     label = "Distributed",
-                    value = distributedAt.take(10)
+                    value = DateTimeUtils.formatDate(distributedAt)
                 )
             }
 
-            // Actions
+            // Action button for ACTIVE items
             if (item.status == InventoryStatus.ACTIVE) {
                 HorizontalDivider()
-
                 Button(
                     onClick = { showDistributeDialog = true },
                     modifier = Modifier.fillMaxWidth(),
@@ -284,26 +418,55 @@ private fun InventoryItemCard(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null)
+                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Mark as Distributed")
+                }
+            }
+
+            // Expired warning
+            if (item.status == InventoryStatus.EXPIRED) {
+                HorizontalDivider()
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = "This item has expired and should be disposed of properly",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                 }
             }
         }
     }
 
-    // Distribute Dialog
+    // Distribute Confirmation Dialog
     if (showDistributeDialog) {
         AlertDialog(
             onDismissRequest = { showDistributeDialog = false },
             title = { Text("Mark as Distributed?") },
-            text = {
-                Text("Confirm that ${item.productName} has been distributed to beneficiaries?")
+            text = { 
+                Text("Confirm that ${item.productName} has been distributed to beneficiaries?") 
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDistribute(item.id)
+                        onDistributeItem(item.id)
                         showDistributeDialog = false
                     }
                 ) {
@@ -356,7 +519,8 @@ private fun StatusBadge(status: InventoryStatus) {
 private fun DetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
-    value: String
+    value: String,
+    isWarning: Boolean = false
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -366,7 +530,11 @@ private fun DetailRow(
             icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = if (isWarning && label == "Expires") {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
         Text(
             text = "$label:",
@@ -376,7 +544,12 @@ private fun DetailRow(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = if (isWarning && label == "Expires") {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
         )
     }
 }

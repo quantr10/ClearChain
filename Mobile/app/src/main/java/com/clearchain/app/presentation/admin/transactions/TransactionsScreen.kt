@@ -157,7 +157,6 @@ private fun StatusFilterRow(
         "Ready" to "READY",
         "Completed" to "COMPLETED",
         "Rejected" to "REJECTED",
-        "Cancelled" to "CANCELLED"
     )
 
     LazyRow(
@@ -266,11 +265,6 @@ private fun StatusBadge(status: PickupRequestStatus) {
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
             "Completed"
-        )
-        PickupRequestStatus.CANCELLED -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            "Cancelled"
         )
     }
 

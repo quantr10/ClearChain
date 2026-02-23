@@ -2,6 +2,7 @@ package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,25 +28,20 @@ class BrowseListingsViewModel @Inject constructor(
 
     fun onEvent(event: BrowseListingsEvent) {
         when (event) {
-            BrowseListingsEvent.LoadListings -> {
-                loadListings()
-            }
+            BrowseListingsEvent.LoadListings -> loadListings()
+            BrowseListingsEvent.RefreshListings -> refreshListings()
 
-            BrowseListingsEvent.RefreshListings -> {
-                refreshListings()
-            }
-
+            // NEW: Search, Sort, Filter handlers
             is BrowseListingsEvent.SearchQueryChanged -> {
-                _state.update {
-                    it.copy(searchQuery = event.query)
-                }
+                _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
             }
-
+            is BrowseListingsEvent.SortOptionChanged -> {
+                _state.update { it.copy(selectedSort = event.option) }
+                applyFilters()
+            }
             is BrowseListingsEvent.CategoryFilterChanged -> {
-                _state.update {
-                    it.copy(selectedCategory = event.category)
-                }
+                _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
             }
 
@@ -71,11 +67,11 @@ class BrowseListingsViewModel @Inject constructor(
                 onSuccess = { listings ->
                     _state.update {
                         it.copy(
-                            listings = listings.sortedByDescending { listing -> listing.createdAt },
-                            filteredListings = listings.sortedByDescending { listing -> listing.createdAt },
+                            allListings = listings,
                             isLoading = false
                         )
                     }
+                    applyFilters()
                 },
                 onFailure = { error ->
                     _state.update {
@@ -99,7 +95,7 @@ class BrowseListingsViewModel @Inject constructor(
                 onSuccess = { listings ->
                     _state.update {
                         it.copy(
-                            listings = listings.sortedByDescending { listing -> listing.createdAt },
+                            allListings = listings,
                             isRefreshing = false
                         )
                     }
@@ -118,24 +114,43 @@ class BrowseListingsViewModel @Inject constructor(
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Filter and Sort Logic
+    // ═══════════════════════════════════════════════════════════════════════════
+
     private fun applyFilters() {
-        val currentState = _state.value
-        var filtered = currentState.listings
+        val current = _state.value
+        var filtered = current.allListings
 
-        // Apply category filter
-        currentState.selectedCategory?.let { category ->
-            filtered = filtered.filter { it.category == category }
-        }
-
-        // Apply search query
-        if (currentState.searchQuery.isNotBlank()) {
-            val query = currentState.searchQuery.lowercase()
+        // Apply search
+        if (current.searchQuery.isNotBlank()) {
+            val query = current.searchQuery.lowercase()
             filtered = filtered.filter { listing ->
                 listing.title.lowercase().contains(query) ||
                         listing.description.lowercase().contains(query) ||
                         listing.groceryName.lowercase().contains(query) ||
-                        listing.location.lowercase().contains(query)
+                        listing.location.lowercase().contains(query) ||
+                        listing.category.displayName().lowercase().contains(query)
             }
+        }
+
+        // Apply category filter
+        current.selectedCategory?.let { category ->
+            filtered = filtered.filter { it.category.name == category }
+        }
+
+        // Apply sort
+        filtered = when (current.selectedSort.value) {
+            "date_desc" -> filtered.sortedByDescending { it.createdAt }
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            "expiry_asc" -> filtered.sortedBy { it.expiryDate }
+            "expiry_desc" -> filtered.sortedByDescending { it.expiryDate }
+            "quantity_desc" -> filtered.sortedByDescending { it.quantity }
+            "quantity_asc" -> filtered.sortedBy { it.quantity }
+            "location_asc" -> filtered.sortedBy { it.location }
+            "name_asc" -> filtered.sortedBy { it.title }
+            "name_desc" -> filtered.sortedByDescending { it.title }
+            else -> filtered
         }
 
         _state.update { it.copy(filteredListings = filtered) }

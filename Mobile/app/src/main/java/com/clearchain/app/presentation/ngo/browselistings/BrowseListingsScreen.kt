@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,9 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.displayName
+import com.clearchain.app.presentation.components.FilterSection
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 
@@ -72,171 +71,142 @@ fun BrowseListingsScreen(
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = state.searchQuery,
-                onValueChange = {
-                    viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it))
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search by name, location...") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                trailingIcon = {
-                    if (state.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = {
-                            viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(""))
-                        }) {
-                            Icon(Icons.Default.Clear, "Clear")
-                        }
+            when {
+                state.isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                },
-                singleLine = true
-            )
-
-            // Category Filter Chips
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    FilterChip(
-                        selected = state.selectedCategory == null,
-                        onClick = {
-                            viewModel.onEvent(BrowseListingsEvent.CategoryFilterChanged(null))
-                        },
-                        label = { Text("All") }
-                    )
                 }
 
-                items(FoodCategory.entries) { category ->
-                    FilterChip(
-                        selected = state.selectedCategory == category,
-                        onClick = {
-                            viewModel.onEvent(
-                                BrowseListingsEvent.CategoryFilterChanged(
-                                    if (state.selectedCategory == category) null else category
-                                )
-                            )
-                        },
-                        label = { Text(category.displayName()) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Results count
-            if (!state.isLoading) {
-                Text(
-                    text = "${state.filteredListings.size} listing${if (state.filteredListings.size != 1) "s" else ""} available",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Content
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                when {
-                    state.isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+                state.error != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "❌",
+                            style = MaterialTheme.typography.displayMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = state.error!!,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }) {
+                            Text("Retry")
                         }
                     }
+                }
 
-                    state.error != null -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "❌",
-                                style = MaterialTheme.typography.displayMedium
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = state.error!!,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = {
-                                viewModel.onEvent(BrowseListingsEvent.LoadListings)
-                            }) {
-                                Text("Retry")
+                state.allListings.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "🔍",
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No available listings",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Check back later for new listings",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                else -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // ══════════════════════════════════════════════════════
+                        // FILTER SECTION
+                        // ══════════════════════════════════════════════════════
+                        FilterSection(
+                            searchQuery = state.searchQuery,
+                            onSearchQueryChange = {
+                                viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it))
+                            },
+                            searchPlaceholder = "Search by name, location, grocery...",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = {
+                                viewModel.onEvent(BrowseListingsEvent.SortOptionChanged(it))
+                            },
+                            sortOptions = state.availableSortOptions,
+                            filterChips = state.availableCategoryFilters,
+                            selectedFilter = state.selectedCategory,
+                            onFilterSelected = {
+                                viewModel.onEvent(BrowseListingsEvent.CategoryFilterChanged(it))
+                            },
+                            resultsCount = state.filteredListings.size,
+                            itemName = "listing"
+                        )
+
+                        // ══════════════════════════════════════════════════════
+                        // LISTINGS LIST
+                        // ══════════════════════════════════════════════════════
+                        if (state.filteredListings.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "🔍",
+                                        style = MaterialTheme.typography.displayMedium
+                                    )
+                                    Text(
+                                        text = "No listings match your filters",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Try adjusting your search or filters",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
-                        }
-                    }
-
-                    state.filteredListings.isEmpty() -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "🔍",
-                                style = MaterialTheme.typography.displayLarge
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = if (state.searchQuery.isNotEmpty() || state.selectedCategory != null) {
-                                    "No listings match your filters"
-                                } else {
-                                    "No available listings"
-                                },
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = if (state.searchQuery.isNotEmpty() || state.selectedCategory != null) {
-                                    "Try adjusting your search or filters"
-                                } else {
-                                    "Check back later for new listings"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(state.filteredListings, key = { it.id }) { listing ->
-                                BrowseListingCard(
-                                    listing = listing,
-                                    onRequestPickup = {
-                                        viewModel.onEvent(
-                                            BrowseListingsEvent.NavigateToRequestPickup(listing.id)
-                                        )
-                                    }
-                                )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(state.filteredListings, key = { it.id }) { listing ->
+                                    BrowseListingCard(
+                                        listing = listing,
+                                        onRequestPickup = {
+                                            viewModel.onEvent(
+                                                BrowseListingsEvent.NavigateToRequestPickup(listing.id)
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -247,7 +217,7 @@ fun BrowseListingsScreen(
 }
 
 @Composable
-fun BrowseListingCard(
+private fun BrowseListingCard(
     listing: Listing,
     onRequestPickup: () -> Unit
 ) {

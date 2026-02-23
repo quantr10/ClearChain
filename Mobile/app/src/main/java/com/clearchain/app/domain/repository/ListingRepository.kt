@@ -40,4 +40,6 @@ interface ListingRepository {
     ): Result<Listing>
 
     suspend fun deleteListing(id: String): Result<Unit>
+
+    suspend fun updateListingQuantity(listingId: String, newQuantity: Int): Result<Listing>
 }

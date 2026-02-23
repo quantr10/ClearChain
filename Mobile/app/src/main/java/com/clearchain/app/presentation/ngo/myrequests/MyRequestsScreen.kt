@@ -1,8 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// MyRequestsScreen.kt - COMPLETE WITH SEARCH, SORT, FILTER
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo.myrequests
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.presentation.components.FilterSection
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,12 +79,27 @@ fun MyRequestsScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Status Filter
-                StatusFilterRow(
-                    selectedStatus = state.selectedStatus,
-                    onStatusSelected = { status ->
-                        viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(status))
-                    }
+                // ══════════════════════════════════════════════════════
+                // FILTER SECTION
+                // ══════════════════════════════════════════════════════
+                FilterSection(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = {
+                        viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it))
+                    },
+                    searchPlaceholder = "Search by item, grocery...",
+                    selectedSort = state.selectedSort,
+                    onSortSelected = {
+                        viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it))
+                    },
+                    sortOptions = state.availableSortOptions,
+                    filterChips = state.availableStatusFilters,
+                    selectedFilter = state.selectedStatus,
+                    onFilterSelected = {
+                        viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it))
+                    },
+                    resultsCount = state.filteredRequests.size,
+                    itemName = "request"
                 )
 
                 // Error Message
@@ -118,9 +137,11 @@ fun MyRequestsScreen(
                     }
                 }
 
-                // Content
+                // ══════════════════════════════════════════════════════
+                // CONTENT
+                // ══════════════════════════════════════════════════════
                 when {
-                    state.isLoading && state.requests.isEmpty() -> {
+                    state.isLoading && state.allRequests.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -129,14 +150,12 @@ fun MyRequestsScreen(
                         }
                     }
 
-                    state.filteredRequests.isEmpty() && !state.isLoading -> {
-                        EmptyState(
-                            message = if (state.selectedStatus != null) {
-                                "No ${state.selectedStatus?.lowercase()} requests"
-                            } else {
-                                "No pickup requests yet"
-                            }
-                        )
+                    state.allRequests.isEmpty() && !state.isLoading -> {
+                        EmptyState(message = "No pickup requests yet")
+                    }
+
+                    state.filteredRequests.isEmpty() -> {
+                        EmptyState(message = "No requests match your filters")
                     }
 
                     else -> {
@@ -157,36 +176,6 @@ fun MyRequestsScreen(
 }
 
 @Composable
-private fun StatusFilterRow(
-    selectedStatus: String?,
-    onStatusSelected: (String?) -> Unit
-) {
-    val statuses = listOf(
-        "All" to null,
-        "Pending" to "PENDING",
-        "Approved" to "APPROVED",
-        "Ready" to "READY", 
-        "Rejected" to "REJECTED",
-        "Completed" to "COMPLETED"
-    )
-
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(statuses) { (label, status) ->
-            FilterChip(
-                selected = selectedStatus == status,
-                onClick = { onStatusSelected(status) },
-                label = { Text(label) }
-            )
-        }
-    }
-}
-
-@Composable
 private fun RequestsList(
     requests: List<PickupRequest>,
     onCancelRequest: (String) -> Unit,
@@ -197,14 +186,6 @@ private fun RequestsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Text(
-                text = "${requests.size} request${if (requests.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
         items(requests) { request ->
             RequestCard(
                 request = request,
@@ -350,8 +331,8 @@ private fun RequestCard(
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
             title = { Text("Confirm Pickup?") },
-            text = { 
-                Text("Confirm that you have picked up the food from ${request.groceryName}?") 
+            text = {
+                Text("Confirm that you have picked up the food from ${request.groceryName}?")
             },
             confirmButton = {
                 TextButton(
@@ -399,11 +380,6 @@ private fun StatusBadge(status: PickupRequestStatus) {
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer,
             "Completed"
-        )
-        PickupRequestStatus.CANCELLED -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            "Cancelled"
         )
     }
 

@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase
 ) : ViewModel() {
 

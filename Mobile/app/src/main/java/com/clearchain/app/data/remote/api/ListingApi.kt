@@ -3,6 +3,8 @@ package com.clearchain.app.data.remote.api
 import com.clearchain.app.data.remote.dto.CreateListingRequest
 import com.clearchain.app.data.remote.dto.ListingResponse
 import com.clearchain.app.data.remote.dto.ListingsResponse
+import com.clearchain.app.data.remote.dto.UpdateListingQuantityRequest
+
 import retrofit2.http.*
 
 interface ListingApi {
@@ -35,5 +37,12 @@ interface ListingApi {
     @DELETE("listings/{id}")
     suspend fun deleteListing(
         @Path("id") id: String
+    ): ListingResponse
+
+    // data/remote/api/ListingApi.kt - Add this method:
+    @PUT("listings/{id}/quantity")
+    suspend fun updateListingQuantity(
+        @Path("id") listingId: String,
+        @Body request: UpdateListingQuantityRequest
     ): ListingResponse
 }
