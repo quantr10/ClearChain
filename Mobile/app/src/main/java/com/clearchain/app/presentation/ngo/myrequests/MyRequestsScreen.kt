@@ -1,24 +1,31 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MyRequestsScreen.kt - COMPLETE WITH SEARCH, SORT, FILTER
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.ngo.myrequests
 
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.presentation.components.FilterSection
+import com.clearchain.app.presentation.components.PhotoPickerDialog
+import com.clearchain.app.presentation.components.FullPhotoDialog
+import com.clearchain.app.presentation.components.UploadErrorDialog
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +49,48 @@ fun MyRequestsScreen(
                 else -> {}
             }
         }
+    }
+
+    // ✅ Loading Overlay with Attempt Counter
+    if (state.isUploading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator()
+                    Text("Uploading photo...")
+                    if (state.uploadAttempts > 1) {
+                        Text(
+                            text = "Attempt ${state.uploadAttempts} of 3",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // ✅ Upload Error Dialog with Retry
+    state.uploadError?.let { errorMessage ->
+        UploadErrorDialog(
+            errorMessage = errorMessage,
+            canRetry = state.uploadAttempts < 3,
+            onRetry = {
+                viewModel.onEvent(MyRequestsEvent.RetryFailedUpload)
+            },
+            onDismiss = {
+                viewModel.onEvent(MyRequestsEvent.DismissUploadError)
+            }
+        )
     }
 
     Scaffold(
@@ -79,9 +128,6 @@ fun MyRequestsScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // ══════════════════════════════════════════════════════
-                // FILTER SECTION
-                // ══════════════════════════════════════════════════════
                 FilterSection(
                     searchQuery = state.searchQuery,
                     onSearchQueryChange = {
@@ -102,7 +148,6 @@ fun MyRequestsScreen(
                     itemName = "request"
                 )
 
-                // Error Message
                 state.error?.let { error ->
                     Card(
                         modifier = Modifier
@@ -137,9 +182,6 @@ fun MyRequestsScreen(
                     }
                 }
 
-                // ══════════════════════════════════════════════════════
-                // CONTENT
-                // ══════════════════════════════════════════════════════
                 when {
                     state.isLoading && state.allRequests.isEmpty() -> {
                         Box(
@@ -164,8 +206,10 @@ fun MyRequestsScreen(
                             onCancelRequest = { requestId ->
                                 viewModel.onEvent(MyRequestsEvent.CancelRequest(requestId))
                             },
-                            onConfirmPickup = { requestId ->
-                                viewModel.onEvent(MyRequestsEvent.ConfirmPickup(requestId))
+                            onConfirmPickup = { requestId, photoUri ->
+                                viewModel.onEvent(
+                                    MyRequestsEvent.ConfirmPickupWithPhoto(requestId, photoUri)
+                                )
                             }
                         )
                     }
@@ -179,7 +223,7 @@ fun MyRequestsScreen(
 private fun RequestsList(
     requests: List<PickupRequest>,
     onCancelRequest: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit
+    onConfirmPickup: (String, Uri) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -200,10 +244,11 @@ private fun RequestsList(
 private fun RequestCard(
     request: PickupRequest,
     onCancelRequest: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit
+    onConfirmPickup: (String, Uri) -> Unit
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
-    var showConfirmDialog by remember { mutableStateOf(false) }
+    var showPhotoPickerDialog by remember { mutableStateOf(false) }
+    var showFullPhoto by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -212,7 +257,6 @@ private fun RequestCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -236,7 +280,6 @@ private fun RequestCard(
 
             HorizontalDivider()
 
-            // Details
             DetailRow(
                 icon = Icons.Default.ShoppingCart,
                 label = "Quantity",
@@ -263,7 +306,79 @@ private fun RequestCard(
                 )
             }
 
-            // Actions based on status
+            // ✅ Display proof photo for completed requests
+            if (request.status == PickupRequestStatus.COMPLETED && request.proofPhotoUrl != null) {
+                HorizontalDivider()
+                
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Photo,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Proof Photo:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Photo thumbnail
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clickable { showFullPhoto = true },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Box {
+                            AsyncImage(
+                                model = request.proofPhotoUrl,
+                                contentDescription = "Proof Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            
+                            // Overlay with zoom icon
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.ZoomIn,
+                                        contentDescription = "View full",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        "Tap to view",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Action buttons
             when (request.status) {
                 PickupRequestStatus.PENDING -> {
                     HorizontalDivider()
@@ -283,7 +398,7 @@ private fun RequestCard(
                 PickupRequestStatus.READY -> {
                     HorizontalDivider()
                     Button(
-                        onClick = { showConfirmDialog = true },
+                        onClick = { showPhotoPickerDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -295,14 +410,12 @@ private fun RequestCard(
                     }
                 }
 
-                else -> {
-                    // No action for APPROVED, COMPLETED, REJECTED, CANCELLED
-                }
+                else -> {}
             }
         }
     }
 
-    // Cancel Confirmation Dialog
+    // Dialogs
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
@@ -326,29 +439,23 @@ private fun RequestCard(
         )
     }
 
-    // Confirm Pickup Dialog
-    if (showConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmDialog = false },
-            title = { Text("Confirm Pickup?") },
-            text = {
-                Text("Confirm that you have picked up the food from ${request.groceryName}?")
+    if (showPhotoPickerDialog) {
+        PhotoPickerDialog(
+            onPhotoSelected = { uri ->
+                onConfirmPickup(request.id, uri)
+                showPhotoPickerDialog = false
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onConfirmPickup(request.id)
-                        showConfirmDialog = false
-                    }
-                ) {
-                    Text("Confirm Pickup")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirmDialog = false }) {
-                    Text("Cancel")
-                }
+            onDismiss = {
+                showPhotoPickerDialog = false
             }
+        )
+    }
+
+    // Full photo viewer
+    if (showFullPhoto && request.proofPhotoUrl != null) {
+        FullPhotoDialog(
+            photoUrl = request.proofPhotoUrl,
+            onDismiss = { showFullPhoto = false }
         )
     }
 }

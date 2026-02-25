@@ -1,6 +1,7 @@
 package com.clearchain.app.data.remote.api
 
 import com.clearchain.app.data.remote.dto.*
+import okhttp3.MultipartBody
 import retrofit2.http.*
 
 interface PickupRequestApi {
@@ -32,7 +33,7 @@ interface PickupRequestApi {
         @Path("id") id: String
     ): PickupRequestResponse
 
-     @PUT("pickuprequests/{id}/approve")
+    @PUT("pickuprequests/{id}/approve")
     suspend fun approvePickupRequest(
         @Path("id") id: String
     ): PickupRequestResponse
@@ -47,8 +48,10 @@ interface PickupRequestApi {
         @Path("id") id: String
     ): PickupRequestResponse
 
+    @Multipart
     @PUT("pickuprequests/{id}/picked-up")
-    suspend fun markPickedUp(
-        @Path("id") id: String
+    suspend fun confirmPickupWithPhoto(
+        @Path("id") id: String,
+        @Part proofPhoto: MultipartBody.Part
     ): PickupRequestResponse
 }

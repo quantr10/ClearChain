@@ -1,9 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MyRequestsViewModel.kt - COMPLETE WITH SEARCH, SORT, FILTER
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.ngo.myrequests
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
@@ -29,6 +26,10 @@ class MyRequestsViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    companion object {
+        private const val MAX_UPLOAD_ATTEMPTS = 3
+    }
+
     init {
         loadRequests()
     }
@@ -38,7 +39,6 @@ class MyRequestsViewModel @Inject constructor(
             MyRequestsEvent.LoadRequests -> loadRequests()
             MyRequestsEvent.RefreshRequests -> refreshRequests()
 
-            // NEW: Search, Sort, Filter handlers
             is MyRequestsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -53,7 +53,13 @@ class MyRequestsViewModel @Inject constructor(
             }
 
             is MyRequestsEvent.CancelRequest -> cancelRequest(event.requestId)
-            is MyRequestsEvent.ConfirmPickup -> confirmPickup(event.requestId)
+            
+            is MyRequestsEvent.ConfirmPickupWithPhoto -> 
+                confirmPickupWithPhoto(event.requestId, event.photoUri)
+
+            // ✅ NEW: Retry mechanism
+            MyRequestsEvent.RetryFailedUpload -> retryFailedUpload()
+            MyRequestsEvent.DismissUploadError -> dismissUploadError()
 
             MyRequestsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -118,15 +124,10 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // NEW: Filter and Sort Logic
-    // ═══════════════════════════════════════════════════════════════════════════
-
     private fun applyFilters() {
         val current = _state.value
         var filtered = current.allRequests
 
-        // Apply search
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { request ->
@@ -136,12 +137,10 @@ class MyRequestsViewModel @Inject constructor(
             }
         }
 
-        // Apply status filter
         current.selectedStatus?.let { status ->
             filtered = filtered.filter { it.status.name == status }
         }
 
-        // Apply sort
         filtered = when (current.selectedSort.value) {
             "date_desc" -> filtered.sortedByDescending { it.createdAt }
             "date_asc" -> filtered.sortedBy { it.createdAt }
@@ -162,7 +161,7 @@ class MyRequestsViewModel @Inject constructor(
             result.fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar("Request cancelled successfully"))
-                    loadRequests() // Reload list
+                    loadRequests()
                 },
                 onFailure = { error ->
                     _state.update {
@@ -176,25 +175,83 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    private fun confirmPickup(requestId: String) {
+    // ✅ UPDATED: Photo upload with retry state
+    private fun confirmPickupWithPhoto(requestId: String, photoUri: Uri) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            val currentAttempts = _state.value.uploadAttempts + 1
+            
+            _state.update { 
+                it.copy(
+                    isUploading = true, 
+                    uploadError = null,
+                    uploadAttempts = currentAttempts
+                ) 
+            }
 
-            val result = confirmPickupUseCase(requestId)
+            val result = confirmPickupUseCase(requestId, photoUri)
 
             result.fold(
                 onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup confirmed!"))
-                    loadRequests() // Reload list
+                    _state.update { 
+                        it.copy(
+                            isUploading = false,
+                            uploadAttempts = 0,
+                            failedUploadRequestId = null,
+                            failedUploadPhotoUri = null
+                        ) 
+                    }
+                    _uiEvent.send(UiEvent.ShowSnackbar("Pickup confirmed with photo!"))
+                    loadRequests()
                 },
                 onFailure = { error ->
+                    val errorMessage = error.message ?: "Failed to upload photo"
+                    
                     _state.update {
                         it.copy(
-                            error = error.message ?: "Failed to confirm pickup",
-                            isLoading = false
+                            isUploading = false,
+                            uploadError = if (currentAttempts < MAX_UPLOAD_ATTEMPTS) {
+                                "$errorMessage\nAttempt $currentAttempts of $MAX_UPLOAD_ATTEMPTS"
+                            } else {
+                                "$errorMessage\nMaximum retry attempts reached"
+                            },
+                            failedUploadRequestId = requestId,
+                            failedUploadPhotoUri = photoUri
                         )
                     }
                 }
+            )
+        }
+    }
+
+    // ✅ NEW: Retry failed upload
+    private fun retryFailedUpload() {
+        val currentState = _state.value
+        
+        if (currentState.failedUploadRequestId != null && 
+            currentState.failedUploadPhotoUri != null &&
+            currentState.uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
+            
+            confirmPickupWithPhoto(
+                currentState.failedUploadRequestId,
+                currentState.failedUploadPhotoUri
+            )
+        } else {
+            viewModelScope.launch {
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Cannot retry: Maximum attempts reached")
+                )
+            }
+        }
+    }
+
+    // ✅ NEW: Dismiss upload error
+    private fun dismissUploadError() {
+        _state.update {
+            it.copy(
+                uploadError = null,
+                uploadAttempts = 0,
+                failedUploadRequestId = null,
+                failedUploadPhotoUri = null
             )
         }
     }

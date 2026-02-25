@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.ngo.myrequests
 
+import android.net.Uri
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.presentation.components.CommonSortOptions
 import com.clearchain.app.presentation.components.FilterChipData
@@ -26,12 +27,18 @@ data class MyRequestsState(
         FilterChipData("READY", "Ready"),
         FilterChipData("COMPLETED", "Completed"),
         FilterChipData("REJECTED", "Rejected"),
-//        FilterChipData("CANCELLED", "Cancelled")
     ),
 
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val isUploading: Boolean = false,
+    val error: String? = null,
+    
+    // ✅ NEW: Retry mechanism state
+    val uploadError: String? = null,
+    val failedUploadRequestId: String? = null,
+    val failedUploadPhotoUri: Uri? = null,
+    val uploadAttempts: Int = 0
 ) {
     val requests: List<PickupRequest> get() = filteredRequests
 }

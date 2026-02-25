@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ✅ CHANGE: Use cache-path instead of external-files-path -->
+    <cache-path
+        name="pickup_photos"
+        path="pickup_photos/" />
+</paths>

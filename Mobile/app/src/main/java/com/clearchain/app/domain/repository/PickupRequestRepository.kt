@@ -1,5 +1,6 @@
 package com.clearchain.app.domain.repository
 
+import android.net.Uri
 import com.clearchain.app.domain.model.PickupRequest
 
 interface PickupRequestRepository {
@@ -31,5 +32,9 @@ interface PickupRequestRepository {
 
     suspend fun markReadyForPickup(id: String): Result<PickupRequest>
 
-    suspend fun markPickedUp(id: String): Result<PickupRequest>
+    // ✅ NEW METHOD (with photo)
+    suspend fun confirmPickupWithPhoto(
+        id: String,
+        photoUri: Uri
+    ): Result<PickupRequest>
 }

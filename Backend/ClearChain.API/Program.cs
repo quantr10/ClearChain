@@ -25,6 +25,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["JWT_SECRET_KEY"];
