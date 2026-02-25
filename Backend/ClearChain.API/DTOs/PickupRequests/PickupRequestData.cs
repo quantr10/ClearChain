@@ -17,6 +17,7 @@ public class PickupRequestData
     public string ListingCategory { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
     public string? MarkedReadyAt { get; set; }
-public string? MarkedPickedUpAt { get; set; }
-public string? ConfirmedReceivedAt { get; set; }
+    public string? MarkedPickedUpAt { get; set; }
+    public string? ConfirmedReceivedAt { get; set; }
+    public string? ProofPhotoUrl { get; set; }
 }

@@ -19,7 +19,8 @@ data class PickupRequest(
     val notes: String? = null,
     val listingTitle: String,
     val listingCategory: String,
-    val createdAt: String
+    val createdAt: String,
+    val proofPhotoUrl: String? = null  // ✅ NEW
 )
 
 @Serializable

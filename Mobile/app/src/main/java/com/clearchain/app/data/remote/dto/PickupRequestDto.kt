@@ -51,7 +51,8 @@ data class PickupRequestData(
     val notes: String?,
     val listingTitle: String,
     val listingCategory: String,
-    val createdAt: String
+    val createdAt: String,
+    val proofPhotoUrl: String? = null  // ✅ NEW
 )
 
 // Extension function
@@ -77,6 +78,7 @@ fun PickupRequestData.toDomain(): PickupRequest {
         notes = notes,
         listingTitle = listingTitle,
         listingCategory = listingCategory,
-        createdAt = createdAt
+        createdAt = createdAt,
+        proofPhotoUrl = proofPhotoUrl  // ✅ NEW
     )
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using ClearChain.API.Services;
 
 namespace ClearChain.API.Controllers;
 
@@ -15,13 +16,17 @@ public class PickupRequestsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<PickupRequestsController> _logger;
+    private readonly IStorageService _storageService;
+
 
     public PickupRequestsController(
         ApplicationDbContext context,
-        ILogger<PickupRequestsController> logger)
+        ILogger<PickupRequestsController> logger,
+        IStorageService storageService)
     {
         _context = context;
         _logger = logger;
+        _storageService = storageService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -483,136 +488,174 @@ public class PickupRequestsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
     // PUT: api/pickuprequests/{id}/picked-up (UPDATED - delete listing, update group)
     // ═══════════════════════════════════════════════════════════════════════════
-
     [HttpPut("{id}/picked-up")]
-    public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(Guid id)
+[Consumes("multipart/form-data")]  // ✅ CHỈ CẦN THÊM DÒNG NÀY
+public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(
+    Guid id,  // ✅ Không cần [FromRoute]
+    IFormFile proofPhoto)  // ✅ Không cần [FromForm], không cần DTO
+{
+    try
     {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { message = "User not authenticated" });
+        }
+
+        var pickupRequest = await _context.PickupRequests
+            .FirstOrDefaultAsync(pr => pr.Id == id &&
+                (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));
+
+        if (pickupRequest == null)
+        {
+            return NotFound(new { message = "Pickup request not found" });
+        }
+
+        if (pickupRequest.Status != "ready")
+        {
+            return BadRequest(new { message = "Can only mark ready requests as picked up" });
+        }
+
+        // ✅ Validate photo
+        if (proofPhoto == null || proofPhoto.Length == 0)
+        {
+            return BadRequest(new { message = "Proof photo is required to confirm pickup" });
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(proofPhoto.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { message = "Only JPG, PNG and WEBP images are allowed" });
+        }
+
+        if (proofPhoto.Length > 5 * 1024 * 1024)
+        {
+            return BadRequest(new { message = "Photo size must not exceed 5MB" });
+        }
+
+        // Get related data
+        var listing = pickupRequest.ListingId.HasValue
+            ? await _context.ClearanceListings
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == pickupRequest.ListingId.Value)
+            : null;
+
+        var ngo = await _context.Organizations.FindAsync(pickupRequest.NgoId);
+        var grocery = await _context.Organizations.FindAsync(pickupRequest.GroceryId);
+
+        // ✅ Upload photo
+        string proofPhotoUrl;
         try
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
+            using var stream = proofPhoto.OpenReadStream();
+            proofPhotoUrl = await _storageService.UploadPickupProofAsync(
+                stream,
+                proofPhoto.FileName
+            );
 
-            var pickupRequest = await _context.PickupRequests
-                .FirstOrDefaultAsync(pr => pr.Id == id &&
-                    (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));
-
-            if (pickupRequest == null)
-            {
-                return NotFound(new { message = "Pickup request not found" });
-            }
-
-            if (pickupRequest.Status != "ready")
-            {
-                return BadRequest(new { message = "Can only mark ready requests as picked up" });
-            }
-
-            // Get listing and orgs for response
-            var listing = pickupRequest.ListingId.HasValue
-                ? await _context.ClearanceListings
-                    .Include(l => l.Group)
-                    .FirstOrDefaultAsync(l => l.Id == pickupRequest.ListingId.Value)
-                : null;
-
-            var ngo = await _context.Organizations.FindAsync(pickupRequest.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pickupRequest.GroceryId);
-
-            // Build response data BEFORE changes
-            var responseData = new PickupRequestData
-            {
-                Id = pickupRequest.Id.ToString(),
-                ListingId = pickupRequest.ListingId?.ToString() ?? "",
-                NgoId = pickupRequest.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
-                GroceryId = pickupRequest.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
-                Status = "completed",
-                RequestedQuantity = pickupRequest.RequestedQuantity ?? 0,
-                PickupDate = pickupRequest.PickupDate.ToString("yyyy-MM-dd"),
-                PickupTime = pickupRequest.PickupTime ?? "09:00",
-                Notes = pickupRequest.Notes ?? "",
-                ListingTitle = listing?.ProductName ?? "",
-                ListingCategory = listing?.Category ?? "",
-                CreatedAt = pickupRequest.RequestedAt.ToString("o")
-            };
-
-            // ✅ CRITICAL: Update request status AND remove FK reference
-            pickupRequest.Status = "completed";
-            pickupRequest.MarkedPickedUpAt = DateTime.UtcNow;
-            pickupRequest.ConfirmedReceivedAt = DateTime.UtcNow;
-            pickupRequest.ListingId = null; // ✅ NULL out FK BEFORE deleting listing!
-
-            await _context.SaveChangesAsync();
-
-            // ✅ Now safe to delete listing
-            if (listing != null)
-            {
-                var expiryDate = listing.ExpirationDate.HasValue
-                    ? DateTime.SpecifyKind(listing.ExpirationDate.Value, DateTimeKind.Utc)
-                    : DateTime.UtcNow.AddDays(7);
-
-                var inventoryItem = new Inventory
-                {
-                    Id = Guid.NewGuid(),
-                    NgoId = pickupRequest.NgoId,
-                    PickupRequestId = pickupRequest.Id,
-                    ProductName = listing.ProductName,
-                    Category = listing.Category,
-                    Quantity = pickupRequest.RequestedQuantity ?? 0,
-                    Unit = listing.Unit,
-                    ExpiryDate = expiryDate,
-                    Status = "active",
-                    ReceivedAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Inventories.Add(inventoryItem);
-
-                if (listing.Group != null)
-                {
-                    listing.Group.TotalReserved -= listing.Quantity;
-                    listing.Group.TotalCompleted += listing.Quantity;
-                    listing.Group.UpdatedAt = DateTime.UtcNow;
-
-                    if (listing.Group.TotalCompleted >= listing.Group.OriginalQuantity)
-                    {
-                        listing.Group.IsFullyConsumed = true;
-                    }
-
-                    var remainingChildren = await _context.ClearanceListings
-                        .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
-                        .CountAsync();
-
-                    if (remainingChildren == 0 && listing.Group.IsFullyConsumed)
-                    {
-                        _context.ListingGroups.Remove(listing.Group);
-                    }
-                }
-
-                _context.ClearanceListings.Remove(listing);
-                await _context.SaveChangesAsync();
-            }
-
-            return Ok(new PickupRequestResponse
-            {
-                Message = "Pickup completed successfully",
-                Data = responseData
-            });
+            _logger.LogInformation($"Proof photo uploaded successfully: {proofPhotoUrl}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error marking pickup as completed");
-            return StatusCode(500, new
-            {
-                message = "An error occurred while marking the pickup as completed"
-            });
+            _logger.LogError(ex, "Error uploading proof photo");
+            return StatusCode(500, new { message = "Error uploading photo. Please try again." });
         }
-    }
 
-    // ═══════════════════════════════════════════════════════════════════════════
+        // Build response
+        var responseData = new PickupRequestData
+        {
+            Id = pickupRequest.Id.ToString(),
+            ListingId = pickupRequest.ListingId?.ToString() ?? "",
+            NgoId = pickupRequest.NgoId.ToString(),
+            NgoName = ngo?.Name ?? "",
+            GroceryId = pickupRequest.GroceryId.ToString(),
+            GroceryName = grocery?.Name ?? "",
+            Status = "completed",
+            RequestedQuantity = pickupRequest.RequestedQuantity ?? 0,
+            PickupDate = pickupRequest.PickupDate.ToString("yyyy-MM-dd"),
+            PickupTime = pickupRequest.PickupTime ?? "09:00",
+            Notes = pickupRequest.Notes ?? "",
+            ListingTitle = listing?.ProductName ?? "",
+            ListingCategory = listing?.Category ?? "",
+            CreatedAt = pickupRequest.RequestedAt.ToString("o"),
+            ProofPhotoUrl = proofPhotoUrl
+        };
+
+        // Update request
+        pickupRequest.Status = "completed";
+        pickupRequest.MarkedPickedUpAt = DateTime.UtcNow;
+        pickupRequest.ConfirmedReceivedAt = DateTime.UtcNow;
+        pickupRequest.ProofPhotoUrl = proofPhotoUrl;
+        pickupRequest.ListingId = null;
+
+        await _context.SaveChangesAsync();
+
+        // Delete listing and create inventory
+        if (listing != null)
+        {
+            var expiryDate = listing.ExpirationDate.HasValue
+                ? DateTime.SpecifyKind(listing.ExpirationDate.Value, DateTimeKind.Utc)
+                : DateTime.UtcNow.AddDays(7);
+
+            var inventoryItem = new Inventory
+            {
+                Id = Guid.NewGuid(),
+                NgoId = pickupRequest.NgoId,
+                PickupRequestId = pickupRequest.Id,
+                ProductName = listing.ProductName,
+                Category = listing.Category,
+                Quantity = pickupRequest.RequestedQuantity ?? 0,
+                Unit = listing.Unit,
+                ExpiryDate = expiryDate,
+                Status = "active",
+                ReceivedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Inventories.Add(inventoryItem);
+
+            if (listing.Group != null)
+            {
+                listing.Group.TotalReserved -= listing.Quantity;
+                listing.Group.TotalCompleted += listing.Quantity;
+                listing.Group.UpdatedAt = DateTime.UtcNow;
+
+                if (listing.Group.TotalCompleted >= listing.Group.OriginalQuantity)
+                {
+                    listing.Group.IsFullyConsumed = true;
+                }
+
+                var remainingChildren = await _context.ClearanceListings
+                    .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
+                    .CountAsync();
+
+                if (remainingChildren == 0 && listing.Group.IsFullyConsumed)
+                {
+                    _context.ListingGroups.Remove(listing.Group);
+                }
+            }
+
+            _context.ClearanceListings.Remove(listing);
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new PickupRequestResponse
+        {
+            Message = "Pickup completed successfully",
+            Data = responseData
+        });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error marking pickup as completed");
+        return StatusCode(500, new
+        {
+            message = "An error occurred while marking the pickup as completed"
+        });
+    }
+}// ═══════════════════════════════════════════════════════════════════════════
     // UNCHANGED METHODS (keep as-is)
     // ═══════════════════════════════════════════════════════════════════════════
 
