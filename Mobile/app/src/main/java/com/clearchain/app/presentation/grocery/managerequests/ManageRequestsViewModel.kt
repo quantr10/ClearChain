@@ -2,7 +2,12 @@ package com.clearchain.app.presentation.grocery.managerequests
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.clearchain.app.domain.usecase.pickuprequest.*
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
+import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
+import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
+import com.clearchain.app.domain.usecase.pickuprequest.RejectPickupRequestUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,7 +20,8 @@ class ManageRequestsViewModel @Inject constructor(
     private val getGroceryPickupRequestsUseCase: GetGroceryPickupRequestsUseCase,
     private val approvePickupRequestUseCase: ApprovePickupRequestUseCase,
     private val rejectPickupRequestUseCase: RejectPickupRequestUseCase,
-    private val markReadyForPickupUseCase: MarkReadyForPickupUseCase
+    private val markReadyForPickupUseCase: MarkReadyForPickupUseCase,
+    private val signalRService: SignalRService  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ManageRequestsState())
@@ -26,6 +32,74 @@ class ManageRequestsViewModel @Inject constructor(
 
     init {
         loadRequests()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+        // Connect to SignalR (reuse existing connection)
+        viewModelScope.launch {
+            signalRService.connect()
+        }
+
+        // Listen for connection state
+        viewModelScope.launch {
+            signalRService.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
+                    }
+                    is ConnectionState.Error -> {
+                        // Silent fail
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // ✅ Listen for NEW pickup requests (important for groceries!)
+        viewModelScope.launch {
+            signalRService.pickupRequestCreated.collect { request ->
+                loadRequests()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar(
+                        "📢 New pickup request from ${request.ngoName}"
+                    )
+                )
+            }
+        }
+
+        // ✅ Listen for status changes
+        viewModelScope.launch {
+            signalRService.pickupRequestStatusChanged.collect { notification ->
+                loadRequests()
+                
+                val statusMessage = when (notification.newStatus.lowercase()) {
+                    "completed" -> "✅ ${notification.request.ngoName} confirmed pickup"
+                    "cancelled" -> "❌ Request cancelled by NGO"
+                    else -> "Status updated to ${notification.newStatus}"
+                }
+                
+                _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
+            }
+        }
+
+        // ✅ Listen for cancellations
+        viewModelScope.launch {
+            signalRService.pickupRequestCancelled.collect { request ->
+                loadRequests()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Request cancelled by ${request.ngoName}")
+                )
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: ManageRequestsEvent) {
@@ -33,7 +107,6 @@ class ManageRequestsViewModel @Inject constructor(
             ManageRequestsEvent.LoadRequests -> loadRequests()
             ManageRequestsEvent.RefreshRequests -> refreshRequests()
 
-            // NEW: Search, Sort, Filter handlers
             is ManageRequestsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -49,7 +122,7 @@ class ManageRequestsViewModel @Inject constructor(
 
             is ManageRequestsEvent.ApproveRequest -> approveRequest(event.requestId)
             is ManageRequestsEvent.RejectRequest -> rejectRequest(event.requestId)
-            is ManageRequestsEvent.MarkReady -> markReady(event.requestId)
+            is ManageRequestsEvent.MarkReady -> markReadyForPickup(event.requestId)
 
             ManageRequestsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
@@ -114,15 +187,10 @@ class ManageRequestsViewModel @Inject constructor(
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // NEW: Filter and Sort Logic
-    // ═══════════════════════════════════════════════════════════════════════════
-
     private fun applyFilters() {
         val current = _state.value
         var filtered = current.allRequests
 
-        // Apply search
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { request ->
@@ -132,12 +200,10 @@ class ManageRequestsViewModel @Inject constructor(
             }
         }
 
-        // Apply status filter
         current.selectedStatus?.let { status ->
             filtered = filtered.filter { it.status.name == status }
         }
 
-        // Apply sort
         filtered = when (current.selectedSort.value) {
             "date_desc" -> filtered.sortedByDescending { it.createdAt }
             "date_asc" -> filtered.sortedBy { it.createdAt }
@@ -195,7 +261,7 @@ class ManageRequestsViewModel @Inject constructor(
         }
     }
 
-    private fun markReady(requestId: String) {
+    private fun markReadyForPickup(requestId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 

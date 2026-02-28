@@ -1,11 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MyListingsViewModel.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.grocery.mylistings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService  // ✅ ADD
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.DeleteListingUseCase
 import com.clearchain.app.domain.usecase.listing.GetMyListingsUseCase
@@ -21,7 +19,8 @@ import javax.inject.Inject
 class MyListingsViewModel @Inject constructor(
     private val getMyListingsUseCase: GetMyListingsUseCase,
     private val deleteListingUseCase: DeleteListingUseCase,
-    private val updateListingQuantityUseCase: UpdateListingQuantityUseCase // ✅ NEW
+    private val updateListingQuantityUseCase: UpdateListingQuantityUseCase,
+    private val signalRService: SignalRService  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyListingsState())
@@ -32,6 +31,102 @@ class MyListingsViewModel @Inject constructor(
 
     init {
         loadListings()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+        // Connect to SignalR (reuse existing connection)
+        viewModelScope.launch {
+            signalRService.connect()
+        }
+
+        // Listen for connection state
+        viewModelScope.launch {
+            signalRService.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
+                    }
+                    is ConnectionState.Error -> {
+                        // Silent fail - app works without real-time
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // ✅ Listen for listing created (confirmation when grocery creates)
+        viewModelScope.launch {
+            signalRService.listingCreated.collect { listing ->
+                loadListings()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("✅ New listing created: ${listing.title}")
+                )
+            }
+        }
+
+        // ✅ Listen for listing deleted (confirmation)
+        viewModelScope.launch {
+            signalRService.listingDeleted.collect { notification ->
+                loadListings()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Listing deleted")
+                )
+            }
+        }
+
+        // ✅ Listen for quantity changes (confirmation)
+        viewModelScope.launch {
+            signalRService.listingQuantityChanged.collect { notification ->
+                loadListings()
+                val change = if (notification.newQuantity > notification.oldQuantity) {
+                    "increased"
+                } else {
+                    "decreased"
+                }
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Quantity $change: ${notification.listing.title}")
+                )
+            }
+        }
+
+        // ✅ Listen for listing updates (general updates)
+        viewModelScope.launch {
+            signalRService.listingUpdated.collect { listing ->
+                loadListings()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Listing updated: ${listing.title}")
+                )
+            }
+        }
+
+        // ✅ CRITICAL: Listen for pickup requests (listings become RESERVED!)
+        viewModelScope.launch {
+            signalRService.pickupRequestCreated.collect { request ->
+                loadListings() // Auto-refresh to show status change
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("📝 New pickup request for: ${request.listingTitle}")
+                )
+            }
+        }
+
+        // ✅ Listen for pickup request cancellations (listings become AVAILABLE again!)
+        viewModelScope.launch {
+            signalRService.pickupRequestCancelled.collect { request ->
+                loadListings() // Auto-refresh
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Request cancelled: ${request.listingTitle}")
+                )
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: MyListingsEvent) {
@@ -50,13 +145,13 @@ class MyListingsViewModel @Inject constructor(
                 applyFilters()
             }
 
-            // NEW: Status Tab (changed from chip)
+            // Status Tab
             is MyListingsEvent.StatusTabChanged -> {
                 _state.update { it.copy(selectedStatusTab = event.status) }
                 applyFilters()
             }
 
-            // NEW: Category Filter (food categories)
+            // Category Filter
             is MyListingsEvent.CategoryFilterChanged -> {
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
@@ -145,10 +240,6 @@ class MyListingsViewModel @Inject constructor(
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // UPDATED: Filter and Sort Logic with Status TAB + Category CHIP
-    // ═══════════════════════════════════════════════════════════════════════════
-
     private fun applyFilters() {
         val current = _state.value
         var filtered = current.allListings
@@ -172,7 +263,6 @@ class MyListingsViewModel @Inject constructor(
         // Apply CATEGORY CHIP filter
         current.selectedCategory?.let { category ->
             filtered = filtered.filter { listing ->
-                // Match by FoodCategory enum name
                 listing.category.name == category
             }
         }

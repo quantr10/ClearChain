@@ -4,28 +4,37 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Claims;
 using ClearChain.Infrastructure.Data;
 using ClearChain.API.Services;
-using ClearChain.API.Middleware;  // ADD THIS
+using ClearChain.API.Middleware;
+using ClearChain.API.Hubs;
+using Microsoft.AspNetCore.SignalR;  // ✅ ADD this line at top
 
-// Load .env file
+
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add environment variables from .env
 builder.Configuration.AddEnvironmentVariables();
 
-// Add DbContext
 var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Add Services - UPDATED
+// Add Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
+builder.Services.AddScoped<IPickupNotificationService, PickupNotificationService>();
+builder.Services.AddScoped<IListingNotificationService, ListingNotificationService>();  // ✅ ADD
+
+// ✅ ADD SignalR with custom user ID provider
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
+builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["JWT_SECRET_KEY"];
@@ -48,17 +57,32 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey!)),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = ClaimTypes.Role  // ✅ ADD THIS
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            
+            return Task.CompletedTask;
+        }
     };
 });
 
 builder.Services.AddAuthorization();
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Configure Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo 
@@ -68,7 +92,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Surplus food clearance platform API"
     });
 
-    // JWT Authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -95,7 +118,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ClearChainPolicy", policy =>
@@ -112,10 +134,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ADD ERROR HANDLING MIDDLEWARE - FIRST!
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -135,7 +155,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Test endpoint
+app.MapHub<PickupRequestHub>("/hubs/pickuprequests");
+app.MapHub<ListingHub>("/hubs/listings");
+app.MapHub<InventoryHub>("/hubs/inventory");
+app.MapHub<AdminHub>("/hubs/admin");
+
 app.MapGet("/", () => new
 {
     message = "ClearChain API is running!",
@@ -144,23 +168,19 @@ app.MapGet("/", () => new
     version = "1.0.0"
 }).WithTags("Health");
 
-// Database test endpoint
-app.MapGet("/api/health/database", async (ApplicationDbContext db) =>
+// ✅ ADD: SignalR health check endpoint
+app.MapGet("/api/health/signalr", () => new
 {
-    try
+    status = "configured",
+    hubs = new[]
     {
-        var count = await db.Organizations.CountAsync();
-        return Results.Ok(new
-        {
-            status = "healthy",
-            organizationsCount = count,
-            message = "Database connection successful!"
-        });
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem($"Database error: {ex.Message}");
-    }
+        new { name = "PickupRequestHub", endpoint = "/hubs/pickuprequests" },
+        new { name = "ListingHub", endpoint = "/hubs/listings" },
+        new { name = "InventoryHub", endpoint = "/hubs/inventory" },
+        new { name = "AdminHub", endpoint = "/hubs/admin" }
+    },
+    authentication = "JWT Bearer Token (via query string or header)",
+    timestamp = DateTime.UtcNow
 }).WithTags("Health");
 
 app.Run();
