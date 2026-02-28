@@ -14,11 +14,16 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ApplicationDbContext _context;
+    private readonly IAdminNotificationService _adminNotificationService;  // ✅ ADD
 
-    public AuthController(IAuthService authService, ApplicationDbContext context)
+    public AuthController(
+        IAuthService authService, 
+        ApplicationDbContext context,
+        IAdminNotificationService adminNotificationService)  // ✅ ADD
     {
         _authService = authService;
         _context = context;
+        _adminNotificationService = adminNotificationService;  // ✅ ADD
     }
 
     [HttpPost("register")]
@@ -31,6 +36,29 @@ public class AuthController : ControllerBase
 
         if (!success)
             return BadRequest(new { message });
+
+        // ✅ ADD: Notify admins of new organization (after successful registration)
+        if (response?.User != null)
+        {
+            try
+            {
+                var orgNotification = new OrganizationRegisteredNotification
+                {
+                    OrganizationId = response.User.Id.ToString(),
+                    Name = response.User.Name,
+                    Type = response.User.Type,
+                    Email = response.User.Email,
+                    Location = response.User.Location ?? "",
+                    RegisteredAt = DateTime.Parse(response.User.CreatedAt)
+                };
+                await _adminNotificationService.NotifyNewOrganizationRegistered(orgNotification);
+            }
+            catch (Exception ex)
+            {
+                // Don't fail registration if notification fails
+                Console.WriteLine($"Failed to send admin notification: {ex.Message}");
+            }
+        }
 
         return Ok(new { message, data = response });
     }

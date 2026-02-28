@@ -3,6 +3,8 @@ package com.clearchain.app.presentation.ngo.myrequests
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
@@ -17,7 +19,8 @@ import javax.inject.Inject
 class MyRequestsViewModel @Inject constructor(
     private val getMyPickupRequestsUseCase: GetMyPickupRequestsUseCase,
     private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
-    private val confirmPickupUseCase: ConfirmPickupUseCase
+    private val confirmPickupUseCase: ConfirmPickupUseCase,
+    private val signalRService: SignalRService  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyRequestsState())
@@ -32,6 +35,65 @@ class MyRequestsViewModel @Inject constructor(
 
     init {
         loadRequests()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    // ✅ FIXED: Setup SignalR real-time updates
+private fun setupSignalR() {
+    // Connect to SignalR
+    viewModelScope.launch {
+        signalRService.connect()
+    }
+
+    // ✅ FIX: Each flow collection in separate coroutine
+    viewModelScope.launch {
+        signalRService.connectionState.collect { state ->
+            when (state) {
+                is ConnectionState.Connected -> {
+                    _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
+                }
+                is ConnectionState.Error -> {
+                    // Silent fail - app works without real-time updates
+                }
+                else -> {}
+            }
+        }
+    }
+
+    // Listen for status changes
+    viewModelScope.launch {
+        signalRService.pickupRequestStatusChanged.collect { notification ->
+            // Auto-refresh list
+            loadRequests()
+            
+            // Show notification to user
+            val statusMessage = when (notification.newStatus.lowercase()) {
+                "approved" -> "Your request has been approved!"
+                "ready" -> "Food is ready for pickup!"
+                "completed" -> "Pickup completed"
+                "rejected" -> "Request was rejected"
+                else -> "Status updated to ${notification.newStatus}"
+            }
+            
+            _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
+        }
+    }
+
+    // Listen for cancellations
+    viewModelScope.launch {
+        signalRService.pickupRequestCancelled.collect { request ->
+            loadRequests()
+            _uiEvent.send(UiEvent.ShowSnackbar("Request cancelled"))
+        }
+    }
+}
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: MyRequestsEvent) {
@@ -57,7 +119,6 @@ class MyRequestsViewModel @Inject constructor(
             is MyRequestsEvent.ConfirmPickupWithPhoto -> 
                 confirmPickupWithPhoto(event.requestId, event.photoUri)
 
-            // ✅ NEW: Retry mechanism
             MyRequestsEvent.RetryFailedUpload -> retryFailedUpload()
             MyRequestsEvent.DismissUploadError -> dismissUploadError()
 
@@ -175,7 +236,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    // ✅ UPDATED: Photo upload with retry state
     private fun confirmPickupWithPhoto(requestId: String, photoUri: Uri) {
         viewModelScope.launch {
             val currentAttempts = _state.value.uploadAttempts + 1
@@ -223,7 +283,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    // ✅ NEW: Retry failed upload
     private fun retryFailedUpload() {
         val currentState = _state.value
         
@@ -244,7 +303,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    // ✅ NEW: Dismiss upload error
     private fun dismissUploadError() {
         _state.update {
             it.copy(

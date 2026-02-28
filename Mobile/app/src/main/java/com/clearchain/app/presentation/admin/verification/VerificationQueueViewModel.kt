@@ -3,9 +3,12 @@ package com.clearchain.app.presentation.admin.verification
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.AdminApi
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -15,7 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VerificationQueueViewModel @Inject constructor(
-    private val adminApi: AdminApi
+    private val adminApi: AdminApi,
+    private val signalRService: SignalRService,  // ✅ ADD
+    private val getCurrentUserUseCase: GetCurrentUserUseCase  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerificationQueueState())
@@ -26,6 +31,48 @@ class VerificationQueueViewModel @Inject constructor(
 
     init {
         loadOrganizations()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+    viewModelScope.launch {
+        // Simple - just connect (admin hub will auto-connect if user is admin)
+        try {
+            signalRService.connect()  // ✅ Use regular connect()
+        } catch (e: Exception) {
+            return@launch
+        }
+
+        // Listen for connection state
+        launch {
+            signalRService.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time monitoring enabled"))
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // ✅ Listen for new organization registrations
+        launch {
+            signalRService.newOrganizationRegistered.collect { notification ->
+                loadOrganizations() // Auto-refresh queue
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("📢 New ${notification.type} pending verification: ${notification.name}")
+                )
+            }
+        }
+    }
+}
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: VerificationQueueEvent) {

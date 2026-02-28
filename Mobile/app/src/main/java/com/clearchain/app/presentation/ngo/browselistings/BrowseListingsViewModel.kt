@@ -2,6 +2,8 @@ package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
 import com.clearchain.app.util.UiEvent
@@ -13,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class BrowseListingsViewModel @Inject constructor(
-    private val getAllListingsUseCase: GetAllListingsUseCase
+    private val getAllListingsUseCase: GetAllListingsUseCase,
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BrowseListingsState())
@@ -24,6 +27,80 @@ class BrowseListingsViewModel @Inject constructor(
 
     init {
         loadListings()
+        setupSignalR()
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+        // Connect to SignalR (reuse existing connection)
+        viewModelScope.launch {
+            signalRService.connect()
+        }
+
+        // Listen for connection state
+        viewModelScope.launch {
+            signalRService.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
+                    }
+                    is ConnectionState.Error -> {
+                        // Silent fail - app works without real-time
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // ✅ Listen for NEW listings
+        viewModelScope.launch {
+            signalRService.listingCreated.collect { listing ->
+                loadListings() // Auto-refresh
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("📢 New listing: ${listing.title}")
+                )
+            }
+        }
+
+        // ✅ Listen for listing updates
+        viewModelScope.launch {
+            signalRService.listingUpdated.collect { listing ->
+                loadListings()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Listing updated: ${listing.title}")
+                )
+            }
+        }
+
+        // ✅ Listen for listing deletions
+        viewModelScope.launch {
+            signalRService.listingDeleted.collect { notification ->
+                loadListings()
+                _uiEvent.send(UiEvent.ShowSnackbar("Listing removed"))
+            }
+        }
+
+        // ✅ Listen for quantity changes
+        viewModelScope.launch {
+            signalRService.listingQuantityChanged.collect { notification ->
+                loadListings()
+                
+                val quantityMsg = if (notification.newQuantity > notification.oldQuantity) {
+                    "📈 More available: ${notification.listing.title}"
+                } else {
+                    "📉 Less available: ${notification.listing.title}"
+                }
+                
+                _uiEvent.send(UiEvent.ShowSnackbar(quantityMsg))
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: BrowseListingsEvent) {
@@ -31,7 +108,6 @@ class BrowseListingsViewModel @Inject constructor(
             BrowseListingsEvent.LoadListings -> loadListings()
             BrowseListingsEvent.RefreshListings -> refreshListings()
 
-            // NEW: Search, Sort, Filter handlers
             is BrowseListingsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -113,10 +189,6 @@ class BrowseListingsViewModel @Inject constructor(
             )
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // NEW: Filter and Sort Logic
-    // ═══════════════════════════════════════════════════════════════════════════
 
     private fun applyFilters() {
         val current = _state.value

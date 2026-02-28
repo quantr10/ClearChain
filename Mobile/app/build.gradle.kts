@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.clearchain.app"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -124,6 +124,9 @@ dependencies {
     // Lifecycle
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+
+    // SignalR
+    implementation("com.microsoft.signalr:signalr:8.0.0")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
