@@ -1,11 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// InventoryViewModel.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.ngo.inventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService  // ✅ ADD
 import com.clearchain.app.domain.usecase.inventory.DistributeItemUseCase
 import com.clearchain.app.domain.usecase.inventory.GetMyInventoryUseCase
 import com.clearchain.app.domain.usecase.inventory.UpdateExpiredItemsUseCase
@@ -20,7 +18,8 @@ import javax.inject.Inject
 class InventoryViewModel @Inject constructor(
     private val getMyInventoryUseCase: GetMyInventoryUseCase,
     private val updateExpiredItemsUseCase: UpdateExpiredItemsUseCase,
-    private val distributeInventoryItemUseCase: DistributeItemUseCase
+    private val distributeInventoryItemUseCase: DistributeItemUseCase,
+    private val signalRService: SignalRService  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(InventoryState())
@@ -31,6 +30,77 @@ class InventoryViewModel @Inject constructor(
 
     init {
         loadInventory()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+        // Connect to SignalR (reuse existing connection)
+        viewModelScope.launch {
+            signalRService.connect()
+        }
+
+        // Listen for connection state
+        viewModelScope.launch {
+            signalRService.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
+                    }
+                    is ConnectionState.Error -> {
+                        // Silent fail - app works without real-time
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // ✅ Listen for NEW inventory items (from confirmed pickups)
+        viewModelScope.launch {
+            signalRService.inventoryItemAdded.collect { item ->
+                loadInventory() // Auto-refresh
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("📦 New item received: ${item.productName}")
+                )
+            }
+        }
+
+        // ✅ Listen for distributed items
+        viewModelScope.launch {
+            signalRService.inventoryItemDistributed.collect { notification ->
+                loadInventory()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("✅ Item marked as distributed")
+                )
+            }
+        }
+
+        // ✅ Listen for expired items
+        viewModelScope.launch {
+            signalRService.inventoryItemExpired.collect { item ->
+                loadInventory()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("⚠️ Item expired: ${item.productName}")
+                )
+            }
+        }
+
+        // ✅ Listen for item updates
+        viewModelScope.launch {
+            signalRService.inventoryItemUpdated.collect { item ->
+                loadInventory()
+                _uiEvent.send(
+                    UiEvent.ShowSnackbar("Item updated: ${item.productName}")
+                )
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: InventoryEvent) {
@@ -49,13 +119,13 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
             
-            // NEW: Status Tab (changed from chip)
+            // Status Tab
             is InventoryEvent.StatusTabChanged -> {
                 _state.update { it.copy(selectedStatusTab = event.status) }
                 applyFilters()
             }
             
-            // NEW: Category Filter (food categories)
+            // Category Filter
             is InventoryEvent.CategoryFilterChanged -> {
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
@@ -139,10 +209,6 @@ class InventoryViewModel @Inject constructor(
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // UPDATED: Filter and Sort Logic with Status TAB + Category CHIP
-    // ═══════════════════════════════════════════════════════════════════════════
-    
     private fun applyFilters() {
         val current = _state.value
         var filtered = current.allItems
@@ -164,9 +230,7 @@ class InventoryViewModel @Inject constructor(
         // Apply CATEGORY CHIP filter
         current.selectedCategory?.let { category ->
             filtered = filtered.filter { item ->
-                // Match by FoodCategory enum name
                 item.category.equals(category, ignoreCase = true) ||
-                // Or if category is stored as display name, try matching that too
                 item.category.lowercase().replace(" ", "_") == category.lowercase()
             }
         }

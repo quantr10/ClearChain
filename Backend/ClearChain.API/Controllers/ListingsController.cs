@@ -1,6 +1,7 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Listings;
+using ClearChain.API.Services;  // ✅ ADD
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,19 +15,21 @@ public class ListingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ListingsController> _logger;
+    private readonly IListingNotificationService _listingNotificationService;
 
     public ListingsController(
         ApplicationDbContext context,
-        ILogger<ListingsController> logger)
+        ILogger<ListingsController> logger,
+        IListingNotificationService listingNotificationService)
     {
         _context = context;
         _logger = logger;
+        _listingNotificationService = listingNotificationService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // HELPER: Convert Listing Entity to DTO
     // ═══════════════════════════════════════════════════════════════════════════
-    
     private ListingData MapListingToDto(ClearanceListing listing, ListingGroup? group = null)
     {
         var dto = new ListingData
@@ -46,8 +49,7 @@ public class ListingsController : ControllerBase
             ImageUrl = listing.PhotoUrl,
             Location = listing.Grocery?.Location ?? "",
             CreatedAt = listing.CreatedAt.ToString("o"),
-            
-            // NEW: Group tracking
+            // Group tracking
             GroupId = listing.GroupId?.ToString(),
             SplitReason = listing.SplitReason,
             RelatedRequestId = listing.RelatedRequestId?.ToString(),
@@ -73,7 +75,6 @@ public class ListingsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
     // GET: api/listings
     // ═══════════════════════════════════════════════════════════════════════════
-    
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<ListingsResponse>> GetAllListings(
@@ -119,7 +120,6 @@ public class ListingsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
     // GET: api/listings/grocery/my
     // ═══════════════════════════════════════════════════════════════════════════
-    
     [HttpGet("grocery/my")]
     [Authorize]
     public async Task<ActionResult<ListingsResponse>> GetMyListings()
@@ -155,9 +155,8 @@ public class ListingsController : ControllerBase
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // POST: api/listings (UPDATED - Creates ListingGroup + Listing)
+    // POST: api/listings (UPDATED with SignalR notification)
     // ═══════════════════════════════════════════════════════════════════════════
-    
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> CreateListing(
@@ -198,10 +197,7 @@ public class ListingsController : ControllerBase
                 pickupTimeEnd = endTime;
             }
 
-            // ═══════════════════════════════════════════════════════════════
-            // CREATE LISTING GROUP (NEW)
-            // ═══════════════════════════════════════════════════════════════
-            
+            // CREATE LISTING GROUP
             var groupId = Guid.NewGuid();
             var listingId = Guid.NewGuid();
 
@@ -228,10 +224,7 @@ public class ListingsController : ControllerBase
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // ═══════════════════════════════════════════════════════════════
             // CREATE INITIAL LISTING
-            // ═══════════════════════════════════════════════════════════════
-            
             var listing = new ClearanceListing
             {
                 Id = listingId,
@@ -256,9 +249,15 @@ public class ListingsController : ControllerBase
 
             _context.ListingGroups.Add(listingGroup);
             _context.ClearanceListings.Add(listing);
+            
             await _context.SaveChangesAsync();
 
+            // ✅ ADD: Map to DTO for response AND notification
+            listing.Grocery = grocery; // Ensure grocery is populated
             var listingDto = MapListingToDto(listing, listingGroup);
+
+            // ✅ ADD: Send real-time notification
+            await _listingNotificationService.NotifyListingCreated(listingDto);
 
             return CreatedAtAction(
                 nameof(GetListingById),
@@ -279,7 +278,6 @@ public class ListingsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
     // GET: api/listings/{id}
     // ═══════════════════════════════════════════════════════════════════════════
-    
     [HttpGet("{id}")]
     public async Task<ActionResult<ListingResponse>> GetListingById(Guid id)
     {
@@ -311,160 +309,162 @@ public class ListingsController : ControllerBase
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // DELETE: api/listings/{id} (UPDATED - Validates status & updates group)
+    // DELETE: api/listings/{id} (UPDATED with SignalR notification)
     // ═══════════════════════════════════════════════════════════════════════════
-    
-[HttpDelete("{id}")]
-[Authorize]
-public async Task<ActionResult<ListingResponse>> DeleteListing(Guid id)
-{
-    try
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<ActionResult<ListingResponse>> DeleteListing(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        try
         {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
-
-        var listing = await _context.ClearanceListings
-            .Include(l => l.Grocery)
-            .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-        if (listing == null)
-        {
-            return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
-        }
-
-        if (listing.Status != "open")
-        {
-            var statusMessage = listing.Status switch
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
-                "reserved" => "Cannot delete reserved listing. Wait for pickup completion or cancellation.",
-                "expired" => "Cannot delete expired listing.",
-                _ => $"Cannot delete listing with status: {listing.Status}"
-            };
-            
-            return BadRequest(new { message = statusMessage });
-        }
-
-
-        // Now proceed with deletion
-        if (listing.GroupId.HasValue && listing.Group != null)
-        {
-            listing.Group.TotalAvailable -= listing.Quantity;
-            listing.Group.UpdatedAt = DateTime.UtcNow;
-            
-            var remainingChildren = await _context.ClearanceListings
-                .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
-                .CountAsync();
-            
-            if (remainingChildren == 0)
-            {
-                _context.ListingGroups.Remove(listing.Group);
+                return Unauthorized(new { message = "User not authenticated" });
             }
-        }
 
-        _context.ClearanceListings.Remove(listing);
-        await _context.SaveChangesAsync();
+            var listing = await _context.ClearanceListings
+                .Include(l => l.Grocery)
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
 
-        var listingData = MapListingToDto(listing, listing.Group);
+            if (listing == null)
+            {
+                return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
+            }
 
-        // ✅ Return ListingResponse with full data
-        return Ok(new ListingResponse
-        {
-            Message = "Listing deleted successfully",
-            Data = listingData
-        });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error deleting listing");
-        return StatusCode(500, new { message = "An error occurred while deleting the listing" });
-    }
-}
+            if (listing.Status != "open")
+            {
+                var statusMessage = listing.Status switch
+                {
+                    "reserved" => "Cannot delete reserved listing. Wait for pickup completion or cancellation.",
+                    "expired" => "Cannot delete expired listing.",
+                    _ => $"Cannot delete listing with status: {listing.Status}"
+                };
+                return BadRequest(new { message = statusMessage });
+            }
 
-// In ListingsController.cs
+            // ✅ SAVE listing ID before deletion for notification
+            var deletedListingId = listing.Id.ToString();
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PUT: api/listings/{id}/quantity - Update quantity of AVAILABLE listing
-// ═══════════════════════════════════════════════════════════════════════════
+            // Update group
+            if (listing.GroupId.HasValue && listing.Group != null)
+            {
+                listing.Group.TotalAvailable -= listing.Quantity;
+                listing.Group.UpdatedAt = DateTime.UtcNow;
 
-[HttpPut("{id}/quantity")]
-[Authorize]
-public async Task<ActionResult<ListingResponse>> UpdateListingQuantity(
-    Guid id,
-    [FromBody] UpdateListingQuantityRequest request)
-{
-    try
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
+                var remainingChildren = await _context.ClearanceListings
+                    .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
+                    .CountAsync();
 
-        var listing = await _context.ClearanceListings
-            .Include(l => l.Grocery)
-            .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+                if (remainingChildren == 0)
+                {
+                    _context.ListingGroups.Remove(listing.Group);
+                }
+            }
 
-        if (listing == null)
-        {
-            return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
-        }
+            _context.ClearanceListings.Remove(listing);
+            await _context.SaveChangesAsync();
 
-        // ═══════════════════════════════════════════════════════════════
-        // VALIDATION: Can only update AVAILABLE listings
-        // ═══════════════════════════════════════════════════════════════
-        
-        if (listing.Status != "open")
-        {
-            return BadRequest(new { 
-                message = "Can only update quantity of available listings" 
+            // ✅ ADD: Send real-time notification
+            await _listingNotificationService.NotifyListingDeleted(deletedListingId);
+
+            var listingData = MapListingToDto(listing, listing.Group);
+
+            return Ok(new ListingResponse
+            {
+                Message = "Listing deleted successfully",
+                Data = listingData
             });
         }
-
-        if (request.NewQuantity <= 0)
+        catch (Exception ex)
         {
-            return BadRequest(new { 
-                message = "Quantity must be greater than 0" 
+            _logger.LogError(ex, "Error deleting listing");
+            return StatusCode(500, new { message = "An error occurred while deleting the listing" });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PUT: api/listings/{id}/quantity (UPDATED with SignalR notification)
+    // ═══════════════════════════════════════════════════════════════════════════
+    [HttpPut("{id}/quantity")]
+    [Authorize]
+    public async Task<ActionResult<ListingResponse>> UpdateListingQuantity(
+        Guid id,
+        [FromBody] UpdateListingQuantityRequest request)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            var listing = await _context.ClearanceListings
+                .Include(l => l.Grocery)
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+            if (listing == null)
+            {
+                return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
+            }
+
+            if (listing.Status != "open")
+            {
+                return BadRequest(new
+                {
+                    message = "Can only update quantity of available listings"
+                });
+            }
+
+            if (request.NewQuantity <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "Quantity must be greater than 0"
+                });
+            }
+
+            // ✅ SAVE old quantity for notification
+            var oldQuantity = (int)listing.Quantity;
+            var difference = request.NewQuantity - oldQuantity;
+
+            listing.Quantity = request.NewQuantity;
+            listing.UpdatedAt = DateTime.UtcNow;
+
+            // Update group totals
+            if (listing.GroupId.HasValue && listing.Group != null)
+            {
+                listing.Group.TotalAvailable += difference;
+                listing.Group.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var listingDto = MapListingToDto(listing, listing.Group);
+
+            // ✅ ADD: Send real-time notification
+            await _listingNotificationService.NotifyListingQuantityChanged(
+                listingDto,
+                oldQuantity,
+                request.NewQuantity
+            );
+
+            return Ok(new ListingResponse
+            {
+                Message = "Quantity updated successfully",
+                Data = listingDto
             });
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // UPDATE LISTING & GROUP
-        // ═══════════════════════════════════════════════════════════════
-        
-        var oldQuantity = listing.Quantity;
-        var difference = request.NewQuantity - oldQuantity;
-
-        listing.Quantity = request.NewQuantity;
-        listing.UpdatedAt = DateTime.UtcNow;
-
-        // Update group totals
-        if (listing.GroupId.HasValue && listing.Group != null)
+        catch (Exception ex)
         {
-            listing.Group.TotalAvailable += difference;
-            listing.Group.UpdatedAt = DateTime.UtcNow;
+            _logger.LogError(ex, "Error updating listing quantity");
+            return StatusCode(500, new
+            {
+                message = "An error occurred while updating the quantity"
+            });
         }
-
-        await _context.SaveChangesAsync();
-
-        var listingDto = MapListingToDto(listing, listing.Group);
-
-        return Ok(new ListingResponse
-        {
-            Message = "Quantity updated successfully",
-            Data = listingDto
-        });
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error updating listing quantity");
-        return StatusCode(500, new { 
-            message = "An error occurred while updating the quantity" 
-        });
-    }
-}
 }

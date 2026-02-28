@@ -3,6 +3,7 @@ namespace ClearChain.API.DTOs.Inventory;
 public class InventoryItemData
 {
     public string Id { get; set; } = string.Empty;
+    public string NgoId { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
@@ -11,4 +12,5 @@ public class InventoryItemData
     public string Status { get; set; } = string.Empty;
     public string ReceivedAt { get; set; } = string.Empty;
     public string? DistributedAt { get; set; }
+    public string? PickupRequestId { get; set; }
 }

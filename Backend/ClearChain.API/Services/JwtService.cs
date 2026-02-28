@@ -36,6 +36,8 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Name, user.Name),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),  // ✅ ADD for compatibility
+            new Claim(ClaimTypes.Role, user.Type),  // ✅ ADD - CRITICAL for [Authorize(Roles)]
             new Claim("type", user.Type),
             new Claim("verified", user.Verified.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -43,7 +45,6 @@ public class JwtService : IJwtService
         };
 
         var expiryMinutes = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60");
-
         var token = new JwtSecurityToken(
             issuer: _configuration["JWT_ISSUER"],
             audience: _configuration["JWT_AUDIENCE"],
@@ -81,7 +82,8 @@ public class JwtService : IJwtService
                 ValidIssuer = _configuration["JWT_ISSUER"],
                 ValidAudience = _configuration["JWT_AUDIENCE"],
                 IssuerSigningKey = securityKey,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero,
+                RoleClaimType = ClaimTypes.Role  // ✅ ADD
             }, out _);
 
             return principal;
@@ -102,7 +104,6 @@ public class JwtService : IJwtService
         {
             return userId;
         }
-
         return null;
     }
 }

@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.toDomain
+import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -13,7 +16,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
-    private val adminApi: AdminApi
+    private val adminApi: AdminApi,
+    private val signalRService: SignalRService,  // ✅ ADD
+    private val getCurrentUserUseCase: GetCurrentUserUseCase  // ✅ ADD
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TransactionsState())
@@ -24,6 +29,77 @@ class TransactionsViewModel @Inject constructor(
 
     init {
         loadTransactions()
+        setupSignalR()  // ✅ ADD
+    }
+
+    // ✅ NEW: Setup SignalR real-time updates
+    private fun setupSignalR() {
+        viewModelScope.launch {
+            try {
+                signalRService.connect()  // ✅ Use regular connect()
+            } catch (e: Exception) {
+                return@launch
+            }
+
+            // Listen for connection state
+            launch {
+                signalRService.connectionState.collect { state ->
+                    when (state) {
+                        is ConnectionState.Connected -> {
+                            _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time monitoring enabled"))
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            // ✅ Listen for new pickup requests
+            launch {
+                signalRService.pickupRequestCreated.collect { request ->
+                    loadTransactions()
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar("📝 New pickup request from ${request.ngoName}")
+                    )
+                }
+            }
+
+            // ✅ Listen for status changes
+            launch {
+                signalRService.pickupRequestStatusChanged.collect { notification ->
+                    loadTransactions()
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar("Status updated: ${notification.request.listingTitle}")
+                    )
+                }
+            }
+
+            // ✅ Listen for completed transactions
+            launch {
+                signalRService.transactionCompleted.collect { notification ->
+                    loadTransactions()
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar("✅ Transaction completed: ${notification.productName}")
+                    )
+                }
+            }
+
+            // ✅ Listen for cancellations
+            launch {
+                signalRService.pickupRequestCancelled.collect { request ->
+                    loadTransactions()
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar("Request cancelled: ${request.listingTitle}")
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.launch {
+            signalRService.disconnect()
+        }
     }
 
     fun onEvent(event: TransactionsEvent) {

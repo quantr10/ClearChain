@@ -23,6 +23,7 @@ data class InventoryItemResponse(
 @Serializable
 data class InventoryItemData(
     val id: String,
+    val ngoId: String,
     val productName: String,
     val category: String,
     val quantity: Double,
@@ -30,7 +31,8 @@ data class InventoryItemData(
     val expiryDate: String,
     val status: String,
     val receivedAt: String,
-    val distributedAt: String? = null
+    val distributedAt: String? = null,
+    val pickupRequestId: String? = null
 )
 
 // Extension function to convert DTO to Domain
