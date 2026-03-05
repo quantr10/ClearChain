@@ -2,20 +2,20 @@ package com.clearchain.app.presentation.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.clearchain.app.domain.usecase.auth.IsLoggedInUseCase
+import com.clearchain.app.domain.model.Organization
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val isLoggedInUseCase: IsLoggedInUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
-    val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn
+    val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn.asStateFlow()
 
     init {
         checkLoginStatus()
@@ -23,8 +23,16 @@ class SplashViewModel @Inject constructor(
 
     private fun checkLoginStatus() {
         viewModelScope.launch {
-            val loggedIn = isLoggedInUseCase()
-            _isLoggedIn.value = loggedIn
+            getCurrentUserUseCase()
+                .map { it != null }
+                .collect { loggedIn ->
+                    _isLoggedIn.value = loggedIn
+                }
         }
+    }
+
+    // ✅ ADD: Method to get current user
+    suspend fun getCurrentUser(): Organization? {
+        return getCurrentUserUseCase().first()
     }
 }

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using ClearChain.API.Services;
 using ClearChain.API.DTOs.Auth;
 using ClearChain.Infrastructure.Data;
+using ClearChain.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Controllers;
@@ -14,16 +15,16 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ApplicationDbContext _context;
-    private readonly IAdminNotificationService _adminNotificationService;  // ✅ ADD
+    private readonly IAdminNotificationService _adminNotificationService;
 
     public AuthController(
         IAuthService authService, 
         ApplicationDbContext context,
-        IAdminNotificationService adminNotificationService)  // ✅ ADD
+        IAdminNotificationService adminNotificationService)
     {
         _authService = authService;
         _context = context;
-        _adminNotificationService = adminNotificationService;  // ✅ ADD
+        _adminNotificationService = adminNotificationService;
     }
 
     [HttpPost("register")]
@@ -37,7 +38,7 @@ public class AuthController : ControllerBase
         if (!success)
             return BadRequest(new { message });
 
-        // ✅ ADD: Notify admins of new organization (after successful registration)
+        // Notify admins of new organization
         if (response?.User != null)
         {
             try
@@ -55,7 +56,6 @@ public class AuthController : ControllerBase
             }
             catch (Exception ex)
             {
-                // Don't fail registration if notification fails
                 Console.WriteLine($"Failed to send admin notification: {ex.Message}");
             }
         }
@@ -113,12 +113,10 @@ public class AuthController : ControllerBase
         if (userId == null || !Guid.TryParse(userId, out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
-        // Query full user from DB
         var user = await _context.Organizations.FindAsync(userGuid);
         if (user == null)
             return NotFound(new { message = "User not found" });
 
-        // Android's AuthApi expects AuthResponse shape: { data: AuthData }
         var responseData = new
         {
             accessToken = "",
@@ -164,5 +162,45 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Current password is incorrect" });
 
         return Ok(new { message = "Password changed successfully" });
+    }
+
+    // ✅ NEW: Register FCM Token endpoint
+    [HttpPost("fcm-token")]
+    [Authorize]
+    public async Task<IActionResult> RegisterFCMToken([FromBody] RegisterFCMTokenRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+            return Unauthorized(new { message = "Invalid token" });
+
+        try
+        {
+            // Delete old tokens for this user
+            var oldTokens = await _context.FCMTokens
+                .Where(t => t.OrganizationId == userGuid)
+                .ToListAsync();
+            _context.FCMTokens.RemoveRange(oldTokens);
+
+            // Save new token
+            var fcmToken = new FCMToken
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = userGuid,
+                Token = request.FcmToken,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.FCMTokens.Add(fcmToken);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "FCM token registered successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to register FCM token", error = ex.Message });
+        }
     }
 }

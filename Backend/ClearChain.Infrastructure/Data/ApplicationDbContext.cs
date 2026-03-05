@@ -17,9 +17,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<Inventory> Inventories { get; set; } = null!;
-    
-    // NEW: ListingGroup DbSet
     public DbSet<ListingGroup> ListingGroups { get; set; } = null!;
+    public DbSet<FCMToken> FCMTokens { get; set; } = null!;  // ✅ ADD
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,16 +31,26 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<RefreshToken>().ToTable("refreshtokens");
         modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
         modelBuilder.Entity<Inventory>().ToTable("inventory");
-        
-        // NEW: ListingGroup table
         modelBuilder.Entity<ListingGroup>().ToTable("listinggroups");
+        modelBuilder.Entity<FCMToken>().ToTable("fcmtokens");  // ✅ ADD
         
-        // NEW: Configure ListingGroup - ClearanceListing relationship
+        // Configure ListingGroup - ClearanceListing relationship
         modelBuilder.Entity<ListingGroup>()
             .HasMany(lg => lg.ChildListings)
             .WithOne(cl => cl.Group)
             .HasForeignKey(cl => cl.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        // ✅ ADD: Configure FCMToken - Organization relationship
+        modelBuilder.Entity<FCMToken>()
+            .HasOne(f => f.Organization)
+            .WithMany()
+            .HasForeignKey(f => f.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        // ✅ ADD: Index on OrganizationId for faster lookups
+        modelBuilder.Entity<FCMToken>()
+            .HasIndex(f => f.OrganizationId);
         
         // Configure PickupRequest - Listing many-to-many
         modelBuilder.Entity<PickupRequest>()
