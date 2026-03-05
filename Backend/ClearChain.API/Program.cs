@@ -9,8 +9,7 @@ using ClearChain.Infrastructure.Data;
 using ClearChain.API.Services;
 using ClearChain.API.Middleware;
 using ClearChain.API.Hubs;
-using Microsoft.AspNetCore.SignalR;  // ✅ ADD this line at top
-
+using Microsoft.AspNetCore.SignalR;
 
 Env.Load();
 
@@ -28,13 +27,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
 builder.Services.AddScoped<IPickupNotificationService, PickupNotificationService>();
-builder.Services.AddScoped<IListingNotificationService, ListingNotificationService>();  // ✅ ADD
-
-// ✅ ADD SignalR with custom user ID provider
-builder.Services.AddSignalR();
-builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddScoped<IListingNotificationService, ListingNotificationService>();
 builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();  // ✅ ADD
+
+// Add SignalR with custom user ID provider
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
 // Configure JWT Authentication
 var jwtSecretKey = builder.Configuration["JWT_SECRET_KEY"];
@@ -58,7 +58,7 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey!)),
         ClockSkew = TimeSpan.Zero,
-        RoleClaimType = ClaimTypes.Role  // ✅ ADD THIS
+        RoleClaimType = ClaimTypes.Role
     };
 
     options.Events = new JwtBearerEvents
@@ -168,7 +168,6 @@ app.MapGet("/", () => new
     version = "1.0.0"
 }).WithTags("Health");
 
-// ✅ ADD: SignalR health check endpoint
 app.MapGet("/api/health/signalr", () => new
 {
     status = "configured",

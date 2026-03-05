@@ -87,6 +87,20 @@ data class MessageResponse(
     val message: String
 )
 
+// ✅ ADD FCM Token DTO
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class RegisterFCMTokenRequest(
+    val fcmToken: String
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ApiResponse<T>(
+    val message: String? = null,
+    val data: T? = null
+)
+
 // ─── Extension functions ───────────────────────────────────────────────────────
 
 fun OrganizationDto.toDomain(): Organization {

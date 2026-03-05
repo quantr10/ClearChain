@@ -33,6 +33,9 @@ interface AuthApi {
         @Body request: ChangePasswordRequest
     ): MessageResponse
 
+    @POST("auth/fcm-token")
+    suspend fun registerFCMToken(@Body request: RegisterFCMTokenRequest): ApiResponse<Unit>
+
     companion object {
         const val BASE_URL = "http://10.0.2.2:5000/api/"
     }

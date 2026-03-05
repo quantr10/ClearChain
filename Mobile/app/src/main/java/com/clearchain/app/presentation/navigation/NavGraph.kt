@@ -37,6 +37,8 @@ fun NavGraph(
     startDestination: String = Screen.Splash.route,
     onShowBottomBar: (Boolean, OrganizationType?) -> Unit = { _, _ -> }
 ) {
+    // ✅ REMOVED: Deep link check (now handled in SplashScreen)
+    
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -164,7 +166,6 @@ fun NavGraph(
         // ═══════════════════════════════════════════════════════════════════════════
         
         composable(route = Screen.Profile.route) {
-            // Get user type from viewModel
             val getCurrentUserUseCase: GetCurrentUserUseCase = hiltViewModel<com.clearchain.app.presentation.profile.ProfileViewModel>().getCurrentUserUseCase
             LaunchedEffect(Unit) {
                 val user = getCurrentUserUseCase().first()

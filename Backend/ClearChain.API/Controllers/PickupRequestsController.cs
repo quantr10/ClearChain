@@ -21,6 +21,7 @@ public class PickupRequestsController : ControllerBase
     private readonly IPickupNotificationService _notificationService;
     private readonly IInventoryNotificationService _inventoryNotificationService;
     private readonly IAdminNotificationService _adminNotificationService;  // ✅ ADD
+    private readonly IPushNotificationService _pushNotificationService;
 
     public PickupRequestsController(
         ApplicationDbContext context,
@@ -28,7 +29,8 @@ public class PickupRequestsController : ControllerBase
         IStorageService storageService,
         IPickupNotificationService notificationService,
         IInventoryNotificationService inventoryNotificationService,
-        IAdminNotificationService adminNotificationService)  // ✅ ADD
+        IAdminNotificationService adminNotificationService,
+        IPushNotificationService pushNotificationService)  // ✅ ADD
     {
         _context = context;
         _logger = logger;
@@ -36,6 +38,7 @@ public class PickupRequestsController : ControllerBase
         _notificationService = notificationService;
         _inventoryNotificationService = inventoryNotificationService;
         _adminNotificationService = adminNotificationService;  // ✅ ADD
+        _pushNotificationService = pushNotificationService;  // ✅ ADD
     }
 
     // HELPER METHODS FOR SPLIT/MERGE LOGIC
@@ -341,8 +344,9 @@ public class PickupRequestsController : ControllerBase
 
             if (pr.Status != "pending")
             {
-                return BadRequest(new { 
-                    message = $"Cannot cancel request with status: {pr.Status}. Only PENDING requests can be cancelled." 
+                return BadRequest(new
+                {
+                    message = $"Cannot cancel request with status: {pr.Status}. Only PENDING requests can be cancelled."
                 });
             }
 
@@ -405,80 +409,82 @@ public class PickupRequestsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
 
     [HttpPut("{id}/reject")]
-    public async Task<ActionResult<PickupRequestResponse>> RejectPickupRequest(Guid id)
+public async Task<ActionResult<PickupRequestResponse>> RejectPickupRequest(Guid id)
+{
+    try
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
+            return Unauthorized(new { message = "User not authenticated" });
+        }
 
-            var pr = await _context.PickupRequests
-                .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
+        var pr = await _context.PickupRequests
+            .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
 
-            if (pr == null)
-            {
-                return NotFound(new { message = "Pickup request not found" });
-            }
+        if (pr == null)
+        {
+            return NotFound(new { message = "Pickup request not found" });
+        }
 
-            if (pr.Status != "pending")
-            {
-                return BadRequest(new { message = $"Cannot reject request with status: {pr.Status}" });
-            }
+        if (pr.Status != "pending")
+        {
+            return BadRequest(new { message = $"Cannot reject request with status: {pr.Status}" });
+        }
 
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
+        var ngo = await _context.Organizations.FindAsync(pr.NgoId);
+        var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
 
-            var listing = pr.ListingId.HasValue
-                ? await _context.ClearanceListings
-                    .Include(l => l.Group)
-                    .FirstOrDefaultAsync(l => l.Id == pr.ListingId.Value)
-                : null;
+        var listing = pr.ListingId.HasValue
+            ? await _context.ClearanceListings
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == pr.ListingId.Value)
+            : null;
 
-            var responseData = new PickupRequestData
-            {
-                Id = pr.Id.ToString(),
-                ListingId = pr.ListingId?.ToString() ?? "",
-                NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
-                GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
-                Status = "rejected",
-                RequestedQuantity = pr.RequestedQuantity ?? 0,
-                PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-                PickupTime = pr.PickupTime ?? "09:00",
-                Notes = pr.Notes ?? "",
-                ListingTitle = listing?.ProductName ?? "",
-                ListingCategory = listing?.Category ?? "",
-                CreatedAt = pr.RequestedAt.ToString("o"),
-                ProofPhotoUrl = pr.ProofPhotoUrl
-            };
+        var responseData = new PickupRequestData
+        {
+            Id = pr.Id.ToString(),
+            ListingId = pr.ListingId?.ToString() ?? "",
+            NgoId = pr.NgoId.ToString(),
+            NgoName = ngo?.Name ?? "",
+            GroceryId = pr.GroceryId.ToString(),
+            GroceryName = grocery?.Name ?? "",
+            Status = "rejected",
+            RequestedQuantity = pr.RequestedQuantity ?? 0,
+            PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
+            PickupTime = pr.PickupTime ?? "09:00",
+            Notes = pr.Notes ?? "",
+            ListingTitle = listing?.ProductName ?? "",
+            ListingCategory = listing?.Category ?? "",
+            CreatedAt = pr.RequestedAt.ToString("o"),
+            ProofPhotoUrl = pr.ProofPhotoUrl
+        };
 
-            _context.PickupRequests.Remove(pr);
+        _context.PickupRequests.Remove(pr);
+        await _context.SaveChangesAsync();
+
+        if (listing != null && listing.Group != null)
+        {
+            await SmartMergeOnCancel(listing, listing.Group);
             await _context.SaveChangesAsync();
-
-            if (listing != null && listing.Group != null)
-            {
-                await SmartMergeOnCancel(listing, listing.Group);
-                await _context.SaveChangesAsync();
-            }
-
-            await _notificationService.NotifyPickupRequestStatusChanged(responseData, "pending");
-
-            return Ok(new PickupRequestResponse
-            {
-                Message = "Pickup request rejected successfully",
-                Data = responseData
-            });
         }
-        catch (Exception ex)
+
+        await _notificationService.NotifyPickupRequestStatusChanged(responseData, "pending");
+
+        await _pushNotificationService.SendPickupRejectedNotification(pr.NgoId, responseData);
+
+        return Ok(new PickupRequestResponse
         {
-            _logger.LogError(ex, "Error rejecting pickup request");
-            return StatusCode(500, new { message = ex.Message });
-        }
+            Message = "Pickup request rejected successfully",
+            Data = responseData
+        });
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error rejecting pickup request");
+        return StatusCode(500, new { message = ex.Message });
+    }
+}
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PUT: api/pickuprequests/{id}/picked-up
@@ -677,6 +683,14 @@ public class PickupRequestsController : ControllerBase
                 // Don't fail the transaction if admin notification fails
                 _logger.LogError(ex, "Failed to send admin transaction notification");
             }
+
+            await _pushNotificationService.SendPickupCompletedNotification(pickupRequest.GroceryId, responseData);
+            await _pushNotificationService.SendInventoryAddedNotification(
+                pickupRequest.NgoId,
+                listing?.ProductName ?? "",
+                pickupRequest.RequestedQuantity ?? 0,
+                listing?.Unit ?? ""
+            );
 
             return Ok(new PickupRequestResponse
             {
@@ -909,6 +923,8 @@ public class PickupRequestsController : ControllerBase
 
             await _notificationService.NotifyPickupRequestStatusChanged(responseData, "pending");
 
+            await _pushNotificationService.SendPickupApprovedNotification(pr.NgoId, responseData);
+
             return Ok(new PickupRequestResponse
             {
                 Message = "Pickup request approved successfully",
@@ -976,6 +992,8 @@ public class PickupRequestsController : ControllerBase
             };
 
             await _notificationService.NotifyPickupRequestStatusChanged(responseData, "approved");
+
+            await _pushNotificationService.SendPickupReadyNotification(pr.NgoId, responseData);
 
             return Ok(new PickupRequestResponse
             {
