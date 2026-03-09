@@ -32,124 +32,142 @@ public class AuthService : IAuthService
     }
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> RegisterAsync(RegisterRequest request)
+{
+    // Check if email already exists
+    if (await _context.Organizations.AnyAsync(o => o.Email.ToLower() == request.Email.ToLower()))
     {
-        // Check if email already exists
-        if (await _context.Organizations.AnyAsync(o => o.Email.ToLower() == request.Email.ToLower()))
+        return (false, "Email already registered", null);
+    }
+
+    // Hash password
+    var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+    // Create organization
+    var organization = new Organization
+    {
+        Id = Guid.NewGuid(),
+        Name = request.Name,
+        Type = request.Type.ToLower(),
+        Email = request.Email.ToLower(),
+        PasswordHash = passwordHash,
+        Phone = request.Phone,
+        Address = request.Address,
+        Location = request.Location,
+        Hours = request.Hours,
+        Verified = true,  // ✅ CHANGED: Auto-verify
+        VerificationStatus = "approved",  // ✅ CHANGED: Auto-approve
+        AuthProvider = "local",
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
+
+    _context.Organizations.Add(organization);
+    await _context.SaveChangesAsync();
+
+    // Save FCM token if provided
+    if (!string.IsNullOrEmpty(request.FcmToken))
+    {
+        var existingTokens = await _context.FCMTokens
+            .Where(t => t.Token == request.FcmToken)
+            .ToListAsync();
+        
+        if (existingTokens.Any())
         {
-            return (false, "Email already registered", null);
+            _context.FCMTokens.RemoveRange(existingTokens);
+            await _context.SaveChangesAsync();
         }
 
-        // Hash password
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-        // Create organization
-        var organization = new Organization
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
-            Type = request.Type.ToLower(),
-            Email = request.Email.ToLower(),
-            PasswordHash = passwordHash,
-            Phone = request.Phone,
-            Address = request.Address,
-            Location = request.Location,
-            Hours = request.Hours,
-            Verified = false,
-            VerificationStatus = "pending",
-            AuthProvider = "local",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Organizations.Add(organization);
-        await _context.SaveChangesAsync();
-
-        // Generate tokens
-        var accessToken = _jwtService.GenerateAccessToken(organization);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-
-        // Save refresh token
-        var refreshTokenEntity = new RefreshToken
+        var fcmToken = new FCMToken
         {
             Id = Guid.NewGuid(),
             OrganizationId = organization.Id,
-            Token = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(
-                int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")
-            ),
+            Token = request.FcmToken,
             CreatedAt = DateTime.UtcNow,
-            IsRevoked = false
+            UpdatedAt = DateTime.UtcNow
         };
-
-        _context.RefreshTokens.Add(refreshTokenEntity);
+        _context.FCMTokens.Add(fcmToken);
         await _context.SaveChangesAsync();
-
-        var response = new AuthResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            TokenType = "Bearer",
-            ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
-            User = MapToDto(organization)
-        };
-
-        return (true, "Registration successful. Awaiting admin verification.", response);
     }
 
-    public async Task<(bool Success, string Message, AuthResponse? Response)> LoginAsync(LoginRequest request)
+    // Generate tokens
+    var accessToken = _jwtService.GenerateAccessToken(organization);
+    var refreshToken = _jwtService.GenerateRefreshToken();
+
+    // Save refresh token
+    var refreshTokenEntity = new RefreshToken
     {
-        // Find user by email
-        var user = await _context.Organizations
-            .FirstOrDefaultAsync(o => o.Email.ToLower() == request.Email.ToLower());
+        Id = Guid.NewGuid(),
+        OrganizationId = organization.Id,
+        Token = refreshToken,
+        ExpiresAt = DateTime.UtcNow.AddDays(
+            int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")
+        ),
+        CreatedAt = DateTime.UtcNow,
+        IsRevoked = false
+    };
 
-        if (user == null || user.PasswordHash == null)
-        {
-            return (false, "Invalid email or password", null);
-        }
+    _context.RefreshTokens.Add(refreshTokenEntity);
+    await _context.SaveChangesAsync();
 
-        // Verify password
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-        {
-            return (false, "Invalid email or password", null);
-        }
+    var response = new AuthResponse
+    {
+        AccessToken = accessToken,
+        RefreshToken = refreshToken,
+        TokenType = "Bearer",
+        ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
+        User = MapToDto(organization)
+    };
 
-        // Check if verified (optional - can allow login even if not verified)
-        // if (!user.Verified)
-        // {
-        //     return (false, "Account pending verification", null);
-        // }
+    return (true, "Registration successful. Your account is now active!", response);  // ✅ CHANGED message
+}
+    public async Task<(bool Success, string Message, AuthResponse? Response)> LoginAsync(LoginRequest request)
+{
+    // Find user by email
+    var user = await _context.Organizations
+        .FirstOrDefaultAsync(o => o.Email.ToLower() == request.Email.ToLower());
 
-        // Generate tokens
-        var accessToken = _jwtService.GenerateAccessToken(user);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-
-        // Save refresh token
-        var refreshTokenEntity = new RefreshToken
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = user.Id,
-            Token = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(
-                int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")
-            ),
-            CreatedAt = DateTime.UtcNow,
-            IsRevoked = false
-        };
-
-        _context.RefreshTokens.Add(refreshTokenEntity);
-        await _context.SaveChangesAsync();
-
-        var response = new AuthResponse
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            TokenType = "Bearer",
-            ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
-            User = MapToDto(user)
-        };
-
-        return (true, "Login successful", response);
+    if (user == null || user.PasswordHash == null)
+    {
+        return (false, "Invalid email or password", null);
     }
+
+    // Verify password
+    if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+    {
+        return (false, "Invalid email or password", null);
+    }
+
+    // Generate tokens
+    var accessToken = _jwtService.GenerateAccessToken(user);
+    var refreshToken = _jwtService.GenerateRefreshToken();
+
+    // Save refresh token
+    var refreshTokenEntity = new RefreshToken
+    {
+        Id = Guid.NewGuid(),
+        OrganizationId = user.Id,
+        Token = refreshToken,
+        ExpiresAt = DateTime.UtcNow.AddDays(
+            int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")
+        ),
+        CreatedAt = DateTime.UtcNow,
+        IsRevoked = false
+    };
+
+    _context.RefreshTokens.Add(refreshTokenEntity);
+    await _context.SaveChangesAsync();
+
+    var response = new AuthResponse
+    {
+        AccessToken = accessToken,
+        RefreshToken = refreshToken,
+        TokenType = "Bearer",
+        ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
+        User = MapToDto(user)
+    };
+
+    return (true, "Login successful", response);
+}
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> RefreshTokenAsync(string refreshToken)
     {

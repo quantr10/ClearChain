@@ -41,7 +41,7 @@ fun VerificationQueueScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Verification Queue") },
+                title = { Text("Organizations") },  // ✅ CHANGED: No longer "Verification Queue"
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -71,13 +71,13 @@ fun VerificationQueueScreen(
                 .padding(padding)
         ) {
             when {
-                state.isLoading && state.unverifiedOrganizations.isEmpty() -> {
+                state.isLoading && state.organizations.isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                state.unverifiedOrganizations.isEmpty() && !state.isLoading -> {
+                state.organizations.isEmpty() && !state.isLoading -> {
                     EmptyState()
                 }
 
@@ -89,19 +89,14 @@ fun VerificationQueueScreen(
                     ) {
                         item {
                             Text(
-                                text = "${state.unverifiedOrganizations.size} organization${if (state.unverifiedOrganizations.size != 1) "s" else ""} pending verification",
+                                text = "${state.organizations.size} organization${if (state.organizations.size != 1) "s" else ""} registered",  // ✅ CHANGED
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
-                        items(state.unverifiedOrganizations) { organization ->
-                            OrganizationVerificationCard(
-                                organization = organization,
-                                onVerify = { id ->
-                                    viewModel.onEvent(VerificationQueueEvent.VerifyOrganization(id))
-                                }
-                            )
+                        items(state.organizations) { organization ->
+                            OrganizationInfoCard(organization = organization)  // ✅ CHANGED: Read-only card
                         }
                     }
                 }
@@ -110,13 +105,11 @@ fun VerificationQueueScreen(
     }
 }
 
+// ✅ NEW: Read-only organization card (no verify button)
 @Composable
-private fun OrganizationVerificationCard(
-    organization: Organization,
-    onVerify: (String) -> Unit
+private fun OrganizationInfoCard(
+    organization: Organization
 ) {
-    var showDialog by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -143,16 +136,28 @@ private fun OrganizationVerificationCard(
                     )
                 }
 
+                // ✅ CHANGED: Always show as verified
                 Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     shape = MaterialTheme.shapes.small
                 ) {
-                    Text(
-                        text = "Unverified",
+                    Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Verified",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
@@ -165,48 +170,7 @@ private fun OrganizationVerificationCard(
             if (organization.address.isNotBlank()) {
                 DetailRow(Icons.Default.Home, organization.address)
             }
-
-            HorizontalDivider()
-
-            // Action
-            Button(
-                onClick = { showDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Verify Organization")
-            }
         }
-    }
-
-    // Confirmation Dialog
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Verify Organization?") },
-            text = {
-                Text("Verify ${organization.name}? This will mark them as a trusted ${organization.type.name.lowercase()} organization.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onVerify(organization.id)
-                        showDialog = false
-                    }
-                ) {
-                    Text("Verify")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 
@@ -244,16 +208,16 @@ private fun EmptyState() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "✅",
+                text = "📋",
                 style = MaterialTheme.typography.displayLarge
             )
             Text(
-                text = "All organizations verified!",
+                text = "No organizations yet",  // ✅ CHANGED
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "No pending verifications",
+                text = "Organizations will appear here when they register",  // ✅ CHANGED
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

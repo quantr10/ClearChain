@@ -1,20 +1,19 @@
 package com.clearchain.app.presentation.auth.register
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,8 +24,11 @@ import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun RegisterScreen(
     navController: NavController,
@@ -34,6 +36,23 @@ fun RegisterScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    // ✅ NEW: Request notification permission (Android 13+)
+    val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        null
+    }
+
+    // ✅ NEW: Request permission on first composition
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (notificationPermissionState?.status?.isGranted == false) {
+                notificationPermissionState.launchPermissionRequest()
+            }
+        }
+    }
 
     LaunchedEffect(key1 = true) {
         viewModel.uiEvent.collect { event ->
@@ -259,7 +278,7 @@ fun RegisterScreen(
                     onValueChange = { viewModel.onEvent(RegisterEvent.HoursChanged(it)) },
                     label = "Operating Hours (Optional)",
                     placeholder = "9AM - 9PM",
-                    leadingIcon = null, // No icon for simplicity
+                    leadingIcon = null,
                     imeAction = ImeAction.Done,
                     onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
                     enabled = !state.isLoading

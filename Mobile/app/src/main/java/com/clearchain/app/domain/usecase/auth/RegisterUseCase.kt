@@ -1,18 +1,13 @@
 package com.clearchain.app.domain.usecase.auth
 
-import android.util.Log
-import com.clearchain.app.data.local.database.ClearChainDatabase
-import com.clearchain.app.data.remote.api.AuthApi
-import com.clearchain.app.data.remote.dto.RegisterFCMTokenRequest
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
 import javax.inject.Inject
 
 class RegisterUseCase @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val database: ClearChainDatabase,  // ✅ ADD
-    private val authApi: AuthApi  // ✅ ADD
+    private val authRepository: AuthRepository
+    // ❌ REMOVE: database, authApi - không cần thiết
 ) {
     suspend operator fun invoke(
         name: String,
@@ -22,7 +17,8 @@ class RegisterUseCase @Inject constructor(
         phone: String,
         address: String,
         location: String,
-        hours: String? = null
+        hours: String? = null,
+        fcmToken: String? = null  // ✅ NEW
     ): Result<Pair<Organization, AuthTokens>> {
 
         // Validate inputs
@@ -70,8 +66,8 @@ class RegisterUseCase @Inject constructor(
             return Result.failure(Exception("Type must be 'grocery' or 'ngo'"))
         }
 
-        // Register
-        val result = authRepository.register(
+        // ✅ Register với FCM token - Backend sẽ save token tự động
+        return authRepository.register(
             name = name.trim(),
             type = type.lowercase(),
             email = email.trim(),
@@ -79,26 +75,12 @@ class RegisterUseCase @Inject constructor(
             phone = phone.trim(),
             address = address.trim(),
             location = location.trim(),
-            hours = hours?.trim()
+            hours = hours?.trim(),
+            fcmToken = fcmToken  // ✅ Pass FCM token - đã đủ!
         )
-
-        // ✅ ADD: Register FCM token after successful registration
-        if (result.isSuccess) {
-            try {
-                val fcmToken = database.fcmTokenDao().getToken()
-                if (fcmToken != null) {
-                    authApi.registerFCMToken(RegisterFCMTokenRequest(fcmToken))
-                    Log.d("RegisterUseCase", "🔔 FCM token registered with backend")
-                } else {
-                    Log.d("RegisterUseCase", "⚠️ No FCM token found in database")
-                }
-            } catch (e: Exception) {
-                Log.e("RegisterUseCase", "Failed to register FCM token: ${e.message}")
-                // Don't fail registration if FCM registration fails
-            }
-        }
-
-        return result
+        
+        // ❌ REMOVE: Không cần gọi registerFCMToken API sau khi register
+        // Backend đã save token trong RegisterAsync() rồi!
     }
 
     private fun isValidEmail(email: String): Boolean {

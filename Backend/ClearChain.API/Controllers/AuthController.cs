@@ -16,15 +16,18 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly ApplicationDbContext _context;
     private readonly IAdminNotificationService _adminNotificationService;
+    private readonly IPushNotificationService _pushNotificationService;
 
     public AuthController(
-        IAuthService authService, 
+        IAuthService authService,
         ApplicationDbContext context,
-        IAdminNotificationService adminNotificationService)
+        IAdminNotificationService adminNotificationService,
+        IPushNotificationService pushNotificationService)
     {
         _authService = authService;
         _context = context;
         _adminNotificationService = adminNotificationService;
+        _pushNotificationService = pushNotificationService;
     }
 
     [HttpPost("register")]
@@ -38,25 +41,32 @@ public class AuthController : ControllerBase
         if (!success)
             return BadRequest(new { message });
 
-        // Notify admins of new organization
+        // ✅ Send admin alert when new user registers
         if (response?.User != null)
         {
             try
             {
-                var orgNotification = new OrganizationRegisteredNotification
+                var orgData = new ClearChain.API.DTOs.Admin.OrganizationData
                 {
-                    OrganizationId = response.User.Id.ToString(),
+                    Id = response.User.Id.ToString(),
                     Name = response.User.Name,
-                    Type = response.User.Type,
                     Email = response.User.Email,
+                    Type = response.User.Type,
+                    Phone = response.User.Phone,
+                    Address = response.User.Address,
                     Location = response.User.Location ?? "",
-                    RegisteredAt = DateTime.Parse(response.User.CreatedAt)
+                    Verified = response.User.Verified,
+                    VerificationStatus = response.User.VerificationStatus,
+                    CreatedAt = response.User.CreatedAt
                 };
-                await _adminNotificationService.NotifyNewOrganizationRegistered(orgNotification);
+
+                await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
+
+                await _pushNotificationService.SendWelcomeNotification(orgData);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to send admin notification: {ex.Message}");
+                Console.WriteLine($"Failed to send admin alert: {ex.Message}");
             }
         }
 
@@ -125,18 +135,18 @@ public class AuthController : ControllerBase
             expiresIn = 0,
             user = new OrganizationDto
             {
-                Id                 = user.Id,
-                Name               = user.Name,
-                Type               = user.Type,
-                Email              = user.Email,
-                Phone              = user.Phone ?? "",
-                Address            = user.Address ?? "",
-                Location           = user.Location ?? "",
-                Verified           = user.Verified,
+                Id = user.Id,
+                Name = user.Name,
+                Type = user.Type,
+                Email = user.Email,
+                Phone = user.Phone ?? "",
+                Address = user.Address ?? "",
+                Location = user.Location ?? "",
+                Verified = user.Verified,
                 VerificationStatus = user.VerificationStatus ?? "pending",
-                Hours              = user.Hours,
-                ProfilePictureUrl  = user.ProfilePictureUrl,
-                CreatedAt          = user.CreatedAt.ToString("o")
+                Hours = user.Hours,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                CreatedAt = user.CreatedAt.ToString("o")
             }
         };
 
@@ -177,11 +187,25 @@ public class AuthController : ControllerBase
 
         try
         {
-            // Delete old tokens for this user
-            var oldTokens = await _context.FCMTokens
-                .Where(t => t.OrganizationId == userGuid)
+            // ✅ FIXED: Delete ALL tokens with this FCM token (any organization)
+            var existingTokensWithSameToken = await _context.FCMTokens
+                .Where(t => t.Token == request.FcmToken)
                 .ToListAsync();
-            _context.FCMTokens.RemoveRange(oldTokens);
+
+            if (existingTokensWithSameToken.Any())
+            {
+                _context.FCMTokens.RemoveRange(existingTokensWithSameToken);
+            }
+
+            // ✅ ALSO delete old tokens for this user (different tokens)
+            var oldTokensForThisUser = await _context.FCMTokens
+                .Where(t => t.OrganizationId == userGuid && t.Token != request.FcmToken)
+                .ToListAsync();
+
+            if (oldTokensForThisUser.Any())
+            {
+                _context.FCMTokens.RemoveRange(oldTokensForThisUser);
+            }
 
             // Save new token
             var fcmToken = new FCMToken

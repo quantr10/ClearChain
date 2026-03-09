@@ -1,7 +1,7 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Listings;
-using ClearChain.API.Services;  // ✅ ADD
+using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,20 +16,20 @@ public class ListingsController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ILogger<ListingsController> _logger;
     private readonly IListingNotificationService _listingNotificationService;
+    private readonly IPushNotificationService _pushNotificationService;
 
     public ListingsController(
         ApplicationDbContext context,
         ILogger<ListingsController> logger,
-        IListingNotificationService listingNotificationService)
+        IListingNotificationService listingNotificationService,
+        IPushNotificationService pushNotificationService)
     {
         _context = context;
         _logger = logger;
         _listingNotificationService = listingNotificationService;
+        _pushNotificationService = pushNotificationService;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // HELPER: Convert Listing Entity to DTO
-    // ═══════════════════════════════════════════════════════════════════════════
     private ListingData MapListingToDto(ClearanceListing listing, ListingGroup? group = null)
     {
         var dto = new ListingData
@@ -49,14 +49,12 @@ public class ListingsController : ControllerBase
             ImageUrl = listing.PhotoUrl,
             Location = listing.Grocery?.Location ?? "",
             CreatedAt = listing.CreatedAt.ToString("o"),
-            // Group tracking
             GroupId = listing.GroupId?.ToString(),
             SplitReason = listing.SplitReason,
             RelatedRequestId = listing.RelatedRequestId?.ToString(),
             SplitIndex = listing.SplitIndex
         };
 
-        // Include group summary if group is provided
         if (group != null)
         {
             dto.GroupSummary = new ListingGroupSummary
@@ -72,9 +70,6 @@ public class ListingsController : ControllerBase
         return dto;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GET: api/listings
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<ListingsResponse>> GetAllListings(
@@ -117,9 +112,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GET: api/listings/grocery/my
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpGet("grocery/my")]
     [Authorize]
     public async Task<ActionResult<ListingsResponse>> GetMyListings()
@@ -154,9 +146,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // POST: api/listings (UPDATED with SignalR notification)
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> CreateListing(
@@ -197,7 +186,6 @@ public class ListingsController : ControllerBase
                 pickupTimeEnd = endTime;
             }
 
-            // CREATE LISTING GROUP
             var groupId = Guid.NewGuid();
             var listingId = Guid.NewGuid();
 
@@ -224,7 +212,6 @@ public class ListingsController : ControllerBase
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // CREATE INITIAL LISTING
             var listing = new ClearanceListing
             {
                 Id = listingId,
@@ -252,12 +239,14 @@ public class ListingsController : ControllerBase
             
             await _context.SaveChangesAsync();
 
-            // ✅ ADD: Map to DTO for response AND notification
-            listing.Grocery = grocery; // Ensure grocery is populated
+            listing.Grocery = grocery;
             var listingDto = MapListingToDto(listing, listingGroup);
 
-            // ✅ ADD: Send real-time notification
+            // ✅ SignalR notification
             await _listingNotificationService.NotifyListingCreated(listingDto);
+
+            // ✅ Push notifications
+            await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
 
             return CreatedAtAction(
                 nameof(GetListingById),
@@ -275,9 +264,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GET: api/listings/{id}
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpGet("{id}")]
     public async Task<ActionResult<ListingResponse>> GetListingById(Guid id)
     {
@@ -308,9 +294,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // DELETE: api/listings/{id} (UPDATED with SignalR notification)
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> DeleteListing(Guid id)
@@ -344,10 +327,8 @@ public class ListingsController : ControllerBase
                 return BadRequest(new { message = statusMessage });
             }
 
-            // ✅ SAVE listing ID before deletion for notification
             var deletedListingId = listing.Id.ToString();
 
-            // Update group
             if (listing.GroupId.HasValue && listing.Group != null)
             {
                 listing.Group.TotalAvailable -= listing.Quantity;
@@ -366,7 +347,6 @@ public class ListingsController : ControllerBase
             _context.ClearanceListings.Remove(listing);
             await _context.SaveChangesAsync();
 
-            // ✅ ADD: Send real-time notification
             await _listingNotificationService.NotifyListingDeleted(deletedListingId);
 
             var listingData = MapListingToDto(listing, listing.Group);
@@ -384,9 +364,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PUT: api/listings/{id}/quantity (UPDATED with SignalR notification)
-    // ═══════════════════════════════════════════════════════════════════════════
     [HttpPut("{id}/quantity")]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> UpdateListingQuantity(
@@ -427,14 +404,12 @@ public class ListingsController : ControllerBase
                 });
             }
 
-            // ✅ SAVE old quantity for notification
             var oldQuantity = (int)listing.Quantity;
             var difference = request.NewQuantity - oldQuantity;
 
             listing.Quantity = request.NewQuantity;
             listing.UpdatedAt = DateTime.UtcNow;
 
-            // Update group totals
             if (listing.GroupId.HasValue && listing.Group != null)
             {
                 listing.Group.TotalAvailable += difference;
@@ -445,7 +420,6 @@ public class ListingsController : ControllerBase
 
             var listingDto = MapListingToDto(listing, listing.Group);
 
-            // ✅ ADD: Send real-time notification
             await _listingNotificationService.NotifyListingQuantityChanged(
                 listingDto,
                 oldQuantity,

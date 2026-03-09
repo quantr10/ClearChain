@@ -32,7 +32,8 @@ class AuthRepositoryImpl @Inject constructor(
         phone: String,
         address: String,
         location: String,
-        hours: String?
+        hours: String?,
+        fcmToken: String? 
     ): Result<Pair<Organization, AuthTokens>> {
         return try {
             val response = authApi.register(
@@ -44,7 +45,8 @@ class AuthRepositoryImpl @Inject constructor(
                     phone = phone,
                     address = address,
                     location = location,
-                    hours = hours
+                    hours = hours,
+                    fcmToken = fcmToken
                 )
             )
 

@@ -8,7 +8,6 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
-import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -19,8 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class VerificationQueueViewModel @Inject constructor(
     private val adminApi: AdminApi,
-    private val signalRService: SignalRService,  // ✅ ADD
-    private val getCurrentUserUseCase: GetCurrentUserUseCase  // ✅ ADD
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerificationQueueState())
@@ -31,42 +29,38 @@ class VerificationQueueViewModel @Inject constructor(
 
     init {
         loadOrganizations()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-    viewModelScope.launch {
-        // Simple - just connect (admin hub will auto-connect if user is admin)
-        try {
-            signalRService.connect()  // ✅ Use regular connect()
-        } catch (e: Exception) {
-            return@launch
-        }
+        viewModelScope.launch {
+            try {
+                signalRService.connect()
+            } catch (e: Exception) {
+                return@launch
+            }
 
-        // Listen for connection state
-        launch {
-            signalRService.connectionState.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> {
-                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time monitoring enabled"))
+            launch {
+                signalRService.connectionState.collect { state ->
+                    when (state) {
+                        is ConnectionState.Connected -> {
+                            _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time monitoring enabled"))
+                        }
+                        else -> {}
                     }
-                    else -> {}
+                }
+            }
+
+            launch {
+                signalRService.newOrganizationRegistered.collect { notification ->
+                    loadOrganizations()
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar("📢 New ${notification.type} registered: ${notification.name}")
+                    )
                 }
             }
         }
-
-        // ✅ Listen for new organization registrations
-        launch {
-            signalRService.newOrganizationRegistered.collect { notification ->
-                loadOrganizations() // Auto-refresh queue
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("📢 New ${notification.type} pending verification: ${notification.name}")
-                )
-            }
-        }
     }
-}
 
     override fun onCleared() {
         super.onCleared()
@@ -79,7 +73,6 @@ class VerificationQueueViewModel @Inject constructor(
         when (event) {
             VerificationQueueEvent.LoadOrganizations -> loadOrganizations()
             VerificationQueueEvent.RefreshOrganizations -> refreshOrganizations()
-            is VerificationQueueEvent.VerifyOrganization -> verifyOrganization(event.organizationId)
             VerificationQueueEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
             }
@@ -91,7 +84,7 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val orgsResponse = adminApi.getAllOrganizations(verified = false)
+                val orgsResponse = adminApi.getAllOrganizations()
                 val organizations = orgsResponse.data.map { dto ->
                     Organization(
                         id = dto.id,
@@ -121,7 +114,7 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         organizations = organizations,
-                        unverifiedOrganizations = organizations.filter { org -> !org.verified },
+                        // ✅ REMOVED: unverifiedOrganizations field
                         isLoading = false
                     )
                 }
@@ -141,7 +134,7 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isRefreshing = true, error = null) }
 
             try {
-                val orgsResponse = adminApi.getAllOrganizations(verified = false)
+                val orgsResponse = adminApi.getAllOrganizations()
                 val organizations = orgsResponse.data.map { dto ->
                     Organization(
                         id = dto.id,
@@ -171,7 +164,7 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         organizations = organizations,
-                        unverifiedOrganizations = organizations.filter { org -> !org.verified },
+                        // ✅ REMOVED: unverifiedOrganizations field
                         isRefreshing = false
                     )
                 }
@@ -181,25 +174,6 @@ class VerificationQueueViewModel @Inject constructor(
                     it.copy(
                         error = e.message ?: "Failed to refresh organizations",
                         isRefreshing = false
-                    )
-                }
-            }
-        }
-    }
-
-    private fun verifyOrganization(organizationId: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                adminApi.verifyOrganization(organizationId)
-                _uiEvent.send(UiEvent.ShowSnackbar("Organization verified successfully"))
-                loadOrganizations() // Reload list
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = e.message ?: "Failed to verify organization",
-                        isLoading = false
                     )
                 }
             }
