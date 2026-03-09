@@ -57,40 +57,7 @@ public class OrganizationsController : ControllerBase
             $"Retrieved {organizations.Count} verified organizations"
         ));
     }
-
-    /// <summary>
-    /// Verify or reject an organization (Admin only)
-    /// </summary>
-    [HttpPut("{id}/verify")]
-    public async Task<IActionResult> VerifyOrganization(
-        Guid id,
-        [FromBody] VerifyOrganizationRequest request)
-    {
-        var userType = User.FindFirst("type")?.Value;
-        if (userType != "admin")
-        {
-            return Forbid();
-        }
-
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        var (success, message) = await _organizationService.VerifyOrganizationAsync(
-            id,
-            request.Action,
-            request.Notes
-        );
-
-        if (!success)
-        {
-            return BadRequest(ApiResponse<object>.ErrorResponse(message));
-        }
-
-        return Ok(ApiResponse<object>.SuccessResponse(null!, message));
-    }
-
+    
     /// <summary>
     /// Get organization by ID
     /// </summary>

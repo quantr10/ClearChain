@@ -31,6 +31,7 @@ builder.Services.AddScoped<IListingNotificationService, ListingNotificationServi
 builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();  // ✅ ADD
+builder.Services.AddHostedService<NotificationSchedulerService>();
 
 // Add SignalR with custom user ID provider
 builder.Services.AddSignalR();

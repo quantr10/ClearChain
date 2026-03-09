@@ -9,7 +9,6 @@ public class RegisterRequest
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Organization type is required")]
-    // CHANGED: Allow 'admin' type as well
     [RegularExpression("^(grocery|ngo|admin)$", ErrorMessage = "Type must be 'grocery', 'ngo', or 'admin'")]
     public string Type { get; set; } = string.Empty;
 
@@ -33,6 +32,8 @@ public class RegisterRequest
     [Required(ErrorMessage = "Location is required")]
     public string Location { get; set; } = string.Empty;
 
-    // Optional for grocery stores
     public string? Hours { get; set; }
+
+    // ✅ NEW: FCM Token (optional)
+    public string? FcmToken { get; set; }
 }

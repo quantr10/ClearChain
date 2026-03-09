@@ -115,20 +115,49 @@ fun ProfileScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.primary
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = when (state.user!!.type) {
-                                            OrganizationType.GROCERY -> "GROCERY"
-                                            OrganizationType.NGO     -> "NGO"
-                                            OrganizationType.ADMIN   -> "ADMIN"
-                                        },
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
+                                    Surface(
+                                        shape = MaterialTheme.shapes.small,
+                                        color = MaterialTheme.colorScheme.primary
+                                    ) {
+                                        Text(
+                                            text = when (state.user!!.type) {
+                                                OrganizationType.GROCERY -> "GROCERY"
+                                                OrganizationType.NGO     -> "NGO"
+                                                OrganizationType.ADMIN   -> "ADMIN"
+                                            },
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+
+                                    // ✅ NEW: Always show verified badge
+                                    Surface(
+                                        shape = MaterialTheme.shapes.small,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                            Text(
+                                                text = "Verified",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -200,53 +229,8 @@ fun ProfileScreen(
                             )
                         }
 
-                        // ── Verification Status ─────────────────────────────
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (state.user!!.verified)
-                                    MaterialTheme.colorScheme.tertiaryContainer
-                                else
-                                    MaterialTheme.colorScheme.errorContainer
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = if (state.user!!.verified) Icons.Default.CheckCircle
-                                                  else Icons.Default.Warning,
-                                    contentDescription = null,
-                                    tint = if (state.user!!.verified)
-                                        MaterialTheme.colorScheme.onTertiaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Column {
-                                    Text(
-                                        text = "Verification Status",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (state.user!!.verified)
-                                            MaterialTheme.colorScheme.onTertiaryContainer
-                                        else
-                                            MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                    Text(
-                                        text = if (state.user!!.verified) "Verified" else "Pending Verification",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (state.user!!.verified)
-                                            MaterialTheme.colorScheme.onTertiaryContainer
-                                        else
-                                            MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
-                            }
-                        }
+                        // ❌ REMOVED: Verification Status Card
+                        // Users are auto-verified, no need to show status
 
                         HorizontalDivider()
 

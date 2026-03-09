@@ -1,14 +1,17 @@
 package com.clearchain.app.presentation.auth.register
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.auth.RegisterUseCase
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -87,6 +90,16 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
+            // ✅ NEW: Get FCM token first
+            val fcmToken = try {
+                FirebaseMessaging.getInstance().token.await()
+            } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Failed to get FCM token", e)
+                null // Continue without token
+            }
+
+            Log.d("RegisterViewModel", "FCM Token: ${fcmToken ?: "None"}")
+
             val result = registerUseCase(
                 name = currentState.name,
                 type = currentState.type,
@@ -95,7 +108,8 @@ class RegisterViewModel @Inject constructor(
                 phone = currentState.phone,
                 address = currentState.address,
                 location = currentState.location,
-                hours = currentState.hours.ifBlank { null }
+                hours = currentState.hours.ifBlank { null },
+                fcmToken = fcmToken  // ✅ NEW: Pass FCM token
             )
 
             result.fold(

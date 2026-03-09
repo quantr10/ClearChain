@@ -24,7 +24,8 @@ data class RegisterRequest(
     val phone: String,
     val address: String,
     val location: String,
-    val hours: String? = null
+    val hours: String? = null,
+    val fcmToken: String? = null  // ✅ NEW: FCM Token
 )
 
 // Used for login / register / refresh responses

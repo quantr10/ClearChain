@@ -14,7 +14,8 @@ interface AuthRepository {
         phone: String,
         address: String,
         location: String,
-        hours: String? = null
+        hours: String? = null,
+        fcmToken: String? = null 
     ): Result<Pair<Organization, AuthTokens>>
 
     suspend fun login(

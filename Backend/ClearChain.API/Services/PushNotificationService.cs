@@ -4,6 +4,9 @@ using Google.Apis.Auth.OAuth2;
 using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.API.DTOs.PickupRequests;
+using ClearChain.API.DTOs.Listings;
+using ClearChain.API.DTOs.Admin;
+using ClearChain.API.DTOs.Inventory;
 
 namespace ClearChain.API.Services;
 
@@ -29,7 +32,6 @@ public class PushNotificationService : IPushNotificationService
 
         try
         {
-            // Check if firebase-adminsdk.json exists
             var credentialPath = Path.Combine(Directory.GetCurrentDirectory(), "firebase-adminsdk.json");
 
             if (!File.Exists(credentialPath))
@@ -54,6 +56,10 @@ public class PushNotificationService : IPushNotificationService
             _logger.LogError(ex, "❌ Failed to initialize Firebase Admin SDK");
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXISTING: Pickup Request Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
 
     public async Task SendPickupApprovedNotification(Guid userId, PickupRequestData request)
     {
@@ -112,6 +118,25 @@ public class PushNotificationService : IPushNotificationService
         });
     }
 
+    public async Task SendPickupRejectedNotification(Guid userId, PickupRequestData request)
+    {
+        if (!_firebaseInitialized)
+        {
+            _logger.LogWarning("Firebase not initialized, skipping notification");
+            return;
+        }
+
+        var title = "❌ Pickup Request Rejected";
+        var body = $"Your request for {request.ListingTitle} was declined by {request.GroceryName}";
+
+        await SendNotification(userId, title, body, new Dictionary<string, string>
+        {
+            { "type", "pickup_rejected" },
+            { "requestId", request.Id },
+            { "screen", "browse_listings" }
+        });
+    }
+
     public async Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit)
     {
         if (!_firebaseInitialized)
@@ -130,8 +155,283 @@ public class PushNotificationService : IPushNotificationService
         });
     }
 
-    // ✅ Helper method for quick notifications (already exists but adding for clarity)
-    private async Task SendNotification(
+    public async Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request)
+    {
+        await SendNotification(
+            groceryId,
+            "📝 New Pickup Request",
+            $"{request.NgoName} requested {request.RequestedQuantity} of {request.ListingTitle}",
+            new Dictionary<string, string>
+            {
+                { "type", "pickup_request_created" },
+                { "requestId", request.Id },
+                { "screen", "grocery_requests" }
+            }
+        );
+    }
+
+    public async Task SendPickupConfirmedNotification(Guid groceryId, PickupRequestData request)
+    {
+        await SendNotification(
+            groceryId,
+            "📦 Ready for Pickup Confirmed",
+            $"{request.NgoName} confirmed they will pickup {request.ListingTitle}",
+            new Dictionary<string, string>
+            {
+                { "type", "pickup_confirmed" },
+                { "requestId", request.Id },
+                { "screen", "grocery_requests" }
+            }
+        );
+    }
+
+    public async Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request)
+    {
+        await SendNotification(
+            groceryId,
+            "❌ Pickup Request Cancelled",
+            $"{request.NgoName} cancelled pickup for {request.ListingTitle}",
+            new Dictionary<string, string>
+            {
+                { "type", "pickup_cancelled" },
+                { "requestId", request.Id },
+                { "screen", "grocery_requests" }
+            }
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Listing Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async Task SendNewListingNotificationToAllNGOs(ListingData listing)
+    {
+        if (!_firebaseInitialized)
+        {
+            _logger.LogWarning("Firebase not initialized, skipping notification");
+            return;
+        }
+
+        try
+        {
+            var ngoTokens = await _context.FCMTokens
+                .Include(t => t.Organization)
+                .Where(t => t.Organization != null && t.Organization.Type.ToLower() == "ngo")
+                .Select(t => t.Token)
+                .Distinct()
+                .ToListAsync();
+
+            if (!ngoTokens.Any())
+            {
+                _logger.LogWarning("No NGO FCM tokens found");
+                return;
+            }
+
+            var title = "🆕 New Food Available!";
+            var body = $"{listing.GroceryName} posted {listing.Quantity} {listing.Unit} {listing.Title}";
+
+            var message = new MulticastMessage
+            {
+                Tokens = ngoTokens,
+                Notification = new Notification
+                {
+                    Title = title,
+                    Body = body
+                },
+                Data = new Dictionary<string, string>
+                {
+                    { "type", "new_listing" },
+                    { "listingId", listing.Id },
+                    { "groceryId", listing.GroceryId },
+                    { "screen", "browse_listings" }
+                },
+                Android = new AndroidConfig
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification
+                    {
+                        ChannelId = "clearchain_notifications",
+                        Sound = "default",
+                        Priority = NotificationPriority.MAX
+                    }
+                }
+            };
+
+            var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+            _logger.LogInformation($"✅ Broadcast sent to {response.SuccessCount}/{ngoTokens.Count} NGOs. Failures: {response.FailureCount}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error broadcasting new listing to NGOs");
+        }
+    }
+
+    public async Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing)
+    {
+        var expiryDate = DateTime.Parse(listing.ExpiryDate);
+        var daysUntilExpiry = (expiryDate - DateTime.UtcNow.Date).Days;
+
+        await SendNotification(
+            groceryId,
+            "⚠️ Listing Expiring Soon",
+            $"{listing.Title} expires in {daysUntilExpiry} day(s)! Consider clearance.",
+            new Dictionary<string, string>
+            {
+                { "type", "listing_expiring_soon" },
+                { "listingId", listing.Id },
+                { "screen", "my_listings" }
+            }
+        );
+    }
+    public async Task SendListingExpiredNotification(Guid groceryId, ListingData listing)
+    {
+        await SendNotification(
+            groceryId,
+            "🚨 Listing Expired",
+            $"{listing.Title} has expired. Please update or remove this listing.",
+            new Dictionary<string, string>
+            {
+                { "type", "listing_expired" },
+                { "listingId", listing.Id },
+                { "screen", "my_listings" }
+            }
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: Inventory Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async Task SendInventoryExpiringSoonNotification(Guid ngoId, InventoryItemData item)
+    {
+        var expiryDate = DateTime.Parse(item.ExpiryDate);
+        var daysUntilExpiry = (expiryDate - DateTime.UtcNow.Date).Days;
+
+        await SendNotification(
+            ngoId,
+            "⚠️ Food Expiring Soon",
+            $"{item.ProductName} ({item.Quantity} {item.Unit}) expires in {daysUntilExpiry} day(s)!",
+            new Dictionary<string, string>
+            {
+                { "type", "inventory_expiring_soon" },
+                { "inventoryId", item.Id },
+                { "screen", "inventory" }
+            }
+        );
+    }
+
+    public async Task SendInventoryExpiredNotification(Guid ngoId, InventoryItemData item)
+    {
+        await SendNotification(
+            ngoId,
+            "🚨 Expired Food Alert",
+            $"{item.ProductName} has expired. Please remove from inventory.",
+            new Dictionary<string, string>
+            {
+                { "type", "inventory_expired" },
+                { "inventoryId", item.Id },
+                { "screen", "inventory" }
+            }
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NEW: User Onboarding & Admin Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async Task SendWelcomeNotification(OrganizationData organization)
+    {
+        var dashboard = organization.Type.ToLower() switch
+        {
+            "ngo" => "ngo_dashboard",
+            "grocery" => "grocery_dashboard",
+            _ => "profile"
+        };
+
+        var actionText = organization.Type.ToLower() == "ngo"
+            ? "Start browsing available food items!"
+            : "Start posting surplus food items!";
+
+        await SendNotification(
+            Guid.Parse(organization.Id),
+            "👋 Welcome to ClearChain!",
+            $"Hi {organization.Name}! Thank you for joining ClearChain. {actionText}",
+            new Dictionary<string, string>
+            {
+                { "type", "welcome" },
+                { "organizationType", organization.Type },
+                { "screen", dashboard }
+            }
+        );
+    }
+
+    public async Task SendNewRegistrationAlertToAdmins(OrganizationData organization)
+    {
+        if (!_firebaseInitialized)
+        {
+            _logger.LogWarning("Firebase not initialized, skipping notification");
+            return;
+        }
+
+        try
+        {
+            var adminTokens = await _context.FCMTokens
+                .Include(t => t.Organization)
+                .Where(t => t.Organization != null && t.Organization.Type.ToLower() == "admin")
+                .Select(t => t.Token)
+                .Distinct()
+                .ToListAsync();
+
+            if (!adminTokens.Any())
+            {
+                _logger.LogWarning("No admin FCM tokens found");
+                return;
+            }
+
+            var title = "📢 New Registration";
+            var body = $"{organization.Name} ({organization.Type}) needs verification";
+
+            var message = new MulticastMessage
+            {
+                Tokens = adminTokens,
+                Notification = new Notification
+                {
+                    Title = title,
+                    Body = body
+                },
+                Data = new Dictionary<string, string>
+                {
+                    { "type", "new_registration" },
+                    { "organizationId", organization.Id },
+                    { "organizationType", organization.Type },
+                    { "screen", "admin_verification" }
+                },
+                Android = new AndroidConfig
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification
+                    {
+                        ChannelId = "clearchain_notifications",
+                        Sound = "default",
+                        Priority = NotificationPriority.MAX
+                    }
+                }
+            };
+
+            var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
+            _logger.LogInformation($"✅ Admin alert sent to {response.SuccessCount}/{adminTokens.Count} admins");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending new registration alert to admins");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HELPER: Generic notification sender (PUBLIC for interface)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async Task SendNotification(
         Guid userId,
         string title,
         string body,
@@ -139,7 +439,6 @@ public class PushNotificationService : IPushNotificationService
     {
         try
         {
-            // Get FCM token from database
             var token = await _context.FCMTokens
                 .Where(t => t.OrganizationId == userId)
                 .OrderByDescending(t => t.UpdatedAt)
@@ -152,7 +451,6 @@ public class PushNotificationService : IPushNotificationService
                 return;
             }
 
-            // Build Firebase message
             var message = new Message
             {
                 Token = token,
@@ -174,7 +472,6 @@ public class PushNotificationService : IPushNotificationService
                 }
             };
 
-            // Send notification
             var response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
             _logger.LogInformation($"✅ Push notification sent to user {userId}: {response}");
         }
@@ -182,7 +479,6 @@ public class PushNotificationService : IPushNotificationService
         {
             _logger.LogError($"❌ Firebase error sending notification to user {userId}: {ex.Message}");
 
-            // Remove invalid token
             if (ex.MessagingErrorCode == MessagingErrorCode.Unregistered ||
                 ex.MessagingErrorCode == MessagingErrorCode.InvalidArgument)
             {
@@ -212,72 +508,5 @@ public class PushNotificationService : IPushNotificationService
         {
             _logger.LogError(ex, $"Failed to remove invalid tokens for user {userId}");
         }
-    }
-
-    public async Task SendPickupRejectedNotification(Guid userId, PickupRequestData request)
-    {
-        if (!_firebaseInitialized)
-        {
-            _logger.LogWarning("Firebase not initialized, skipping notification");
-            return;
-        }
-
-        var title = "❌ Pickup Request Rejected";
-        var body = $"Your request for {request.ListingTitle} was declined by {request.GroceryName}";
-
-        await SendNotification(userId, title, body, new Dictionary<string, string>
-    {
-        { "type", "pickup_rejected" },
-        { "requestId", request.Id },
-        { "screen", "browse_listings" }  // Redirect to browse for alternatives
-    });
-    }
-
-    // ✅ NEW: Notify Grocery when NGO creates request
-    public async Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request)
-    {
-        await SendNotification(
-            groceryId,
-            "📝 New Pickup Request",
-            $"{request.NgoName} requested {request.RequestedQuantity} of {request.ListingTitle}",
-            new Dictionary<string, string>
-            {
-            { "type", "pickup_request_created" },
-            { "requestId", request.Id },
-            { "screen", "grocery_requests" }
-            }
-        );
-    }
-
-    // ✅ NEW: Notify Grocery when request is ready to be picked up (confirmation)
-    public async Task SendPickupConfirmedNotification(Guid groceryId, PickupRequestData request)
-    {
-        await SendNotification(
-            groceryId,
-            "📦 Ready for Pickup Confirmed",
-            $"{request.NgoName} confirmed they will pickup {request.ListingTitle}",
-            new Dictionary<string, string>
-            {
-            { "type", "pickup_confirmed" },
-            { "requestId", request.Id },
-            { "screen", "grocery_requests" }
-            }
-        );
-    }
-
-    // ✅ NEW: Notify Grocery when NGO cancels
-    public async Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request)
-    {
-        await SendNotification(
-            groceryId,
-            "❌ Pickup Request Cancelled",
-            $"{request.NgoName} cancelled pickup for {request.ListingTitle}",
-            new Dictionary<string, string>
-            {
-            { "type", "pickup_cancelled" },
-            { "requestId", request.Id },
-            { "screen", "grocery_requests" }
-            }
-        );
     }
 }
