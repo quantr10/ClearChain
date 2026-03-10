@@ -1,102 +1,44 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.API.DTOs.Listings;
 using ClearChain.API.DTOs.Inventory;
-using Microsoft.EntityFrameworkCore;
+using ClearChain.API.Services;
 
-namespace ClearChain.API.Services;
+namespace ClearChain.API.Jobs;
 
-public class NotificationSchedulerService : BackgroundService
+/// <summary>
+/// Hangfire background jobs for scheduled notifications
+/// Migrated from NotificationSchedulerService (BackgroundService)
+/// </summary>
+public class NotificationJobs
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<NotificationSchedulerService> _logger;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(24);
+    private readonly ApplicationDbContext _context;
+    private readonly IPushNotificationService _pushService;
+    private readonly ILogger<NotificationJobs> _logger;
 
-    public NotificationSchedulerService(
-        IServiceProvider serviceProvider,
-        ILogger<NotificationSchedulerService> logger)
+    public NotificationJobs(
+        ApplicationDbContext context,
+        IPushNotificationService pushService,
+        ILogger<NotificationJobs> logger)
     {
-        _serviceProvider = serviceProvider;
+        _context = context;
+        _pushService = pushService;
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        _logger.LogInformation("🕐 NotificationSchedulerService started");
-
-        // Wait until 2 AM for first run
-        await WaitUntilTargetTime(stoppingToken);
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
-            {
-                _logger.LogInformation("🔔 Running daily notification checks...");
-
-                using (var scope = _serviceProvider.CreateScope())
-                {
-                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    var pushService = scope.ServiceProvider.GetRequiredService<IPushNotificationService>();
-
-                    await CheckExpiringListings(context, pushService);
-                    await CheckExpiredListings(context, pushService);
-                    await CheckExpiringInventory(context, pushService);
-                    await CheckExpiredInventory(context, pushService);
-                }
-
-                _logger.LogInformation("✅ Daily notification checks completed");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Error in notification scheduler");
-            }
-
-            await Task.Delay(_checkInterval, stoppingToken);
-        }
-    }
-
-private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
-{
-    var now = DateTime.UtcNow;
-    var today2AM = DateTime.UtcNow.Date.AddHours(2);
-    var tomorrow2AM = DateTime.UtcNow.Date.AddDays(1).AddHours(2);
-
-    DateTime targetTime;
-    
-    // If current time is before 2 AM today, wait until 2 AM today
-    // Otherwise, wait until 2 AM tomorrow
-    if (now.Hour < 2)
-    {
-        targetTime = today2AM;
-    }
-    else
-    {
-        targetTime = tomorrow2AM;
-    }
-
-    var delay = targetTime - now;
-    
-    // Safety check: If delay is negative (shouldn't happen with fix above), default to 1 minute
-    if (delay.TotalMilliseconds < 0)
-    {
-        _logger.LogWarning($"⚠️ Calculated delay was negative ({delay.TotalHours:F1} hours). Defaulting to 1 minute delay.");
-        delay = TimeSpan.FromMinutes(1);
-    }
-
-    _logger.LogInformation($"⏰ Scheduler will start at {targetTime:yyyy-MM-dd HH:mm:ss} UTC (in {delay.TotalHours:F1} hours)");
-
-    await Task.Delay(delay, stoppingToken);
-}
-    private async Task CheckExpiringListings(ApplicationDbContext context, IPushNotificationService pushService)
+    /// <summary>
+    /// Job #1: Check listings expiring tomorrow and send notifications
+    /// Schedule: Daily at 2:00 AM UTC
+    /// Cron: "0 2 * * *"
+    /// </summary>
+    public async Task CheckExpiringListings()
     {
         try
         {
             var tomorrow = DateTime.UtcNow.Date.AddDays(1);
             var dayAfterTomorrow = tomorrow.AddDays(1);
 
-            var expiringListings = await context.ClearanceListings
+            var expiringListings = await _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
                 .Where(l => l.Status == "open" &&
@@ -105,7 +47,7 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                            l.ExpirationDate.Value.Date < dayAfterTomorrow)
                 .ToListAsync();
 
-            _logger.LogInformation($"Found {expiringListings.Count} listings expiring tomorrow");
+            _logger.LogInformation($"🔔 [Hangfire] Found {expiringListings.Count} listings expiring tomorrow");
 
             foreach (var listing in expiringListings)
             {
@@ -123,27 +65,33 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                     Location = listing.Grocery?.Location ?? ""
                 };
 
-                await pushService.SendListingExpiringSoonNotification(
+                await _pushService.SendListingExpiringSoonNotification(
                     listing.GroceryId,
                     listingData
                 );
             }
 
-            _logger.LogInformation($"✅ Sent {expiringListings.Count} listing expiry notifications");
+            _logger.LogInformation($"✅ [Hangfire] Sent {expiringListings.Count} listing expiry notifications");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking expiring listings");
+            _logger.LogError(ex, "❌ [Hangfire] Error checking expiring listings");
+            throw; // Re-throw to let Hangfire handle retry
         }
     }
 
-    private async Task CheckExpiredListings(ApplicationDbContext context, IPushNotificationService pushService)
+    /// <summary>
+    /// Job #2: Check expired listings, update status, and send notifications
+    /// Schedule: Daily at 2:00 AM UTC
+    /// Cron: "0 2 * * *"
+    /// </summary>
+    public async Task CheckExpiredListings()
     {
         try
         {
             var today = DateTime.UtcNow.Date;
 
-            var expiredListings = await context.ClearanceListings
+            var expiredListings = await _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
                 .Where(l => l.Status == "open" &&
@@ -151,7 +99,7 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                            l.ExpirationDate.Value.Date < today)
                 .ToListAsync();
 
-            _logger.LogInformation($"Found {expiredListings.Count} expired listings");
+            _logger.LogInformation($"🔔 [Hangfire] Found {expiredListings.Count} expired listings");
 
             foreach (var listing in expiredListings)
             {
@@ -173,7 +121,7 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                     Location = listing.Grocery?.Location ?? ""
                 };
 
-                await pushService.SendListingExpiredNotification(
+                await _pushService.SendListingExpiredNotification(
                     listing.GroceryId,
                     listingData
                 );
@@ -181,31 +129,37 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
 
             if (expiredListings.Any())
             {
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation($"✅ Marked {expiredListings.Count} listings as expired and sent notifications");
+            _logger.LogInformation($"✅ [Hangfire] Marked {expiredListings.Count} listings as expired and sent notifications");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking expired listings");
+            _logger.LogError(ex, "❌ [Hangfire] Error checking expired listings");
+            throw;
         }
     }
 
-    private async Task CheckExpiringInventory(ApplicationDbContext context, IPushNotificationService pushService)
+    /// <summary>
+    /// Job #3: Check inventory expiring in 2 days and send notifications
+    /// Schedule: Daily at 2:00 AM UTC
+    /// Cron: "0 2 * * *"
+    /// </summary>
+    public async Task CheckExpiringInventory()
     {
         try
         {
             var twoDaysFromNow = DateTime.UtcNow.Date.AddDays(2);
             var threeDaysFromNow = twoDaysFromNow.AddDays(1);
 
-            var expiringItems = await context.Inventories
+            var expiringItems = await _context.Inventories
                 .Where(i => i.Status == "active" &&
                            i.ExpiryDate.Date >= twoDaysFromNow &&
                            i.ExpiryDate.Date < threeDaysFromNow)
                 .ToListAsync();
 
-            _logger.LogInformation($"Found {expiringItems.Count} inventory items expiring in 2 days");
+            _logger.LogInformation($"🔔 [Hangfire] Found {expiringItems.Count} inventory items expiring in 2 days");
 
             foreach (var item in expiringItems)
             {
@@ -223,32 +177,38 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                     PickupRequestId = item.PickupRequestId.ToString()
                 };
 
-                await pushService.SendInventoryExpiringSoonNotification(
+                await _pushService.SendInventoryExpiringSoonNotification(
                     item.NgoId,
                     itemData
                 );
             }
 
-            _logger.LogInformation($"✅ Sent {expiringItems.Count} inventory expiry warnings");
+            _logger.LogInformation($"✅ [Hangfire] Sent {expiringItems.Count} inventory expiry warnings");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking expiring inventory");
+            _logger.LogError(ex, "❌ [Hangfire] Error checking expiring inventory");
+            throw;
         }
     }
 
-    private async Task CheckExpiredInventory(ApplicationDbContext context, IPushNotificationService pushService)
+    /// <summary>
+    /// Job #4: Check expired inventory, update status, and send notifications
+    /// Schedule: Daily at 2:00 AM UTC
+    /// Cron: "0 2 * * *"
+    /// </summary>
+    public async Task CheckExpiredInventory()
     {
         try
         {
             var today = DateTime.UtcNow.Date;
 
-            var expiredItems = await context.Inventories
+            var expiredItems = await _context.Inventories
                 .Where(i => i.Status == "active" &&
                            i.ExpiryDate.Date < today)
                 .ToListAsync();
 
-            _logger.LogInformation($"Found {expiredItems.Count} expired inventory items");
+            _logger.LogInformation($"🔔 [Hangfire] Found {expiredItems.Count} expired inventory items");
 
             foreach (var item in expiredItems)
             {
@@ -269,7 +229,7 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
                     PickupRequestId = item.PickupRequestId.ToString()
                 };
 
-                await pushService.SendInventoryExpiredNotification(
+                await _pushService.SendInventoryExpiredNotification(
                     item.NgoId,
                     itemData
                 );
@@ -277,14 +237,15 @@ private async Task WaitUntilTargetTime(CancellationToken stoppingToken)
 
             if (expiredItems.Any())
             {
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation($"✅ Marked {expiredItems.Count} items as expired and sent notifications");
+            _logger.LogInformation($"✅ [Hangfire] Marked {expiredItems.Count} items as expired and sent notifications");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking expired inventory");
+            _logger.LogError(ex, "❌ [Hangfire] Error checking expired inventory");
+            throw;
         }
     }
 }

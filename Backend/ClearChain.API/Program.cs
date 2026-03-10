@@ -9,7 +9,10 @@ using ClearChain.Infrastructure.Data;
 using ClearChain.API.Services;
 using ClearChain.API.Middleware;
 using ClearChain.API.Hubs;
+using ClearChain.API.Jobs;
 using Microsoft.AspNetCore.SignalR;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 Env.Load();
 
@@ -21,6 +24,26 @@ var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Hangfire Configuration (Background Jobs)
+// ═══════════════════════════════════════════════════════════════════════════
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(connectionString)));
+
+// Add Hangfire server with custom options
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = 5; // Number of concurrent jobs
+    options.ServerName = "ClearChain-Notifications";
+});
+
+// Register NotificationJobs for dependency injection
+builder.Services.AddScoped<NotificationJobs>();
+
 // Add Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -30,8 +53,10 @@ builder.Services.AddScoped<IPickupNotificationService, PickupNotificationService
 builder.Services.AddScoped<IListingNotificationService, ListingNotificationService>();
 builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
-builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();  // ✅ ADD
-builder.Services.AddHostedService<NotificationSchedulerService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+
+// ❌ REMOVED: Background service (replaced by Hangfire)
+// builder.Services.AddHostedService<NotificationSchedulerService>();
 
 // Add SignalR with custom user ID provider
 builder.Services.AddSignalR();
@@ -147,6 +172,59 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Hangfire Dashboard (Admin UI for monitoring jobs)
+// Access: https://your-domain/hangfire
+// ═══════════════════════════════════════════════════════════════════════════
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    AppPath = "/",
+    DashboardTitle = "ClearChain Background Jobs",
+    // TODO: Add authorization filter in production
+    // Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Schedule Recurring Jobs (Daily at 2:00 AM UTC)
+// Cron format: "minute hour day month day-of-week"
+// "0 2 * * *" = Every day at 2:00 AM UTC
+// ═══════════════════════════════════════════════════════════════════════════
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "check-expiring-listings",
+    job => job.CheckExpiringListings(),
+    "0 2 * * *",  // Daily at 2 AM UTC
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.Utc
+    });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "check-expired-listings",
+    job => job.CheckExpiredListings(),
+    "0 2 * * *",  // Daily at 2 AM UTC
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.Utc
+    });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "check-expiring-inventory",
+    job => job.CheckExpiringInventory(),
+    "0 2 * * *",  // Daily at 2 AM UTC
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.Utc
+    });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "check-expired-inventory",
+    job => job.CheckExpiredInventory(),
+    "0 2 * * *",  // Daily at 2 AM UTC
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.Utc
+    });
+
 app.UseCors("ClearChainPolicy");
 
 app.UseHttpsRedirection();
@@ -166,7 +244,8 @@ app.MapGet("/", () => new
     message = "ClearChain API is running!",
     timestamp = DateTime.UtcNow,
     environment = app.Environment.EnvironmentName,
-    version = "1.0.0"
+    version = "1.0.0",
+    hangfire = "✅ Background jobs active"
 }).WithTags("Health");
 
 app.MapGet("/api/health/signalr", () => new
@@ -180,6 +259,20 @@ app.MapGet("/api/health/signalr", () => new
         new { name = "AdminHub", endpoint = "/hubs/admin" }
     },
     authentication = "JWT Bearer Token (via query string or header)",
+    timestamp = DateTime.UtcNow
+}).WithTags("Health");
+
+app.MapGet("/api/health/jobs", () => new
+{
+    status = "active",
+    jobs = new[]
+    {
+        new { name = "check-expiring-listings", schedule = "Daily 2:00 AM UTC", description = "Notify groceries about listings expiring tomorrow" },
+        new { name = "check-expired-listings", schedule = "Daily 2:00 AM UTC", description = "Mark expired listings and notify" },
+        new { name = "check-expiring-inventory", schedule = "Daily 2:00 AM UTC", description = "Notify NGOs about inventory expiring in 2 days" },
+        new { name = "check-expired-inventory", schedule = "Daily 2:00 AM UTC", description = "Mark expired inventory and notify" }
+    },
+    dashboard = "/hangfire",
     timestamp = DateTime.UtcNow
 }).WithTags("Health");
 
