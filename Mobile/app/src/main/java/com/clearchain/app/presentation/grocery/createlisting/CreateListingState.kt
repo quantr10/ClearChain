@@ -1,5 +1,8 @@
 package com.clearchain.app.presentation.grocery.createlisting
 
+import android.net.Uri
+import com.clearchain.app.data.remote.dto.FoodAnalysisData
+
 data class CreateListingState(
     val title: String = "",
     val description: String = "",
@@ -24,5 +27,12 @@ data class CreateListingState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val showCategoryDropdown: Boolean = false,
-    val showUnitDropdown: Boolean = false
+    val showUnitDropdown: Boolean = false,  // ✅ THÊM DẤU PHẨY
+
+    // AI Image Analysis
+    val selectedImageUri: Uri? = null,
+    val isAnalyzing: Boolean = false,
+    val analysisResult: FoodAnalysisData? = null,
+    val showImagePicker: Boolean = false,
+    val analysisError: String? = null
 )

@@ -1,7 +1,8 @@
 package com.clearchain.app.domain.repository
 
+import android.net.Uri
+import com.clearchain.app.data.remote.dto.FoodAnalysisData
 import com.clearchain.app.domain.model.Listing
-import kotlinx.coroutines.flow.Flow
 
 interface ListingRepository {
 
@@ -42,4 +43,11 @@ interface ListingRepository {
     suspend fun deleteListing(id: String): Result<Unit>
 
     suspend fun updateListingQuantity(listingId: String, newQuantity: Int): Result<Listing>
+
+    suspend fun analyzeImage(imageUri: Uri): Result<FoodAnalysisData>
+
+    suspend fun saveAnalysis(analysisData: FoodAnalysisData): Result<Unit>
+
+    suspend fun uploadFoodImage(imageUri: Uri): Result<String> 
+
 }

@@ -6,6 +6,7 @@ import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.api.InventoryApi
+import com.clearchain.app.data.remote.api.ImageAnalysisApi
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -105,5 +106,11 @@ object NetworkModule {
     @Singleton
     fun provideInventoryApi(retrofit: Retrofit): InventoryApi {
         return retrofit.create(InventoryApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageAnalysisApi(retrofit: Retrofit): ImageAnalysisApi {
+        return retrofit.create(ImageAnalysisApi::class.java)
     }
 }
