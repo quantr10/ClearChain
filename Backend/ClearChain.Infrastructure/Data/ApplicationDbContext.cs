@@ -18,7 +18,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<Inventory> Inventories { get; set; } = null!;
     public DbSet<ListingGroup> ListingGroups { get; set; } = null!;
-    public DbSet<FCMToken> FCMTokens { get; set; } = null!;  // ✅ ADD
+    public DbSet<FCMToken> FCMTokens { get; set; } = null!;
+    public DbSet<FoodImageAnalysis> FoodImageAnalyses { get; set; } = null!;  // ✅ ADD THIS
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,7 +33,8 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
         modelBuilder.Entity<Inventory>().ToTable("inventory");
         modelBuilder.Entity<ListingGroup>().ToTable("listinggroups");
-        modelBuilder.Entity<FCMToken>().ToTable("fcmtokens");  // ✅ ADD
+        modelBuilder.Entity<FCMToken>().ToTable("fcmtokens");
+        modelBuilder.Entity<FoodImageAnalysis>().ToTable("foodimageanalyses");  // ✅ ADD THIS
         
         // Configure ListingGroup - ClearanceListing relationship
         modelBuilder.Entity<ListingGroup>()
@@ -41,16 +43,29 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(cl => cl.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
         
-        // ✅ ADD: Configure FCMToken - Organization relationship
+        // Configure FCMToken - Organization relationship
         modelBuilder.Entity<FCMToken>()
             .HasOne(f => f.Organization)
             .WithMany()
             .HasForeignKey(f => f.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);
         
-        // ✅ ADD: Index on OrganizationId for faster lookups
         modelBuilder.Entity<FCMToken>()
             .HasIndex(f => f.OrganizationId);
+        
+        // ✅ ADD: Configure FoodImageAnalysis - Organization relationship
+        modelBuilder.Entity<FoodImageAnalysis>()
+            .HasOne(f => f.Grocery)
+            .WithMany()
+            .HasForeignKey(f => f.GroceryId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        // ✅ ADD: Indexes for FoodImageAnalysis
+        modelBuilder.Entity<FoodImageAnalysis>()
+            .HasIndex(f => f.GroceryId);
+        
+        modelBuilder.Entity<FoodImageAnalysis>()
+            .HasIndex(f => f.AnalyzedAt);
         
         // Configure PickupRequest - Listing many-to-many
         modelBuilder.Entity<PickupRequest>()

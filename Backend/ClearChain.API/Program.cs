@@ -54,6 +54,7 @@ builder.Services.AddScoped<IListingNotificationService, ListingNotificationServi
 builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IImageAnalysisService, AzureVisionService>();
 
 // ❌ REMOVED: Background service (replaced by Hangfire)
 // builder.Services.AddHostedService<NotificationSchedulerService>();

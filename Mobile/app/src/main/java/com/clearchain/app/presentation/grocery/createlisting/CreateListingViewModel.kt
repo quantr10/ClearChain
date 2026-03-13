@@ -1,7 +1,11 @@
 package com.clearchain.app.presentation.grocery.createlisting
 
+import android.net.Uri
+import android.util.Log  // ✅ ADD THIS
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.dto.FoodAnalysisData  // ✅ ADD THIS
+import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.listing.CreateListingUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,9 +14,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 @HiltViewModel
 class CreateListingViewModel @Inject constructor(
-    private val createListingUseCase: CreateListingUseCase
+    private val createListingUseCase: CreateListingUseCase,
+    private val listingRepository: ListingRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateListingState())
@@ -41,7 +47,6 @@ class CreateListingViewModel @Inject constructor(
             }
 
             is CreateListingEvent.QuantityChanged -> {
-                // Only allow numbers
                 val filtered = event.quantity.filter { it.isDigit() }
                 _state.update { it.copy(quantity = filtered, quantityError = null) }
             }
@@ -72,6 +77,16 @@ class CreateListingViewModel @Inject constructor(
                 _state.update { it.copy(imageUrl = event.url) }
             }
 
+            is CreateListingEvent.ImageSelected -> {
+                _state.update { 
+                    it.copy(
+                        selectedImageUri = event.uri,
+                        showImagePicker = false
+                    ) 
+                }
+                analyzeImage()
+            }
+
             CreateListingEvent.ToggleCategoryDropdown -> {
                 _state.update { it.copy(showCategoryDropdown = !it.showCategoryDropdown) }
             }
@@ -87,57 +102,127 @@ class CreateListingViewModel @Inject constructor(
             CreateListingEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
             }
+
+            CreateListingEvent.AnalyzeImage -> {
+                analyzeImage()
+            }
+            
+            CreateListingEvent.ApplyAISuggestions -> {
+                applyAISuggestions()
+            }
+            
+            CreateListingEvent.ToggleImagePicker -> {
+                _state.update { it.copy(showImagePicker = !it.showImagePicker) }
+            }
+            
+            CreateListingEvent.ClearImage -> {
+                _state.update { 
+                    it.copy(
+                        selectedImageUri = null,
+                        analysisResult = null,
+                        analysisError = null,
+                        imageUrl = ""
+                    ) 
+                }
+            }
         }
     }
 
-    private fun createListing() {
-        val currentState = _state.value
+private fun createListing() {
+    val currentState = _state.value
 
-        // Validate
-        if (!validateInputs()) {
-            return
-        }
+    if (!validateInputs()) {
+        return
+    }
 
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+    viewModelScope.launch {
+        _state.update { it.copy(isLoading = true, error = null) }
 
-            val result = createListingUseCase(
-                title = currentState.title,
-                description = currentState.description,
-                category = currentState.category,
-                quantity = currentState.quantity.toInt(),
-                unit = currentState.unit,
-                expiryDate = currentState.expiryDate,
-                pickupTimeStart = currentState.pickupTimeStart,
-                pickupTimeEnd = currentState.pickupTimeEnd,
-                imageUrl = currentState.imageUrl.ifBlank { null }
-            )
-
-            result.fold(
-                onSuccess = { listing ->
-                    _state.update { it.copy(isLoading = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar("Listing created successfully!"))
-                    _uiEvent.send(UiEvent.NavigateUp)
+        // ✅ NEW: Upload image first if user selected one
+        var finalImageUrl = currentState.imageUrl
+        
+        if (currentState.selectedImageUri != null && finalImageUrl.isEmpty()) {
+            _state.update { it.copy(isLoading = true, error = "Uploading image...") }
+            
+            val uploadResult = listingRepository.uploadFoodImage(currentState.selectedImageUri!!)
+            
+            uploadResult.fold(
+                onSuccess = { uploadedUrl ->
+                    finalImageUrl = uploadedUrl
+                    Log.d("CreateListingVM", "✅ Image uploaded: $uploadedUrl")
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "Failed to create listing"
+                            error = "Image upload failed: ${error.message}"
                         )
                     }
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to create listing"))
+                    _uiEvent.send(UiEvent.ShowSnackbar("Image upload failed: ${error.message}"))
+                    return@launch // Stop if upload fails
                 }
             )
         }
+
+        // Create listing with uploaded imageUrl
+        val result = createListingUseCase(
+            title = currentState.title,
+            description = currentState.description,
+            category = currentState.category,
+            quantity = currentState.quantity.toInt(),
+            unit = currentState.unit,
+            expiryDate = currentState.expiryDate,
+            pickupTimeStart = currentState.pickupTimeStart,
+            pickupTimeEnd = currentState.pickupTimeEnd,
+            imageUrl = finalImageUrl.ifBlank { null }
+        )
+
+        result.fold(
+            onSuccess = { listing ->
+                _state.update { it.copy(isLoading = false) }
+                
+                // Save analysis to DB if AI was used
+                if (currentState.analysisResult != null) {
+                    // Update imageUrl in analysis before saving
+                    val updatedAnalysis = currentState.analysisResult!!.copy(
+                        imageUrl = finalImageUrl
+                    )
+                    saveAnalysisToDatabase(updatedAnalysis)
+                }
+                
+                _uiEvent.send(UiEvent.ShowSnackbar("Listing created successfully!"))
+                _uiEvent.send(UiEvent.NavigateUp)
+            },
+            onFailure = { error ->
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = error.message ?: "Failed to create listing"
+                    )
+                }
+                _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to create listing"))
+            }
+        )
+    }
+}
+
+// ✅ NEW: Save analysis after listing created
+private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
+        viewModelScope.launch {
+            try {
+                listingRepository.saveAnalysis(analysisData)
+                Log.d("CreateListingVM", "✅ Analysis saved to database")
+            } catch (e: Exception) {
+                // Don't fail - analysis save is non-critical
+                Log.e("CreateListingVM", "⚠️ Failed to save analysis (non-critical): ${e.message}")
+            }
+        }
     }
 
-    // ✅ ENHANCED: Add time format validation
     private fun validateInputs(): Boolean {
         val currentState = _state.value
         var isValid = true
 
-        // Validate title
         if (currentState.title.isBlank()) {
             _state.update { it.copy(titleError = "Title is required") }
             isValid = false
@@ -146,13 +231,11 @@ class CreateListingViewModel @Inject constructor(
             isValid = false
         }
 
-        // Validate description
         if (currentState.description.isBlank()) {
             _state.update { it.copy(descriptionError = "Description is required") }
             isValid = false
         }
 
-        // Validate quantity
         if (currentState.quantity.isBlank()) {
             _state.update { it.copy(quantityError = "Quantity is required") }
             isValid = false
@@ -161,13 +244,11 @@ class CreateListingViewModel @Inject constructor(
             isValid = false
         }
 
-        // Validate unit
         if (currentState.unit.isBlank()) {
             _state.update { it.copy(unitError = "Unit is required") }
             isValid = false
         }
 
-        // Validate expiry date
         if (currentState.expiryDate.isBlank()) {
             _state.update { it.copy(expiryDateError = "Expiry date is required") }
             isValid = false
@@ -176,7 +257,6 @@ class CreateListingViewModel @Inject constructor(
             isValid = false
         }
 
-        // ✅ ADD: Validate pickup start time
         if (currentState.pickupTimeStart.isBlank()) {
             _state.update { it.copy(pickupTimeStartError = "Pickup start time is required") }
             isValid = false
@@ -185,7 +265,6 @@ class CreateListingViewModel @Inject constructor(
             isValid = false
         }
 
-        // ✅ ADD: Validate pickup end time
         if (currentState.pickupTimeEnd.isBlank()) {
             _state.update { it.copy(pickupTimeEndError = "Pickup end time is required") }
             isValid = false
@@ -194,7 +273,6 @@ class CreateListingViewModel @Inject constructor(
             isValid = false
         }
 
-        // ✅ ADD: Validate end time is after start time
         if (isValid && currentState.pickupTimeStart.isNotBlank() && currentState.pickupTimeEnd.isNotBlank()) {
             if (!isEndTimeAfterStartTime(currentState.pickupTimeStart, currentState.pickupTimeEnd)) {
                 _state.update { it.copy(pickupTimeEndError = "End time must be after start time") }
@@ -205,19 +283,16 @@ class CreateListingViewModel @Inject constructor(
         return isValid
     }
 
-    // ✅ ADD: Time format validation (HH:MM)
     private fun isValidTimeFormat(time: String): Boolean {
         val timeRegex = Regex("^([0-1][0-9]|2[0-3]):[0-5][0-9]$")
         return timeRegex.matches(time)
     }
 
-    // ✅ ADD: Date format validation (YYYY-MM-DD)
     private fun isValidDateFormat(date: String): Boolean {
         val dateRegex = Regex("^\\d{4}-\\d{2}-\\d{2}$")
         return dateRegex.matches(date)
     }
 
-    // ✅ ADD: Check end time is after start time
     private fun isEndTimeAfterStartTime(startTime: String, endTime: String): Boolean {
         return try {
             val start = startTime.split(":").let { it[0].toInt() * 60 + it[1].toInt() }
@@ -225,6 +300,60 @@ class CreateListingViewModel @Inject constructor(
             end > start
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun analyzeImage() {
+        val imageUri = _state.value.selectedImageUri ?: return
+        
+        viewModelScope.launch {
+            _state.update { it.copy(isAnalyzing = true, analysisError = null) }
+            
+            val result = listingRepository.analyzeImage(imageUri)
+            
+            result.fold(
+                onSuccess = { analysisData ->
+                    _state.update { 
+                        it.copy(
+                            isAnalyzing = false,
+                            analysisResult = analysisData,
+                            imageUrl = analysisData.imageUrl
+                        ) 
+                    }
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar(
+                            "AI detected: ${analysisData.title} (${(analysisData.confidence * 100).toInt()}% confidence)"
+                        )
+                    )
+                },
+                onFailure = { error ->
+                    _state.update { 
+                        it.copy(
+                            isAnalyzing = false,
+                            analysisError = error.message ?: "Analysis failed"
+                        ) 
+                    }
+                    _uiEvent.send(UiEvent.ShowSnackbar("Analysis failed: ${error.message}"))
+                }
+            )
+        }
+    }
+    
+    private fun applyAISuggestions() {
+        val analysis = _state.value.analysisResult ?: return
+        
+        _state.update { 
+            it.copy(
+                title = analysis.title,
+                description = analysis.notes,
+                category = analysis.category.uppercase(),
+                expiryDate = analysis.expiryDate.substring(0, 10),
+                imageUrl = analysis.imageUrl
+            ) 
+        }
+        
+        viewModelScope.launch {
+            _uiEvent.send(UiEvent.ShowSnackbar("AI suggestions applied! Please review and adjust."))
         }
     }
 }
