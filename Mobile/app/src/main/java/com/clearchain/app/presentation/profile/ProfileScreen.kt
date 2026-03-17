@@ -10,11 +10,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.presentation.components.ClearChainButton
+import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,10 +49,27 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text(if (state.isEditing) "Edit Profile" else "Profile") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (state.isEditing) {
+                            viewModel.onEvent(ProfileEvent.CancelEdit)
+                        } else {
+                            onNavigateBack()
+                        }
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    // ✅ NEW: Edit/Save button in app bar
+                    if (!state.isEditing) {
+                        IconButton(
+                            onClick = { viewModel.onEvent(ProfileEvent.StartEdit) },
+                            enabled = !state.isLoading
+                        ) {
+                            Icon(Icons.Default.Edit, "Edit Profile")
+                        }
                     }
                 }
             )
@@ -135,7 +157,6 @@ fun ProfileScreen(
                                         )
                                     }
 
-                                    // ✅ NEW: Always show verified badge
                                     Surface(
                                         shape = MaterialTheme.shapes.small,
                                         color = MaterialTheme.colorScheme.tertiary
@@ -190,6 +211,50 @@ fun ProfileScreen(
                             }
                         }
 
+                        // ✅ NEW: Show completion hint if profile incomplete
+                        if (!state.isEditing && 
+                            (state.user!!.phone.isBlank() || 
+                             state.user!!.address.isBlank() || 
+                             state.user!!.location.isBlank())) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Complete Your Profile",
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Text(
+                                            text = "Add your contact details to get the most out of ClearChain",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                    IconButton(onClick = { viewModel.onEvent(ProfileEvent.StartEdit) }) {
+                                        Icon(
+                                            Icons.Default.ArrowForward,
+                                            contentDescription = "Edit",
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         // ── Account Information ─────────────────────────────
                         Text(
                             text = "Account Information",
@@ -197,47 +262,148 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold
                         )
 
-                        ProfileInfoCard(
-                            icon  = Icons.Default.Email,
-                            label = "Email",
-                            value = state.user!!.email
-                        )
-
-                        ProfileInfoCard(
-                            icon  = Icons.Default.Phone,
-                            label = "Phone",
-                            value = state.user!!.phone.ifBlank { "Not provided" }
-                        )
-
-                        ProfileInfoCard(
-                            icon  = Icons.Default.LocationOn,
-                            label = "Location",
-                            value = state.user!!.location.ifBlank { "Not provided" }
-                        )
-
-                        ProfileInfoCard(
-                            icon  = Icons.Default.Home,
-                            label = "Address",
-                            value = state.user!!.address.ifBlank { "Not provided" }
-                        )
-
-                        if (state.user!!.type == OrganizationType.GROCERY) {
-                            ProfileInfoCard(
-                                icon  = Icons.Default.Schedule,
-                                label = "Hours",
-                                value = state.user!!.hours ?: "Not provided"
+                        // ✅ CONDITIONAL: Show edit fields or read-only info
+                        if (state.isEditing) {
+                            // ── EDIT MODE ──────────────────────────────────
+                            
+                            // Name (editable)
+                            ClearChainTextField(
+                                value = state.editName,
+                                onValueChange = { viewModel.onEvent(ProfileEvent.EditNameChanged(it)) },
+                                label = "Organization Name",
+                                placeholder = "Your organization name",
+                                leadingIcon = { Icon(Icons.Default.Business, null) },
+                                imeAction = ImeAction.Next,
+                                isError = state.editNameError != null,
+                                errorMessage = state.editNameError,
+                                enabled = !state.isSavingProfile
                             )
-                        }
 
-                        // ❌ REMOVED: Verification Status Card
-                        // Users are auto-verified, no need to show status
+                            // Email (read-only)
+                            ProfileInfoCard(
+                                icon = Icons.Default.Email,
+                                label = "Email",
+                                value = state.user!!.email
+                            )
+
+                            // Phone (editable)
+                            ClearChainTextField(
+                                value = state.editPhone,
+                                onValueChange = { viewModel.onEvent(ProfileEvent.EditPhoneChanged(it)) },
+                                label = "Phone Number",
+                                placeholder = "+1-234-567-8900",
+                                leadingIcon = { Icon(Icons.Default.Phone, null) },
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Next,
+                                isError = state.editPhoneError != null,
+                                errorMessage = state.editPhoneError,
+                                enabled = !state.isSavingProfile
+                            )
+
+                            // Address (editable)
+                            ClearChainTextField(
+                                value = state.editAddress,
+                                onValueChange = { viewModel.onEvent(ProfileEvent.EditAddressChanged(it)) },
+                                label = "Address",
+                                placeholder = "123 Main Street",
+                                leadingIcon = { Icon(Icons.Default.Home, null) },
+                                imeAction = ImeAction.Next,
+                                isError = state.editAddressError != null,
+                                errorMessage = state.editAddressError,
+                                enabled = !state.isSavingProfile
+                            )
+
+                            // Location (editable)
+                            ClearChainTextField(
+                                value = state.editLocation,
+                                onValueChange = { viewModel.onEvent(ProfileEvent.EditLocationChanged(it)) },
+                                label = "City/Location",
+                                placeholder = "New York, NY",
+                                leadingIcon = { Icon(Icons.Default.Place, null) },
+                                imeAction = if (state.user!!.type == OrganizationType.GROCERY) ImeAction.Next else ImeAction.Done,
+                                isError = state.editLocationError != null,
+                                errorMessage = state.editLocationError,
+                                enabled = !state.isSavingProfile
+                            )
+
+                            // Hours (grocery only, editable)
+                            if (state.user!!.type == OrganizationType.GROCERY) {
+                                ClearChainTextField(
+                                    value = state.editHours,
+                                    onValueChange = { viewModel.onEvent(ProfileEvent.EditHoursChanged(it)) },
+                                    label = "Operating Hours (Optional)",
+                                    placeholder = "9AM - 9PM",
+                                    leadingIcon = { Icon(Icons.Default.Schedule, null) },
+                                    imeAction = ImeAction.Done,
+                                    enabled = !state.isSavingProfile
+                                )
+                            }
+
+                            // Save/Cancel buttons
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { viewModel.onEvent(ProfileEvent.CancelEdit) },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isSavingProfile
+                                ) {
+                                    Text("Cancel")
+                                }
+
+                                ClearChainButton(
+                                    text = "Save Changes",
+                                    onClick = { viewModel.onEvent(ProfileEvent.SaveProfile) },
+                                    loading = state.isSavingProfile,
+                                    enabled = !state.isSavingProfile,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                        } else {
+                            // ── READ-ONLY MODE ────────────────────────────
+                            
+                            ProfileInfoCard(
+                                icon = Icons.Default.Email,
+                                label = "Email",
+                                value = state.user!!.email
+                            )
+
+                            ProfileInfoCard(
+                                icon = Icons.Default.Phone,
+                                label = "Phone",
+                                value = state.user!!.phone.ifBlank { "Not provided" }
+                            )
+
+                            ProfileInfoCard(
+                                icon = Icons.Default.Home,
+                                label = "Address",
+                                value = state.user!!.address.ifBlank { "Not provided" }
+                            )
+
+                            ProfileInfoCard(
+                                icon = Icons.Default.Place,
+                                label = "Location",
+                                value = state.user!!.location.ifBlank { "Not provided" }
+                            )
+
+                            if (state.user!!.type == OrganizationType.GROCERY) {
+                                ProfileInfoCard(
+                                    icon = Icons.Default.Schedule,
+                                    label = "Hours",
+                                    value = state.user!!.hours ?: "Not provided"
+                                )
+                            }
+                        }
 
                         HorizontalDivider()
 
                         // ── Change Password Button ──────────────────────────
                         OutlinedButton(
                             onClick = { showChangePasswordDialog = true },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isEditing
                         ) {
                             Icon(Icons.Default.Lock, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -250,7 +416,8 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.error
-                            )
+                            ),
+                            enabled = !state.isEditing
                         ) {
                             Icon(Icons.Default.Logout, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))

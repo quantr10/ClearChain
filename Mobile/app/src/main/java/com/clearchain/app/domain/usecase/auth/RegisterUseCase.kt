@@ -3,94 +3,57 @@ package com.clearchain.app.domain.usecase.auth
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
+import com.clearchain.app.util.ValidationUtils
 import javax.inject.Inject
 
 class RegisterUseCase @Inject constructor(
-    private val authRepository: AuthRepository
-    // ❌ REMOVE: database, authApi - không cần thiết
+    private val repository: AuthRepository
 ) {
+    // ✅ UPDATED: Removed phone, address, location, hours parameters
     suspend operator fun invoke(
         name: String,
         type: String,
         email: String,
         password: String,
-        phone: String,
-        address: String,
-        location: String,
-        hours: String? = null,
-        fcmToken: String? = null  // ✅ NEW
+        fcmToken: String? = null
     ): Result<Pair<Organization, AuthTokens>> {
-
+        
         // Validate inputs
         if (name.isBlank()) {
-            return Result.failure(Exception("Name cannot be empty"))
+            return Result.failure(Exception("Name is required"))
         }
-
+        
         if (name.length < 3) {
             return Result.failure(Exception("Name must be at least 3 characters"))
         }
-
+        
         if (email.isBlank()) {
-            return Result.failure(Exception("Email cannot be empty"))
+            return Result.failure(Exception("Email is required"))
         }
-
-        if (!isValidEmail(email)) {
+        
+        if (!ValidationUtils.isValidEmail(email)) {
             return Result.failure(Exception("Invalid email format"))
         }
-
-        if (password.isBlank()) {
-            return Result.failure(Exception("Password cannot be empty"))
-        }
-
-        if (password.length < 8) {
-            return Result.failure(Exception("Password must be at least 8 characters"))
-        }
-
-        if (!isValidPassword(password)) {
-            return Result.failure(Exception("Password must contain uppercase, lowercase, and number"))
-        }
-
-        if (phone.isBlank()) {
-            return Result.failure(Exception("Phone cannot be empty"))
-        }
-
-        if (address.isBlank()) {
-            return Result.failure(Exception("Address cannot be empty"))
-        }
-
-        if (location.isBlank()) {
-            return Result.failure(Exception("Location cannot be empty"))
-        }
-
-        if (type.lowercase() !in listOf("grocery", "ngo")) {
-            return Result.failure(Exception("Type must be 'grocery' or 'ngo'"))
-        }
-
-        // ✅ Register với FCM token - Backend sẽ save token tự động
-        return authRepository.register(
-            name = name.trim(),
-            type = type.lowercase(),
-            email = email.trim(),
-            password = password,
-            phone = phone.trim(),
-            address = address.trim(),
-            location = location.trim(),
-            hours = hours?.trim(),
-            fcmToken = fcmToken  // ✅ Pass FCM token - đã đủ!
-        )
         
-        // ❌ REMOVE: Không cần gọi registerFCMToken API sau khi register
-        // Backend đã save token trong RegisterAsync() rồi!
-    }
-
-    private fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
-
-    private fun isValidPassword(password: String): Boolean {
-        val hasUppercase = password.any { it.isUpperCase() }
-        val hasLowercase = password.any { it.isLowerCase() }
-        val hasDigit = password.any { it.isDigit() }
-        return hasUppercase && hasLowercase && hasDigit
+        if (password.isBlank()) {
+            return Result.failure(Exception("Password is required"))
+        }
+        
+        if (!ValidationUtils.isValidPassword(password)) {
+            return Result.failure(Exception("Password must be at least 8 characters with uppercase, lowercase, and number"))
+        }
+        
+        if (type !in listOf("grocery", "ngo", "admin")) {
+            return Result.failure(Exception("Invalid organization type"))
+        }
+        
+        // Call repository
+        return repository.register(
+            name = name,
+            type = type,
+            email = email,
+            password = password,
+            fcmToken = fcmToken
+        )
     }
 }

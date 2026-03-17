@@ -47,21 +47,7 @@ class RegisterViewModel @Inject constructor(
                 _state.update { it.copy(confirmPassword = event.confirmPassword, confirmPasswordError = null) }
             }
 
-            is RegisterEvent.PhoneChanged -> {
-                _state.update { it.copy(phone = event.phone, phoneError = null) }
-            }
-
-            is RegisterEvent.AddressChanged -> {
-                _state.update { it.copy(address = event.address, addressError = null) }
-            }
-
-            is RegisterEvent.LocationChanged -> {
-                _state.update { it.copy(location = event.location, locationError = null) }
-            }
-
-            is RegisterEvent.HoursChanged -> {
-                _state.update { it.copy(hours = event.hours) }
-            }
+            // ✅ REMOVED: PhoneChanged, AddressChanged, LocationChanged, HoursChanged
 
             RegisterEvent.Register -> {
                 register()
@@ -90,26 +76,23 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // ✅ NEW: Get FCM token first
+            // Get FCM token
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {
                 Log.e("RegisterViewModel", "Failed to get FCM token", e)
-                null // Continue without token
+                null
             }
 
             Log.d("RegisterViewModel", "FCM Token: ${fcmToken ?: "None"}")
 
+            // ✅ SIMPLIFIED: Only pass required fields
             val result = registerUseCase(
                 name = currentState.name,
                 type = currentState.type,
                 email = currentState.email,
                 password = currentState.password,
-                phone = currentState.phone,
-                address = currentState.address,
-                location = currentState.location,
-                hours = currentState.hours.ifBlank { null },
-                fcmToken = fcmToken  // ✅ NEW: Pass FCM token
+                fcmToken = fcmToken
             )
 
             result.fold(
@@ -125,7 +108,7 @@ class RegisterViewModel @Inject constructor(
                     }
 
                     _uiEvent.send(UiEvent.Navigate(route))
-                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome to ClearChain, ${user.name}!"))
+                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome! Complete your profile to get started."))
                 },
                 onFailure = { error ->
                     _state.update {
@@ -140,6 +123,7 @@ class RegisterViewModel @Inject constructor(
         }
     }
 
+    // ✅ SIMPLIFIED: Only validate required fields
     private fun validateInputs(): Boolean {
         val currentState = _state.value
         var isValid = true
@@ -182,26 +166,7 @@ class RegisterViewModel @Inject constructor(
             isValid = false
         }
 
-        // Validate phone
-        if (currentState.phone.isBlank()) {
-            _state.update { it.copy(phoneError = "Phone number is required") }
-            isValid = false
-        } else if (!ValidationUtils.isValidPhone(currentState.phone)) {
-            _state.update { it.copy(phoneError = "Invalid phone number") }
-            isValid = false
-        }
-
-        // Validate address
-        if (currentState.address.isBlank()) {
-            _state.update { it.copy(addressError = "Address is required") }
-            isValid = false
-        }
-
-        // Validate location
-        if (currentState.location.isBlank()) {
-            _state.update { it.copy(locationError = "Location is required") }
-            isValid = false
-        }
+        // ✅ REMOVED: phone, address, location validation
 
         return isValid
     }

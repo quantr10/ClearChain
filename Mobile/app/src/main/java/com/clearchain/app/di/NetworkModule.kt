@@ -1,13 +1,8 @@
 package com.clearchain.app.di
 
-import com.clearchain.app.BuildConfig
-import com.clearchain.app.data.remote.api.AdminApi
-import com.clearchain.app.data.remote.api.AuthApi
-import com.clearchain.app.data.remote.api.ListingApi
-import com.clearchain.app.data.remote.api.PickupRequestApi
-import com.clearchain.app.data.remote.api.InventoryApi
-import com.clearchain.app.data.remote.api.ImageAnalysisApi
+import com.clearchain.app.data.remote.api.*
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
+import com.clearchain.app.util.Constants
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -27,23 +22,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJson(): Json {
-        return Json {
-            ignoreUnknownKeys = true
-            coerceInputValues = true
-            isLenient = true
-        }
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+        encodeDefaults = true
     }
 
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
+            level = HttpLoggingInterceptor.Level.BODY
         }
     }
 
@@ -52,12 +41,10 @@ object NetworkModule {
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
         loggingInterceptor: HttpLoggingInterceptor
-        // tokenAuthenticator: TokenAuthenticator  // REMOVED
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
-            // .authenticator(tokenAuthenticator)  // REMOVED
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -72,7 +59,7 @@ object NetworkModule {
     ): Retrofit {
         val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+            .baseUrl(Constants.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
@@ -112,5 +99,12 @@ object NetworkModule {
     @Singleton
     fun provideImageAnalysisApi(retrofit: Retrofit): ImageAnalysisApi {
         return retrofit.create(ImageAnalysisApi::class.java)
+    }
+
+    // ✅ ADD: Provide OrganizationApi
+    @Provides
+    @Singleton
+    fun provideOrganizationApi(retrofit: Retrofit): OrganizationApi {
+        return retrofit.create(OrganizationApi::class.java)
     }
 }

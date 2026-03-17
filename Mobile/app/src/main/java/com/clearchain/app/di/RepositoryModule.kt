@@ -2,9 +2,11 @@ package com.clearchain.app.di
 
 import com.clearchain.app.data.repository.AuthRepositoryImpl
 import com.clearchain.app.data.repository.ListingRepositoryImpl
+import com.clearchain.app.data.repository.OrganizationRepositoryImpl  // ✅ ADD
 import com.clearchain.app.data.repository.PickupRequestRepositoryImpl
 import com.clearchain.app.domain.repository.AuthRepository
 import com.clearchain.app.domain.repository.ListingRepository
+import com.clearchain.app.domain.repository.OrganizationRepository  // ✅ ADD
 import com.clearchain.app.domain.repository.PickupRequestRepository
 import dagger.Binds
 import dagger.Module
@@ -33,4 +35,11 @@ abstract class RepositoryModule {
     abstract fun bindPickupRequestRepository(
         pickupRequestRepositoryImpl: PickupRequestRepositoryImpl
     ): PickupRequestRepository
+    
+    // ✅ ADD: Bind OrganizationRepository
+    @Binds
+    @Singleton
+    abstract fun bindOrganizationRepository(
+        organizationRepositoryImpl: OrganizationRepositoryImpl
+    ): OrganizationRepository
 }

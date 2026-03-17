@@ -22,18 +22,5 @@ public class RegisterRequest
         ErrorMessage = "Password must contain uppercase, lowercase, and number")]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public string Phone { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Address is required")]
-    public string Address { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Location is required")]
-    public string Location { get; set; } = string.Empty;
-
-    public string? Hours { get; set; }
-
-    // ✅ NEW: FCM Token (optional)
     public string? FcmToken { get; set; }
 }

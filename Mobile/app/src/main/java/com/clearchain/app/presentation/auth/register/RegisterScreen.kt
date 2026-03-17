@@ -1,9 +1,5 @@
 package com.clearchain.app.presentation.auth.register
 
-import android.Manifest
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,10 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -24,11 +20,8 @@ import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     navController: NavController,
@@ -36,23 +29,6 @@ fun RegisterScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
-
-    // ✅ NEW: Request notification permission (Android 13+)
-    val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
-    } else {
-        null
-    }
-
-    // ✅ NEW: Request permission on first composition
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (notificationPermissionState?.status?.isGranted == false) {
-                notificationPermissionState.launchPermissionRequest()
-            }
-        }
-    }
 
     LaunchedEffect(key1 = true) {
         viewModel.uiEvent.collect { event ->
@@ -128,7 +104,7 @@ fun RegisterScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Organization Type",
+                        text = "I am a...",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -143,6 +119,9 @@ fun RegisterScreen(
                             selected = state.type == "grocery",
                             onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("grocery")) },
                             label = { Text("Grocery Store") },
+                            leadingIcon = if (state.type == "grocery") {
+                                { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+                            } else null,
                             modifier = Modifier.weight(1f),
                             enabled = !state.isLoading
                         )
@@ -150,7 +129,10 @@ fun RegisterScreen(
                         FilterChip(
                             selected = state.type == "ngo",
                             onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("ngo")) },
-                            label = { Text("NGO") },
+                            label = { Text("NGO / Food Bank") },
+                            leadingIcon = if (state.type == "ngo") {
+                                { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+                            } else null,
                             modifier = Modifier.weight(1f),
                             enabled = !state.isLoading
                         )
@@ -166,7 +148,7 @@ fun RegisterScreen(
                 onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
                 label = "Organization Name",
                 placeholder = "Your organization name",
-                leadingIcon = { Icon(Icons.Default.Person, null) },
+                leadingIcon = { Icon(Icons.Default.Business, null) },
                 imeAction = ImeAction.Next,
                 isError = state.nameError != null,
                 errorMessage = state.nameError,
@@ -186,22 +168,6 @@ fun RegisterScreen(
                 imeAction = ImeAction.Next,
                 isError = state.emailError != null,
                 errorMessage = state.emailError,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Phone
-            ClearChainTextField(
-                value = state.phone,
-                onValueChange = { viewModel.onEvent(RegisterEvent.PhoneChanged(it)) },
-                label = "Phone Number",
-                placeholder = "+1-234-567-8900",
-                leadingIcon = { Icon(Icons.Default.Phone, null) },
-                keyboardType = KeyboardType.Phone,
-                imeAction = ImeAction.Next,
-                isError = state.phoneError != null,
-                errorMessage = state.phoneError,
                 enabled = !state.isLoading
             )
 
@@ -232,67 +198,33 @@ fun RegisterScreen(
                 placeholder = "Re-enter your password",
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next,
+                imeAction = ImeAction.Done,
                 isPassword = true,
                 isError = state.confirmPasswordError != null,
                 errorMessage = state.confirmPasswordError,
+                onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
                 enabled = !state.isLoading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Address
-            ClearChainTextField(
-                value = state.address,
-                onValueChange = { viewModel.onEvent(RegisterEvent.AddressChanged(it)) },
-                label = "Address",
-                placeholder = "123 Main Street",
-                leadingIcon = { Icon(Icons.Default.Home, null) },
-                imeAction = ImeAction.Next,
-                isError = state.addressError != null,
-                errorMessage = state.addressError,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Location/City
-            ClearChainTextField(
-                value = state.location,
-                onValueChange = { viewModel.onEvent(RegisterEvent.LocationChanged(it)) },
-                label = "City/Location",
-                placeholder = "New York, NY",
-                leadingIcon = { Icon(Icons.Default.Place, null) },
-                imeAction = if (state.type == "grocery") ImeAction.Next else ImeAction.Done,
-                isError = state.locationError != null,
-                errorMessage = state.locationError,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Hours (optional, grocery only)
-            if (state.type == "grocery") {
-                ClearChainTextField(
-                    value = state.hours,
-                    onValueChange = { viewModel.onEvent(RegisterEvent.HoursChanged(it)) },
-                    label = "Operating Hours (Optional)",
-                    placeholder = "9AM - 9PM",
-                    leadingIcon = null,
-                    imeAction = ImeAction.Done,
-                    onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
-                    enabled = !state.isLoading
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             // Register button
             ClearChainButton(
                 text = "Create Account",
                 onClick = { viewModel.onEvent(RegisterEvent.Register) },
                 loading = state.isLoading,
-                enabled = !state.isLoading
+                enabled = !state.isLoading,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Hint about profile completion
+            Text(
+                text = "You can add contact details after registration",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(16.dp))
