@@ -6,13 +6,9 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class GetCurrentUserUseCase @Inject constructor(
-    private val authRepository: AuthRepository
+    private val repository: AuthRepository
 ) {
-    operator fun invoke(): Flow<Organization?> {
-        return authRepository.getStoredUser()
-    }
-
-    suspend fun refresh(): Result<Organization> {
-        return authRepository.getCurrentUser()
+    suspend operator fun invoke(): Flow<Organization?> {
+        return repository.getCurrentUser()
     }
 }

@@ -7,9 +7,12 @@ public class Organization
     public string Type { get; set; } = string.Empty; // grocery, ngo, admin
     public string Email { get; set; } = string.Empty;
     public string? PasswordHash { get; set; }
-    public string Phone { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public string Location { get; set; } = string.Empty;
+    
+    // ✅ CHANGED: Make these nullable (can be added later)
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public string? Location { get; set; }
+    
     public bool Verified { get; set; }
     public string VerificationStatus { get; set; } = "pending";
     public string? Hours { get; set; }
