@@ -27,7 +27,7 @@ data class CreateListingState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val showCategoryDropdown: Boolean = false,
-    val showUnitDropdown: Boolean = false,  // ✅ THÊM DẤU PHẨY
+    val showUnitDropdown: Boolean = false,
 
     // AI Image Analysis
     val selectedImageUri: Uri? = null,

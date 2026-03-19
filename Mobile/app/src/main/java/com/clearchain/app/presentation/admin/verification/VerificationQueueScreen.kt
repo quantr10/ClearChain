@@ -1,8 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// VerificationQueueScreen.kt — REDESIGNED with unified components
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.admin.verification
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.Organization
+import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,12 +34,7 @@ fun VerificationQueueScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
                 else -> {}
             }
         }
@@ -41,7 +43,7 @@ fun VerificationQueueScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Organizations") },  // ✅ CHANGED: No longer "Verification Queue"
+                title = { Text("Organizations") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
@@ -52,10 +54,7 @@ fun VerificationQueueScreen(
                         onClick = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
                     ) {
                         if (state.isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.Default.Refresh, "Refresh")
                         }
@@ -66,38 +65,39 @@ fun VerificationQueueScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             when {
                 state.isLoading && state.organizations.isEmpty() -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
-                state.organizations.isEmpty() && !state.isLoading -> {
-                    EmptyState()
+                state.organizations.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.Business,
+                        title = "No organizations yet",
+                        subtitle = "Organizations will appear here when they register"
+                    )
                 }
 
                 else -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         item {
                             Text(
-                                text = "${state.organizations.size} organization${if (state.organizations.size != 1) "s" else ""} registered",  // ✅ CHANGED
-                                style = MaterialTheme.typography.bodyMedium,
+                                "${state.organizations.size} organization${if (state.organizations.size != 1) "s" else ""} registered",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
-                        items(state.organizations) { organization ->
-                            OrganizationInfoCard(organization = organization)  // ✅ CHANGED: Read-only card
+                        items(state.organizations, key = { it.id }) { org ->
+                            OrganizationCard(organization = org)
                         }
+
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
@@ -105,19 +105,21 @@ fun VerificationQueueScreen(
     }
 }
 
-// ✅ NEW: Read-only organization card (no verify button)
 @Composable
-private fun OrganizationInfoCard(
-    organization: Organization
-) {
+private fun OrganizationCard(organization: Organization) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header
+            // ── Header ──────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -129,98 +131,40 @@ private fun OrganizationInfoCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = organization.type.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                    // Type badge
+                    StatusBadge(
+                        label = organization.type.name,
+                        backgroundColor = when (organization.type) {
+                            OrganizationType.GROCERY -> MaterialTheme.colorScheme.secondaryContainer
+                            OrganizationType.NGO -> MaterialTheme.colorScheme.tertiaryContainer
+                            OrganizationType.ADMIN -> MaterialTheme.colorScheme.primaryContainer
+                        },
+                        contentColor = when (organization.type) {
+                            OrganizationType.GROCERY -> MaterialTheme.colorScheme.onSecondaryContainer
+                            OrganizationType.NGO -> MaterialTheme.colorScheme.onTertiaryContainer
+                            OrganizationType.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
+                        }
                     )
                 }
 
-                // ✅ CHANGED: Always show as verified
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Verified",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                // Verified badge
+                StatusBadge(
+                    label = "Verified",
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    icon = Icons.Default.CheckCircle
+                )
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Details
-            DetailRow(Icons.Default.Email, organization.email)
-            DetailRow(Icons.Default.Phone, organization.phone)
-            DetailRow(Icons.Default.Place, organization.location)
+            // ── Details ─────────────────────────────────────────────
+            InfoRow(Icons.Default.Email, "Email", organization.email)
+            InfoRow(Icons.Default.Phone, "Phone", organization.phone.ifBlank { "Not provided" })
+            InfoRow(Icons.Default.Place, "Location", organization.location.ifBlank { "Not provided" })
             if (organization.address.isNotBlank()) {
-                DetailRow(Icons.Default.Home, organization.address)
+                InfoRow(Icons.Default.Home, "Address", organization.address)
             }
-        }
-    }
-}
-
-@Composable
-private fun DetailRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "📋",
-                style = MaterialTheme.typography.displayLarge
-            )
-            Text(
-                text = "No organizations yet",  // ✅ CHANGED
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Organizations will appear here when they register",  // ✅ CHANGED
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

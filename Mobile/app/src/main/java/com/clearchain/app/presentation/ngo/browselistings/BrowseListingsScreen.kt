@@ -1,8 +1,14 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// BrowseListingsScreen.kt — Same pattern as all other list screens
+// Fullscreen error on first load fail, filters always visible
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -10,14 +16,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.clearchain.app.domain.model.Listing
-import com.clearchain.app.domain.model.displayName
-import com.clearchain.app.presentation.components.FilterSection
-import com.clearchain.app.util.DateTimeUtils
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,12 +34,8 @@ fun BrowseListingsScreen(
     LaunchedEffect(key1 = true) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
-                }
-                is UiEvent.Navigate -> {
-                    navController.navigate(event.route)
-                }
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                is UiEvent.Navigate -> navController.navigate(event.route)
                 else -> Unit
             }
         }
@@ -77,78 +75,33 @@ fun BrowseListingsScreen(
                 .padding(padding)
         ) {
             when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                // ── 1. First load → fullscreen spinner ──────────────
+                state.isLoading && state.allListings.isEmpty() -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 
-                state.error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "❌",
-                            style = MaterialTheme.typography.displayMedium
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = state.error!!,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }) {
-                            Text("Retry")
-                        }
-                    }
+                // ── 2. First load error → fullscreen error + Retry ──
+                state.error != null && state.allListings.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.ErrorOutline,
+                        title = "Something went wrong",
+                        subtitle = state.error,
+                        actionLabel = "Retry",
+                        onAction = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }
+                    )
                 }
 
-                state.allListings.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "🔍",
-                            style = MaterialTheme.typography.displayLarge
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No available listings",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Check back later for new listings",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
+                // ── 3. Normal → filters always visible + content ────
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // ══════════════════════════════════════════════════════
-                        // FILTER SECTION
-                        // ══════════════════════════════════════════════════════
+
+                        // Filters
                         FilterSection(
                             searchQuery = state.searchQuery,
                             onSearchQueryChange = {
                                 viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it))
                             },
-                            searchPlaceholder = "Search by name, location, grocery...",
+                            searchPlaceholder = "Search by name, grocery, location...",
                             selectedSort = state.selectedSort,
                             onSortSelected = {
                                 viewModel.onEvent(BrowseListingsEvent.SortOptionChanged(it))
@@ -163,238 +116,65 @@ fun BrowseListingsScreen(
                             itemName = "listing"
                         )
 
-                        // ══════════════════════════════════════════════════════
-                        // LISTINGS LIST
-                        // ══════════════════════════════════════════════════════
-                        if (state.filteredListings.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "🔍",
-                                        style = MaterialTheme.typography.displayMedium
-                                    )
-                                    Text(
-                                        text = "No listings match your filters",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Try adjusting your search or filters",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                        // Inline error (after data loaded but action failed)
+                        state.error?.let {
+                            ErrorBanner(
+                                message = it,
+                                onDismiss = { viewModel.onEvent(BrowseListingsEvent.ClearError) },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        // Content area
+                        when {
+                            state.filteredListings.isEmpty() -> {
+                                EmptyState(
+                                    icon = if (state.allListings.isEmpty()) Icons.Default.SearchOff else Icons.Default.FilterAlt,
+                                    title = if (state.allListings.isEmpty()) "No available listings"
+                                    else "No listings match your filters",
+                                    subtitle = if (state.allListings.isEmpty())
+                                        "Check back later for new surplus food"
+                                    else "Try adjusting your search or filters"
+                                )
                             }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(state.filteredListings, key = { it.id }) { listing ->
-                                    BrowseListingCard(
-                                        listing = listing,
-                                        onRequestPickup = {
-                                            viewModel.onEvent(
-                                                BrowseListingsEvent.NavigateToRequestPickup(listing.id)
-                                            )
-                                        }
-                                    )
+
+                            else -> {
+                                LazyColumn(
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(
+                                        items = state.filteredListings,
+                                        key = { it.id }
+                                    ) { listing ->
+                                        ListingCard(
+                                            listing = listing,
+                                            showGroceryInfo = true,
+                                            primaryAction = {
+                                                Button(
+                                                    onClick = {
+                                                        viewModel.onEvent(
+                                                            BrowseListingsEvent.NavigateToRequestPickup(listing.id)
+                                                        )
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(10.dp)
+                                                ) {
+                                                    Icon(Icons.Default.ShoppingCart, null, Modifier.size(18.dp))
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("Request Pickup")
+                                                }
+                                            }
+                                        )
+                                    }
+
+                                    item { Spacer(Modifier.height(16.dp)) }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun BrowseListingCard(
-    listing: Listing,
-    onRequestPickup: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = listing.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Store,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = listing.groceryName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text(
-                        text = listing.category.displayName(),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Description
-            Text(
-                text = listing.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Details
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Quantity
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Scale,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "${listing.quantity} ${listing.unit}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Location
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Place,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = listing.location,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Expiry date
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Text(
-                    text = "Expires: ${DateTimeUtils.formatDate(listing.expiryDate)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Pickup time
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    Icons.Default.AccessTime,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Pickup: ${listing.pickupTimeStart} - ${listing.pickupTimeEnd}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Request Pickup Button
-            Button(
-                onClick = onRequestPickup,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Request Pickup")
-            }
-
-            // Posted time
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Posted ${DateTimeUtils.getTimeAgo(listing.createdAt)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
