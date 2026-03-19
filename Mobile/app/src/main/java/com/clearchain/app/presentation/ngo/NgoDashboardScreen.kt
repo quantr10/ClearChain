@@ -1,18 +1,22 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// NgoDashboardScreen.kt — REDESIGNED with unified shared components
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.ngo
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -21,7 +25,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun NgoDashboardScreen(
     navController: NavController,
-    getCurrentUserUseCase: GetCurrentUserUseCase = hiltViewModel<NgoDashboardViewModel>().getCurrentUserUseCase
+    getCurrentUserUseCase: com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase =
+        hiltViewModel<NgoDashboardViewModel>().getCurrentUserUseCase
 ) {
     val scope = rememberCoroutineScope()
     var userName by remember { mutableStateOf("NGO") }
@@ -36,43 +41,13 @@ fun NgoDashboardScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("ClearChain")
-                        Text(
-                            text = userName,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
-                    IconButton(
-                        onClick = {
-                            navController.navigate(Screen.Profile.route)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-
-                    IconButton(onClick = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+            ClearChainTopBar(
+                userName = userName,
+                userType = "NGO",
+                onProfileClick = { navController.navigate(Screen.Profile.route) },
+                onLogoutClick = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -82,119 +57,92 @@ fun NgoDashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(
-                text = "Welcome!",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Help reduce food waste in your community",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Quick Actions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Browse Listings Card
-            DashboardCard(
-                icon = Icons.Default.RestaurantMenu,
-                title = "Browse Food",
-                description = "Find available surplus food",
-                onClick = {
-                    navController.navigate(Screen.BrowseListings.route)
-                }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // My Requests Card
-            DashboardCard(
-                icon = Icons.Default.LocalShipping,
-                title = "My Requests",
-                description = "View and track your pickup requests",
-                onClick = {
-                    navController.navigate(Screen.Deliveries.route)
-                }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Inventory Card
-            DashboardCard(
-                icon = Icons.Default.Inventory,
-                title = "Inventory",
-                description = "Manage collected food items",
-                onClick = {
-                    navController.navigate(Screen.Inventory.route)
-                }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DashboardCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    description: String,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            // ── Welcome ─────────────────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Welcome, $userName!",
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = description,
+                    text = "Help reduce food waste in your community",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            // ── Quick Stats (2×2) ───────────────────────────────────────
+            SectionHeader(title = "Overview")
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard(
+                    icon = Icons.Default.Inventory,
+                    label = "In Stock",
+                    value = "–",
+                    accentColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    icon = Icons.Default.Pending,
+                    label = "Active Requests",
+                    value = "–",
+                    accentColor = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard(
+                    icon = Icons.Default.VolunteerActivism,
+                    label = "Distributed",
+                    value = "–",
+                    accentColor = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    icon = Icons.Default.RestaurantMenu,
+                    label = "Available Food",
+                    value = "–",
+                    accentColor = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // ── Quick Actions ───────────────────────────────────────────
+            SectionHeader(title = "Quick Actions")
+
+            DashboardActionCard(
+                icon = Icons.Default.RestaurantMenu,
+                title = "Browse Food",
+                subtitle = "Find available surplus food",
+                onClick = { navController.navigate(Screen.BrowseListings.route) }
             )
+
+            DashboardActionCard(
+                icon = Icons.Default.LocalShipping,
+                title = "My Requests",
+                subtitle = "View and track your pickup requests",
+                onClick = { navController.navigate(Screen.Deliveries.route) }
+            )
+
+            DashboardActionCard(
+                icon = Icons.Default.Inventory,
+                title = "Inventory",
+                subtitle = "Manage collected food items",
+                onClick = { navController.navigate(Screen.Inventory.route) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

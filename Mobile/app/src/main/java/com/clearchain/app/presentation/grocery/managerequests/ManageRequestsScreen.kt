@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// ManageRequestsScreen.kt — With fullscreen error on first load fail
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.grocery.managerequests
 
 import androidx.compose.foundation.layout.*
@@ -9,12 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.clearchain.app.domain.model.PickupRequest
-import com.clearchain.app.domain.model.PickupRequestStatus
-import com.clearchain.app.presentation.components.FilterSection
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,12 +30,7 @@ fun ManageRequestsScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
                 else -> {}
             }
         }
@@ -54,10 +50,7 @@ fun ManageRequestsScreen(
                         onClick = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
                     ) {
                         if (state.isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.Default.Refresh, "Refresh")
                         }
@@ -68,455 +61,88 @@ fun ManageRequestsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // ══════════════════════════════════════════════════════
-                // FILTER SECTION
-                // ══════════════════════════════════════════════════════
-                FilterSection(
-                    searchQuery = state.searchQuery,
-                    onSearchQueryChange = {
-                        viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it))
-                    },
-                    searchPlaceholder = "Search by item, NGO...",
-                    selectedSort = state.selectedSort,
-                    onSortSelected = {
-                        viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it))
-                    },
-                    sortOptions = state.availableSortOptions,
-                    filterChips = state.availableStatusFilters,
-                    selectedFilter = state.selectedStatus,
-                    onFilterSelected = {
-                        viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it))
-                    },
-                    resultsCount = state.filteredRequests.size,
-                    itemName = "request"
-                )
+            when {
+                // ── 1. First load → fullscreen spinner ──────────────
+                state.isLoading && state.allRequests.isEmpty() -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
 
-                // Error Message
-                state.error?.let { error ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                // ── 2. First load error → fullscreen error + Retry ──
+                state.error != null && state.allRequests.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.ErrorOutline,
+                        title = "Failed to load requests",
+                        subtitle = state.error,
+                        actionLabel = "Retry",
+                        onAction = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
+                    )
+                }
+
+                // ── 3. Normal → filters always visible + content ────
+                else -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+
+                        // Filters
+                        FilterSection(
+                            searchQuery = state.searchQuery,
+                            onSearchQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
+                            searchPlaceholder = "Search by item, NGO...",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions,
+                            filterChips = state.availableStatusFilters,
+                            selectedFilter = state.selectedStatus,
+                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) },
+                            resultsCount = state.filteredRequests.size,
+                            itemName = "request"
                         )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = error,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.weight(1f)
+
+                        // Inline error (after data loaded but action failed)
+                        state.error?.let {
+                            ErrorBanner(
+                                message = it,
+                                onDismiss = { viewModel.onEvent(ManageRequestsEvent.ClearError) },
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                             )
-                            IconButton(
-                                onClick = { viewModel.onEvent(ManageRequestsEvent.ClearError) }
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    "Dismiss",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                        }
+
+                        // Content area
+                        when {
+                            state.filteredRequests.isEmpty() -> {
+                                EmptyState(
+                                    icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
+                                    title = if (state.allRequests.isEmpty()) "No pickup requests yet"
+                                    else "No requests match your filters",
+                                    subtitle = if (state.allRequests.isEmpty())
+                                        "Requests from NGOs will appear here"
+                                    else "Try adjusting your search or filters"
                                 )
                             }
-                        }
-                    }
-                }
 
-                // ══════════════════════════════════════════════════════
-                // CONTENT
-                // ══════════════════════════════════════════════════════
-                when {
-                    state.isLoading && state.allRequests.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
+                            else -> {
+                                LazyColumn(
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(state.filteredRequests, key = { it.id }) { request ->
+                                        RequestCard(
+                                            request = request,
+                                            viewMode = RequestViewMode.GROCERY,
+                                            onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
+                                            onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
+                                            onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
+                                        )
+                                    }
 
-                    state.filteredRequests.isEmpty() && !state.isLoading -> {
-                        EmptyState(
-                            message = if (state.selectedStatus != null || state.searchQuery.isNotBlank()) {
-                                "No requests match your filters"
-                            } else {
-                                "No pickup requests yet"
+                                    item { Spacer(Modifier.height(16.dp)) }
+                                }
                             }
-                        )
-                    }
-
-                    else -> {
-                        RequestsList(
-                            requests = state.filteredRequests,
-                            onApprove = { requestId ->
-                                viewModel.onEvent(ManageRequestsEvent.ApproveRequest(requestId))
-                            },
-                            onReject = { requestId ->
-                                viewModel.onEvent(ManageRequestsEvent.RejectRequest(requestId))
-                            },
-                            onMarkReady = { requestId ->
-                                viewModel.onEvent(ManageRequestsEvent.MarkReady(requestId))
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RequestsList(
-    requests: List<PickupRequest>,
-    onApprove: (String) -> Unit,
-    onReject: (String) -> Unit,
-    onMarkReady: (String) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(requests) { request ->
-            RequestCard(
-                request = request,
-                onApprove = onApprove,
-                onReject = onReject,
-                onMarkReady = onMarkReady
-            )
-        }
-    }
-}
-
-@Composable
-private fun RequestCard(
-    request: PickupRequest,
-    onApprove: (String) -> Unit,
-    onReject: (String) -> Unit,
-    onMarkReady: (String) -> Unit
-) {
-    var showApproveDialog by remember { mutableStateOf(false) }
-    var showRejectDialog by remember { mutableStateOf(false) }
-    var showReadyDialog by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = request.listingTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Requested by: ${request.ngoName}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                StatusBadge(status = request.status)
-            }
-
-            HorizontalDivider()
-
-            // Details
-            DetailRow(
-                icon = Icons.Default.ShoppingCart,
-                label = "Quantity",
-                value = "${request.requestedQuantity}"
-            )
-
-            DetailRow(
-                icon = Icons.Default.DateRange,
-                label = "Pickup Date",
-                value = request.pickupDate
-            )
-
-            DetailRow(
-                icon = Icons.Default.Schedule,
-                label = "Pickup Time",
-                value = request.pickupTime
-            )
-
-            request.notes?.let { notes ->
-                DetailRow(
-                    icon = Icons.Default.Info,
-                    label = "Notes",
-                    value = notes
-                )
-            }
-
-            // Actions based on status
-            when (request.status) {
-                PickupRequestStatus.PENDING -> {
-                    HorizontalDivider()
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { showApproveDialog = true },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Approve")
-                        }
-
-                        OutlinedButton(
-                            onClick = { showRejectDialog = true },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Reject")
                         }
                     }
                 }
-
-                PickupRequestStatus.APPROVED -> {
-                    HorizontalDivider()
-                    Button(
-                        onClick = { showReadyDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary
-                        )
-                    ) {
-                        Icon(Icons.Default.Done, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mark Ready for Pickup")
-                    }
-                }
-
-                PickupRequestStatus.READY -> {
-                    HorizontalDivider()
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "Waiting for ${request.ngoName} to confirm pickup",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-
-                else -> {
-                    // No actions for COMPLETED, REJECTED, CANCELLED
-                }
             }
-        }
-    }
-
-    // Approve Dialog
-    if (showApproveDialog) {
-        AlertDialog(
-            onDismissRequest = { showApproveDialog = false },
-            title = { Text("Approve Request?") },
-            text = { Text("Approve pickup request from ${request.ngoName} for ${request.requestedQuantity} items?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onApprove(request.id)
-                        showApproveDialog = false
-                    }
-                ) {
-                    Text("Approve")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showApproveDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Reject Dialog
-    if (showRejectDialog) {
-        AlertDialog(
-            onDismissRequest = { showRejectDialog = false },
-            title = { Text("Reject Request?") },
-            text = { Text("Reject pickup request from ${request.ngoName}? The quantity will be restored to the listing.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onReject(request.id)
-                        showRejectDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Reject")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRejectDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Ready Dialog
-    if (showReadyDialog) {
-        AlertDialog(
-            onDismissRequest = { showReadyDialog = false },
-            title = { Text("Mark Ready?") },
-            text = { Text("Mark this request as ready for pickup? The NGO will be notified.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onMarkReady(request.id)
-                        showReadyDialog = false
-                    }
-                ) {
-                    Text("Mark Ready")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showReadyDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun StatusBadge(status: PickupRequestStatus) {
-    val (backgroundColor, textColor, label) = when (status) {
-        PickupRequestStatus.PENDING -> Triple(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-            "Pending"
-        )
-        PickupRequestStatus.APPROVED -> Triple(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
-            "Approved"
-        )
-        PickupRequestStatus.READY -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            "Ready"
-        )
-        PickupRequestStatus.REJECTED -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-            "Rejected"
-        )
-        PickupRequestStatus.COMPLETED -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            "Completed"
-        )
-    }
-
-    Surface(
-        color = backgroundColor,
-        shape = MaterialTheme.shapes.small
-    ) {
-        Text(
-            text = label,
-            color = textColor,
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-        )
-    }
-}
-
-@Composable
-private fun DetailRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "$label:",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun EmptyState(message: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "📋",
-                style = MaterialTheme.typography.displayMedium
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

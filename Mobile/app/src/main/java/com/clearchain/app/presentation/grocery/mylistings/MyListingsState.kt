@@ -18,14 +18,14 @@ data class MyListingsState(
 
     // Search, Sort, Filter
     val searchQuery: String = "",
-    val selectedSort: SortOption = CommonSortOptions.DATE_DESC,
+    val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
-        CommonSortOptions.DATE_DESC,
-        CommonSortOptions.DATE_ASC,
+        CommonSortOptions.CREATED_DATE_DESC,
+        CommonSortOptions.CREATED_DATE_ASC,
+        CommonSortOptions.EXPIRY_ASC,
+        CommonSortOptions.EXPIRY_DESC,
         CommonSortOptions.NAME_ASC,
         CommonSortOptions.NAME_DESC,
-        CommonSortOptions.EXPIRY_ASC,
-        CommonSortOptions.QUANTITY_DESC
     ),
 
     // NEW: Status as TABS (not chips)
@@ -34,7 +34,7 @@ data class MyListingsState(
     // NEW: Category as CHIPS (food categories)
     val selectedCategory: String? = null,
     val availableCategoryFilters: List<FilterChipData> = listOf(
-        FilterChipData(null, "All Categories")
+        FilterChipData(null, "All")
     ) + FoodCategory.entries.map {
         FilterChipData(it.name, it.displayName())
     },
@@ -46,14 +46,14 @@ data class MyListingsState(
     // Backward compatibility
     val listings: List<Listing> get() = filteredListings
 
-    // Helper to get counts for each tab
-    fun getStatusCounts(): Map<ListingStatus?, Int> {
-        return mapOf(
-            null to allListings.size, // All
-            ListingStatus.AVAILABLE to allListings.count { it.status == ListingStatus.AVAILABLE },
-            ListingStatus.RESERVED to allListings.count { it.status == ListingStatus.RESERVED },
-            ListingStatus.COMPLETED to allListings.count { it.status == ListingStatus.COMPLETED },
-            ListingStatus.EXPIRED to allListings.count { it.status == ListingStatus.EXPIRED }
-        )
-    }
+//    // Helper to get counts for each tab
+//    fun getStatusCounts(): Map<ListingStatus?, Int> {
+//        return mapOf(
+//            null to allListings.size, // All
+//            ListingStatus.AVAILABLE to allListings.count { it.status == ListingStatus.AVAILABLE },
+//            ListingStatus.RESERVED to allListings.count { it.status == ListingStatus.RESERVED },
+//            ListingStatus.COMPLETED to allListings.count { it.status == ListingStatus.COMPLETED },
+//            ListingStatus.EXPIRED to allListings.count { it.status == ListingStatus.EXPIRED }
+//        )
+//    }
 }

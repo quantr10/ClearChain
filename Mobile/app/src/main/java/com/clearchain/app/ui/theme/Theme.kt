@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// Theme.kt — Updated with semantic colors and proper dark theme
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.ui.theme
 
 import android.app.Activity
@@ -7,37 +11,61 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import androidx.compose.ui.graphics.Color
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Teal600,
-    onPrimary = Color.White,
-    primaryContainer = Teal700,
-    secondary = Blue600,
-    tertiary = Purple600,
-    background = Gray900,
-    surface = Gray800,
-    onBackground = Gray50,
-    onSurface = Gray50,
-    error = Red600
-)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal600,
-    onPrimary = Color.White,
-    primaryContainer = Teal50,
-    secondary = Blue600,
-    tertiary = Purple600,
-    background = Gray50,
-    surface = Color.White,
-    onBackground = Gray900,
-    onSurface = Gray900,
-    error = Red600,
-    surfaceVariant = SurfaceVariant,
-    onSurfaceVariant = OnSurfaceVariant
+    primary               = LightPrimary,
+    onPrimary             = LightOnPrimary,
+    primaryContainer      = LightPrimaryContainer,
+    onPrimaryContainer    = LightOnPrimaryContainer,
+    secondary             = LightSecondary,
+    onSecondary           = Color.White,
+    secondaryContainer    = Color(0xFFDBEAFE),
+    onSecondaryContainer  = Color(0xFF1E40AF),
+    tertiary              = LightTertiary,
+    onTertiary            = Color.White,
+    tertiaryContainer     = Color(0xFFEDE9FE),
+    onTertiaryContainer   = Color(0xFF5B21B6),
+    background            = LightBackground,
+    onBackground          = LightOnBackground,
+    surface               = LightSurface,
+    onSurface             = LightOnSurface,
+    surfaceVariant        = LightSurfaceVariant,
+    onSurfaceVariant      = LightOnSurfaceVariant,
+    error                 = LightError,
+    errorContainer        = LightErrorContainer,
+    onErrorContainer      = LightOnErrorContainer,
+    outline               = Gray300,
+    outlineVariant        = Gray200,
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary               = DarkPrimary,
+    onPrimary             = DarkOnPrimary,
+    primaryContainer      = DarkPrimaryContainer,
+    onPrimaryContainer    = DarkOnPrimaryContainer,
+    secondary             = DarkSecondary,
+    onSecondary           = Color(0xFF003373),
+    secondaryContainer    = Color(0xFF1E3A5F),
+    onSecondaryContainer  = Color(0xFFBFDBFE),
+    tertiary              = DarkTertiary,
+    onTertiary            = Color(0xFF2D1065),
+    tertiaryContainer     = Color(0xFF3B1A6E),
+    onTertiaryContainer   = Color(0xFFDDD6FE),
+    background            = DarkBackground,
+    onBackground          = DarkOnBackground,
+    surface               = DarkSurface,
+    onSurface             = DarkOnSurface,
+    surfaceVariant        = DarkSurfaceVariant,
+    onSurfaceVariant      = DarkOnSurfaceVariant,
+    error                 = DarkError,
+    errorContainer        = DarkErrorContainer,
+    onErrorContainer      = DarkOnErrorContainer,
+    outline               = Color(0xFF475569),
+    outlineVariant        = Color(0xFF334155),
 )
 
 @Composable

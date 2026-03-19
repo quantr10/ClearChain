@@ -67,7 +67,6 @@ fun SortDropdown(
             value = selectedSort.label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Sort") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             leadingIcon = { Icon(Icons.Default.Sort, null, modifier = Modifier.size(20.dp)) },
             modifier = Modifier
@@ -251,12 +250,14 @@ data class FilterChipData(
 // ════════════════════════════════════════════════════════════════════════════════
 
 object CommonSortOptions {
-    val DATE_DESC = SortOption("date_desc", "Newest First")
-    val DATE_ASC = SortOption("date_asc", "Oldest First")
-    val NAME_ASC = SortOption("name_asc", "Name (A-Z)")
-    val NAME_DESC = SortOption("name_desc", "Name (Z-A)")
-    val QUANTITY_DESC = SortOption("quantity_desc", "Highest Quantity")
-    val QUANTITY_ASC = SortOption("quantity_asc", "Lowest Quantity")
+    val CREATED_DATE_DESC = SortOption("date_desc", "Newest")
+    val CREATED_DATE_ASC = SortOption("date_asc", "Oldest")
+    val DISTRIBUTED_DATE_ASC = SortOption("distributed_date", "Newest")
+    val DISTRIBUTED_DATE_DESC = SortOption("distributed_date", "Oldest")
+    val NAME_ASC = SortOption("name_asc", "A-Z")
+    val NAME_DESC = SortOption("name_desc", "Z-A")
     val EXPIRY_ASC = SortOption("expiry_asc", "Expiring Soon")
     val EXPIRY_DESC = SortOption("expiry_desc", "Expiring Later")
+    val PICKUP_DATE_ASC = SortOption("pickup_date_asc", "Oldest")
+    val PICKUP_DATE_DESC = SortOption("pickup_date_desc", "Newest")
 }

@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// TransactionsScreen.kt — REDESIGNED with unified RequestCard in ADMIN mode
+// ═══════════════════════════════════════════════════════════════════════════════
+
 package com.clearchain.app.presentation.admin.transactions
 
 import androidx.compose.foundation.layout.*
@@ -10,11 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.clearchain.app.domain.model.PickupRequest
-import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,19 +27,23 @@ fun TransactionsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFullPhotoUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        message = event.message,
-                        duration = SnackbarDuration.Short
-                    )
-                }
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
                 else -> {}
             }
         }
+    }
+
+    // ── Full Photo Viewer ───────────────────────────────────────────
+    showFullPhotoUrl?.let { url ->
+        FullPhotoDialog(
+            photoUrl = url,
+            onDismiss = { showFullPhotoUrl = null }
+        )
     }
 
     Scaffold(
@@ -54,10 +60,7 @@ fun TransactionsScreen(
                         onClick = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
                     ) {
                         if (state.isRefreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.Default.Refresh, "Refresh")
                         }
@@ -67,273 +70,84 @@ fun TransactionsScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
+            // ── Search ──────────────────────────────────────────────
+            SearchBar(
+                query = state.searchQuery,
+                onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
+                placeholder = "Search by item, grocery, NGO...",
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // ── Status Filter Chips ─────────────────────────────────
+            val statuses = listOf(
+                FilterChipData(null, "All"),
+                FilterChipData("PENDING", "Pending"),
+                FilterChipData("APPROVED", "Approved"),
+                FilterChipData("READY", "Ready"),
+                FilterChipData("COMPLETED", "Completed"),
+                FilterChipData("REJECTED", "Rejected")
+            )
+
+            FilterChipsRow(
+                filters = statuses,
+                selectedFilter = state.selectedStatus,
+                onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) },
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // ── Results Count ───────────────────────────────────────
+            Text(
+                text = "${state.filteredTransactions.size} transaction${if (state.filteredTransactions.size != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
+            // ── Content ─────────────────────────────────────────────
             when {
                 state.isLoading && state.allTransactions.isEmpty() -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                state.allTransactions.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.Receipt,
+                        title = "No transactions yet",
+                        subtitle = "Transactions will appear here when requests are created"
                     )
                 }
 
-                state.allTransactions.isEmpty() && !state.isLoading -> {
-                    EmptyState()
+                state.filteredTransactions.isEmpty() -> {
+                    EmptyState(
+                        icon = Icons.Default.FilterAlt,
+                        title = "No transactions match your filters",
+                        subtitle = "Try adjusting your search or filters"
+                    )
                 }
 
                 else -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Search Bar
-                        OutlinedTextField(
-                            value = state.searchQuery,
-                            onValueChange = {
-                                viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it))
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            placeholder = { Text("Search by item, grocery, or NGO...") },
-                            leadingIcon = { Icon(Icons.Default.Search, null) },
-                            trailingIcon = {
-                                if (state.searchQuery.isNotBlank()) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.onEvent(TransactionsEvent.SearchQueryChanged(""))
-                                        }
-                                    ) {
-                                        Icon(Icons.Default.Close, "Clear")
-                                    }
-                                }
-                            },
-                            singleLine = true
-                        )
-
-                        // Status Filter
-                        StatusFilterRow(
-                            selectedStatus = state.selectedStatus,
-                            onStatusSelected = { status ->
-                                viewModel.onEvent(TransactionsEvent.StatusFilterChanged(status))
-                            }
-                        )
-
-                        // Transaction List
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            item {
-                                Text(
-                                    text = "${state.filteredTransactions.size} transaction${if (state.filteredTransactions.size != 1) "s" else ""}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            items(state.filteredTransactions) { transaction ->
-                                TransactionCard(transaction = transaction)
-                            }
+                        items(state.filteredTransactions, key = { it.id }) { transaction ->
+                            // ✅ Using shared RequestCard in ADMIN (read-only) mode
+                            RequestCard(
+                                request = transaction,
+                                viewMode = RequestViewMode.ADMIN,
+                                onViewPhoto = { showFullPhotoUrl = it }
+                            )
                         }
+
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun StatusFilterRow(
-    selectedStatus: String?,
-    onStatusSelected: (String?) -> Unit
-) {
-    val statuses = listOf(
-        "All" to null,
-        "Pending" to "PENDING",
-        "Approved" to "APPROVED",
-        "Ready" to "READY",
-        "Completed" to "COMPLETED",
-        "Rejected" to "REJECTED",
-    )
-
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(statuses) { (label, status) ->
-            FilterChip(
-                selected = selectedStatus == status,
-                onClick = { onStatusSelected(status) },
-                label = { Text(label) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun TransactionCard(transaction: PickupRequest) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = transaction.listingTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = transaction.listingCategory,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                StatusBadge(status = transaction.status)
-            }
-
-            HorizontalDivider()
-
-            // Details
-            DetailRow(Icons.Default.Store, "Grocery", transaction.groceryName)
-            DetailRow(Icons.Default.Group, "NGO", transaction.ngoName)
-            DetailRow(Icons.Default.ShoppingCart, "Quantity", "${transaction.requestedQuantity}")
-            DetailRow(Icons.Default.DateRange, "Pickup Date", transaction.pickupDate)
-            DetailRow(Icons.Default.Schedule, "Pickup Time", transaction.pickupTime)
-
-            transaction.notes?.let { notes ->
-                HorizontalDivider()
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = notes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatusBadge(status: PickupRequestStatus) {
-    val (backgroundColor, textColor, label) = when (status) {
-        PickupRequestStatus.PENDING -> Triple(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-            "Pending"
-        )
-        PickupRequestStatus.APPROVED -> Triple(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
-            "Approved"
-        )
-        PickupRequestStatus.READY -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            "Ready"
-        )
-        PickupRequestStatus.REJECTED -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-            "Rejected"
-        )
-        PickupRequestStatus.COMPLETED -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            "Completed"
-        )
-    }
-
-    Surface(
-        color = backgroundColor,
-        shape = MaterialTheme.shapes.small
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = textColor
-        )
-    }
-}
-
-@Composable
-private fun DetailRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "$label:",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "📋",
-                style = MaterialTheme.typography.displayLarge
-            )
-            Text(
-                text = "No transactions yet",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Transactions will appear here when requests are created",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

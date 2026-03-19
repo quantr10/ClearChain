@@ -13,13 +13,14 @@ data class BrowseListingsState(
 
     // Search, Sort, Filter
     val searchQuery: String = "",
-    val selectedSort: SortOption = CommonSortOptions.DATE_DESC,
+    val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
-        CommonSortOptions.DATE_DESC,
+        CommonSortOptions.CREATED_DATE_DESC,
+        CommonSortOptions.CREATED_DATE_ASC,
         CommonSortOptions.EXPIRY_ASC,
-        CommonSortOptions.QUANTITY_DESC,
-        SortOption("location_asc", "Nearest"),
-        CommonSortOptions.NAME_ASC
+        CommonSortOptions.EXPIRY_DESC,
+        CommonSortOptions.NAME_ASC,
+        CommonSortOptions.NAME_DESC
     ),
     val selectedCategory: String? = null,
     val availableCategoryFilters: List<FilterChipData> = listOf(

@@ -14,12 +14,14 @@ data class InventoryState(
     
     // Search, Sort, Filter
     val searchQuery: String = "",
-    val selectedSort: SortOption = CommonSortOptions.DATE_DESC,
+    val selectedSort: SortOption = CommonSortOptions.DISTRIBUTED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
-        CommonSortOptions.DATE_DESC,
+        CommonSortOptions.DISTRIBUTED_DATE_ASC,
+        CommonSortOptions.DISTRIBUTED_DATE_DESC,
+        CommonSortOptions.NAME_ASC,
+        CommonSortOptions.NAME_DESC,
         CommonSortOptions.EXPIRY_ASC,
-        SortOption("distributed_date", "Recently Distributed"),
-        CommonSortOptions.NAME_ASC
+        CommonSortOptions.EXPIRY_DESC,
     ),
     
     // NEW: Status as TABS (not chips)

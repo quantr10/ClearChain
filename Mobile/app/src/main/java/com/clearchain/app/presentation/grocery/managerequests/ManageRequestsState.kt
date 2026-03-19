@@ -11,12 +11,14 @@ data class ManageRequestsState(
 
     // Search, Sort, Filter
     val searchQuery: String = "",
-    val selectedSort: SortOption = CommonSortOptions.DATE_DESC,
+    val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
-        CommonSortOptions.DATE_DESC,
-        CommonSortOptions.DATE_ASC,
-        SortOption("pickup_date_asc", "Pickup Date (Soon)"),
-        SortOption("pickup_date_desc", "Pickup Date (Later)")
+        CommonSortOptions.CREATED_DATE_DESC,
+        CommonSortOptions.CREATED_DATE_ASC,
+        CommonSortOptions.EXPIRY_ASC,
+        CommonSortOptions.EXPIRY_DESC,
+        CommonSortOptions.NAME_ASC,
+        CommonSortOptions.NAME_DESC,
     ),
     val selectedStatus: String? = null,
     val availableStatusFilters: List<FilterChipData> = listOf(
