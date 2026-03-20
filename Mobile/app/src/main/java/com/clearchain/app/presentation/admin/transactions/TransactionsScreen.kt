@@ -88,7 +88,6 @@ fun TransactionsScreen(
                 FilterChipData("APPROVED", "Approved"),
                 FilterChipData("READY", "Ready"),
                 FilterChipData("COMPLETED", "Completed"),
-                FilterChipData("REJECTED", "Rejected")
             )
 
             FilterChipsRow(

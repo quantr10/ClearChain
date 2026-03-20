@@ -174,64 +174,6 @@ fun ResultsCountAndSort(
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// FILTER SECTION (Complete Filter UI) - VERTICAL LAYOUT
-// ════════════════════════════════════════════════════════════════════════════════
-
-@Composable
-fun FilterSection(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    searchPlaceholder: String = "Search...",
-    selectedSort: SortOption,
-    onSortSelected: (SortOption) -> Unit,
-    sortOptions: List<SortOption>,
-    filterChips: List<FilterChipData>? = null,
-    selectedFilter: String? = null,
-    onFilterSelected: ((String?) -> Unit)? = null,
-    resultsCount: Int? = null,
-    itemName: String = "item",
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        // ══════════════════════════════════════════════════════════════════════
-        // 1. SEARCH BAR (Top - Full Width)
-        // ══════════════════════════════════════════════════════════════════════
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            placeholder = searchPlaceholder,
-            modifier = Modifier.padding(16.dp)
-        )
-
-        // ══════════════════════════════════════════════════════════════════════
-        // 2. FILTER CHIPS (Middle - if provided)
-        // ══════════════════════════════════════════════════════════════════════
-        if (filterChips != null && onFilterSelected != null) {
-            FilterChipsRow(
-                filters = filterChips,
-                selectedFilter = selectedFilter,
-                onFilterSelected = onFilterSelected,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
-        // ══════════════════════════════════════════════════════════════════════
-        // 3. RESULTS COUNT + SORT (Bottom - if provided)
-        // ══════════════════════════════════════════════════════════════════════
-        if (resultsCount != null) {
-            ResultsCountAndSort(
-                count = resultsCount,
-                itemName = itemName,
-                selectedSort = selectedSort,
-                onSortSelected = onSortSelected,
-                sortOptions = sortOptions,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-    }
-}
-
-// ════════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
 // ════════════════════════════════════════════════════════════════════════════════
 

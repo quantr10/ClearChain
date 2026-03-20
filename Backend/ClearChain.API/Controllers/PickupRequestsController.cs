@@ -334,8 +334,10 @@ public class PickupRequestsController : ControllerBase
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
+            // ✅ CHANGED: Allow both NGO and Grocery to cancel
             var pr = await _context.PickupRequests
-                .FirstOrDefaultAsync(p => p.Id == id && p.NgoId.ToString() == userId);
+                .FirstOrDefaultAsync(p => p.Id == id &&
+                    (p.NgoId.ToString() == userId || p.GroceryId.ToString() == userId));
 
             if (pr == null)
             {
@@ -349,6 +351,9 @@ public class PickupRequestsController : ControllerBase
                     message = $"Cannot cancel request with status: {pr.Status}. Only PENDING requests can be cancelled."
                 });
             }
+
+            // ✅ NEW: Determine who is cancelling
+            bool isGroceryRejecting = pr.GroceryId.ToString() == userId;
 
             // Get related data before processing
             var ngo = await _context.Organizations.FindAsync(pr.NgoId);
@@ -367,7 +372,8 @@ public class PickupRequestsController : ControllerBase
                 NgoName = ngo?.Name ?? "",
                 GroceryId = pr.GroceryId.ToString(),
                 GroceryName = grocery?.Name ?? "",
-                Status = "cancelled",
+                // ✅ CHANGED: Status based on who cancelled
+                Status = isGroceryRejecting ? "rejected" : "cancelled",
                 RequestedQuantity = pr.RequestedQuantity ?? 0,
                 PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
                 PickupTime = pr.PickupTime ?? "09:00",
@@ -389,11 +395,26 @@ public class PickupRequestsController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            await _notificationService.NotifyPickupRequestCancelled(responseData);
+            // ✅ CHANGED: Different notifications based on who cancelled
+            if (isGroceryRejecting)
+            {
+                // Grocery rejected → notify NGO
+                await _notificationService.NotifyPickupRequestCancelled(responseData);
+                await _pushNotificationService.SendPickupRejectedNotification(pr.NgoId, responseData);
+            }
+            else
+            {
+                // NGO cancelled → notify Grocery
+                await _notificationService.NotifyPickupRequestCancelled(responseData);
+                await _pushNotificationService.SendPickupRequestCancelledNotification(pr.GroceryId, responseData);
+            }
 
             return Ok(new PickupRequestResponse
             {
-                Message = "Pickup request cancelled successfully",
+                // ✅ CHANGED: Message based on who cancelled
+                Message = isGroceryRejecting
+                    ? "Pickup request rejected successfully"
+                    : "Pickup request cancelled successfully",
                 Data = responseData
             });
         }
@@ -403,88 +424,6 @@ public class PickupRequestsController : ControllerBase
             return StatusCode(500, new { message = ex.Message });
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PUT: api/pickuprequests/{id}/reject
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    [HttpPut("{id}/reject")]
-public async Task<ActionResult<PickupRequestResponse>> RejectPickupRequest(Guid id)
-{
-    try
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
-
-        var pr = await _context.PickupRequests
-            .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
-
-        if (pr == null)
-        {
-            return NotFound(new { message = "Pickup request not found" });
-        }
-
-        if (pr.Status != "pending")
-        {
-            return BadRequest(new { message = $"Cannot reject request with status: {pr.Status}" });
-        }
-
-        var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-        var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
-
-        var listing = pr.ListingId.HasValue
-            ? await _context.ClearanceListings
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == pr.ListingId.Value)
-            : null;
-
-        var responseData = new PickupRequestData
-        {
-            Id = pr.Id.ToString(),
-            ListingId = pr.ListingId?.ToString() ?? "",
-            NgoId = pr.NgoId.ToString(),
-            NgoName = ngo?.Name ?? "",
-            GroceryId = pr.GroceryId.ToString(),
-            GroceryName = grocery?.Name ?? "",
-            Status = "rejected",
-            RequestedQuantity = pr.RequestedQuantity ?? 0,
-            PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-            PickupTime = pr.PickupTime ?? "09:00",
-            Notes = pr.Notes ?? "",
-            ListingTitle = listing?.ProductName ?? "",
-            ListingCategory = listing?.Category ?? "",
-            CreatedAt = pr.RequestedAt.ToString("o"),
-            ProofPhotoUrl = pr.ProofPhotoUrl
-        };
-
-        _context.PickupRequests.Remove(pr);
-        await _context.SaveChangesAsync();
-
-        if (listing != null && listing.Group != null)
-        {
-            await SmartMergeOnCancel(listing, listing.Group);
-            await _context.SaveChangesAsync();
-        }
-
-        await _notificationService.NotifyPickupRequestStatusChanged(responseData, "pending");
-
-        await _pushNotificationService.SendPickupRejectedNotification(pr.NgoId, responseData);
-
-        return Ok(new PickupRequestResponse
-        {
-            Message = "Pickup request rejected successfully",
-            Data = responseData
-        });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error rejecting pickup request");
-        return StatusCode(500, new { message = ex.Message });
-    }
-}
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PUT: api/pickuprequests/{id}/picked-up

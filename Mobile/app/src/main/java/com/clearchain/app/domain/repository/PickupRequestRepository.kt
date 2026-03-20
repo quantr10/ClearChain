@@ -28,8 +28,6 @@ interface PickupRequestRepository {
 
     suspend fun approvePickupRequest(id: String): Result<PickupRequest>
 
-    suspend fun rejectPickupRequest(id: String): Result<PickupRequest>
-
     suspend fun markReadyForPickup(id: String): Result<PickupRequest>
 
     // ✅ NEW METHOD (with photo)

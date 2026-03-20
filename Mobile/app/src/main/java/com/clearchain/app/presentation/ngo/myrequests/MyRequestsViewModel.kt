@@ -72,7 +72,7 @@ private fun setupSignalR() {
                 "approved" -> "Your request has been approved!"
                 "ready" -> "Food is ready for pickup!"
                 "completed" -> "Pickup completed"
-                "rejected" -> "Request was rejected"
+                "rejected" -> "Your request was rejected by the grocery"
                 else -> "Status updated to ${notification.newStatus}"
             }
             

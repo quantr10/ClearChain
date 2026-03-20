@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// BrowseListingsScreen.kt — Same pattern as all other list screens
-// Fullscreen error on first load fail, filters always visible
+// BrowseListingsScreen.kt — Split filters, same pattern as all list screens
 // ═══════════════════════════════════════════════════════════════════════════════
 
 package com.clearchain.app.presentation.ngo.browselistings
@@ -70,9 +69,7 @@ fun BrowseListingsScreen(
         }
     ) { padding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             when {
                 // ── 1. First load → fullscreen spinner ──────────────
@@ -95,28 +92,39 @@ fun BrowseListingsScreen(
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
 
-                        // Filters
-                        FilterSection(
-                            searchQuery = state.searchQuery,
-                            onSearchQueryChange = {
+                        // Search bar
+                        SearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = {
                                 viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it))
                             },
-                            searchPlaceholder = "Search by name, grocery, location...",
+                            placeholder = "Search by name, grocery, location...",
+                            modifier = Modifier.padding(16.dp)
+                        )
+
+                        // Category chips
+                        FilterChipsRow(
+                            filters = state.availableCategoryFilters,
+                            selectedFilter = state.selectedCategory,
+                            onFilterSelected = {
+                                viewModel.onEvent(BrowseListingsEvent.CategoryFilterChanged(it))
+                            },
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        // Results count + Sort
+                        ResultsCountAndSort(
+                            count = state.filteredListings.size,
+                            itemName = "listing",
                             selectedSort = state.selectedSort,
                             onSortSelected = {
                                 viewModel.onEvent(BrowseListingsEvent.SortOptionChanged(it))
                             },
                             sortOptions = state.availableSortOptions,
-                            filterChips = state.availableCategoryFilters,
-                            selectedFilter = state.selectedCategory,
-                            onFilterSelected = {
-                                viewModel.onEvent(BrowseListingsEvent.CategoryFilterChanged(it))
-                            },
-                            resultsCount = state.filteredListings.size,
-                            itemName = "listing"
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
 
-                        // Inline error (after data loaded but action failed)
+                        // Inline error
                         state.error?.let {
                             ErrorBanner(
                                 message = it,
