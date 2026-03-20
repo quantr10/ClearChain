@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// ManageRequestsScreen.kt — With fullscreen error on first load fail
+// ManageRequestsScreen.kt — Split filters (no FilterSection)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 package com.clearchain.app.presentation.grocery.managerequests
@@ -84,19 +84,30 @@ fun ManageRequestsScreen(
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
 
-                        // Filters
-                        FilterSection(
-                            searchQuery = state.searchQuery,
-                            onSearchQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
-                            searchPlaceholder = "Search by item, NGO...",
+                        // Search bar
+                        SearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
+                            placeholder = "Search by item, NGO...",
+                            modifier = Modifier.padding(16.dp)
+                        )
+
+                        // Status chips
+                        FilterChipsRow(
+                            filters = state.availableStatusFilters,
+                            selectedFilter = state.selectedStatus,
+                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) },
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        // Results count + Sort
+                        ResultsCountAndSort(
+                            count = state.filteredRequests.size,
+                            itemName = "request",
                             selectedSort = state.selectedSort,
                             onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
                             sortOptions = state.availableSortOptions,
-                            filterChips = state.availableStatusFilters,
-                            selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) },
-                            resultsCount = state.filteredRequests.size,
-                            itemName = "request"
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
 
                         // Inline error (after data loaded but action failed)
@@ -114,7 +125,7 @@ fun ManageRequestsScreen(
                                 EmptyState(
                                     icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
                                     title = if (state.allRequests.isEmpty()) "No pickup requests yet"
-                                    else "No requests match your filters",
+                                           else "No requests match your filters",
                                     subtitle = if (state.allRequests.isEmpty())
                                         "Requests from NGOs will appear here"
                                     else "Try adjusting your search or filters"

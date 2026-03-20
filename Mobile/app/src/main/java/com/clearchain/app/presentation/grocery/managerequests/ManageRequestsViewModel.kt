@@ -7,7 +7,7 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
-import com.clearchain.app.domain.usecase.pickuprequest.RejectPickupRequestUseCase
+import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class ManageRequestsViewModel @Inject constructor(
     private val getGroceryPickupRequestsUseCase: GetGroceryPickupRequestsUseCase,
     private val approvePickupRequestUseCase: ApprovePickupRequestUseCase,
-    private val rejectPickupRequestUseCase: RejectPickupRequestUseCase,
+    private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
     private val markReadyForPickupUseCase: MarkReadyForPickupUseCase,
     private val signalRService: SignalRService  // ✅ ADD
 ) : ViewModel() {
@@ -242,7 +242,7 @@ class ManageRequestsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            val result = rejectPickupRequestUseCase(requestId)
+            val result = cancelPickupRequestUseCase(requestId)
 
             result.fold(
                 onSuccess = {

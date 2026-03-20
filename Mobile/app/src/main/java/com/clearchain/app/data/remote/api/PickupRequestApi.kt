@@ -38,11 +38,6 @@ interface PickupRequestApi {
         @Path("id") id: String
     ): PickupRequestResponse
 
-    @PUT("pickuprequests/{id}/reject")
-    suspend fun rejectPickupRequest(
-        @Path("id") id: String
-    ): PickupRequestResponse
-
     @PUT("pickuprequests/{id}/ready")
     suspend fun markReadyForPickup(
         @Path("id") id: String

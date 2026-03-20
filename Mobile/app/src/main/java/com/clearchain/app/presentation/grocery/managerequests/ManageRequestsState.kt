@@ -27,7 +27,6 @@ data class ManageRequestsState(
         FilterChipData("APPROVED", "Approved"),
         FilterChipData("READY", "Ready"),
         FilterChipData("COMPLETED", "Completed"),
-        FilterChipData("REJECTED", "Rejected")
     ),
 
     val isLoading: Boolean = false,

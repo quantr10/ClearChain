@@ -122,7 +122,6 @@ fun StatisticsScreen(
                                 "Approved" to "${stats.approvedRequests}",
                                 "Ready" to "${stats.readyRequests}",
                                 "Completed" to "${stats.completedRequests}",
-                                "Rejected" to "${stats.rejectedRequests}",
                                 "Cancelled" to "${stats.cancelledRequests}"
                             )
                         )

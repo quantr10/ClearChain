@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// MyRequestsScreen.kt — Same pattern as ManageRequestsScreen
-// Fullscreen error on first load fail, filters always visible
+// MyRequestsScreen.kt — Split filters, same pattern as all list screens
 // ═══════════════════════════════════════════════════════════════════════════════
 
 package com.clearchain.app.presentation.ngo.myrequests
@@ -115,22 +114,33 @@ fun MyRequestsScreen(
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
 
-                        // Filters
-                        FilterSection(
-                            searchQuery = state.searchQuery,
-                            onSearchQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
-                            searchPlaceholder = "Search by item, grocery...",
+                        // Search bar
+                        SearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
+                            placeholder = "Search by item, grocery...",
+                            modifier = Modifier.padding(16.dp)
+                        )
+
+                        // Status chips
+                        FilterChipsRow(
+                            filters = state.availableStatusFilters,
+                            selectedFilter = state.selectedStatus,
+                            onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) },
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        // Results count + Sort
+                        ResultsCountAndSort(
+                            count = state.filteredRequests.size,
+                            itemName = "request",
                             selectedSort = state.selectedSort,
                             onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
                             sortOptions = state.availableSortOptions,
-                            filterChips = state.availableStatusFilters,
-                            selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) },
-                            resultsCount = state.filteredRequests.size,
-                            itemName = "request"
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
 
-                        // Inline error (after data loaded but action failed)
+                        // Inline error
                         state.error?.let {
                             ErrorBanner(
                                 message = it,

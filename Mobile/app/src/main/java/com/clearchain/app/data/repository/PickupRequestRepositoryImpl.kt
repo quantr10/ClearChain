@@ -103,15 +103,6 @@ class PickupRequestRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun rejectPickupRequest(id: String): Result<PickupRequest> {
-        return try {
-            val response = pickupRequestApi.rejectPickupRequest(id)
-            Result.success(response.data.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     override suspend fun markReadyForPickup(id: String): Result<PickupRequest> {
         return try {
             val response = pickupRequestApi.markReadyForPickup(id)
