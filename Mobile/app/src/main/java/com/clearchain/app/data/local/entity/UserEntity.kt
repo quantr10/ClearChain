@@ -8,8 +8,7 @@ import com.clearchain.app.domain.model.VerificationStatus
 
 @Entity(tableName = "users")
 data class UserEntity(
-    @PrimaryKey
-    val id: String,
+    @PrimaryKey val id: String,
     val name: String,
     val type: String,
     val email: String,
@@ -20,49 +19,47 @@ data class UserEntity(
     val verificationStatus: String,
     val hours: String? = null,
     val profilePictureUrl: String? = null,
-    val createdAt: String
+    val createdAt: String,
+    // ═══ NEW FIELDS (Part 1) ═══
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val contactPerson: String? = null,
+    val pickupInstructions: String? = null,
+    val description: String? = null
 )
 
-// Extension functions
+// CANONICAL mapping functions — used everywhere, no duplicates
 fun UserEntity.toDomain(): Organization {
     return Organization(
-        id = id,
-        name = name,
+        id = id, name = name,
         type = when (type.lowercase()) {
             "grocery" -> OrganizationType.GROCERY
             "ngo" -> OrganizationType.NGO
             "admin" -> OrganizationType.ADMIN
             else -> OrganizationType.GROCERY
         },
-        email = email,
-        phone = phone,
-        address = address,
-        location = location,
+        email = email, phone = phone, address = address, location = location,
         verified = verified,
         verificationStatus = when (verificationStatus.lowercase()) {
             "approved" -> VerificationStatus.APPROVED
             "rejected" -> VerificationStatus.REJECTED
             else -> VerificationStatus.PENDING
         },
-        hours = hours,
-        profilePictureUrl = profilePictureUrl,
-        createdAt = createdAt
+        hours = hours, profilePictureUrl = profilePictureUrl, createdAt = createdAt,
+        latitude = latitude, longitude = longitude,
+        contactPerson = contactPerson, pickupInstructions = pickupInstructions,
+        description = description
     )
 }
 
 fun Organization.toEntity(): UserEntity {
     return UserEntity(
-        id = id,
-        name = name,
-        type = type.name.lowercase(),
-        email = email,
-        phone = phone,
-        address = address,
-        location = location,
-        verified = verified,
-        verificationStatus = verificationStatus.name.lowercase(),
-        hours = hours,
-        profilePictureUrl = profilePictureUrl,
-        createdAt = createdAt
+        id = id, name = name, type = type.name.lowercase(),
+        email = email, phone = phone, address = address, location = location,
+        verified = verified, verificationStatus = verificationStatus.name.lowercase(),
+        hours = hours, profilePictureUrl = profilePictureUrl, createdAt = createdAt,
+        latitude = latitude, longitude = longitude,
+        contactPerson = contactPerson, pickupInstructions = pickupInstructions,
+        description = description
     )
 }

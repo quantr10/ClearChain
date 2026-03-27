@@ -3,19 +3,15 @@ package com.clearchain.app.data.local.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.clearchain.app.data.local.dao.AuthTokenDao
-import com.clearchain.app.data.local.dao.FCMTokenDao  // ✅ ADD
+import com.clearchain.app.data.local.dao.FCMTokenDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.FCMTokenEntity  // ✅ ADD
+import com.clearchain.app.data.local.entity.FCMTokenEntity
 import com.clearchain.app.data.local.entity.UserEntity
 
 @Database(
-    entities = [
-        UserEntity::class,
-        AuthTokenEntity::class,
-        FCMTokenEntity::class
-    ],
-    version = 2,
+    entities = [UserEntity::class, AuthTokenEntity::class, FCMTokenEntity::class],
+    version = 3,  // BUMPED from 2 (Part 1: new fields in UserEntity)
     exportSchema = false
 )
 abstract class ClearChainDatabase : RoomDatabase() {

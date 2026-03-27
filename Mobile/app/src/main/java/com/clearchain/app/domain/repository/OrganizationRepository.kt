@@ -6,6 +6,12 @@ interface OrganizationRepository {
         phone: String?,
         address: String?,
         location: String?,
-        hours: String?
+        hours: String?,
+        // ═══ NEW PARAMS (Part 1) ═══
+        latitude: Double? = null,
+        longitude: Double? = null,
+        contactPerson: String? = null,
+        pickupInstructions: String? = null,
+        description: String? = null
     ): Result<Unit>
 }

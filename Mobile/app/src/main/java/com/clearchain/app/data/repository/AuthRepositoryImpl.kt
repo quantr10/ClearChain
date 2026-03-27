@@ -3,7 +3,8 @@ package com.clearchain.app.data.repository
 import com.clearchain.app.data.local.dao.AuthTokenDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.UserEntity
+import com.clearchain.app.data.local.entity.toEntity  // CANONICAL from UserEntity.kt
+import com.clearchain.app.data.local.entity.toDomain   // CANONICAL from UserEntity.kt
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.dto.ChangePasswordRequest
 import com.clearchain.app.data.remote.dto.LoginRequest
@@ -24,76 +25,46 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override suspend fun register(
-    name: String,
-    type: String,
-    email: String,
-    password: String,
-    fcmToken: String?
-): Result<Pair<Organization, AuthTokens>> {
-    return try {
-        val request = RegisterRequest(
-            name = name,
-            type = type,
-            email = email,
-            password = password,
-            fcmToken = fcmToken
-        )
-
-        val response = authApi.register(request)
-        val (organization, tokens) = response.data.toDomain()
-
-        // ✅ ADD: Clear old users BEFORE saving new one
-        userDao.clearUsers()
-        
-        authTokenDao.saveTokens(
-            AuthTokenEntity(
-                accessToken = tokens.accessToken,
-                refreshToken = tokens.refreshToken,
-                expiresIn = tokens.expiresIn,
-                tokenType = tokens.tokenType
-            )
-        )
-
-        userDao.insertUser(organization.toEntity())
-
-        Result.success(Pair(organization, tokens))
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
-}
-
-    override suspend fun login(
-        email: String,
-        password: String
+        name: String, type: String, email: String,
+        password: String, fcmToken: String?
     ): Result<Pair<Organization, AuthTokens>> {
         return try {
-            val request = LoginRequest(email, password)
-            val response = authApi.login(request)
+            val request = RegisterRequest(name = name, type = type, email = email, password = password, fcmToken = fcmToken)
+            val response = authApi.register(request)
             val (organization, tokens) = response.data.toDomain()
 
-            // ✅ ADD: Clear old users BEFORE saving new one
             userDao.clearUsers()
-            
-            authTokenDao.saveTokens(
-                AuthTokenEntity(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
-                )
-            )
-
-            userDao.insertUser(organization.toEntity())
-
+            authTokenDao.saveTokens(AuthTokenEntity(
+                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
+                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
+            ))
+            userDao.insertUser(organization.toEntity())  // uses canonical from UserEntity.kt
             Result.success(Pair(organization, tokens))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
+
+    override suspend fun login(email: String, password: String): Result<Pair<Organization, AuthTokens>> {
+        return try {
+            val request = LoginRequest(email, password)
+            val response = authApi.login(request)
+            val (organization, tokens) = response.data.toDomain()
+
+            userDao.clearUsers()
+            authTokenDao.saveTokens(AuthTokenEntity(
+                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
+                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
+            ))
+            userDao.insertUser(organization.toEntity())
+            Result.success(Pair(organization, tokens))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun logout(): Result<Unit> {
         return try {
-            // Clear local data
             authTokenDao.clearTokens()
             userDao.clearUsers()
             Result.success(Unit)
@@ -102,98 +73,41 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun refreshToken(
-        refreshToken: String
-    ): Result<Pair<Organization, AuthTokens>> {
+    override suspend fun refreshToken(refreshToken: String): Result<Pair<Organization, AuthTokens>> {
         return try {
             val request = RefreshTokenRequest(refreshToken)
             val response = authApi.refreshToken(request)
             val (organization, tokens) = response.data.toDomain()
 
-            // ✅ ADD: Clear old users BEFORE saving new one
             userDao.clearUsers()
-            
-            authTokenDao.saveTokens(
-                AuthTokenEntity(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
-                )
-            )
-
+            authTokenDao.saveTokens(AuthTokenEntity(
+                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
+                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
+            ))
             userDao.insertUser(organization.toEntity())
-
             Result.success(Pair(organization, tokens))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun changePassword(
-        currentPassword: String,
-        newPassword: String
-    ): Result<Unit> {
+    override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
         return try {
-            val request = ChangePasswordRequest(currentPassword, newPassword)
-            authApi.changePassword(request)
+            authApi.changePassword(ChangePasswordRequest(currentPassword, newPassword))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // ✅ FIX: Return Flow directly (not suspend fun)
     override suspend fun getCurrentUser(): Flow<Organization?> {
-        return userDao.getCurrentUserFlow().map { it?.toDomain() }
+        return userDao.getCurrentUserFlow().map { it?.toDomain() }  // uses canonical from UserEntity.kt
     }
 
-    // ✅ FIX: Return Flow directly (not suspend fun)
     override suspend fun isLoggedIn(): Flow<Boolean> {
         return authTokenDao.getTokensFlow().map { it != null }
     }
 }
 
-// ✅ Extension functions for mapping
-private fun Organization.toEntity(): UserEntity {
-    return UserEntity(
-        id = id,
-        name = name,
-        email = email,
-        type = type.name.lowercase(),
-        phone = phone,
-        address = address,
-        location = location,
-        verified = verified,
-        verificationStatus = verificationStatus.name.lowercase(),
-        hours = hours,
-        profilePictureUrl = profilePictureUrl,
-        createdAt = createdAt
-    )
-}
-
-private fun UserEntity.toDomain(): Organization {
-    return Organization(
-        id = id,
-        name = name,
-        type = when (type.lowercase()) {
-            "grocery" -> com.clearchain.app.domain.model.OrganizationType.GROCERY
-            "ngo" -> com.clearchain.app.domain.model.OrganizationType.NGO
-            "admin" -> com.clearchain.app.domain.model.OrganizationType.ADMIN
-            else -> com.clearchain.app.domain.model.OrganizationType.GROCERY
-        },
-        email = email,
-        phone = phone,
-        address = address,
-        location = location,
-        verified = verified,
-        verificationStatus = when (verificationStatus.lowercase()) {
-            "approved" -> com.clearchain.app.domain.model.VerificationStatus.APPROVED
-            "rejected" -> com.clearchain.app.domain.model.VerificationStatus.REJECTED
-            else -> com.clearchain.app.domain.model.VerificationStatus.PENDING
-        },
-        hours = hours,
-        profilePictureUrl = profilePictureUrl,
-        createdAt = createdAt
-    )
-}
+// NOTE: Private duplicate toEntity()/toDomain() functions REMOVED.
+// Now imported from com.clearchain.app.data.local.entity.UserEntity

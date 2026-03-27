@@ -23,4 +23,11 @@ public class OrganizationDto
     public string? Hours { get; set; }
     public string? ProfilePictureUrl { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
+
+    // ═══ NEW FIELDS (Part 1) ═══
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? ContactPerson { get; set; }
+    public string? PickupInstructions { get; set; }
+    public string? Description { get; set; }
 }

@@ -7,7 +7,6 @@ public class UpdateProfileRequest
     [StringLength(200, MinimumLength = 3)]
     public string? Name { get; set; }
 
-    // ✅ ADDED: Fields removed from RegisterRequest
     [Phone]
     public string? Phone { get; set; }
 
@@ -16,6 +15,11 @@ public class UpdateProfileRequest
     public string? Location { get; set; }
 
     public string? Hours { get; set; }
-    
-    // ❌ NOT INCLUDED: Type (should not be changeable after registration)
+
+    // ═══ NEW FIELDS (Part 1) ═══
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? ContactPerson { get; set; }        // NGO only
+    public string? PickupInstructions { get; set; }    // Grocery only
+    public string? Description { get; set; }           // Both
 }

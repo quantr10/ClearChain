@@ -32,14 +32,9 @@ public class OrganizationService : IOrganizationService
             .Where(o => !o.Verified && o.VerificationStatus == "pending");
 
         if (!string.IsNullOrEmpty(type))
-        {
             query = query.Where(o => o.Type == type.ToLower());
-        }
 
-        var organizations = await query
-            .OrderBy(o => o.CreatedAt)
-            .ToListAsync();
-
+        var organizations = await query.OrderBy(o => o.CreatedAt).ToListAsync();
         return organizations.Select(MapToDto).ToList();
     }
 
@@ -49,33 +44,20 @@ public class OrganizationService : IOrganizationService
             .Where(o => o.Verified && o.VerificationStatus == "approved");
 
         if (!string.IsNullOrEmpty(type))
-        {
             query = query.Where(o => o.Type == type.ToLower());
-        }
 
-        var organizations = await query
-            .OrderBy(o => o.Name)
-            .ToListAsync();
-
+        var organizations = await query.OrderBy(o => o.Name).ToListAsync();
         return organizations.Select(MapToDto).ToList();
     }
 
     public async Task<(bool Success, string Message)> VerifyOrganizationAsync(
-        Guid organizationId, 
-        string action, 
-        string? notes = null)
+        Guid organizationId, string action, string? notes = null)
     {
         var organization = await _context.Organizations.FindAsync(organizationId);
-
         if (organization == null)
-        {
             return (false, "Organization not found");
-        }
-
         if (organization.Verified)
-        {
             return (false, "Organization already verified");
-        }
 
         if (action.ToLower() == "approved")
         {
@@ -88,17 +70,14 @@ public class OrganizationService : IOrganizationService
             organization.VerificationStatus = "rejected";
         }
         else
-        {
             return (false, "Invalid action. Must be 'approved' or 'rejected'");
-        }
 
         organization.UpdatedAt = DateTime.UtcNow;
 
-        // Create audit log
         var auditLog = new AuditLog
         {
             Id = Guid.NewGuid(),
-            UserId = organizationId, // In real app, this should be admin's ID
+            UserId = organizationId,
             Action = $"Organization {action}",
             EntityType = "Organization",
             EntityId = organizationId,
@@ -109,7 +88,6 @@ public class OrganizationService : IOrganizationService
 
         _context.AuditLogs.Add(auditLog);
         await _context.SaveChangesAsync();
-
         return (true, $"Organization {action} successfully");
     }
 
@@ -119,40 +97,34 @@ public class OrganizationService : IOrganizationService
         return organization == null ? null : MapToDto(organization);
     }
 
+    // ═══ UPDATED: handles new fields (Part 1) ═══
     public async Task<(bool Success, string Message)> UpdateProfileAsync(
-        Guid userId, 
-        UpdateProfileRequest request)
+        Guid userId, UpdateProfileRequest request)
     {
         var user = await _context.Organizations.FindAsync(userId);
-
         if (user == null)
-        {
             return (false, "User not found");
-        }
 
-        // Update only provided fields
-        if (!string.IsNullOrEmpty(request.Name))
-            user.Name = request.Name;
+        // Update only provided fields (existing)
+        if (!string.IsNullOrEmpty(request.Name)) user.Name = request.Name;
+        if (!string.IsNullOrEmpty(request.Phone)) user.Phone = request.Phone;
+        if (!string.IsNullOrEmpty(request.Address)) user.Address = request.Address;
+        if (!string.IsNullOrEmpty(request.Location)) user.Location = request.Location;
+        if (request.Hours != null) user.Hours = request.Hours;
 
-        if (!string.IsNullOrEmpty(request.Phone))
-            user.Phone = request.Phone;
-
-        if (!string.IsNullOrEmpty(request.Address))
-            user.Address = request.Address;
-
-        if (!string.IsNullOrEmpty(request.Location))
-            user.Location = request.Location;
-
-        if (request.Hours != null)
-            user.Hours = request.Hours;
+        // ═══ NEW FIELDS (Part 1) ═══
+        if (request.Latitude.HasValue) user.Latitude = request.Latitude;
+        if (request.Longitude.HasValue) user.Longitude = request.Longitude;
+        if (request.ContactPerson != null) user.ContactPerson = request.ContactPerson;
+        if (request.PickupInstructions != null) user.PickupInstructions = request.PickupInstructions;
+        if (request.Description != null) user.Description = request.Description;
 
         user.UpdatedAt = DateTime.UtcNow;
-
         await _context.SaveChangesAsync();
-
         return (true, "Profile updated successfully");
     }
 
+    // ═══ UPDATED: includes new fields (Part 1) ═══
     private static OrganizationDto MapToDto(Organization org)
     {
         return new OrganizationDto
@@ -161,14 +133,20 @@ public class OrganizationService : IOrganizationService
             Name = org.Name,
             Type = org.Type,
             Email = org.Email,
-            Phone = org.Phone,
-            Address = org.Address,
-            Location = org.Location,
+            Phone = org.Phone ?? "",
+            Address = org.Address ?? "",
+            Location = org.Location ?? "",
             Verified = org.Verified,
             VerificationStatus = org.VerificationStatus,
             Hours = org.Hours,
             ProfilePictureUrl = org.ProfilePictureUrl,
-            CreatedAt = org.CreatedAt.ToString("o")
+            CreatedAt = org.CreatedAt.ToString("o"),
+            // NEW
+            Latitude = org.Latitude,
+            Longitude = org.Longitude,
+            ContactPerson = org.ContactPerson,
+            PickupInstructions = org.PickupInstructions,
+            Description = org.Description
         };
     }
 }

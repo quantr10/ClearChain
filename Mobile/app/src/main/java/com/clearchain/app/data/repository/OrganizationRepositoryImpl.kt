@@ -16,33 +16,42 @@ class OrganizationRepositoryImpl @Inject constructor(
         phone: String?,
         address: String?,
         location: String?,
-        hours: String?
+        hours: String?,
+        latitude: Double?,
+        longitude: Double?,
+        contactPerson: String?,
+        pickupInstructions: String?,
+        description: String?
     ): Result<Unit> {
         return try {
             val request = UpdateProfileRequest(
-                name = name,
-                phone = phone,
-                address = address,
-                location = location,
-                hours = hours
+                name = name, phone = phone, address = address,
+                location = location, hours = hours,
+                latitude = latitude, longitude = longitude,
+                contactPerson = contactPerson,
+                pickupInstructions = pickupInstructions,
+                description = description
             )
-
             api.updateProfile(request)
 
-            // ✅ FIX: Update local cache using correct method names
-            val currentUser = userDao.getCurrentUser()  // ✅ CHANGED: getUser() → getCurrentUser()
+            // Update local cache
+            val currentUser = userDao.getCurrentUser()
             if (currentUser != null) {
-                userDao.insertUser(  // ✅ CHANGED: saveUser() → insertUser()
+                userDao.insertUser(
                     currentUser.copy(
                         name = name,
                         phone = phone ?: "",
                         address = address ?: "",
                         location = location ?: "",
-                        hours = hours
+                        hours = hours,
+                        latitude = latitude,
+                        longitude = longitude,
+                        contactPerson = contactPerson,
+                        pickupInstructions = pickupInstructions,
+                        description = description
                     )
                 )
             }
-
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
