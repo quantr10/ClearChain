@@ -41,7 +41,6 @@ public class AuthController : ControllerBase
         if (!success)
             return BadRequest(new { message });
 
-        // ✅ Send admin alert when new user registers
         if (response?.User != null)
         {
             try
@@ -61,7 +60,6 @@ public class AuthController : ControllerBase
                 };
 
                 await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
-
                 await _pushNotificationService.SendWelcomeNotification(orgData);
             }
             catch (Exception ex)
@@ -113,6 +111,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
+    // ═══ UPDATED: /me now includes new fields (Part 1) ═══
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
@@ -146,7 +145,13 @@ public class AuthController : ControllerBase
                 VerificationStatus = user.VerificationStatus ?? "pending",
                 Hours = user.Hours,
                 ProfilePictureUrl = user.ProfilePictureUrl,
-                CreatedAt = user.CreatedAt.ToString("o")
+                CreatedAt = user.CreatedAt.ToString("o"),
+                // ═══ NEW FIELDS (Part 1) ═══
+                Latitude = user.Latitude,
+                Longitude = user.Longitude,
+                ContactPerson = user.ContactPerson,
+                PickupInstructions = user.PickupInstructions,
+                Description = user.Description
             }
         };
 
@@ -174,7 +179,6 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password changed successfully" });
     }
 
-    // ✅ NEW: Register FCM Token endpoint
     [HttpPost("fcm-token")]
     [Authorize]
     public async Task<IActionResult> RegisterFCMToken([FromBody] RegisterFCMTokenRequest request)
@@ -187,37 +191,24 @@ public class AuthController : ControllerBase
 
         try
         {
-            // ✅ FIXED: Delete ALL tokens with this FCM token (any organization)
             var existingTokensWithSameToken = await _context.FCMTokens
-                .Where(t => t.Token == request.FcmToken)
-                .ToListAsync();
-
+                .Where(t => t.Token == request.FcmToken).ToListAsync();
             if (existingTokensWithSameToken.Any())
-            {
                 _context.FCMTokens.RemoveRange(existingTokensWithSameToken);
-            }
 
-            // ✅ ALSO delete old tokens for this user (different tokens)
             var oldTokensForThisUser = await _context.FCMTokens
-                .Where(t => t.OrganizationId == userGuid && t.Token != request.FcmToken)
-                .ToListAsync();
-
+                .Where(t => t.OrganizationId == userGuid && t.Token != request.FcmToken).ToListAsync();
             if (oldTokensForThisUser.Any())
-            {
                 _context.FCMTokens.RemoveRange(oldTokensForThisUser);
-            }
 
-            // Save new token
-            var fcmToken = new FCMToken
+            _context.FCMTokens.Add(new FCMToken
             {
                 Id = Guid.NewGuid(),
                 OrganizationId = userGuid,
                 Token = request.FcmToken,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.FCMTokens.Add(fcmToken);
+            });
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "FCM token registered successfully" });

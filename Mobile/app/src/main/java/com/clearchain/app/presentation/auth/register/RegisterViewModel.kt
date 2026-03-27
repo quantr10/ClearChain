@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.auth.RegisterUseCase
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import com.google.firebase.messaging.FirebaseMessaging
@@ -27,147 +28,88 @@ class RegisterViewModel @Inject constructor(
 
     fun onEvent(event: RegisterEvent) {
         when (event) {
-            is RegisterEvent.NameChanged -> {
+            is RegisterEvent.NameChanged ->
                 _state.update { it.copy(name = event.name, nameError = null) }
-            }
-
-            is RegisterEvent.TypeChanged -> {
+            is RegisterEvent.TypeChanged ->
                 _state.update { it.copy(type = event.type) }
-            }
-
-            is RegisterEvent.EmailChanged -> {
+            is RegisterEvent.EmailChanged ->
                 _state.update { it.copy(email = event.email, emailError = null) }
-            }
-
-            is RegisterEvent.PasswordChanged -> {
+            is RegisterEvent.PasswordChanged ->
                 _state.update { it.copy(password = event.password, passwordError = null) }
-            }
-
-            is RegisterEvent.ConfirmPasswordChanged -> {
+            is RegisterEvent.ConfirmPasswordChanged ->
                 _state.update { it.copy(confirmPassword = event.confirmPassword, confirmPasswordError = null) }
-            }
-
-            // ✅ REMOVED: PhoneChanged, AddressChanged, LocationChanged, HoursChanged
-
-            RegisterEvent.Register -> {
-                register()
-            }
-
-            RegisterEvent.NavigateToLogin -> {
-                viewModelScope.launch {
-                    _uiEvent.send(UiEvent.NavigateUp)
-                }
-            }
-
-            RegisterEvent.ClearError -> {
+            RegisterEvent.Register -> register()
+            RegisterEvent.NavigateToLogin ->
+                viewModelScope.launch { _uiEvent.send(UiEvent.NavigateUp) }
+            RegisterEvent.ClearError ->
                 _state.update { it.copy(error = null) }
-            }
         }
     }
 
     private fun register() {
-        val currentState = _state.value
-
-        // Validate
-        if (!validateInputs()) {
-            return
-        }
+        if (!validateInputs()) return
+        val s = _state.value
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // Get FCM token
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {
-                Log.e("RegisterViewModel", "Failed to get FCM token", e)
-                null
+                Log.e("RegisterViewModel", "Failed to get FCM token", e); null
             }
 
-            Log.d("RegisterViewModel", "FCM Token: ${fcmToken ?: "None"}")
-
-            // ✅ SIMPLIFIED: Only pass required fields
             val result = registerUseCase(
-                name = currentState.name,
-                type = currentState.type,
-                email = currentState.email,
-                password = currentState.password,
-                fcmToken = fcmToken
+                name = s.name, type = s.type, email = s.email,
+                password = s.password, fcmToken = fcmToken
             )
 
             result.fold(
-                onSuccess = { (user, tokens) ->
+                onSuccess = { (user, _) ->
                     _state.update { it.copy(isLoading = false) }
 
-                    // Navigate based on user type
-                    val route = when (user.type.name.lowercase()) {
-                        "grocery" -> "grocery_dashboard"
-                        "ngo" -> "ngo_dashboard"
-                        "admin" -> "admin_dashboard"
-                        else -> "login"
+                    // ═══ NEW: Always go to Onboarding after register (Part 1) ═══
+                    // Admin skips onboarding (isProfileComplete returns true)
+                    val route = if (user.type.name.lowercase() == "admin") {
+                        Screen.AdminDashboard.route
+                    } else {
+                        Screen.Onboarding.route
                     }
 
                     _uiEvent.send(UiEvent.Navigate(route))
-                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome! Complete your profile to get started."))
+                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome! Let's complete your profile."))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Registration failed"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Registration failed") }
                     _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Registration failed"))
                 }
             )
         }
     }
 
-    // ✅ SIMPLIFIED: Only validate required fields
     private fun validateInputs(): Boolean {
-        val currentState = _state.value
-        var isValid = true
-
-        // Validate name
-        if (currentState.name.isBlank()) {
-            _state.update { it.copy(nameError = "Name is required") }
-            isValid = false
-        } else if (currentState.name.length < 3) {
-            _state.update { it.copy(nameError = "Name must be at least 3 characters") }
-            isValid = false
+        val s = _state.value
+        var valid = true
+        if (s.name.isBlank()) {
+            _state.update { it.copy(nameError = "Name is required") }; valid = false
+        } else if (s.name.length < 3) {
+            _state.update { it.copy(nameError = "Name must be at least 3 characters") }; valid = false
         }
-
-        // Validate email
-        if (currentState.email.isBlank()) {
-            _state.update { it.copy(emailError = "Email is required") }
-            isValid = false
-        } else if (!ValidationUtils.isValidEmail(currentState.email)) {
-            _state.update { it.copy(emailError = "Invalid email format") }
-            isValid = false
+        if (s.email.isBlank()) {
+            _state.update { it.copy(emailError = "Email is required") }; valid = false
+        } else if (!ValidationUtils.isValidEmail(s.email)) {
+            _state.update { it.copy(emailError = "Invalid email format") }; valid = false
         }
-
-        // Validate password
-        if (currentState.password.isBlank()) {
-            _state.update { it.copy(passwordError = "Password is required") }
-            isValid = false
-        } else if (!ValidationUtils.isValidPassword(currentState.password)) {
-            _state.update {
-                it.copy(passwordError = "Password must be at least 8 characters with uppercase, lowercase, and number")
-            }
-            isValid = false
+        if (s.password.isBlank()) {
+            _state.update { it.copy(passwordError = "Password is required") }; valid = false
+        } else if (!ValidationUtils.isValidPassword(s.password)) {
+            _state.update { it.copy(passwordError = "Password must be 8+ chars with uppercase, lowercase, and number") }; valid = false
         }
-
-        // Validate confirm password
-        if (currentState.confirmPassword.isBlank()) {
-            _state.update { it.copy(confirmPasswordError = "Please confirm your password") }
-            isValid = false
-        } else if (currentState.password != currentState.confirmPassword) {
-            _state.update { it.copy(confirmPasswordError = "Passwords do not match") }
-            isValid = false
+        if (s.confirmPassword.isBlank()) {
+            _state.update { it.copy(confirmPasswordError = "Please confirm your password") }; valid = false
+        } else if (s.password != s.confirmPassword) {
+            _state.update { it.copy(confirmPasswordError = "Passwords do not match") }; valid = false
         }
-
-        // ✅ REMOVED: phone, address, location validation
-
-        return isValid
+        return valid
     }
 }

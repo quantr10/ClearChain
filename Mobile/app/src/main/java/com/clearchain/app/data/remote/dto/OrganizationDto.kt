@@ -10,5 +10,11 @@ data class UpdateProfileRequest(
     val phone: String?,
     val address: String?,
     val location: String?,
-    val hours: String?
+    val hours: String?,
+    // ═══ NEW FIELDS (Part 1) ═══
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val contactPerson: String? = null,
+    val pickupInstructions: String? = null,
+    val description: String? = null
 )

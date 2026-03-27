@@ -2,6 +2,7 @@ package com.clearchain.app.presentation.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
@@ -17,7 +18,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase  // ✅ NEW
+    private val updateProfileUseCase: UpdateProfileUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -26,34 +27,32 @@ class ProfileViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    init {
-        loadProfile()
-    }
+    init { loadProfile() }
 
     fun onEvent(event: ProfileEvent) {
         when (event) {
             ProfileEvent.LoadProfile -> loadProfile()
-            ProfileEvent.ClearError  -> _state.update { it.copy(error = null) }
+            ProfileEvent.ClearError -> _state.update { it.copy(error = null) }
             is ProfileEvent.ChangePassword -> changePassword(event.currentPassword, event.newPassword)
-            
-            // ✅ NEW: Edit mode events
             ProfileEvent.StartEdit -> startEdit()
             ProfileEvent.CancelEdit -> cancelEdit()
-            is ProfileEvent.EditNameChanged -> {
+            is ProfileEvent.EditNameChanged ->
                 _state.update { it.copy(editName = event.name, editNameError = null) }
-            }
-            is ProfileEvent.EditPhoneChanged -> {
+            is ProfileEvent.EditPhoneChanged ->
                 _state.update { it.copy(editPhone = event.phone, editPhoneError = null) }
-            }
-            is ProfileEvent.EditAddressChanged -> {
+            is ProfileEvent.EditAddressChanged ->
                 _state.update { it.copy(editAddress = event.address, editAddressError = null) }
-            }
-            is ProfileEvent.EditLocationChanged -> {
+            is ProfileEvent.EditLocationChanged ->
                 _state.update { it.copy(editLocation = event.location, editLocationError = null) }
-            }
-            is ProfileEvent.EditHoursChanged -> {
+            is ProfileEvent.EditHoursChanged ->
                 _state.update { it.copy(editHours = event.hours) }
-            }
+            // ═══ NEW event handlers (Part 1) ═══
+            is ProfileEvent.EditContactPersonChanged ->
+                _state.update { it.copy(editContactPerson = event.contactPerson, editContactPersonError = null) }
+            is ProfileEvent.EditPickupInstructionsChanged ->
+                _state.update { it.copy(editPickupInstructions = event.instructions) }
+            is ProfileEvent.EditDescriptionChanged ->
+                _state.update { it.copy(editDescription = event.description) }
             ProfileEvent.SaveProfile -> saveProfile()
         }
     }
@@ -70,131 +69,92 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ✅ NEW: Start editing - populate fields with current values
+    // ═══ UPDATED: populates new fields (Part 1) ═══
     private fun startEdit() {
         val user = _state.value.user ?: return
-        
         _state.update {
             it.copy(
                 isEditing = true,
-                editName = user.name,
-                editPhone = user.phone,
-                editAddress = user.address,
-                editLocation = user.location,
+                editName = user.name, editPhone = user.phone,
+                editAddress = user.address, editLocation = user.location,
                 editHours = user.hours ?: "",
-                // Clear errors
-                editNameError = null,
-                editPhoneError = null,
-                editAddressError = null,
-                editLocationError = null,
-                error = null
+                editContactPerson = user.contactPerson ?: "",
+                editPickupInstructions = user.pickupInstructions ?: "",
+                editDescription = user.description ?: "",
+                editNameError = null, editPhoneError = null,
+                editContactPersonError = null, error = null
             )
         }
     }
 
-    // ✅ NEW: Cancel editing - revert to original values
     private fun cancelEdit() {
         _state.update {
-            it.copy(
-                isEditing = false,
-                editNameError = null,
-                editPhoneError = null,
-                editAddressError = null,
-                editLocationError = null,
-                error = null
-            )
+            it.copy(isEditing = false, editNameError = null,
+                editPhoneError = null, editContactPersonError = null, error = null)
         }
     }
 
-    // ✅ NEW: Save profile changes
+    // ═══ UPDATED: passes new fields (Part 1) ═══
     private fun saveProfile() {
-        val currentState = _state.value
-        
-        // Validate inputs
-        if (!validateProfileInputs()) {
-            return
-        }
+        if (!validateProfileInputs()) return
+        val s = _state.value
 
         viewModelScope.launch {
             _state.update { it.copy(isSavingProfile = true, error = null) }
 
             val result = updateProfileUseCase(
-                name = currentState.editName,
-                phone = currentState.editPhone,
-                address = currentState.editAddress,
-                location = currentState.editLocation,
-                hours = currentState.editHours.ifBlank { null }
+                name = s.editName, phone = s.editPhone,
+                address = s.editAddress, location = s.editLocation,
+                hours = s.editHours.ifBlank { null },
+                latitude = null, longitude = null,
+                contactPerson = s.editContactPerson.ifBlank { null },
+                pickupInstructions = s.editPickupInstructions.ifBlank { null },
+                description = s.editDescription.ifBlank { null }
             )
 
             result.fold(
                 onSuccess = {
-                    // Reload profile to get updated data
                     loadProfile()
-                    
-                    _state.update { 
-                        it.copy(
-                            isSavingProfile = false,
-                            isEditing = false
-                        ) 
-                    }
+                    _state.update { it.copy(isSavingProfile = false, isEditing = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar("Profile updated successfully!"))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isSavingProfile = false,
-                            error = error.message ?: "Failed to update profile"
-                        )
-                    }
+                    _state.update { it.copy(isSavingProfile = false, error = error.message ?: "Failed to update profile") }
                     _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to update profile"))
                 }
             )
         }
     }
 
-    // ✅ NEW: Validate profile inputs
+    // ═══ UPDATED: validates NGO contact person (Part 1) ═══
     private fun validateProfileInputs(): Boolean {
-        val currentState = _state.value
-        var isValid = true
-
-        // Validate name
-        if (currentState.editName.isBlank()) {
-            _state.update { it.copy(editNameError = "Name is required") }
-            isValid = false
-        } else if (currentState.editName.length < 3) {
-            _state.update { it.copy(editNameError = "Name must be at least 3 characters") }
-            isValid = false
+        val s = _state.value
+        var valid = true
+        if (s.editName.isBlank()) {
+            _state.update { it.copy(editNameError = "Name is required") }; valid = false
+        } else if (s.editName.length < 3) {
+            _state.update { it.copy(editNameError = "Name must be at least 3 characters") }; valid = false
         }
-
-        // Validate phone (if provided)
-        if (currentState.editPhone.isNotBlank() && !ValidationUtils.isValidPhone(currentState.editPhone)) {
-            _state.update { it.copy(editPhoneError = "Invalid phone number") }
-            isValid = false
+        if (s.editPhone.isNotBlank() && !ValidationUtils.isValidPhone(s.editPhone)) {
+            _state.update { it.copy(editPhoneError = "Invalid phone number") }; valid = false
         }
-
-        // Address and Location are optional, no validation needed
-
-        return isValid
+        if ((s.user?.type == OrganizationType.NGO || s.user?.type == OrganizationType.GROCERY) && s.editContactPerson.isBlank()) {
+            _state.update { it.copy(editContactPersonError = "Contact person is required") }; valid = false
+        }
+        return valid
     }
 
     private fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
             _state.update { it.copy(isChangingPassword = true, error = null) }
-
             val result = changePasswordUseCase(currentPassword, newPassword)
-
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(isChangingPassword = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar("Password changed successfully!"))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isChangingPassword = false,
-                            error = error.message ?: "Failed to change password"
-                        )
-                    }
+                    _state.update { it.copy(isChangingPassword = false, error = error.message ?: "Failed to change password") }
                 }
             )
         }

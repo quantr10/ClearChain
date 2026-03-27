@@ -7,20 +7,26 @@ data class ProfileState(
     val isLoading: Boolean = false,
     val isChangingPassword: Boolean = false,
     val error: String? = null,
-    
-    // ✅ NEW: Edit mode fields
+
+    // Edit mode
     val isEditing: Boolean = false,
     val editName: String = "",
     val editPhone: String = "",
     val editAddress: String = "",
     val editLocation: String = "",
     val editHours: String = "",
-    
-    // ✅ NEW: Edit errors
+
+    // ═══ NEW edit fields (Part 1) ═══
+    val editContactPerson: String = "",
+    val editPickupInstructions: String = "",
+    val editDescription: String = "",
+
+    // Edit errors
     val editNameError: String? = null,
     val editPhoneError: String? = null,
     val editAddressError: String? = null,
     val editLocationError: String? = null,
-    
+    val editContactPersonError: String? = null,
+
     val isSavingProfile: Boolean = false
 )

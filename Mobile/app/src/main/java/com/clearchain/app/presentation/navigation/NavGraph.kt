@@ -26,6 +26,7 @@ import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
 import com.clearchain.app.presentation.ngo.inventory.InventoryScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
 import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
+import com.clearchain.app.presentation.onboarding.OnboardingScreen
 import com.clearchain.app.presentation.profile.ProfileScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 import kotlinx.coroutines.flow.first
@@ -37,141 +38,127 @@ fun NavGraph(
     startDestination: String = Screen.Splash.route,
     onShowBottomBar: (Boolean, OrganizationType?) -> Unit = { _, _ -> }
 ) {
-    // ✅ REMOVED: Deep link check (now handled in SplashScreen)
-    
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // ═══════════════════════════════════════════════════════════════════════════
-        // Auth Screens (No Bottom Bar)
-        // ═══════════════════════════════════════════════════════════════════════════
-        
-        composable(route = Screen.Splash.route) {
+        // ═══ Auth (No Bottom Bar) ═══
+
+        composable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             SplashScreen(navController = navController)
         }
 
-        composable(route = Screen.Login.route) {
+        composable(Screen.Login.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             LoginScreen(navController = navController)
         }
 
-        composable(route = Screen.Register.route) {
+        composable(Screen.Register.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             RegisterScreen(navController = navController)
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════
-        // Grocery Screens (Show Bottom Bar)
-        // ═══════════════════════════════════════════════════════════════════════════
-        
-        composable(route = Screen.GroceryDashboard.route) {
+        // ═══ NEW: Onboarding Wizard (Part 1) — No Bottom Bar ═══
+        composable(Screen.Onboarding.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
+            OnboardingScreen(
+                onFinished = {
+                    // After finishing, go back through Splash which will route to correct dashboard
+                    navController.navigate(Screen.Splash.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ═══ Grocery (Show Bottom Bar) ═══
+
+        composable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             GroceryDashboardScreen(navController = navController)
         }
 
-        composable(route = Screen.CreateListing.route) {
+        composable(Screen.CreateListing.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             CreateListingScreen(navController = navController)
         }
 
-        composable(route = Screen.MyListings.route) {
+        composable(Screen.MyListings.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             MyListingsScreen(navController = navController)
         }
 
-        composable(route = Screen.PickupRequests.route) {
+        composable(Screen.PickupRequests.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
-            ManageRequestsScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            ManageRequestsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════
-        // NGO Screens (Show Bottom Bar)
-        // ═══════════════════════════════════════════════════════════════════════════
-        
-        composable(route = Screen.NgoDashboard.route) {
+        // ═══ NGO (Show Bottom Bar) ═══
+
+        composable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             NgoDashboardScreen(navController = navController)
         }
 
-        composable(route = Screen.BrowseListings.route) {
+        composable(Screen.BrowseListings.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             BrowseListingsScreen(navController = navController)
         }
 
-        composable(route = Screen.Deliveries.route) {
+        composable(Screen.Deliveries.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            MyRequestsScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            MyRequestsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(route = Screen.Inventory.route) {
+        composable(Screen.Inventory.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            InventoryScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            InventoryScreen(onNavigateBack = { navController.navigateUp() })
         }
 
         composable(
             route = "request_pickup/{listingId}",
-            arguments = listOf(
-                navArgument("listingId") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
         ) { backStackEntry ->
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
             RequestPickupScreen(
-                listingId = listingId,
+                listingId = backStackEntry.arguments?.getString("listingId") ?: "",
                 onNavigateBack = { navController.navigateUp() }
             )
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════
-        // Admin Screens (Show Bottom Bar)
-        // ═══════════════════════════════════════════════════════════════════════════
-        
-        composable(route = Screen.AdminDashboard.route) {
+        // ═══ Admin (Show Bottom Bar) ═══
+
+        composable(Screen.AdminDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
             AdminDashboardScreen(navController = navController)
         }
 
-        composable(route = Screen.Verification.route) {
+        composable(Screen.Verification.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            VerificationQueueScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            VerificationQueueScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(route = Screen.Transactions.route) {
+        composable(Screen.Transactions.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            TransactionsScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            TransactionsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(route = "admin/statistics") {
+        composable("admin/statistics") {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            StatisticsScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            StatisticsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════
-        // Shared Screens (Show Bottom Bar)
-        // ═══════════════════════════════════════════════════════════════════════════
-        
-        composable(route = Screen.Profile.route) {
-            val getCurrentUserUseCase: GetCurrentUserUseCase = hiltViewModel<com.clearchain.app.presentation.profile.ProfileViewModel>().getCurrentUserUseCase
+        // ═══ Shared ═══
+
+        composable(Screen.Profile.route) {
+            val getCurrentUserUseCase: GetCurrentUserUseCase =
+                hiltViewModel<com.clearchain.app.presentation.profile.ProfileViewModel>().getCurrentUserUseCase
             LaunchedEffect(Unit) {
                 val user = getCurrentUserUseCase().first()
                 onShowBottomBar(true, user?.type)
             }
-            
             ProfileScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onLogout = {

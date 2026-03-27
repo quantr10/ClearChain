@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.auth.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.usecase.auth.LoginUseCase
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,37 +25,21 @@ class LoginViewModel @Inject constructor(
 
     fun onEvent(event: LoginEvent) {
         when (event) {
-            is LoginEvent.EmailChanged -> {
+            is LoginEvent.EmailChanged ->
                 _state.update { it.copy(email = event.email, emailError = null) }
-            }
-
-            is LoginEvent.PasswordChanged -> {
+            is LoginEvent.PasswordChanged ->
                 _state.update { it.copy(password = event.password, passwordError = null) }
-            }
-
-            LoginEvent.Login -> {
-                login()
-            }
-
-            LoginEvent.NavigateToRegister -> {
-                viewModelScope.launch {
-                    _uiEvent.send(UiEvent.Navigate("register"))
-                }
-            }
-
-            LoginEvent.ClearError -> {
+            LoginEvent.Login -> login()
+            LoginEvent.NavigateToRegister ->
+                viewModelScope.launch { _uiEvent.send(UiEvent.Navigate("register")) }
+            LoginEvent.ClearError ->
                 _state.update { it.copy(error = null) }
-            }
         }
     }
 
     private fun login() {
+        if (!validateInputs()) return
         val currentState = _state.value
-
-        // Validate
-        if (!validateInputs()) {
-            return
-        }
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
@@ -65,27 +50,26 @@ class LoginViewModel @Inject constructor(
             )
 
             result.fold(
-                onSuccess = { (user, tokens) ->
+                onSuccess = { (user, _) ->
                     _state.update { it.copy(isLoading = false) }
 
-                    // Navigate based on user type
-                    val route = when (user.type.name.lowercase()) {
-                        "grocery" -> "grocery_dashboard"
-                        "ngo" -> "ngo_dashboard"
-                        "admin" -> "admin_dashboard"
-                        else -> "login"
+                    // ═══ NEW: isProfileComplete() check (Part 1) ═══
+                    val route = if (!user.isProfileComplete()) {
+                        Screen.Onboarding.route
+                    } else {
+                        when (user.type.name.lowercase()) {
+                            "grocery" -> "grocery_dashboard"
+                            "ngo" -> "ngo_dashboard"
+                            "admin" -> "admin_dashboard"
+                            else -> "login"
+                        }
                     }
 
                     _uiEvent.send(UiEvent.Navigate(route))
                     _uiEvent.send(UiEvent.ShowSnackbar("Welcome back, ${user.name}!"))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Login failed"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Login failed") }
                     _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Login failed"))
                 }
             )
@@ -93,24 +77,16 @@ class LoginViewModel @Inject constructor(
     }
 
     private fun validateInputs(): Boolean {
-        val currentState = _state.value
-        var isValid = true
-
-        // Validate email
-        if (currentState.email.isBlank()) {
-            _state.update { it.copy(emailError = "Email is required") }
-            isValid = false
-        } else if (!ValidationUtils.isValidEmail(currentState.email)) {
-            _state.update { it.copy(emailError = "Invalid email format") }
-            isValid = false
+        val s = _state.value
+        var valid = true
+        if (s.email.isBlank()) {
+            _state.update { it.copy(emailError = "Email is required") }; valid = false
+        } else if (!ValidationUtils.isValidEmail(s.email)) {
+            _state.update { it.copy(emailError = "Invalid email format") }; valid = false
         }
-
-        // Validate password
-        if (currentState.password.isBlank()) {
-            _state.update { it.copy(passwordError = "Password is required") }
-            isValid = false
+        if (s.password.isBlank()) {
+            _state.update { it.copy(passwordError = "Password is required") }; valid = false
         }
-
-        return isValid
+        return valid
     }
 }

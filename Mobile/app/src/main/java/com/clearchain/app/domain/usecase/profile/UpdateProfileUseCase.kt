@@ -12,30 +12,30 @@ class UpdateProfileUseCase @Inject constructor(
         phone: String,
         address: String,
         location: String,
-        hours: String? = null
+        hours: String? = null,
+        // ═══ NEW PARAMS (Part 1) ═══
+        latitude: Double? = null,
+        longitude: Double? = null,
+        contactPerson: String? = null,
+        pickupInstructions: String? = null,
+        description: String? = null
     ): Result<Unit> {
-        
-        // Validate name
-        if (name.isBlank()) {
-            return Result.failure(Exception("Name is required"))
-        }
-        
-        if (name.length < 3) {
-            return Result.failure(Exception("Name must be at least 3 characters"))
-        }
-        
-        // Validate phone (if provided)
-        if (phone.isNotBlank() && !ValidationUtils.isValidPhone(phone)) {
+        if (name.isBlank()) return Result.failure(Exception("Name is required"))
+        if (name.length < 3) return Result.failure(Exception("Name must be at least 3 characters"))
+        if (phone.isNotBlank() && !ValidationUtils.isValidPhone(phone))
             return Result.failure(Exception("Invalid phone number"))
-        }
-        
-        // Call repository
+
         return repository.updateProfile(
             name = name,
             phone = phone.ifBlank { null },
             address = address.ifBlank { null },
             location = location.ifBlank { null },
-            hours = hours
+            hours = hours,
+            latitude = latitude,
+            longitude = longitude,
+            contactPerson = contactPerson?.ifBlank { null },
+            pickupInstructions = pickupInstructions?.ifBlank { null },
+            description = description?.ifBlank { null }
         )
     }
 }

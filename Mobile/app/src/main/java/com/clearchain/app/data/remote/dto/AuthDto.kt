@@ -2,9 +2,10 @@ package com.clearchain.app.data.remote.dto
 
 import android.annotation.SuppressLint
 import com.clearchain.app.domain.model.Organization
+import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.domain.model.AuthTokens
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -21,10 +22,9 @@ data class RegisterRequest(
     val type: String,
     val email: String,
     val password: String,
-    val fcmToken: String? = null  // ✅ NEW: FCM Token
+    val fcmToken: String? = null
 )
 
-// Used for login / register / refresh responses
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class AuthResponse(
@@ -62,77 +62,64 @@ data class OrganizationDto(
     val verificationStatus: String,
     val hours: String? = null,
     val profilePictureUrl: String? = null,
-    val createdAt: String
+    val createdAt: String,
+    // ═══ NEW FIELDS (Part 1) ═══
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val contactPerson: String? = null,
+    val pickupInstructions: String? = null,
+    val description: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class RefreshTokenRequest(
-    val refreshToken: String
-)
+data class RefreshTokenRequest(val refreshToken: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class ChangePasswordRequest(
-    val currentPassword: String,
-    val newPassword: String
-)
+data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class MessageResponse(
-    val message: String
-)
-
-// ✅ ADD FCM Token DTO
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class RegisterFCMTokenRequest(
-    val fcmToken: String
-)
+data class MessageResponse(val message: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class ApiResponse<T>(
-    val message: String? = null,
-    val data: T? = null
-)
+data class RegisterFCMTokenRequest(val fcmToken: String)
 
-// ─── Extension functions ───────────────────────────────────────────────────────
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ApiResponse<T>(val message: String? = null, val data: T? = null)
 
+// ═══ UPDATED toDomain() includes new fields (Part 1) ═══
 fun OrganizationDto.toDomain(): Organization {
     return Organization(
-        id = id,
-        name = name,
+        id = id, name = name,
         type = when (type.lowercase()) {
-            "grocery" -> com.clearchain.app.domain.model.OrganizationType.GROCERY
-            "ngo"     -> com.clearchain.app.domain.model.OrganizationType.NGO
-            "admin"   -> com.clearchain.app.domain.model.OrganizationType.ADMIN
-            else      -> com.clearchain.app.domain.model.OrganizationType.GROCERY
+            "grocery" -> OrganizationType.GROCERY
+            "ngo" -> OrganizationType.NGO
+            "admin" -> OrganizationType.ADMIN
+            else -> OrganizationType.GROCERY
         },
-        email = email,
-        phone = phone,
-        address = address,
-        location = location,
+        email = email, phone = phone, address = address, location = location,
         verified = verified,
         verificationStatus = when (verificationStatus.lowercase()) {
-            "approved" -> com.clearchain.app.domain.model.VerificationStatus.APPROVED
-            "rejected" -> com.clearchain.app.domain.model.VerificationStatus.REJECTED
-            else       -> com.clearchain.app.domain.model.VerificationStatus.PENDING
+            "approved" -> VerificationStatus.APPROVED
+            "rejected" -> VerificationStatus.REJECTED
+            else -> VerificationStatus.PENDING
         },
-        hours = hours,
-        profilePictureUrl = profilePictureUrl,
-        createdAt = createdAt
+        hours = hours, profilePictureUrl = profilePictureUrl, createdAt = createdAt,
+        latitude = latitude, longitude = longitude,
+        contactPerson = contactPerson, pickupInstructions = pickupInstructions,
+        description = description
     )
 }
 
 fun AuthData.toDomain(): Pair<Organization, AuthTokens> {
     val organization = user.toDomain()
     val tokens = AuthTokens(
-        accessToken  = accessToken,
-        refreshToken = refreshToken,
-        expiresIn    = expiresIn,
-        tokenType    = tokenType
+        accessToken = accessToken, refreshToken = refreshToken,
+        expiresIn = expiresIn, tokenType = tokenType
     )
     return Pair(organization, tokens)
 }
