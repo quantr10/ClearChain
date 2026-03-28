@@ -20,7 +20,7 @@ public class PickupRequestsController : ControllerBase
     private readonly IStorageService _storageService;
     private readonly IPickupNotificationService _notificationService;
     private readonly IInventoryNotificationService _inventoryNotificationService;
-    private readonly IAdminNotificationService _adminNotificationService;  // ✅ ADD
+    private readonly IAdminNotificationService _adminNotificationService;
     private readonly IPushNotificationService _pushNotificationService;
 
     public PickupRequestsController(
@@ -30,22 +30,19 @@ public class PickupRequestsController : ControllerBase
         IPickupNotificationService notificationService,
         IInventoryNotificationService inventoryNotificationService,
         IAdminNotificationService adminNotificationService,
-        IPushNotificationService pushNotificationService)  // ✅ ADD
+        IPushNotificationService pushNotificationService)
     {
         _context = context;
         _logger = logger;
         _storageService = storageService;
         _notificationService = notificationService;
         _inventoryNotificationService = inventoryNotificationService;
-        _adminNotificationService = adminNotificationService;  // ✅ ADD
-        _pushNotificationService = pushNotificationService;  // ✅ ADD
+        _adminNotificationService = adminNotificationService;
+        _pushNotificationService = pushNotificationService;
     }
 
     // HELPER METHODS FOR SPLIT/MERGE LOGIC
 
-    /// <summary>
-    /// Creates a pickup request and handles listing split if needed
-    /// </summary>
     private async Task<(ClearanceListing reservedListing, PickupRequest request)>
         CreateRequestAndSplitListing(
             ClearanceListing sourceListing,
@@ -61,17 +58,14 @@ public class PickupRequestsController : ControllerBase
         // CASE 1: FULL PICKUP (request = listing quantity)
         if (requestedQuantity >= sourceListing.Quantity)
         {
-            // Just change status to reserved
             sourceListing.Status = "reserved";
             sourceListing.RelatedRequestId = requestId;
             sourceListing.UpdatedAt = DateTime.UtcNow;
 
-            // Update group
             group.TotalAvailable -= sourceListing.Quantity;
             group.TotalReserved += sourceListing.Quantity;
             group.UpdatedAt = DateTime.UtcNow;
 
-            // Create pickup request
             var fullRequest = new PickupRequest
             {
                 Id = requestId,
@@ -94,7 +88,6 @@ public class PickupRequestsController : ControllerBase
         // CASE 2: PARTIAL PICKUP (request < listing quantity)
         var reservedListingId = Guid.NewGuid();
 
-        // CREATE RESERVED part (new listing)
         var reservedListing = new ClearanceListing
         {
             Id = reservedListingId,
@@ -121,19 +114,15 @@ public class PickupRequestsController : ControllerBase
             UpdatedAt = DateTime.UtcNow
         };
 
-        // Update AVAILABLE part (reduce quantity)
         sourceListing.Quantity -= requestedQuantity;
         sourceListing.UpdatedAt = DateTime.UtcNow;
 
-        // Update group totals
         group.TotalAvailable -= requestedQuantity;
         group.TotalReserved += requestedQuantity;
         group.UpdatedAt = DateTime.UtcNow;
 
-        // Save the reserved listing
         _context.ClearanceListings.Add(reservedListing);
 
-        // Create pickup request
         var partialRequest = new PickupRequest
         {
             Id = requestId,
@@ -153,39 +142,29 @@ public class PickupRequestsController : ControllerBase
         return (reservedListing, partialRequest);
     }
 
-    /// <summary>
-    /// Smart merge logic when request is cancelled
-    /// </summary>
     private async Task SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)
     {
         if (cancelledListing.GroupId == null) return;
 
-        // Find AVAILABLE siblings in the same group
         var availableSiblings = await _context.ClearanceListings
             .Where(l => l.GroupId == group.Id &&
                        l.Id != cancelledListing.Id &&
                        l.Status == "open")
             .ToListAsync();
 
-        // CASE 1: Has AVAILABLE sibling → MERGE into it
         if (availableSiblings.Any())
         {
             var targetListing = availableSiblings.First();
-
-            // Merge quantity
             targetListing.Quantity += cancelledListing.Quantity;
             targetListing.SplitReason = "merge";
             targetListing.UpdatedAt = DateTime.UtcNow;
 
-            // Update group
             group.TotalReserved -= cancelledListing.Quantity;
             group.TotalAvailable += cancelledListing.Quantity;
             group.UpdatedAt = DateTime.UtcNow;
 
-            // Delete cancelled listing
             _context.ClearanceListings.Remove(cancelledListing);
         }
-        // CASE 2: No AVAILABLE sibling → CONVERT to AVAILABLE
         else
         {
             cancelledListing.Status = "open";
@@ -193,7 +172,6 @@ public class PickupRequestsController : ControllerBase
             cancelledListing.SplitReason = "cancel_restore";
             cancelledListing.UpdatedAt = DateTime.UtcNow;
 
-            // Update group
             group.TotalReserved -= cancelledListing.Quantity;
             group.TotalAvailable += cancelledListing.Quantity;
             group.UpdatedAt = DateTime.UtcNow;
@@ -212,17 +190,13 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var ngo = await _context.Organizations
                 .FirstOrDefaultAsync(o => o.Id.ToString() == userId);
 
             if (ngo == null || ngo.Type.ToLower() != "ngo")
-            {
                 return BadRequest(new { message = "Only NGOs can create pickup requests" });
-            }
 
             var listing = await _context.ClearanceListings
                 .Include(l => l.Grocery)
@@ -230,54 +204,29 @@ public class PickupRequestsController : ControllerBase
                 .FirstOrDefaultAsync(l => l.Id.ToString() == request.ListingId);
 
             if (listing == null)
-            {
                 return NotFound(new { message = "Listing not found" });
-            }
 
             if (listing.Status != "open")
-            {
                 return BadRequest(new { message = "Listing is not available" });
-            }
 
             if (request.RequestedQuantity > listing.Quantity)
-            {
-                return BadRequest(new
-                {
-                    message = $"Requested quantity exceeds available quantity ({listing.Quantity})"
-                });
-            }
+                return BadRequest(new { message = $"Requested quantity exceeds available quantity ({listing.Quantity})" });
 
             var pickupDate = DateTime.Parse(request.PickupDate);
             var pickupDateUtc = DateTime.SpecifyKind(pickupDate, DateTimeKind.Utc);
 
             if (pickupDateUtc.Date < DateTime.UtcNow.Date)
-            {
                 return BadRequest(new { message = "Pickup date cannot be in the past" });
-            }
 
-            if (listing.ExpirationDate.HasValue &&
-                pickupDateUtc.Date > listing.ExpirationDate.Value.Date)
-            {
-                return BadRequest(new
-                {
-                    message = $"Pickup date cannot be after expiry date ({listing.ExpirationDate.Value:yyyy-MM-dd})"
-                });
-            }
+            if (listing.ExpirationDate.HasValue && pickupDateUtc.Date > listing.ExpirationDate.Value.Date)
+                return BadRequest(new { message = $"Pickup date cannot be after expiry date ({listing.ExpirationDate.Value:yyyy-MM-dd})" });
 
             if (listing.Group == null)
-            {
                 return BadRequest(new { message = "Listing has no associated group" });
-            }
 
             var (reservedListing, pickupRequest) = await CreateRequestAndSplitListing(
-                listing,
-                listing.Group,
-                request.RequestedQuantity,
-                pickupDateUtc,
-                request.PickupTime,
-                request.Notes,
-                Guid.Parse(userId)
-            );
+                listing, listing.Group, request.RequestedQuantity,
+                pickupDateUtc, request.PickupTime, request.Notes, Guid.Parse(userId));
 
             _context.PickupRequests.Add(pickupRequest);
             await _context.SaveChangesAsync();
@@ -330,34 +279,22 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
-            // ✅ CHANGED: Allow both NGO and Grocery to cancel
             var pr = await _context.PickupRequests
+                .Include(p => p.Ngo)
+                .Include(p => p.Grocery)
                 .FirstOrDefaultAsync(p => p.Id == id &&
                     (p.NgoId.ToString() == userId || p.GroceryId.ToString() == userId));
 
             if (pr == null)
-            {
                 return NotFound(new { message = "Pickup request not found" });
-            }
 
             if (pr.Status != "pending")
-            {
-                return BadRequest(new
-                {
-                    message = $"Cannot cancel request with status: {pr.Status}. Only PENDING requests can be cancelled."
-                });
-            }
+                return BadRequest(new { message = $"Cannot cancel request with status: {pr.Status}. Only PENDING requests can be cancelled." });
 
-            // ✅ NEW: Determine who is cancelling
             bool isGroceryRejecting = pr.GroceryId.ToString() == userId;
 
-            // Get related data before processing
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
             var listing = pr.ListingId.HasValue
                 ? await _context.ClearanceListings
                     .Include(l => l.Group)
@@ -369,10 +306,9 @@ public class PickupRequestsController : ControllerBase
                 Id = pr.Id.ToString(),
                 ListingId = pr.ListingId?.ToString() ?? "",
                 NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
+                NgoName = pr.Ngo?.Name ?? "",
                 GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
-                // ✅ CHANGED: Status based on who cancelled
+                GroceryName = pr.Grocery?.Name ?? "",
                 Status = isGroceryRejecting ? "rejected" : "cancelled",
                 RequestedQuantity = pr.RequestedQuantity ?? 0,
                 PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
@@ -384,34 +320,28 @@ public class PickupRequestsController : ControllerBase
                 ProofPhotoUrl = pr.ProofPhotoUrl
             };
 
-            // Delete request FIRST and save immediately
             _context.PickupRequests.Remove(pr);
             await _context.SaveChangesAsync();
 
-            // Smart merge and save again
             if (listing != null && listing.Group != null)
             {
                 await SmartMergeOnCancel(listing, listing.Group);
                 await _context.SaveChangesAsync();
             }
 
-            // ✅ CHANGED: Different notifications based on who cancelled
             if (isGroceryRejecting)
             {
-                // Grocery rejected → notify NGO
                 await _notificationService.NotifyPickupRequestCancelled(responseData);
                 await _pushNotificationService.SendPickupRejectedNotification(pr.NgoId, responseData);
             }
             else
             {
-                // NGO cancelled → notify Grocery
                 await _notificationService.NotifyPickupRequestCancelled(responseData);
                 await _pushNotificationService.SendPickupRequestCancelledNotification(pr.GroceryId, responseData);
             }
 
             return Ok(new PickupRequestResponse
             {
-                // ✅ CHANGED: Message based on who cancelled
                 Message = isGroceryRejecting
                     ? "Pickup request rejected successfully"
                     : "Pickup request cancelled successfully",
@@ -428,72 +358,53 @@ public class PickupRequestsController : ControllerBase
     // ═══════════════════════════════════════════════════════════════════════════
     // PUT: api/pickuprequests/{id}/picked-up
     // ═══════════════════════════════════════════════════════════════════════════
+
     [HttpPut("{id}/picked-up")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<PickupRequestResponse>> MarkPickedUp(
-        Guid id,
-        IFormFile proofPhoto)
+        Guid id, IFormFile proofPhoto)
     {
         try
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var pickupRequest = await _context.PickupRequests
+                .Include(p => p.Ngo)
+                .Include(p => p.Grocery)
                 .FirstOrDefaultAsync(pr => pr.Id == id &&
                     (pr.GroceryId.ToString() == userId || pr.NgoId.ToString() == userId));
 
             if (pickupRequest == null)
-            {
                 return NotFound(new { message = "Pickup request not found" });
-            }
 
             if (pickupRequest.Status != "ready")
-            {
                 return BadRequest(new { message = "Can only mark ready requests as picked up" });
-            }
 
-            // Validate photo
             if (proofPhoto == null || proofPhoto.Length == 0)
-            {
                 return BadRequest(new { message = "Proof photo is required to confirm pickup" });
-            }
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var extension = Path.GetExtension(proofPhoto.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(extension))
-            {
                 return BadRequest(new { message = "Only JPG, PNG and WEBP images are allowed" });
-            }
 
             if (proofPhoto.Length > 5 * 1024 * 1024)
-            {
                 return BadRequest(new { message = "Photo size must not exceed 5MB" });
-            }
 
-            // Get related data
             var listing = pickupRequest.ListingId.HasValue
                 ? await _context.ClearanceListings
                     .Include(l => l.Group)
                     .FirstOrDefaultAsync(l => l.Id == pickupRequest.ListingId.Value)
                 : null;
 
-            var ngo = await _context.Organizations.FindAsync(pickupRequest.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pickupRequest.GroceryId);
-
             // Upload photo
             string proofPhotoUrl;
             try
             {
                 using var stream = proofPhoto.OpenReadStream();
-                proofPhotoUrl = await _storageService.UploadPickupProofAsync(
-                    stream,
-                    proofPhoto.FileName
-                );
-
+                proofPhotoUrl = await _storageService.UploadPickupProofAsync(stream, proofPhoto.FileName);
                 _logger.LogInformation($"Proof photo uploaded successfully: {proofPhotoUrl}");
             }
             catch (Exception ex)
@@ -502,15 +413,14 @@ public class PickupRequestsController : ControllerBase
                 return StatusCode(500, new { message = "Error uploading photo. Please try again." });
             }
 
-            // Build response
             var responseData = new PickupRequestData
             {
                 Id = pickupRequest.Id.ToString(),
                 ListingId = pickupRequest.ListingId?.ToString() ?? "",
                 NgoId = pickupRequest.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
+                NgoName = pickupRequest.Ngo?.Name ?? "",
                 GroceryId = pickupRequest.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
+                GroceryName = pickupRequest.Grocery?.Name ?? "",
                 Status = "completed",
                 RequestedQuantity = pickupRequest.RequestedQuantity ?? 0,
                 PickupDate = pickupRequest.PickupDate.ToString("yyyy-MM-dd"),
@@ -522,7 +432,6 @@ public class PickupRequestsController : ControllerBase
                 ProofPhotoUrl = proofPhotoUrl
             };
 
-            // Update request
             pickupRequest.Status = "completed";
             pickupRequest.MarkedPickedUpAt = DateTime.UtcNow;
             pickupRequest.ConfirmedReceivedAt = DateTime.UtcNow;
@@ -531,7 +440,6 @@ public class PickupRequestsController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            // Delete listing and create inventory
             if (listing != null)
             {
                 var expiryDate = listing.ExpirationDate.HasValue
@@ -563,24 +471,19 @@ public class PickupRequestsController : ControllerBase
                     listing.Group.UpdatedAt = DateTime.UtcNow;
 
                     if (listing.Group.TotalCompleted >= listing.Group.OriginalQuantity)
-                    {
                         listing.Group.IsFullyConsumed = true;
-                    }
 
                     var remainingChildren = await _context.ClearanceListings
                         .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
                         .CountAsync();
 
                     if (remainingChildren == 0 && listing.Group.IsFullyConsumed)
-                    {
                         _context.ListingGroups.Remove(listing.Group);
-                    }
                 }
 
                 _context.ClearanceListings.Remove(listing);
                 await _context.SaveChangesAsync();
 
-                // Send inventory notification
                 var inventoryDto = new InventoryItemData
                 {
                     Id = inventoryItem.Id.ToString(),
@@ -600,16 +503,15 @@ public class PickupRequestsController : ControllerBase
 
             await _notificationService.NotifyPickupRequestStatusChanged(responseData, "ready");
 
-            // ✅ ADD: Notify admins of completed transaction
             try
             {
                 var transactionNotification = new TransactionCompletedNotification
                 {
                     TransactionId = pickupRequest.Id.ToString(),
                     NgoId = pickupRequest.NgoId.ToString(),
-                    NgoName = ngo?.Name ?? "",
+                    NgoName = pickupRequest.Ngo?.Name ?? "",
                     GroceryId = pickupRequest.GroceryId.ToString(),
-                    GroceryName = grocery?.Name ?? "",
+                    GroceryName = pickupRequest.Grocery?.Name ?? "",
                     ProductName = listing?.ProductName ?? "",
                     Quantity = pickupRequest.RequestedQuantity ?? 0,
                     Unit = listing?.Unit ?? "",
@@ -619,7 +521,6 @@ public class PickupRequestsController : ControllerBase
             }
             catch (Exception ex)
             {
-                // Don't fail the transaction if admin notification fails
                 _logger.LogError(ex, "Failed to send admin transaction notification");
             }
 
@@ -628,8 +529,7 @@ public class PickupRequestsController : ControllerBase
                 pickupRequest.NgoId,
                 listing?.ProductName ?? "",
                 pickupRequest.RequestedQuantity ?? 0,
-                listing?.Unit ?? ""
-            );
+                listing?.Unit ?? "");
 
             return Ok(new PickupRequestResponse
             {
@@ -640,12 +540,13 @@ public class PickupRequestsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error marking pickup as completed");
-            return StatusCode(500, new
-            {
-                message = "An error occurred while marking the pickup as completed"
-            });
+            return StatusCode(500, new { message = "An error occurred while marking the pickup as completed" });
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GET: api/pickuprequests/ngo/my — FIXED N+1
+    // ═══════════════════════════════════════════════════════════════════════════
 
     [HttpGet("ngo/my")]
     public async Task<ActionResult<PickupRequestsResponse>> GetMyPickupRequests()
@@ -654,41 +555,33 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var pickupRequests = await _context.PickupRequests
+                .Include(pr => pr.Ngo)
+                .Include(pr => pr.Grocery)
                 .Where(pr => pr.NgoId.ToString() == userId)
                 .OrderByDescending(pr => pr.RequestedAt)
                 .ToListAsync();
 
-            var responseData = new List<PickupRequestData>();
-
-            foreach (var pr in pickupRequests)
+            var responseData = pickupRequests.Select(pr => new PickupRequestData
             {
-                var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-                var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
-
-                responseData.Add(new PickupRequestData
-                {
-                    Id = pr.Id.ToString(),
-                    ListingId = pr.ListingId?.ToString() ?? "",
-                    NgoId = pr.NgoId.ToString(),
-                    NgoName = ngo?.Name ?? "",
-                    GroceryId = pr.GroceryId.ToString(),
-                    GroceryName = grocery?.Name ?? "",
-                    Status = pr.Status ?? "pending",
-                    RequestedQuantity = pr.RequestedQuantity ?? 0,
-                    PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-                    PickupTime = pr.PickupTime ?? "09:00",
-                    Notes = pr.Notes ?? "",
-                    ListingTitle = pr.ListingTitle ?? "Unknown Item",
-                    ListingCategory = pr.ListingCategory ?? "OTHER",
-                    CreatedAt = pr.RequestedAt.ToString("o"),
-                    ProofPhotoUrl = pr.ProofPhotoUrl
-                });
-            }
+                Id = pr.Id.ToString(),
+                ListingId = pr.ListingId?.ToString() ?? "",
+                NgoId = pr.NgoId.ToString(),
+                NgoName = pr.Ngo?.Name ?? "",
+                GroceryId = pr.GroceryId.ToString(),
+                GroceryName = pr.Grocery?.Name ?? "",
+                Status = pr.Status ?? "pending",
+                RequestedQuantity = pr.RequestedQuantity ?? 0,
+                PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
+                PickupTime = pr.PickupTime ?? "09:00",
+                Notes = pr.Notes ?? "",
+                ListingTitle = pr.ListingTitle ?? "Unknown Item",
+                ListingCategory = pr.ListingCategory ?? "OTHER",
+                CreatedAt = pr.RequestedAt.ToString("o"),
+                ProofPhotoUrl = pr.ProofPhotoUrl
+            }).ToList();
 
             return Ok(new PickupRequestsResponse
             {
@@ -703,6 +596,10 @@ public class PickupRequestsController : ControllerBase
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GET: api/pickuprequests/grocery/my — FIXED N+1
+    // ═══════════════════════════════════════════════════════════════════════════
+
     [HttpGet("grocery/my")]
     public async Task<ActionResult<PickupRequestsResponse>> GetGroceryPickupRequests()
     {
@@ -710,41 +607,33 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var pickupRequests = await _context.PickupRequests
+                .Include(pr => pr.Ngo)
+                .Include(pr => pr.Grocery)
                 .Where(pr => pr.GroceryId.ToString() == userId)
                 .OrderByDescending(pr => pr.RequestedAt)
                 .ToListAsync();
 
-            var responseData = new List<PickupRequestData>();
-
-            foreach (var pr in pickupRequests)
+            var responseData = pickupRequests.Select(pr => new PickupRequestData
             {
-                var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-                var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
-
-                responseData.Add(new PickupRequestData
-                {
-                    Id = pr.Id.ToString(),
-                    ListingId = pr.ListingId?.ToString() ?? "",
-                    NgoId = pr.NgoId.ToString(),
-                    NgoName = ngo?.Name ?? "",
-                    GroceryId = pr.GroceryId.ToString(),
-                    GroceryName = grocery?.Name ?? "",
-                    Status = pr.Status ?? "pending",
-                    RequestedQuantity = pr.RequestedQuantity ?? 0,
-                    PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-                    PickupTime = pr.PickupTime ?? "09:00",
-                    Notes = pr.Notes ?? "",
-                    ListingTitle = pr.ListingTitle ?? "Unknown Item",
-                    ListingCategory = pr.ListingCategory ?? "OTHER",
-                    CreatedAt = pr.RequestedAt.ToString("o"),
-                    ProofPhotoUrl = pr.ProofPhotoUrl
-                });
-            }
+                Id = pr.Id.ToString(),
+                ListingId = pr.ListingId?.ToString() ?? "",
+                NgoId = pr.NgoId.ToString(),
+                NgoName = pr.Ngo?.Name ?? "",
+                GroceryId = pr.GroceryId.ToString(),
+                GroceryName = pr.Grocery?.Name ?? "",
+                Status = pr.Status ?? "pending",
+                RequestedQuantity = pr.RequestedQuantity ?? 0,
+                PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
+                PickupTime = pr.PickupTime ?? "09:00",
+                Notes = pr.Notes ?? "",
+                ListingTitle = pr.ListingTitle ?? "Unknown Item",
+                ListingCategory = pr.ListingCategory ?? "OTHER",
+                CreatedAt = pr.RequestedAt.ToString("o"),
+                ProofPhotoUrl = pr.ProofPhotoUrl
+            }).ToList();
 
             return Ok(new PickupRequestsResponse
             {
@@ -759,19 +648,23 @@ public class PickupRequestsController : ControllerBase
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GET: api/pickuprequests/{id} — FIXED N+1
+    // ═══════════════════════════════════════════════════════════════════════════
+
     [HttpGet("{id}")]
     public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid id)
     {
         try
         {
-            var pr = await _context.PickupRequests.FindAsync(id);
-            if (pr == null)
-            {
-                return NotFound(new { message = "Pickup request not found" });
-            }
+            var pr = await _context.PickupRequests
+                .Include(p => p.Ngo)
+                .Include(p => p.Grocery)
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
+            if (pr == null)
+                return NotFound(new { message = "Pickup request not found" });
+
             var listing = pr.ListingId.HasValue
                 ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
                 : null;
@@ -781,16 +674,16 @@ public class PickupRequestsController : ControllerBase
                 Id = pr.Id.ToString(),
                 ListingId = pr.ListingId?.ToString() ?? "",
                 NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
+                NgoName = pr.Ngo?.Name ?? "",
                 GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
+                GroceryName = pr.Grocery?.Name ?? "",
                 Status = pr.Status ?? "pending",
                 RequestedQuantity = pr.RequestedQuantity ?? 0,
                 PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
                 PickupTime = pr.PickupTime ?? "09:00",
                 Notes = pr.Notes ?? "",
-                ListingTitle = listing?.ProductName ?? "",
-                ListingCategory = listing?.Category ?? "",
+                ListingTitle = pr.ListingTitle ?? listing?.ProductName ?? "",
+                ListingCategory = pr.ListingCategory ?? listing?.Category ?? "",
                 CreatedAt = pr.RequestedAt.ToString("o"),
                 ProofPhotoUrl = pr.ProofPhotoUrl
             };
@@ -808,6 +701,10 @@ public class PickupRequestsController : ControllerBase
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PUT: api/pickuprequests/{id}/approve
+    // ═══════════════════════════════════════════════════════════════════════════
+
     [HttpPut("{id}/approve")]
     public async Task<ActionResult<PickupRequestResponse>> ApprovePickupRequest(Guid id)
     {
@@ -815,28 +712,22 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var pr = await _context.PickupRequests
+                .Include(p => p.Ngo)
+                .Include(p => p.Grocery)
                 .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
 
             if (pr == null)
-            {
                 return NotFound(new { message = "Pickup request not found" });
-            }
 
             if (pr.Status != "pending")
-            {
                 return BadRequest(new { message = $"Cannot approve request with status: {pr.Status}" });
-            }
 
             pr.Status = "approved";
             await _context.SaveChangesAsync();
 
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
             var listing = pr.ListingId.HasValue
                 ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
                 : null;
@@ -846,9 +737,9 @@ public class PickupRequestsController : ControllerBase
                 Id = pr.Id.ToString(),
                 ListingId = pr.ListingId?.ToString() ?? "",
                 NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
+                NgoName = pr.Ngo?.Name ?? "",
                 GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
+                GroceryName = pr.Grocery?.Name ?? "",
                 Status = pr.Status,
                 RequestedQuantity = pr.RequestedQuantity ?? 0,
                 PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
@@ -861,7 +752,6 @@ public class PickupRequestsController : ControllerBase
             };
 
             await _notificationService.NotifyPickupRequestStatusChanged(responseData, "pending");
-
             await _pushNotificationService.SendPickupApprovedNotification(pr.NgoId, responseData);
 
             return Ok(new PickupRequestResponse
@@ -877,6 +767,10 @@ public class PickupRequestsController : ControllerBase
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PUT: api/pickuprequests/{id}/ready
+    // ═══════════════════════════════════════════════════════════════════════════
+
     [HttpPut("{id}/ready")]
     public async Task<ActionResult<PickupRequestResponse>> MarkReadyForPickup(Guid id)
     {
@@ -884,29 +778,23 @@ public class PickupRequestsController : ControllerBase
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
-            {
                 return Unauthorized(new { message = "User not authenticated" });
-            }
 
             var pr = await _context.PickupRequests
+                .Include(p => p.Ngo)
+                .Include(p => p.Grocery)
                 .FirstOrDefaultAsync(p => p.Id == id && p.GroceryId.ToString() == userId);
 
             if (pr == null)
-            {
                 return NotFound(new { message = "Pickup request not found" });
-            }
 
             if (pr.Status != "approved")
-            {
                 return BadRequest(new { message = $"Can only mark approved requests as ready. Current status: {pr.Status}" });
-            }
 
             pr.Status = "ready";
             pr.MarkedReadyAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-            var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
             var listing = pr.ListingId.HasValue
                 ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
                 : null;
@@ -916,9 +804,9 @@ public class PickupRequestsController : ControllerBase
                 Id = pr.Id.ToString(),
                 ListingId = pr.ListingId?.ToString() ?? "",
                 NgoId = pr.NgoId.ToString(),
-                NgoName = ngo?.Name ?? "",
+                NgoName = pr.Ngo?.Name ?? "",
                 GroceryId = pr.GroceryId.ToString(),
-                GroceryName = grocery?.Name ?? "",
+                GroceryName = pr.Grocery?.Name ?? "",
                 Status = pr.Status,
                 RequestedQuantity = pr.RequestedQuantity ?? 0,
                 PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
@@ -931,7 +819,6 @@ public class PickupRequestsController : ControllerBase
             };
 
             await _notificationService.NotifyPickupRequestStatusChanged(responseData, "approved");
-
             await _pushNotificationService.SendPickupReadyNotification(pr.NgoId, responseData);
 
             return Ok(new PickupRequestResponse

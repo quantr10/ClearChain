@@ -24,16 +24,17 @@ class SignalRService @Inject constructor(
 ) {
     companion object {
         private const val TAG = "SignalRService"
-        private const val PICKUP_HUB_URL = "http://10.0.2.2:5000/hubs/pickuprequests"
-        private const val LISTING_HUB_URL = "http://10.0.2.2:5000/hubs/listings"
-        private const val INVENTORY_HUB_URL = "http://10.0.2.2:5000/hubs/inventory"
-        private const val ADMIN_HUB_URL = "http://10.0.2.2:5000/hubs/admin"  // ✅ ADD
+        private const val BASE_WS_URL = "http://10.0.2.2:5000"
+        private const val PICKUP_HUB_URL = "$BASE_WS_URL/hubs/pickuprequests"
+        private const val LISTING_HUB_URL = "$BASE_WS_URL/hubs/listings"
+        private const val INVENTORY_HUB_URL = "$BASE_WS_URL/hubs/inventory"
+        private const val ADMIN_HUB_URL = "$BASE_WS_URL/hubs/admin"
     }
 
     private var pickupHubConnection: HubConnection? = null
     private var listingHubConnection: HubConnection? = null
     private var inventoryHubConnection: HubConnection? = null
-    private var adminHubConnection: HubConnection? = null  // ✅ ADD
+    private var adminHubConnection: HubConnection? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // Pickup Request Events

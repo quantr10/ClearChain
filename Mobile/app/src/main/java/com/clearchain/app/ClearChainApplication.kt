@@ -55,8 +55,6 @@ class ClearChainApplication : Application() {
 
                 Log.d("ClearChainApp", "✅ FCM Token obtained!")
                 Log.d("ClearChainApp", "🔔 Token (first 30 chars): ${token.take(30)}...")
-                Log.d("ClearChainApp", "🔔 Full token: $token")
-
                 // Token will be saved by FCMService.onNewToken()
             } catch (e: Exception) {
                 Log.e("ClearChainApp", "❌ Failed to get FCM token", e)

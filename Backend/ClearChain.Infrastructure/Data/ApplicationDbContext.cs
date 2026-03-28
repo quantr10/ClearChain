@@ -81,6 +81,20 @@ public class ApplicationDbContext : DbContext
                       .HasForeignKey("pickuprequestid")
             );
 
+        // PickupRequest → Ngo
+        modelBuilder.Entity<PickupRequest>()
+            .HasOne(pr => pr.Ngo)
+            .WithMany()
+            .HasForeignKey(pr => pr.NgoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // PickupRequest → Grocery
+        modelBuilder.Entity<PickupRequest>()
+            .HasOne(pr => pr.Grocery)
+            .WithMany()
+            .HasForeignKey(pr => pr.GroceryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Map all column names to lowercase
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
