@@ -7,6 +7,7 @@ package com.clearchain.app.presentation.ngo.browselistings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -158,6 +159,9 @@ fun BrowseListingsScreen(
                                         ListingCard(
                                             listing = listing,
                                             showGroceryInfo = true,
+                                            modifier = Modifier.clickable {
+                                                navController.navigate("listing_detail/${listing.id}")
+                                            },
                                             primaryAction = {
                                                 Button(
                                                     onClick = {

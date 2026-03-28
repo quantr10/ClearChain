@@ -51,6 +51,7 @@ fun InventoryItemData.toDomain(): InventoryItem {
             else -> InventoryStatus.ACTIVE
         },
         receivedAt = receivedAt,
-        distributedAt = distributedAt
+        distributedAt = distributedAt,
+        pickupRequestId = pickupRequestId  // THÊM
     )
 }

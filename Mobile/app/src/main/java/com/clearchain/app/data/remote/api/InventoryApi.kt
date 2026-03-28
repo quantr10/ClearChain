@@ -18,4 +18,7 @@ interface InventoryApi {
 
     @POST("inventory/update-expired")
     suspend fun updateExpiredItems(): InventoryItemResponse
+
+    @GET("inventory/{id}")
+    suspend fun getInventoryItemById(@Path("id") id: String): InventoryItemResponse
 }

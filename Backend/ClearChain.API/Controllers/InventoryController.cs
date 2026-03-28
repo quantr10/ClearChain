@@ -185,4 +185,32 @@ public class InventoryController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while updating expired items" });
         }
     }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<InventoryItemResponse>> GetInventoryItemById(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not authenticated" });
+
+            var item = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item == null)
+                return NotFound(new { message = "Inventory item not found" });
+
+            return Ok(new InventoryItemResponse
+            {
+                Message = "Inventory item retrieved successfully",
+                Data = MapToDto(item)  // ← dùng helper có sẵn
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting inventory item by id");
+            return StatusCode(500, new { message = "An error occurred while retrieving the inventory item" });
+        }
+    }
 }
