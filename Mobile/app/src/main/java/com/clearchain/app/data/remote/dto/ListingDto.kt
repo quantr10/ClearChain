@@ -50,13 +50,16 @@ data class ListingData(
     val imageUrl: String? = null,
     val location: String,
     val createdAt: String,
-    
-    // NEW: ListingGroup tracking
+
+    // ListingGroup tracking
     val groupId: String? = null,
     val splitReason: String = "new_listing",
     val relatedRequestId: String? = null,
     val splitIndex: Int = 0,
-    val groupSummary: ListingGroupSummaryDto? = null
+    val groupSummary: ListingGroupSummaryDto? = null,
+
+    // ═══ NEW (Part 2): Distance from NGO ═══
+    val distanceKm: Double? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -69,15 +72,13 @@ data class ListingGroupSummaryDto(
     val childListingsCount: Int
 )
 
-// data/remote/dto/ListingDto.kt - Add this:
-
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class UpdateListingQuantityRequest(
     val newQuantity: Int
 )
 
-// Updated mapping function
+// Updated mapping function — includes distanceKm
 fun ListingData.toDomain(): Listing {
     return Listing(
         id = id,
@@ -111,8 +112,6 @@ fun ListingData.toDomain(): Listing {
         imageUrl = imageUrl,
         location = location,
         createdAt = createdAt,
-        
-        // NEW: Map group fields
         groupId = groupId,
         splitReason = splitReason,
         relatedRequestId = relatedRequestId,
@@ -125,6 +124,8 @@ fun ListingData.toDomain(): Listing {
                 totalAvailable = it.totalAvailable,
                 childListingsCount = it.childListingsCount
             )
-        }
+        },
+        // NEW (Part 2)
+        distanceKm = distanceKm
     )
 }

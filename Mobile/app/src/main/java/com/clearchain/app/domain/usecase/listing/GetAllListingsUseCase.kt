@@ -7,10 +7,14 @@ import javax.inject.Inject
 class GetAllListingsUseCase @Inject constructor(
     private val listingRepository: ListingRepository
 ) {
+    // ═══ UPDATED: Added location params (Part 2) ═══
     suspend operator fun invoke(
         status: String? = null,
-        category: String? = null
+        category: String? = null,
+        lat: Double? = null,
+        lng: Double? = null,
+        radiusKm: Int? = null
     ): Result<List<Listing>> {
-        return listingRepository.getAllListings(status, category)
+        return listingRepository.getAllListings(status, category, lat, lng, radiusKm)
     }
 }

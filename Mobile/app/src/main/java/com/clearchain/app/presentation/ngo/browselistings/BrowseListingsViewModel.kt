@@ -2,10 +2,12 @@ package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.local.LocationPreferenceStore
 import com.clearchain.app.data.remote.signalr.ConnectionState
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
+import com.clearchain.app.presentation.components.SortOption
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -16,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class BrowseListingsViewModel @Inject constructor(
     private val getAllListingsUseCase: GetAllListingsUseCase,
-    private val signalRService: SignalRService
+    private val signalRService: SignalRService,
+    private val locationPreferenceStore: LocationPreferenceStore  // NEW (Part 2)
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BrowseListingsState())
@@ -26,88 +29,64 @@ class BrowseListingsViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
-        loadListings()
+        // Load location preference first, then load listings
+        viewModelScope.launch {
+            locationPreferenceStore.locationPreference.first()?.let { pref ->
+                _state.update {
+                    it.copy(
+                        userLat = pref.latitude,
+                        userLng = pref.longitude,
+                        radiusKm = pref.radiusKm,
+                        locationDisplayName = pref.displayName,
+                        isLocationSet = true
+                    )
+                }
+            }
+            loadListings()
+        }
         setupSignalR()
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-        // Connect to SignalR (reuse existing connection)
-        viewModelScope.launch {
-            signalRService.connect()
-        }
+        viewModelScope.launch { signalRService.connect() }
 
-        // Listen for connection state
         viewModelScope.launch {
             signalRService.connectionState.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> {
-                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
-                    }
-                    is ConnectionState.Error -> {
-                        // Silent fail - app works without real-time
-                    }
-                    else -> {}
+                if (state is ConnectionState.Connected) {
+                    _uiEvent.send(UiEvent.ShowSnackbar("Real-time updates enabled"))
                 }
             }
         }
 
-        // ✅ Listen for NEW listings
         viewModelScope.launch {
-            signalRService.listingCreated.collect { listing ->
-                loadListings() // Auto-refresh
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("📢 New listing: ${listing.title}")
-                )
+            signalRService.listingCreated.collect {
+                loadListings()
+                _uiEvent.send(UiEvent.ShowSnackbar("New listing: ${it.title}"))
             }
         }
 
-        // ✅ Listen for listing updates
         viewModelScope.launch {
-            signalRService.listingUpdated.collect { listing ->
-                loadListings()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Listing updated: ${listing.title}")
-                )
-            }
+            signalRService.listingUpdated.collect { loadListings() }
         }
 
-        // ✅ Listen for listing deletions
         viewModelScope.launch {
-            signalRService.listingDeleted.collect { notification ->
-                loadListings()
-                _uiEvent.send(UiEvent.ShowSnackbar("Listing removed"))
-            }
+            signalRService.listingDeleted.collect { loadListings() }
         }
 
-        // ✅ Listen for quantity changes
         viewModelScope.launch {
-            signalRService.listingQuantityChanged.collect { notification ->
-                loadListings()
-                
-                val quantityMsg = if (notification.newQuantity > notification.oldQuantity) {
-                    "📈 More available: ${notification.listing.title}"
-                } else {
-                    "📉 Less available: ${notification.listing.title}"
-                }
-                
-                _uiEvent.send(UiEvent.ShowSnackbar(quantityMsg))
-            }
+            signalRService.listingQuantityChanged.collect { loadListings() }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
+        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: BrowseListingsEvent) {
         when (event) {
             BrowseListingsEvent.LoadListings -> loadListings()
             BrowseListingsEvent.RefreshListings -> refreshListings()
-
             is BrowseListingsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -120,41 +99,38 @@ class BrowseListingsViewModel @Inject constructor(
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
             }
-
             is BrowseListingsEvent.NavigateToRequestPickup -> {
                 viewModelScope.launch {
                     _uiEvent.send(UiEvent.Navigate("request_pickup/${event.listingId}"))
                 }
             }
-
             BrowseListingsEvent.ClearError -> {
                 _state.update { it.copy(error = null) }
             }
         }
     }
 
+    // ═══ UPDATED: Pass location params to API (Part 2) ═══
     private fun loadListings() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+            val s = _state.value
 
-            val result = getAllListingsUseCase(status = "open")
+            val result = getAllListingsUseCase(
+                status = "open",
+                lat = s.userLat,
+                lng = s.userLng,
+                radiusKm = if (s.isLocationSet) s.radiusKm else null
+            )
 
             result.fold(
                 onSuccess = { listings ->
-                    _state.update {
-                        it.copy(
-                            allListings = listings,
-                            isLoading = false
-                        )
-                    }
+                    _state.update { it.copy(allListings = listings, isLoading = false) }
                     applyFilters()
                 },
                 onFailure = { error ->
                     _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to load listings"
-                        )
+                        it.copy(isLoading = false, error = error.message ?: "Failed to load listings")
                     }
                 }
             )
@@ -164,27 +140,23 @@ class BrowseListingsViewModel @Inject constructor(
     private fun refreshListings() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
+            val s = _state.value
 
-            val result = getAllListingsUseCase(status = "open")
+            val result = getAllListingsUseCase(
+                status = "open",
+                lat = s.userLat,
+                lng = s.userLng,
+                radiusKm = if (s.isLocationSet) s.radiusKm else null
+            )
 
             result.fold(
                 onSuccess = { listings ->
-                    _state.update {
-                        it.copy(
-                            allListings = listings,
-                            isRefreshing = false
-                        )
-                    }
+                    _state.update { it.copy(allListings = listings, isRefreshing = false) }
                     applyFilters()
                     _uiEvent.send(UiEvent.ShowSnackbar("Listings refreshed"))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = error.message ?: "Failed to refresh listings"
-                        )
-                    }
+                    _state.update { it.copy(isRefreshing = false, error = error.message) }
                 }
             )
         }
@@ -194,7 +166,7 @@ class BrowseListingsViewModel @Inject constructor(
         val current = _state.value
         var filtered = current.allListings
 
-        // Apply search
+        // Search
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { listing ->
@@ -206,20 +178,17 @@ class BrowseListingsViewModel @Inject constructor(
             }
         }
 
-        // Apply category filter
+        // Category filter
         current.selectedCategory?.let { category ->
             filtered = filtered.filter { it.category.name == category }
         }
 
-        // Apply sort
+        // Sort
         filtered = when (current.selectedSort.value) {
             "date_desc" -> filtered.sortedByDescending { it.createdAt }
             "date_asc" -> filtered.sortedBy { it.createdAt }
             "expiry_asc" -> filtered.sortedBy { it.expiryDate }
             "expiry_desc" -> filtered.sortedByDescending { it.expiryDate }
-            "quantity_desc" -> filtered.sortedByDescending { it.quantity }
-            "quantity_asc" -> filtered.sortedBy { it.quantity }
-            "location_asc" -> filtered.sortedBy { it.location }
             "name_asc" -> filtered.sortedBy { it.title }
             "name_desc" -> filtered.sortedByDescending { it.title }
             else -> filtered

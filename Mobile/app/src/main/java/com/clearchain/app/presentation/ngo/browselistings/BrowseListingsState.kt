@@ -31,9 +31,15 @@ data class BrowseListingsState(
 
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+
+    // ═══ NEW: Location preference fields (Part 2) ═══
+    val userLat: Double? = null,
+    val userLng: Double? = null,
+    val radiusKm: Int = 10,
+    val locationDisplayName: String = "",
+    val isLocationSet: Boolean = false
 ) {
-    // Backward compatibility
     val listings: List<Listing> get() = filteredListings
     val selectedCategoryEnum: FoodCategory? get() =
         selectedCategory?.let { FoodCategory.valueOf(it) }
