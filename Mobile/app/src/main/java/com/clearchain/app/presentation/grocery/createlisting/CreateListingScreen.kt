@@ -25,6 +25,8 @@ import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.presentation.components.PhotoPickerDialog
+import com.clearchain.app.presentation.components.DatePickerField
+import com.clearchain.app.presentation.components.TimePickerField
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -473,13 +475,10 @@ fun CreateListingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Expiry Date
-            ClearChainTextField(
+            DatePickerField(
                 value = state.expiryDate,
-                onValueChange = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged(it)) },
+                onDateSelected = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged(it)) },
                 label = "Expiry Date",
-                placeholder = "YYYY-MM-DD",
-                leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
-                imeAction = ImeAction.Next,
                 isError = state.expiryDateError != null,
                 errorMessage = state.expiryDateError,
                 enabled = !state.isLoading && !state.isAnalyzing
@@ -488,30 +487,20 @@ fun CreateListingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Pickup Time Start
-            ClearChainTextField(
+            TimePickerField(
                 value = state.pickupTimeStart,
-                onValueChange = { viewModel.onEvent(CreateListingEvent.PickupTimeStartChanged(it)) },
+                onTimeSelected = { viewModel.onEvent(CreateListingEvent.PickupTimeStartChanged(it)) },
                 label = "Pickup Start Time",
-                placeholder = "HH:MM (e.g., 09:00)",
-                leadingIcon = { Icon(Icons.Default.AccessTime, null) },
-                imeAction = ImeAction.Next,
-                isError = state.pickupTimeStartError != null,
-                errorMessage = state.pickupTimeStartError,
                 enabled = !state.isLoading && !state.isAnalyzing
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Pickup Time End
-            ClearChainTextField(
+            TimePickerField(
                 value = state.pickupTimeEnd,
-                onValueChange = { viewModel.onEvent(CreateListingEvent.PickupTimeEndChanged(it)) },
+                onTimeSelected = { viewModel.onEvent(CreateListingEvent.PickupTimeEndChanged(it)) },
                 label = "Pickup End Time",
-                placeholder = "HH:MM (e.g., 17:00)",
-                leadingIcon = { Icon(Icons.Default.AccessTime, null) },
-                imeAction = ImeAction.Next,
-                isError = state.pickupTimeEndError != null,
-                errorMessage = state.pickupTimeEndError,
                 enabled = !state.isLoading && !state.isAnalyzing
             )
 

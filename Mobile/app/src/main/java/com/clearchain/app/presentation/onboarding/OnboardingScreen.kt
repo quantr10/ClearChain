@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainTextField
+import com.clearchain.app.presentation.components.TimePickerField
 import com.clearchain.app.util.UiEvent
 
 @Composable
@@ -273,13 +274,17 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             enabled = !state.isSaving
         )
 
-        ClearChainTextField(
-            value = state.hours,
-            onValueChange = { viewModel.onEvent(OnboardingEvent.HoursChanged(it)) },
-            label = "Operating Hours",
-            placeholder = "7:00 - 22:00",
-            leadingIcon = { Icon(Icons.Default.Schedule, null) },
-            imeAction = if (state.userType == OrganizationType.GROCERY) ImeAction.Next else ImeAction.Done,
+        TimePickerField(
+            value = state.openTime,
+            onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
+            label = "Opening Time",
+            enabled = !state.isSaving
+        )
+
+        TimePickerField(
+            value = state.closeTime,
+            onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
+            label = "Closing Time",
             enabled = !state.isSaving
         )
 

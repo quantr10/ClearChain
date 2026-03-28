@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.clearchain.app.presentation.components.DatePickerField
+import com.clearchain.app.presentation.components.TimePickerField
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.util.UiEvent
 
@@ -277,26 +279,18 @@ private fun RequestPickupContent(
         )
 
         // Pickup Date
-        OutlinedTextField(
+        DatePickerField(
             value = pickupDate,
-            onValueChange = onPickupDateChange,
-            label = { Text("Pickup Date") },
-            leadingIcon = { Icon(Icons.Default.DateRange, null) },
-            placeholder = { Text("YYYY-MM-DD") },
-            supportingText = { Text("Format: YYYY-MM-DD (e.g., 2026-02-20)") },
-            modifier = Modifier.fillMaxWidth(),
+            onDateSelected = onPickupDateChange,
+            label = "Pickup Date",
             enabled = !isLoading
         )
 
         // Pickup Time
-        OutlinedTextField(
+        TimePickerField(
             value = pickupTime,
-            onValueChange = onPickupTimeChange,
-            label = { Text("Pickup Time") },
-            leadingIcon = { Icon(Icons.Default.Schedule, null) },
-            placeholder = { Text("HH:MM") },
-            supportingText = { Text("Format: HH:MM (e.g., 14:30)") },
-            modifier = Modifier.fillMaxWidth(),
+            onTimeSelected = onPickupTimeChange,
+            label = "Pickup Time",
             enabled = !isLoading
         )
 

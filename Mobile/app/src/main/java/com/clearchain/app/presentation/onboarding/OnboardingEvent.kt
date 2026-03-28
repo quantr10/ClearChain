@@ -9,7 +9,8 @@ sealed class OnboardingEvent {
     // Step 2 field changes
     data class AddressChanged(val value: String) : OnboardingEvent()
     data class CityChanged(val value: String) : OnboardingEvent()
-    data class HoursChanged(val value: String) : OnboardingEvent()
+    data class OpenTimeChanged(val value: String) : OnboardingEvent()
+    data class CloseTimeChanged(val value: String) : OnboardingEvent()
     data class PickupInstructionsChanged(val value: String) : OnboardingEvent()  // Grocery only
 
     // Navigation between steps

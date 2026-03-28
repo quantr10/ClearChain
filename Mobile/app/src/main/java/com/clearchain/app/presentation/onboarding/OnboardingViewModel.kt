@@ -38,7 +38,8 @@ class OnboardingViewModel @Inject constructor(
                         contactPerson = user.contactPerson ?: "",
                         address = user.address,
                         city = user.location,
-                        hours = user.hours ?: "",
+                        openTime = user.hours?.substringBefore(" - ", "") ?: "",
+                        closeTime = user.hours?.substringAfter(" - ", "") ?: "",
                         pickupInstructions = user.pickupInstructions ?: ""
                     )
                 }
@@ -58,8 +59,10 @@ class OnboardingViewModel @Inject constructor(
                 _state.update { it.copy(address = event.value, addressError = null) }
             is OnboardingEvent.CityChanged ->
                 _state.update { it.copy(city = event.value, cityError = null) }
-            is OnboardingEvent.HoursChanged ->
-                _state.update { it.copy(hours = event.value) }
+            is OnboardingEvent.OpenTimeChanged ->
+                _state.update { it.copy(openTime = event.value) }
+            is OnboardingEvent.CloseTimeChanged ->
+                _state.update { it.copy(closeTime = event.value) }
             is OnboardingEvent.PickupInstructionsChanged ->
                 _state.update { it.copy(pickupInstructions = event.value) }
             OnboardingEvent.NextStep -> handleNextStep()
@@ -117,8 +120,8 @@ class OnboardingViewModel @Inject constructor(
                 phone = s.phone,
                 address = s.address,
                 location = s.city,
-                hours = s.hours.ifBlank { null },
-                contactPerson = s.contactPerson.ifBlank { null },
+                hours = if (s.openTime.isNotBlank() && s.closeTime.isNotBlank())
+                    "${s.openTime} - ${s.closeTime}" else null,                contactPerson = s.contactPerson.ifBlank { null },
                 pickupInstructions = s.pickupInstructions.ifBlank { null },
                 description = s.description.ifBlank { null }
             )
