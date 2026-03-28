@@ -20,9 +20,13 @@ interface ListingRepository {
 
     suspend fun getMyListings(): Result<List<Listing>>
 
+    // ═══ UPDATED: Added location params (Part 2) ═══
     suspend fun getAllListings(
         status: String? = null,
-        category: String? = null
+        category: String? = null,
+        lat: Double? = null,
+        lng: Double? = null,
+        radiusKm: Int? = null
     ): Result<List<Listing>>
 
     suspend fun getListingById(id: String): Result<Listing>
@@ -48,6 +52,5 @@ interface ListingRepository {
 
     suspend fun saveAnalysis(analysisData: FoodAnalysisData): Result<Unit>
 
-    suspend fun uploadFoodImage(imageUri: Uri): Result<String> 
-
+    suspend fun uploadFoodImage(imageUri: Uri): Result<String>
 }

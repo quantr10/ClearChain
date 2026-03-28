@@ -70,11 +70,17 @@ public class ListingsController : ControllerBase
         return dto;
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    // UPDATED: GetAllListings with geospatial filter (Part 2)
+    // ═══════════════════════════════════════════════════════════════════
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<ListingsResponse>> GetAllListings(
         [FromQuery] string? status = null,
-        [FromQuery] string? category = null)
+        [FromQuery] string? category = null,
+        [FromQuery] double? lat = null,
+        [FromQuery] double? lng = null,
+        [FromQuery] double? radiusKm = null)
     {
         try
         {
@@ -97,7 +103,31 @@ public class ListingsController : ControllerBase
                 .OrderByDescending(l => l.CreatedAt)
                 .ToListAsync();
 
-            var listingDtos = listings.Select(l => MapListingToDto(l, l.Group)).ToList();
+            // Map to DTOs and calculate distance if location provided
+            var listingDtos = listings.Select(l =>
+            {
+                var dto = MapListingToDto(l, l.Group);
+
+                if (lat.HasValue && lng.HasValue &&
+                    l.Grocery?.Latitude != null && l.Grocery?.Longitude != null)
+                {
+                    dto.DistanceKm = CalculateHaversineDistance(
+                        lat.Value, lng.Value,
+                        l.Grocery.Latitude.Value, l.Grocery.Longitude.Value
+                    );
+                }
+
+                return dto;
+            }).ToList();
+
+            // Filter by radius if specified
+            if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+            {
+                listingDtos = listingDtos
+                    .Where(l => l.DistanceKm.HasValue && l.DistanceKm.Value <= radiusKm.Value)
+                    .OrderBy(l => l.DistanceKm)
+                    .ToList();
+            }
 
             return Ok(new ListingsResponse
             {
@@ -111,6 +141,26 @@ public class ListingsController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while retrieving listings" });
         }
     }
+
+    // ═══ NEW: Haversine distance calculation (Part 2) ═══
+    private static double CalculateHaversineDistance(
+        double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371; // Earth's radius in km
+        var dLat = ToRadians(lat2 - lat1);
+        var dLon = ToRadians(lon2 - lon1);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return Math.Round(R * c, 1);
+    }
+
+    private static double ToRadians(double degrees) => degrees * Math.PI / 180;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Remaining endpoints — UNCHANGED from original
+    // ═══════════════════════════════════════════════════════════════════
 
     [HttpGet("grocery/my")]
     [Authorize]
@@ -242,10 +292,7 @@ public class ListingsController : ControllerBase
             listing.Grocery = grocery;
             var listingDto = MapListingToDto(listing, listingGroup);
 
-            // ✅ SignalR notification
             await _listingNotificationService.NotifyListingCreated(listingDto);
-
-            // ✅ Push notifications
             await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
 
             return CreatedAtAction(

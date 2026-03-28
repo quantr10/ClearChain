@@ -4,7 +4,6 @@ import com.clearchain.app.data.remote.dto.CreateListingRequest
 import com.clearchain.app.data.remote.dto.ListingResponse
 import com.clearchain.app.data.remote.dto.ListingsResponse
 import com.clearchain.app.data.remote.dto.UpdateListingQuantityRequest
-
 import retrofit2.http.*
 
 interface ListingApi {
@@ -22,10 +21,14 @@ interface ListingApi {
         @Path("id") id: String
     ): ListingResponse
 
+    // ═══ UPDATED: Added lat/lng/radiusKm query params (Part 2) ═══
     @GET("listings")
     suspend fun getAllListings(
         @Query("status") status: String? = null,
-        @Query("category") category: String? = null
+        @Query("category") category: String? = null,
+        @Query("lat") lat: Double? = null,
+        @Query("lng") lng: Double? = null,
+        @Query("radiusKm") radiusKm: Int? = null
     ): ListingsResponse
 
     @PUT("listings/{id}")
@@ -39,7 +42,6 @@ interface ListingApi {
         @Path("id") id: String
     ): ListingResponse
 
-    // data/remote/api/ListingApi.kt - Add this method:
     @PUT("listings/{id}/quantity")
     suspend fun updateListingQuantity(
         @Path("id") listingId: String,

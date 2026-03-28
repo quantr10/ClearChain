@@ -22,14 +22,17 @@ data class Listing(
     val location: String,
     val createdAt: String,
     
-    // NEW: ListingGroup tracking fields
+    // ListingGroup tracking fields
     val groupId: String? = null,
     val splitReason: String = "new_listing",
     val relatedRequestId: String? = null,
     val splitIndex: Int = 0,
     
     // OPTIONAL: Group summary for UI context
-    val groupSummary: ListingGroupSummary? = null
+    val groupSummary: ListingGroupSummary? = null,
+
+    // ═══ NEW (Part 2): Distance from NGO location ═══
+    val distanceKm: Double? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -42,7 +45,6 @@ data class ListingGroupSummary(
     val childListingsCount: Int
 )
 
-// Existing enums remain unchanged
 @Serializable
 enum class FoodCategory {
     FRUITS, VEGETABLES, DAIRY, BAKERY, MEAT, SEAFOOD, 

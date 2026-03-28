@@ -18,7 +18,7 @@ public class ListingData
     public string Location { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
     
-    // NEW: ListingGroup tracking fields
+    // ListingGroup tracking fields
     public string? GroupId { get; set; }
     public string SplitReason { get; set; } = "new_listing";
     public string? RelatedRequestId { get; set; }
@@ -26,6 +26,9 @@ public class ListingData
     
     // OPTIONAL: Include group summary (for UI context)
     public ListingGroupSummary? GroupSummary { get; set; }
+
+    // ═══ NEW (Part 2): Distance from NGO's search location ═══
+    public double? DistanceKm { get; set; }
 }
 
 /// <summary>
