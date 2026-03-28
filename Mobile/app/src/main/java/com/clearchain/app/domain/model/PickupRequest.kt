@@ -28,7 +28,6 @@ enum class PickupRequestStatus {
     PENDING,
     APPROVED,
     READY,
-    REJECTED,
     COMPLETED,
 }
 
@@ -37,7 +36,6 @@ fun PickupRequestStatus.displayName(): String {
         PickupRequestStatus.PENDING -> "Pending"
         PickupRequestStatus.APPROVED -> "Approved"
         PickupRequestStatus.READY -> "Ready for Pickup"
-        PickupRequestStatus.REJECTED -> "Cancelled"
         PickupRequestStatus.COMPLETED -> "Completed"
     }
 }

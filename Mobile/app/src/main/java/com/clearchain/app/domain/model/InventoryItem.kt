@@ -9,7 +9,8 @@ data class InventoryItem(
     val expiryDate: String,
     val status: InventoryStatus,
     val receivedAt: String,
-    val distributedAt: String?
+    val distributedAt: String?,
+    val pickupRequestId: String? = null  // ← THÊM
 )
 
 enum class InventoryStatus {

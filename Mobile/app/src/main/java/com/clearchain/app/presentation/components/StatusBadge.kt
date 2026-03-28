@@ -69,7 +69,6 @@ fun PickupStatusBadge(status: PickupRequestStatus) {
         PickupRequestStatus.PENDING   -> BadgeStyle(StatusColors.PendingBg, StatusColors.PendingOnBg, "Pending", Icons.Default.Schedule)
         PickupRequestStatus.APPROVED  -> BadgeStyle(StatusColors.ApprovedBg, StatusColors.ApprovedOnBg, "Approved", Icons.Default.ThumbUp)
         PickupRequestStatus.READY     -> BadgeStyle(StatusColors.ReadyBg, StatusColors.ReadyOnBg, "Ready", Icons.Default.CheckCircle)
-PickupRequestStatus.REJECTED  -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, "Cancelled", Icons.Default.Cancel)
         PickupRequestStatus.COMPLETED -> BadgeStyle(StatusColors.CompletedBg, StatusColors.CompletedOnBg, "Completed", Icons.Default.Done)
     }
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)

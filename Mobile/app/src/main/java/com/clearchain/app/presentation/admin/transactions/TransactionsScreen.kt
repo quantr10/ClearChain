@@ -1,12 +1,8 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// TransactionsScreen.kt — REDESIGNED with unified RequestCard in ADMIN mode
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.admin.transactions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,6 +19,7 @@ import com.clearchain.app.util.UiEvent
 @Composable
 fun TransactionsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToRequestDetail: (String) -> Unit = {},  // NEW (Part 3)
     viewModel: TransactionsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -38,7 +35,6 @@ fun TransactionsScreen(
         }
     }
 
-    // ── Full Photo Viewer ───────────────────────────────────────────
     showFullPhotoUrl?.let { url ->
         FullPhotoDialog(
             photoUrl = url,
@@ -73,7 +69,6 @@ fun TransactionsScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            // ── Search ──────────────────────────────────────────────
             SearchBar(
                 query = state.searchQuery,
                 onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
@@ -81,7 +76,6 @@ fun TransactionsScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
-            // ── Status Filter Chips ─────────────────────────────────
             val statuses = listOf(
                 FilterChipData(null, "All"),
                 FilterChipData("PENDING", "Pending"),
@@ -97,7 +91,6 @@ fun TransactionsScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // ── Results Count ───────────────────────────────────────
             Text(
                 text = "${state.filteredTransactions.size} transaction${if (state.filteredTransactions.size != 1) "s" else ""}",
                 style = MaterialTheme.typography.bodySmall,
@@ -105,7 +98,6 @@ fun TransactionsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            // ── Content ─────────────────────────────────────────────
             when {
                 state.isLoading && state.allTransactions.isEmpty() -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -135,12 +127,18 @@ fun TransactionsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.filteredTransactions, key = { it.id }) { transaction ->
-                            // ✅ Using shared RequestCard in ADMIN (read-only) mode
-                            RequestCard(
-                                request = transaction,
-                                viewMode = RequestViewMode.ADMIN,
-                                onViewPhoto = { showFullPhotoUrl = it }
-                            )
+                            // ═══ UPDATED (Part 3): Tap card → RequestDetailScreen ═══
+                            Box(
+                                modifier = Modifier.clickable {
+                                    onNavigateToRequestDetail(transaction.id)
+                                }
+                            ) {
+                                RequestCard(
+                                    request = transaction,
+                                    viewMode = RequestViewMode.ADMIN,
+                                    onViewPhoto = { showFullPhotoUrl = it }
+                                )
+                            }
                         }
 
                         item { Spacer(Modifier.height(16.dp)) }

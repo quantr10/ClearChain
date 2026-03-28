@@ -7,6 +7,7 @@ package com.clearchain.app.presentation.grocery.managerequests
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import com.clearchain.app.util.UiEvent
 @Composable
 fun ManageRequestsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToRequestDetail: (String) -> Unit = {},
     viewModel: ManageRequestsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -140,6 +142,9 @@ fun ManageRequestsScreen(
                                     items(state.filteredRequests, key = { it.id }) { request ->
                                         RequestCard(
                                             request = request,
+                                            modifier = Modifier.clickable {
+                                                onNavigateToRequestDetail(request.id)
+                                            },
                                             viewMode = RequestViewMode.GROCERY,
                                             onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
                                             onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
