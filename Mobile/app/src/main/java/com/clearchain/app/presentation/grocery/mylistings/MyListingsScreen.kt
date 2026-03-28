@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.domain.model.ListingStatus
@@ -59,18 +60,6 @@ fun MyListingsScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(MyListingsEvent.RefreshListings) },
-                        enabled = !state.isRefreshing
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
                     }
                 }
             )
@@ -160,71 +149,77 @@ fun MyListingsScreen(
                             }
 
                             else -> {
-                                LazyColumn(
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                PullToRefreshBox(
+                                    isRefreshing = state.isRefreshing,
+                                    onRefresh = { viewModel.onEvent(MyListingsEvent.RefreshListings) }
                                 ) {
-                                    items(state.filteredListings, key = { it.id }) { listing ->
-                                        var showEditQty by remember { mutableStateOf(false) }
-                                        var showDelete by remember { mutableStateOf(false) }
+                                    
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(state.filteredListings, key = { it.id }) { listing ->
+                                                var showEditQty by remember { mutableStateOf(false) }
+                                                var showDelete by remember { mutableStateOf(false) }
 
-                                        ListingCard(
-                                            listing = listing,
-                                            modifier = Modifier.clickable {
-                                                navController.navigate("listing_detail/${listing.id}")
-                                            },
-                                            showGroceryInfo = false,
-                                            secondaryActions = if (listing.status == ListingStatus.AVAILABLE) {
-                                                {
-                                                    TextButton(onClick = { showEditQty = true }) {
-                                                        Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
-                                                        Spacer(Modifier.width(4.dp))
-                                                        Text("Edit Qty", style = MaterialTheme.typography.labelMedium)
-                                                    }
-                                                    TextButton(
-                                                        onClick = { showDelete = true },
-                                                        colors = ButtonDefaults.textButtonColors(
-                                                            contentColor = MaterialTheme.colorScheme.error
-                                                        )
-                                                    ) {
-                                                        Icon(Icons.Default.Delete, null, Modifier.size(16.dp))
-                                                        Spacer(Modifier.width(4.dp))
-                                                        Text("Delete", style = MaterialTheme.typography.labelMedium)
-                                                    }
-                                                }
-                                            } else null
-                                        )
+                                                ListingCard(
+                                                    listing = listing,
+                                                    modifier = Modifier.clickable {
+                                                        navController.navigate("listing_detail/${listing.id}")
+                                                    },
+                                                    showGroceryInfo = false,
+                                                    secondaryActions = if (listing.status == ListingStatus.AVAILABLE) {
+                                                        {
+                                                            TextButton(onClick = { showEditQty = true }) {
+                                                                Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
+                                                                Spacer(Modifier.width(4.dp))
+                                                                Text("Edit Qty", style = MaterialTheme.typography.labelMedium)
+                                                            }
+                                                            TextButton(
+                                                                onClick = { showDelete = true },
+                                                                colors = ButtonDefaults.textButtonColors(
+                                                                    contentColor = MaterialTheme.colorScheme.error
+                                                                )
+                                                            ) {
+                                                                Icon(Icons.Default.Delete, null, Modifier.size(16.dp))
+                                                                Spacer(Modifier.width(4.dp))
+                                                                Text("Delete", style = MaterialTheme.typography.labelMedium)
+                                                            }
+                                                        }
+                                                    } else null
+                                                )
 
-                                        if (showEditQty) {
-                                            EditQuantityDialog(
-                                                currentQuantity = listing.quantity,
-                                                unit = listing.unit,
-                                                onDismiss = { showEditQty = false },
-                                                onConfirm = { newQty ->
-                                                    showEditQty = false
-                                                    viewModel.onEvent(
-                                                        MyListingsEvent.UpdateListingQuantity(listing.id, newQty)
+                                                if (showEditQty) {
+                                                    EditQuantityDialog(
+                                                        currentQuantity = listing.quantity,
+                                                        unit = listing.unit,
+                                                        onDismiss = { showEditQty = false },
+                                                        onConfirm = { newQty ->
+                                                            showEditQty = false
+                                                            viewModel.onEvent(
+                                                                MyListingsEvent.UpdateListingQuantity(listing.id, newQty)
+                                                            )
+                                                        }
                                                     )
                                                 }
-                                            )
-                                        }
 
-                                        if (showDelete) {
-                                            ConfirmDialog(
-                                                title = "Delete Listing",
-                                                message = "Delete \"${listing.title}\"? This cannot be undone.",
-                                                confirmLabel = "Delete",
-                                                isDestructive = true,
-                                                onConfirm = {
-                                                    showDelete = false
-                                                    viewModel.onEvent(MyListingsEvent.DeleteListing(listing.id))
-                                                },
-                                                onDismiss = { showDelete = false }
-                                            )
-                                        }
-                                    }
+                                                if (showDelete) {
+                                                    ConfirmDialog(
+                                                        title = "Delete Listing",
+                                                        message = "Delete \"${listing.title}\"? This cannot be undone.",
+                                                        confirmLabel = "Delete",
+                                                        isDestructive = true,
+                                                        onConfirm = {
+                                                            showDelete = false
+                                                            viewModel.onEvent(MyListingsEvent.DeleteListing(listing.id))
+                                                        },
+                                                        onDismiss = { showDelete = false }
+                                                    )
+                                                }
+                                            }
 
-                                    item { Spacer(Modifier.height(16.dp)) }
+                                            item { Spacer(Modifier.height(16.dp)) }
+                                        }
                                 }
                             }
                         }

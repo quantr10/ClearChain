@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
@@ -45,17 +46,6 @@ fun ManageRequestsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
                     }
                 }
             )
@@ -135,25 +125,30 @@ fun ManageRequestsScreen(
                             }
 
                             else -> {
-                                LazyColumn(
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(state.filteredRequests, key = { it.id }) { request ->
-                                        RequestCard(
-                                            request = request,
-                                            modifier = Modifier.clickable {
-                                                onNavigateToRequestDetail(request.id)
-                                            },
-                                            viewMode = RequestViewMode.GROCERY,
-                                            onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
-                                            onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
-                                            onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
-                                        )
-                                    }
+                                PullToRefreshBox(
+                                        isRefreshing = state.isRefreshing,
+                                        onRefresh = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
+                                    ) {
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(state.filteredRequests, key = { it.id }) { request ->
+                                                RequestCard(
+                                                    request = request,
+                                                    modifier = Modifier.clickable {
+                                                        onNavigateToRequestDetail(request.id)
+                                                    },
+                                                    viewMode = RequestViewMode.GROCERY,
+                                                    onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
+                                                    onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
+                                                    onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
+                                                )
+                                            }
 
-                                    item { Spacer(Modifier.height(16.dp)) }
-                                }
+                                            item { Spacer(Modifier.height(16.dp)) }
+                                        }
+                                    }
                             }
                         }
                     }

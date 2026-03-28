@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,17 +50,6 @@ fun StatisticsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
                     }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(StatisticsEvent.RefreshStatistics) }
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
-                    }
                 }
             )
         },
@@ -72,139 +62,144 @@ fun StatisticsScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 state.stats?.let { stats ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = { viewModel.onEvent(StatisticsEvent.RefreshStatistics) }
                     ) {
-                        // ── Organizations ────────────────────────────────
-                        SectionHeader("Organizations")
-                        StatsGroup(
-                            icon = Icons.Default.Business,
-                            title = "Organization Overview",
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            items = listOf(
-                                "Total" to "${stats.totalOrganizations}",
-                                "Groceries" to "${stats.totalGroceries}",
-                                "NGOs" to "${stats.totalNgos}",
-                                "Verified" to "${stats.verifiedOrganizations}",
-                                "Unverified" to "${stats.unverifiedOrganizations}"
-                            )
-                        )
-
-                        // ── Listings ────────────────────────────────────
-                        SectionHeader("Listings")
-                        StatsGroup(
-                            icon = Icons.Default.Inventory,
-                            title = "Food Listings",
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            items = listOf(
-                                "Total" to "${stats.totalListings}",
-                                "Active (Open)" to "${stats.activeListings}",
-                                "Reserved" to "${stats.reservedListings}"
-                            )
-                        )
-
-                        // ── Pickup Requests ─────────────────────────────
-                        SectionHeader("Pickup Requests")
-                        StatsGroup(
-                            icon = Icons.Default.LocalShipping,
-                            title = "Request Status Breakdown",
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            items = listOf(
-                                "Total" to "${stats.totalPickupRequests}",
-                                "Pending" to "${stats.pendingRequests}",
-                                "Approved" to "${stats.approvedRequests}",
-                                "Ready" to "${stats.readyRequests}",
-                                "Completed" to "${stats.completedRequests}",
-                                "Cancelled" to "${stats.cancelledRequests}"
-                            )
-                        )
-
-                        // ── Platform Impact ─────────────────────────────
-                        SectionHeader("Platform Impact")
-
-                        // Food Saved Card
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(20.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Eco, null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                            // ── Organizations ────────────────────────────────
+                            SectionHeader("Organizations")
+                            StatsGroup(
+                                icon = Icons.Default.Business,
+                                title = "Organization Overview",
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                items = listOf(
+                                    "Total" to "${stats.totalOrganizations}",
+                                    "Groceries" to "${stats.totalGroceries}",
+                                    "NGOs" to "${stats.totalNgos}",
+                                    "Verified" to "${stats.verifiedOrganizations}",
+                                    "Unverified" to "${stats.unverifiedOrganizations}"
                                 )
-                                Column {
-                                    Text(
-                                        "Total Food Saved",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        "${stats.totalFoodSaved.toInt()} items",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
+                            )
 
-                        // Completion Rate Card
-                        if (stats.totalPickupRequests > 0) {
-                            val rate = (stats.completedRequests.toFloat() / stats.totalPickupRequests * 100).toInt()
+                            // ── Listings ────────────────────────────────────
+                            SectionHeader("Listings")
+                            StatsGroup(
+                                icon = Icons.Default.Inventory,
+                                title = "Food Listings",
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                items = listOf(
+                                    "Total" to "${stats.totalListings}",
+                                    "Active (Open)" to "${stats.activeListings}",
+                                    "Reserved" to "${stats.reservedListings}"
+                                )
+                            )
+
+                            // ── Pickup Requests ─────────────────────────────
+                            SectionHeader("Pickup Requests")
+                            StatsGroup(
+                                icon = Icons.Default.LocalShipping,
+                                title = "Request Status Breakdown",
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                items = listOf(
+                                    "Total" to "${stats.totalPickupRequests}",
+                                    "Pending" to "${stats.pendingRequests}",
+                                    "Approved" to "${stats.approvedRequests}",
+                                    "Ready" to "${stats.readyRequests}",
+                                    "Completed" to "${stats.completedRequests}",
+                                    "Cancelled" to "${stats.cancelledRequests}"
+                                )
+                            )
+
+                            // ── Platform Impact ─────────────────────────────
+                            SectionHeader("Platform Impact")
+
+                            // Food Saved Card
                             Card(
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                             ) {
-                                Column(
+                                Row(
                                     modifier = Modifier.fillMaxWidth().padding(20.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(Icons.Default.TrendingUp, null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    Icon(
+                                        Icons.Default.Eco, null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Column {
                                         Text(
-                                            "Completion Rate",
+                                            "Total Food Saved",
                                             style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            "${stats.totalFoodSaved.toInt()} items",
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Completion Rate Card
+                            if (stats.totalPickupRequests > 0) {
+                                val rate = (stats.completedRequests.toFloat() / stats.totalPickupRequests * 100).toInt()
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(Icons.Default.TrendingUp, null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            Text(
+                                                "Completion Rate",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                        Text(
+                                            "$rate%",
+                                            style = MaterialTheme.typography.headlineLarge,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
+                                        LinearProgressIndicator(
+                                            progress = { rate / 100f },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                        )
                                     }
-                                    Text(
-                                        "$rate%",
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                    LinearProgressIndicator(
-                                        progress = { rate / 100f },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                    )
                                 }
                             }
-                        }
 
-                        Spacer(Modifier.height(16.dp))
+                            Spacer(Modifier.height(16.dp))
+                        }
                     }
                 }
             }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,17 +49,6 @@ fun VerificationQueueScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
                     }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
-                    }
                 }
             )
         },
@@ -81,23 +71,28 @@ fun VerificationQueueScreen(
                 }
 
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        item {
-                            Text(
-                                "${state.organizations.size} organization${if (state.organizations.size != 1) "s" else ""} registered",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
+                    ) {                     
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            item {
+                                Text(
+                                    "${state.organizations.size} organization${if (state.organizations.size != 1) "s" else ""} registered",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
-                        items(state.organizations, key = { it.id }) { org ->
-                            OrganizationCard(organization = org)
-                        }
+                            items(state.organizations, key = { it.id }) { org ->
+                                OrganizationCard(organization = org)
+                            }
 
-                        item { Spacer(Modifier.height(16.dp)) }
+                            item { Spacer(Modifier.height(16.dp)) }
+                        }
                     }
                 }
             }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,17 +50,6 @@ fun TransactionsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
                     }
                 }
             )
@@ -122,26 +112,31 @@ fun TransactionsScreen(
                 }
 
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
                     ) {
-                        items(state.filteredTransactions, key = { it.id }) { transaction ->
-                            // ═══ UPDATED (Part 3): Tap card → RequestDetailScreen ═══
-                            Box(
-                                modifier = Modifier.clickable {
-                                    onNavigateToRequestDetail(transaction.id)
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.filteredTransactions, key = { it.id }) { transaction ->
+                                // ═══ UPDATED (Part 3): Tap card → RequestDetailScreen ═══
+                                Box(
+                                    modifier = Modifier.clickable {
+                                        onNavigateToRequestDetail(transaction.id)
+                                    }
+                                ) {
+                                    RequestCard(
+                                        request = transaction,
+                                        viewMode = RequestViewMode.ADMIN,
+                                        onViewPhoto = { showFullPhotoUrl = it }
+                                    )
                                 }
-                            ) {
-                                RequestCard(
-                                    request = transaction,
-                                    viewMode = RequestViewMode.ADMIN,
-                                    onViewPhoto = { showFullPhotoUrl = it }
-                                )
                             }
-                        }
 
-                        item { Spacer(Modifier.height(16.dp)) }
+                            item { Spacer(Modifier.height(16.dp)) }
+                        }
                     }
                 }
             }

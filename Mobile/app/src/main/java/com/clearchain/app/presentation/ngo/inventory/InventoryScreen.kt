@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.presentation.components.*
@@ -54,17 +55,6 @@ fun InventoryScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
-                    ) {
-                        if (state.isRefreshing) {
-                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Refresh, "Refresh")
-                        }
                     }
                 }
             )
@@ -155,21 +145,26 @@ fun InventoryScreen(
                             }
 
                             else -> {
-                                LazyColumn(
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                PullToRefreshBox(
+                                    isRefreshing = state.isRefreshing,
+                                    onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
                                 ) {
-                                    items(state.filteredItems, key = { it.id }) { item ->
-                                        InventoryItemCard(
-                                            item = item,
-                                            modifier = Modifier.clickable {
-                                                onNavigateToItemDetail(item.id)
-                                            },
-                                            onDistribute = { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
-                                        )
-                                    }
+                                    LazyColumn(
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        items(state.filteredItems, key = { it.id }) { item ->
+                                            InventoryItemCard(
+                                                item = item,
+                                                modifier = Modifier.clickable {
+                                                    onNavigateToItemDetail(item.id)
+                                                },
+                                                onDistribute = { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
+                                            )
+                                        }
 
-                                    item { Spacer(Modifier.height(16.dp)) }
+                                        item { Spacer(Modifier.height(16.dp)) }
+                                    }
                                 }
                             }
                         }
