@@ -139,10 +139,19 @@ fun ProfileScreen(
                                 leadingIcon = { Icon(Icons.Default.Place, null) },
                                 imeAction = ImeAction.Next, enabled = !state.isSavingProfile)
                             // Operating Hours (both roles now)
-                            ClearChainTextField(value = state.editHours, onValueChange = { viewModel.onEvent(ProfileEvent.EditHoursChanged(it)) },
-                                label = "Operating Hours", placeholder = "7:00 - 22:00",
-                                leadingIcon = { Icon(Icons.Default.Schedule, null) },
-                                imeAction = ImeAction.Next, enabled = !state.isSavingProfile)
+                            TimePickerField(
+                                value = state.editOpenTime,
+                                onTimeSelected = { viewModel.onEvent(ProfileEvent.EditOpenTimeChanged(it)) },
+                                label = "Opening Time",
+                                enabled = !state.isSavingProfile
+                            )
+
+                            TimePickerField(
+                                value = state.editCloseTime,
+                                onTimeSelected = { viewModel.onEvent(ProfileEvent.EditCloseTimeChanged(it)) },
+                                label = "Closing Time",
+                                enabled = !state.isSavingProfile
+                            )
                             // ═══ NEW: NGO only - Contact Person (Part 1) ═══
                             if (state.user!!.type == OrganizationType.NGO || state.user!!.type == OrganizationType.GROCERY) {
                                 ClearChainTextField(value = state.editContactPerson, onValueChange = { viewModel.onEvent(ProfileEvent.EditContactPersonChanged(it)) },

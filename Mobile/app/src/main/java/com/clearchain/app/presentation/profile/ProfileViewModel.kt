@@ -44,8 +44,10 @@ class ProfileViewModel @Inject constructor(
                 _state.update { it.copy(editAddress = event.address, editAddressError = null) }
             is ProfileEvent.EditLocationChanged ->
                 _state.update { it.copy(editLocation = event.location, editLocationError = null) }
-            is ProfileEvent.EditHoursChanged ->
-                _state.update { it.copy(editHours = event.hours) }
+            is ProfileEvent.EditOpenTimeChanged ->
+                _state.update { it.copy(editOpenTime = event.time) }
+            is ProfileEvent.EditCloseTimeChanged ->
+                _state.update { it.copy(editCloseTime = event.time) }
             // ═══ NEW event handlers (Part 1) ═══
             is ProfileEvent.EditContactPersonChanged ->
                 _state.update { it.copy(editContactPerson = event.contactPerson, editContactPersonError = null) }
@@ -77,7 +79,8 @@ class ProfileViewModel @Inject constructor(
                 isEditing = true,
                 editName = user.name, editPhone = user.phone,
                 editAddress = user.address, editLocation = user.location,
-                editHours = user.hours ?: "",
+                editOpenTime = user.hours?.substringBefore(" - ", "") ?: "",
+                editCloseTime = user.hours?.substringAfter(" - ", "") ?: "",
                 editContactPerson = user.contactPerson ?: "",
                 editPickupInstructions = user.pickupInstructions ?: "",
                 editDescription = user.description ?: "",
@@ -105,7 +108,8 @@ class ProfileViewModel @Inject constructor(
             val result = updateProfileUseCase(
                 name = s.editName, phone = s.editPhone,
                 address = s.editAddress, location = s.editLocation,
-                hours = s.editHours.ifBlank { null },
+                hours = if (s.editOpenTime.isNotBlank() && s.editCloseTime.isNotBlank())
+                    "${s.editOpenTime} - ${s.editCloseTime}" else null,
                 latitude = null, longitude = null,
                 contactPerson = s.editContactPerson.ifBlank { null },
                 pickupInstructions = s.editPickupInstructions.ifBlank { null },

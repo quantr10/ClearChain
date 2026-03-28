@@ -14,7 +14,8 @@ data class ProfileState(
     val editPhone: String = "",
     val editAddress: String = "",
     val editLocation: String = "",
-    val editHours: String = "",
+    val editOpenTime: String = "",
+    val editCloseTime: String = "",
 
     // ═══ NEW edit fields (Part 1) ═══
     val editContactPerson: String = "",

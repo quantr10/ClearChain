@@ -18,7 +18,8 @@ data class OnboardingState(
     // Step 2 fields
     val address: String = "",
     val city: String = "",              // maps to Organization.location
-    val hours: String = "",
+    val openTime: String = "",
+    val closeTime: String = "",
     val pickupInstructions: String = "", // Grocery only
     val addressError: String? = null,
     val cityError: String? = null,

@@ -13,7 +13,8 @@ sealed class ProfileEvent {
     data class EditPhoneChanged(val phone: String) : ProfileEvent()
     data class EditAddressChanged(val address: String) : ProfileEvent()
     data class EditLocationChanged(val location: String) : ProfileEvent()
-    data class EditHoursChanged(val hours: String) : ProfileEvent()
+    data class EditOpenTimeChanged(val time: String) : ProfileEvent()
+    data class EditCloseTimeChanged(val time: String) : ProfileEvent()
 
     // ═══ NEW events (Part 1) ═══
     data class EditContactPersonChanged(val contactPerson: String) : ProfileEvent()
