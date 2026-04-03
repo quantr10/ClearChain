@@ -23,8 +23,11 @@ data class OnboardingState(
     val pickupInstructions: String = "", // Grocery only
     val addressError: String? = null,
     val cityError: String? = null,
+    
 
     // General
     val isSaving: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val addressLat: Double? = null,
+    val addressLng: Double? = null,
 )

@@ -23,6 +23,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.presentation.components.TimePickerField
+import com.clearchain.app.presentation.components.AddressSuggestionField
 import com.clearchain.app.util.UiEvent
 
 @Composable
@@ -250,15 +251,19 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.height(8.dp))
 
-        ClearChainTextField(
+        AddressSuggestionField(
             value = state.address,
             onValueChange = { viewModel.onEvent(OnboardingEvent.AddressChanged(it)) },
+            onAddressSelected = { suggestion ->
+                viewModel.onEvent(OnboardingEvent.AddressSelected(
+                    address = suggestion.fullAddress,
+                    city = suggestion.city,
+                    lat = suggestion.latitude,
+                    lng = suggestion.longitude
+                ))
+            },
             label = "Address *",
-            placeholder = "123 Main Street",
-            leadingIcon = { Icon(Icons.Default.Home, null) },
-            imeAction = ImeAction.Next,
-            isError = state.addressError != null,
-            errorMessage = state.addressError,
+            placeholder = "Start typing an address...",
             enabled = !state.isSaving
         )
 

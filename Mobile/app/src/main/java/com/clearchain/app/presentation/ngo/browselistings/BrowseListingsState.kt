@@ -38,7 +38,8 @@ data class BrowseListingsState(
     val userLng: Double? = null,
     val radiusKm: Int = 10,
     val locationDisplayName: String = "",
-    val isLocationSet: Boolean = false
+    val isLocationSet: Boolean = false,
+    val isCheckingLocation: Boolean = true
 ) {
     val listings: List<Listing> get() = filteredListings
     val selectedCategoryEnum: FoodCategory? get() =
