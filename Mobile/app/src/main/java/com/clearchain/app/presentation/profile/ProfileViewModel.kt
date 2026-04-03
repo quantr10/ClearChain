@@ -55,6 +55,8 @@ class ProfileViewModel @Inject constructor(
                 _state.update { it.copy(editPickupInstructions = event.instructions) }
             is ProfileEvent.EditDescriptionChanged ->
                 _state.update { it.copy(editDescription = event.description) }
+            is ProfileEvent.EditLocationCoordsChanged ->
+                _state.update { it.copy(editLat = event.lat, editLng = event.lng) }
             ProfileEvent.SaveProfile -> saveProfile()
         }
     }
@@ -84,6 +86,8 @@ class ProfileViewModel @Inject constructor(
                 editContactPerson = user.contactPerson ?: "",
                 editPickupInstructions = user.pickupInstructions ?: "",
                 editDescription = user.description ?: "",
+                editLat = user.latitude,
+                editLng = user.longitude,
                 editNameError = null, editPhoneError = null,
                 editContactPersonError = null, error = null
             )
@@ -110,7 +114,8 @@ class ProfileViewModel @Inject constructor(
                 address = s.editAddress, location = s.editLocation,
                 hours = if (s.editOpenTime.isNotBlank() && s.editCloseTime.isNotBlank())
                     "${s.editOpenTime} - ${s.editCloseTime}" else null,
-                latitude = null, longitude = null,
+                latitude = s.editLat,
+                longitude = s.editLng,
                 contactPerson = s.editContactPerson.ifBlank { null },
                 pickupInstructions = s.editPickupInstructions.ifBlank { null },
                 description = s.editDescription.ifBlank { null }

@@ -20,6 +20,7 @@ sealed class ProfileEvent {
     data class EditContactPersonChanged(val contactPerson: String) : ProfileEvent()
     data class EditPickupInstructionsChanged(val instructions: String) : ProfileEvent()
     data class EditDescriptionChanged(val description: String) : ProfileEvent()
+    data class EditLocationCoordsChanged(val lat: Double, val lng: Double) : ProfileEvent()
 
     object SaveProfile : ProfileEvent()
 }

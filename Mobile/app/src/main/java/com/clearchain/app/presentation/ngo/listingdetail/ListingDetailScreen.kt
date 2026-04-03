@@ -14,51 +14,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
-import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.ListingStatus
-import com.clearchain.app.domain.model.displayName
-import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.DateTimeUtils
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-// ═══ State ═══
-data class ListingDetailState(
-    val listing: Listing? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
-
-// ═══ ViewModel ═══
-@HiltViewModel
-class ListingDetailViewModel @Inject constructor(
-    private val listingRepository: ListingRepository
-) : ViewModel() {
-
-    private val _state = MutableStateFlow(ListingDetailState())
-    val state: StateFlow<ListingDetailState> = _state.asStateFlow()
-
-    fun loadListing(listingId: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            val result = listingRepository.getListingById(listingId)
-            result.fold(
-                onSuccess = { listing ->
-                    _state.update { it.copy(listing = listing, isLoading = false) }
-                },
-                onFailure = { e ->
-                    _state.update { it.copy(error = e.message ?: "Failed to load listing", isLoading = false) }
-                }
-            )
-        }
-    }
-}
 
 // ═══ Screen ═══
 @OptIn(ExperimentalMaterial3Api::class)

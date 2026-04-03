@@ -34,6 +34,8 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"${properties.getProperty("API_BASE_URL", "http://10.0.2.2:5000/api")}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL", "")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${properties.getProperty("SUPABASE_ANON_KEY", "")}\"")
+
+        manifestPlaceholders["MAPS_API_KEY"] = properties.getProperty("MAPS_API_KEY", "")
     }
 
     buildTypes {
@@ -138,6 +140,10 @@ dependencies {
     
     implementation("androidx.compose.material3:material3:1.3.1")
     
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

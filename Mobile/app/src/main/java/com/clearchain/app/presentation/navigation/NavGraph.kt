@@ -28,6 +28,7 @@ import com.clearchain.app.presentation.ngo.listingdetail.ListingDetailScreen
 import com.clearchain.app.presentation.ngo.inventorydetail.InventoryDetailScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
 import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
+import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
 import com.clearchain.app.presentation.onboarding.OnboardingScreen
 import com.clearchain.app.presentation.profile.ProfileScreen
 import com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen
@@ -143,6 +144,26 @@ fun NavGraph(
             RequestPickupScreen(
                 listingId = backStackEntry.arguments?.getString("listingId") ?: "",
                 onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        composable("location_picker") {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LocationPickerScreen(
+                onLocationSelected = {
+                    navController.navigate(Screen.BrowseListings.route) {
+                        popUpTo("location_picker") { inclusive = true }
+                    }
+                },
+                onDismiss = null
+            )
+        }
+
+        composable("location_picker_edit") {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LocationPickerScreen(
+                onLocationSelected = { navController.navigateUp() },
+                onDismiss = { navController.navigateUp() }
             )
         }
 

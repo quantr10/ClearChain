@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.presentation.components.AddressSuggestionField
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,10 +131,18 @@ fun ProfileScreen(
                                 label = "Description", placeholder = "About your organization",
                                 leadingIcon = { Icon(Icons.Default.Description, null) },
                                 imeAction = ImeAction.Next, enabled = !state.isSavingProfile, singleLine = false)
-                            ClearChainTextField(value = state.editAddress, onValueChange = { viewModel.onEvent(ProfileEvent.EditAddressChanged(it)) },
-                                label = "Address", placeholder = "123 Main Street",
-                                leadingIcon = { Icon(Icons.Default.Home, null) },
-                                imeAction = ImeAction.Next, enabled = !state.isSavingProfile)
+                            AddressSuggestionField(
+                                value = state.editAddress,
+                                onValueChange = { viewModel.onEvent(ProfileEvent.EditAddressChanged(it)) },
+                                onAddressSelected = { suggestion ->
+                                    viewModel.onEvent(ProfileEvent.EditAddressChanged(suggestion.fullAddress))
+                                    viewModel.onEvent(ProfileEvent.EditLocationChanged(suggestion.city))
+                                    viewModel.onEvent(ProfileEvent.EditLocationCoordsChanged(suggestion.latitude, suggestion.longitude))
+                                },
+                                label = "Address",
+                                placeholder = "Start typing an address...",
+                                enabled = !state.isSavingProfile
+                            )
                             ClearChainTextField(value = state.editLocation, onValueChange = { viewModel.onEvent(ProfileEvent.EditLocationChanged(it)) },
                                 label = "City/Location", placeholder = "Ho Chi Minh City",
                                 leadingIcon = { Icon(Icons.Default.Place, null) },

@@ -21,7 +21,9 @@ data class ProfileState(
     val editContactPerson: String = "",
     val editPickupInstructions: String = "",
     val editDescription: String = "",
-
+    val editLat: Double? = null,
+    val editLng: Double? = null,
+    
     // Edit errors
     val editNameError: String? = null,
     val editPhoneError: String? = null,

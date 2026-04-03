@@ -123,10 +123,16 @@ public class ListingsController : ControllerBase
             // Filter by radius if specified
             if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
             {
-                listingDtos = listingDtos
+                var withinRadius = listingDtos
                     .Where(l => l.DistanceKm.HasValue && l.DistanceKm.Value <= radiusKm.Value)
                     .OrderBy(l => l.DistanceKm)
                     .ToList();
+
+                var noCoordinates = listingDtos
+                    .Where(l => !l.DistanceKm.HasValue)
+                    .ToList();
+
+                listingDtos = withinRadius.Concat(noCoordinates).ToList();
             }
 
             return Ok(new ListingsResponse

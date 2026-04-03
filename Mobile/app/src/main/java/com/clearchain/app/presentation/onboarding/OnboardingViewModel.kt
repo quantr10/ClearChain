@@ -37,6 +37,8 @@ class OnboardingViewModel @Inject constructor(
                         description = user.description ?: "",
                         contactPerson = user.contactPerson ?: "",
                         address = user.address,
+                        addressLat = user.latitude,
+                        addressLng = user.longitude,
                         city = user.location,
                         openTime = user.hours?.substringBefore(" - ", "") ?: "",
                         closeTime = user.hours?.substringAfter(" - ", "") ?: "",
@@ -65,6 +67,18 @@ class OnboardingViewModel @Inject constructor(
                 _state.update { it.copy(closeTime = event.value) }
             is OnboardingEvent.PickupInstructionsChanged ->
                 _state.update { it.copy(pickupInstructions = event.value) }
+            is OnboardingEvent.AddressSelected -> {
+                _state.update {
+                    it.copy(
+                        address = event.address,
+                        city = event.city.ifBlank { it.city },
+                        addressLat = event.lat,
+                        addressLng = event.lng,
+                        addressError = null,
+                        cityError = null
+                    )
+                }
+            }
             OnboardingEvent.NextStep -> handleNextStep()
             OnboardingEvent.PreviousStep -> handlePreviousStep()
             OnboardingEvent.FinishOnboarding -> {
@@ -121,10 +135,14 @@ class OnboardingViewModel @Inject constructor(
                 address = s.address,
                 location = s.city,
                 hours = if (s.openTime.isNotBlank() && s.closeTime.isNotBlank())
-                    "${s.openTime} - ${s.closeTime}" else null,                contactPerson = s.contactPerson.ifBlank { null },
+                    "${s.openTime} - ${s.closeTime}" else null,
+                latitude = s.addressLat,
+                longitude = s.addressLng,
+                contactPerson = s.contactPerson.ifBlank { null },       // ← THÊM
                 pickupInstructions = s.pickupInstructions.ifBlank { null },
-                description = s.description.ifBlank { null }
+                description = s.description.ifBlank { null },
             )
+
 
             result.fold(
                 onSuccess = {
