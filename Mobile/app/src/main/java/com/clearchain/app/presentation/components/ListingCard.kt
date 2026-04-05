@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -9,13 +10,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.clearchain.app.domain.model.*
 import com.clearchain.app.util.DateTimeUtils
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun ListingCard(
@@ -25,6 +32,22 @@ fun ListingCard(
     secondaryActions: (@Composable RowScope.() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val daysUntilExpiry: Long = remember(listing.expiryDate) {
+        try {
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(listing.expiryDate)!!
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.time
+            TimeUnit.MILLISECONDS.toDays(date.time - today.time)
+        } catch (_: Exception) { Long.MAX_VALUE }
+    }
+    val expiryColor = when {
+        daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
+        daysUntilExpiry <= 3L -> Color(0xFFE65100)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -32,17 +55,58 @@ fun ListingCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            // Image
-            listing.imageUrl?.let { url ->
-                if (url.isNotBlank()) {
-                    AsyncImage(
-                        model = url,
-                        contentDescription = listing.title,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                        contentScale = ContentScale.Crop
+            // Image — always rendered; shows placeholder when URL is absent or loading/broken
+            val imageClip = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            val imageModifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .clip(imageClip)
+            val imageUrl = listing.imageUrl?.takeIf { it.isNotBlank() }
+            if (imageUrl != null) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = listing.title,
+                    modifier = imageModifier,
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.BrokenImage,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                        }
+                    }
+                )
+            } else {
+                Box(
+                    modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.ImageNotSupported,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                     )
                 }
             }
@@ -121,10 +185,10 @@ fun ListingCard(
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.error)
+                            tint = expiryColor)
                         Text("Exp: ${DateTimeUtils.formatDate(listing.expiryDate)}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error)
+                            color = expiryColor)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)) {
