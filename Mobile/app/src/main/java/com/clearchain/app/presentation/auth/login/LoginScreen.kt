@@ -2,8 +2,10 @@ package com.clearchain.app.presentation.auth.login
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -62,10 +64,23 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center
         ) {
             // Logo
-            Text(
-                text = "🍎",
-                style = MaterialTheme.typography.displayLarge
-            )
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Eco,
+                        contentDescription = "ClearChain",
+                        modifier = Modifier.size(44.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

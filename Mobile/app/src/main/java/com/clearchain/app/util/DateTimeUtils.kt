@@ -13,12 +13,14 @@ object DateTimeUtils {
     private const val DISPLAY_DATETIME_FORMAT = "MMM dd, yyyy hh:mm a"
 
     fun formatDate(isoDate: String): String {
-        return try {
-            val date = SimpleDateFormat(ISO_8601_FORMAT, Locale.getDefault()).parse(isoDate)
-            SimpleDateFormat(DISPLAY_DATE_FORMAT, Locale.getDefault()).format(date ?: Date())
-        } catch (e: Exception) {
-            isoDate
+        val formats = listOf(ISO_8601_FORMAT, "yyyy-MM-dd")
+        for (fmt in formats) {
+            try {
+                val date = SimpleDateFormat(fmt, Locale.getDefault()).parse(isoDate) ?: continue
+                return SimpleDateFormat(DISPLAY_DATE_FORMAT, Locale.getDefault()).format(date)
+            } catch (_: Exception) {}
         }
+        return isoDate
     }
 
     fun formatDateTime(isoDate: String): String {
