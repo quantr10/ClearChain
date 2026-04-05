@@ -37,20 +37,20 @@ class ListingRepositoryImpl @Inject constructor(
         } catch (e: Exception) { Result.failure(e) }
     }
 
-    override suspend fun getMyListings(): Result<List<Listing>> {
+    override suspend fun getMyListings(page: Int, pageSize: Int): Result<List<Listing>> {
         return try {
-            val response = listingApi.getMyListings()
+            val response = listingApi.getMyListings(page, pageSize)
             Result.success(response.data.map { it.toDomain() })
         } catch (e: Exception) { Result.failure(e) }
     }
 
-    // ═══ UPDATED: Pass lat/lng/radiusKm to API (Part 2) ═══
     override suspend fun getAllListings(
         status: String?, category: String?,
-        lat: Double?, lng: Double?, radiusKm: Int?
+        lat: Double?, lng: Double?, radiusKm: Int?,
+        page: Int, pageSize: Int
     ): Result<List<Listing>> {
         return try {
-            val response = listingApi.getAllListings(status, category, lat, lng, radiusKm)
+            val response = listingApi.getAllListings(status, category, lat, lng, radiusKm, page, pageSize)
             Result.success(response.data.map { it.toDomain() })
         } catch (e: Exception) { Result.failure(e) }
     }

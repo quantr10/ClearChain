@@ -43,18 +43,18 @@ class PickupRequestRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getMyPickupRequests(): Result<List<PickupRequest>> {
+    override suspend fun getMyPickupRequests(page: Int, pageSize: Int): Result<List<PickupRequest>> {
         return try {
-            val response = pickupRequestApi.getMyPickupRequests()
+            val response = pickupRequestApi.getMyPickupRequests(page, pageSize)
             Result.success(response.data.map { it.toDomain() })
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun getGroceryPickupRequests(): Result<List<PickupRequest>> {
+    override suspend fun getGroceryPickupRequests(page: Int, pageSize: Int): Result<List<PickupRequest>> {
         return try {
-            val response = pickupRequestApi.getGroceryPickupRequests()
+            val response = pickupRequestApi.getGroceryPickupRequests(page, pageSize)
             Result.success(response.data.map { it.toDomain() })
         } catch (e: Exception) {
             Result.failure(e)

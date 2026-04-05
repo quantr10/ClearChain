@@ -18,7 +18,7 @@ interface ListingRepository {
         imageUrl: String? = null
     ): Result<Listing>
 
-    suspend fun getMyListings(): Result<List<Listing>>
+    suspend fun getMyListings(page: Int = 1, pageSize: Int = 20): Result<List<Listing>>
 
     // ═══ UPDATED: Added location params (Part 2) ═══
     suspend fun getAllListings(
@@ -26,7 +26,9 @@ interface ListingRepository {
         category: String? = null,
         lat: Double? = null,
         lng: Double? = null,
-        radiusKm: Int? = null
+        radiusKm: Int? = null,
+        page: Int = 1,
+        pageSize: Int = 50
     ): Result<List<Listing>>
 
     suspend fun getListingById(id: String): Result<Listing>

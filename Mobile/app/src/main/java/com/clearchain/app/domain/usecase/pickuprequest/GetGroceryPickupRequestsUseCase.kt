@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetGroceryPickupRequestsUseCase @Inject constructor(
     private val pickupRequestRepository: PickupRequestRepository
 ) {
-    suspend operator fun invoke(): Result<List<PickupRequest>> {
-        return pickupRequestRepository.getGroceryPickupRequests()
+    suspend operator fun invoke(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>> {
+        return pickupRequestRepository.getGroceryPickupRequests(page, pageSize)
     }
 }

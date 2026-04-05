@@ -1,4 +1,5 @@
 using ClearChain.Infrastructure.Data;
+using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.Admin;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.API.Services;
@@ -114,19 +115,19 @@ public class AdminController : ControllerBase
             var unverifiedOrgs = totalOrgs - verifiedOrgs;
 
             var totalListings = await _context.ClearanceListings.CountAsync();
-            var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status.ToLower() == "open");
-            var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status.ToLower() == "reserved");
+            var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
+            var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
 
             var totalRequests = await _context.PickupRequests.CountAsync();
-            var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "pending");
-            var approvedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "approved");
-            var readyRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "ready");
-            var rejectedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "rejected");
-            var completedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "completed");
-            var cancelledRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == "cancelled");
+            var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
+            var approvedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Approved);
+            var readyRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Ready);
+            var rejectedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Rejected);
+            var completedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
+            var cancelledRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Cancelled);
 
             var totalFoodSaved = await _context.PickupRequests
-                .Where(pr => pr.Status == "completed")
+                .Where(pr => pr.Status == PickupRequestStatus.Completed)
                 .SumAsync(pr => pr.RequestedQuantity ?? 0);
 
             var stats = new AdminStatsData
@@ -204,7 +205,7 @@ public class AdminController : ControllerBase
                     NgoName = ngo?.Name ?? "",
                     GroceryId = pr.GroceryId.ToString(),
                     GroceryName = grocery?.Name ?? "",
-                    Status = pr.Status ?? "pending",
+                    Status = pr.Status.ToString().ToLower(),
                     RequestedQuantity = pr.RequestedQuantity ?? 0,
                     PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
                     PickupTime = pr.PickupTime ?? "09:00",

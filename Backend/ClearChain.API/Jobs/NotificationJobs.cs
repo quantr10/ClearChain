@@ -3,6 +3,8 @@ using ClearChain.Infrastructure.Data;
 using ClearChain.API.DTOs.Listings;
 using ClearChain.API.DTOs.Inventory;
 using ClearChain.API.Services;
+using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
 
 namespace ClearChain.API.Jobs;
 
@@ -41,7 +43,7 @@ public class NotificationJobs
             var expiringListings = await _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
-                .Where(l => l.Status == "open" &&
+                .Where(l => l.Status == ListingStatus.Open &&
                            l.ExpirationDate.HasValue &&
                            l.ExpirationDate.Value.Date >= tomorrow &&
                            l.ExpirationDate.Value.Date < dayAfterTomorrow)
@@ -61,7 +63,7 @@ public class NotificationJobs
                     Quantity = (int)listing.Quantity,
                     Unit = listing.Unit,
                     ExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
-                    Status = listing.Status,
+                    Status = listing.Status.ToString().ToLower(),
                     Location = listing.Grocery?.Location ?? ""
                 };
 
@@ -94,7 +96,7 @@ public class NotificationJobs
             var expiredListings = await _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
-                .Where(l => l.Status == "open" &&
+                .Where(l => l.Status == ListingStatus.Open &&
                            l.ExpirationDate.HasValue &&
                            l.ExpirationDate.Value.Date < today)
                 .ToListAsync();
@@ -104,7 +106,7 @@ public class NotificationJobs
             foreach (var listing in expiredListings)
             {
                 // Update status to expired
-                listing.Status = "expired";
+                listing.Status = ListingStatus.Expired;
                 listing.UpdatedAt = DateTime.UtcNow;
 
                 var listingData = new ListingData
@@ -154,7 +156,7 @@ public class NotificationJobs
             var threeDaysFromNow = twoDaysFromNow.AddDays(1);
 
             var expiringItems = await _context.Inventories
-                .Where(i => i.Status == "active" &&
+                .Where(i => i.Status == InventoryStatus.Active &&
                            i.ExpiryDate.Date >= twoDaysFromNow &&
                            i.ExpiryDate.Date < threeDaysFromNow)
                 .ToListAsync();
@@ -172,7 +174,7 @@ public class NotificationJobs
                     Quantity = item.Quantity,
                     Unit = item.Unit,
                     ExpiryDate = item.ExpiryDate.ToString("yyyy-MM-dd"),
-                    Status = item.Status,
+                    Status = item.Status.ToString().ToLower(),
                     ReceivedAt = item.ReceivedAt.ToString("o"),
                     PickupRequestId = item.PickupRequestId.ToString()
                 };
@@ -204,7 +206,7 @@ public class NotificationJobs
             var today = DateTime.UtcNow.Date;
 
             var expiredItems = await _context.Inventories
-                .Where(i => i.Status == "active" &&
+                .Where(i => i.Status == InventoryStatus.Active &&
                            i.ExpiryDate.Date < today)
                 .ToListAsync();
 
@@ -212,7 +214,7 @@ public class NotificationJobs
 
             foreach (var item in expiredItems)
             {
-                item.Status = "expired";
+                item.Status = InventoryStatus.Expired;
                 item.UpdatedAt = DateTime.UtcNow;
 
                 var itemData = new InventoryItemData
@@ -245,6 +247,31 @@ public class NotificationJobs
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ [Hangfire] Error checking expired inventory");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Job #5: Delete refresh tokens that are revoked or expired (older than 30 days)
+    /// Prevents unbounded table growth.
+    /// Schedule: Daily at 3:00 AM UTC
+    /// </summary>
+    public async Task CleanupExpiredRefreshTokens()
+    {
+        try
+        {
+            var cutoff = DateTime.UtcNow.AddDays(-30);
+
+            var deleted = await _context.RefreshTokens
+                .Where(rt => rt.IsRevoked || rt.ExpiresAt < DateTime.UtcNow)
+                .Where(rt => rt.CreatedAt < cutoff)
+                .ExecuteDeleteAsync();
+
+            _logger.LogInformation($"✅ [Hangfire] Deleted {deleted} expired/revoked refresh tokens");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [Hangfire] Error cleaning up refresh tokens");
             throw;
         }
     }

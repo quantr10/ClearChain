@@ -12,10 +12,16 @@ interface PickupRequestApi {
     ): PickupRequestResponse
 
     @GET("pickuprequests/ngo/my")
-    suspend fun getMyPickupRequests(): PickupRequestsResponse
+    suspend fun getMyPickupRequests(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
+    ): PickupRequestsResponse
 
     @GET("pickuprequests/grocery/my")
-    suspend fun getGroceryPickupRequests(): PickupRequestsResponse
+    suspend fun getGroceryPickupRequests(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
+    ): PickupRequestsResponse
 
     @GET("pickuprequests/{id}")
     suspend fun getPickupRequestById(

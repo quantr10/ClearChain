@@ -29,7 +29,11 @@ data class ListingResponse(
 @Serializable
 data class ListingsResponse(
     val message: String,
-    val data: List<ListingData>
+    val data: List<ListingData>,
+    val total: Int = 0,
+    val page: Int = 1,
+    val pageSize: Int = 50,
+    val totalPages: Int = 1
 )
 
 @SuppressLint("UnsafeOptInUsageError")

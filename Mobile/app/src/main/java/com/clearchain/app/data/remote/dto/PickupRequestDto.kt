@@ -32,7 +32,11 @@ data class PickupRequestResponse(
 @Serializable
 data class PickupRequestsResponse(
     val message: String,
-    val data: List<PickupRequestData>
+    val data: List<PickupRequestData>,
+    val total: Int = 0,
+    val page: Int = 1,
+    val pageSize: Int = 20,
+    val totalPages: Int = 1
 )
 
 @SuppressLint("UnsafeOptInUsageError")

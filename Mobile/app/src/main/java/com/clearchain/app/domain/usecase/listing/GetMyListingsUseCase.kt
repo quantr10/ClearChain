@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetMyListingsUseCase @Inject constructor(
     private val listingRepository: ListingRepository
 ) {
-    suspend operator fun invoke(): Result<List<Listing>> {
-        return listingRepository.getMyListings()
+    suspend operator fun invoke(page: Int = 1, pageSize: Int = 20): Result<List<Listing>> {
+        return listingRepository.getMyListings(page, pageSize)
     }
 }

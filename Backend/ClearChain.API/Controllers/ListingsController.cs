@@ -1,5 +1,6 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.Listings;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -45,7 +46,7 @@ public class ListingsController : ControllerBase
             ExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
             PickupTimeStart = listing.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",
             PickupTimeEnd = listing.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
-            Status = listing.Status,
+            Status = listing.Status.ToString().ToLower(),
             ImageUrl = listing.PhotoUrl,
             Location = listing.Grocery?.Location ?? "",
             CreatedAt = listing.CreatedAt.ToString("o"),
@@ -80,7 +81,9 @@ public class ListingsController : ControllerBase
         [FromQuery] string? category = null,
         [FromQuery] double? lat = null,
         [FromQuery] double? lng = null,
-        [FromQuery] double? radiusKm = null)
+        [FromQuery] double? radiusKm = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
         try
         {
@@ -89,14 +92,31 @@ public class ListingsController : ControllerBase
                 .Include(l => l.Group)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(status))
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ListingStatus>(status, ignoreCase: true, out var statusEnum))
             {
-                query = query.Where(l => l.Status.ToLower() == status.ToLower());
+                query = query.Where(l => l.Status == statusEnum);
             }
 
             if (!string.IsNullOrEmpty(category))
             {
                 query = query.Where(l => l.Category.ToUpper() == category.ToUpper());
+            }
+
+            // Bounding box pre-filter: eliminates distant rows before Haversine in memory
+            if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+            {
+                var deltaLat = radiusKm.Value / 111.0;
+                var deltaLng = radiusKm.Value / (111.0 * Math.Cos(lat.Value * Math.PI / 180.0));
+                var minLat = lat.Value - deltaLat;
+                var maxLat = lat.Value + deltaLat;
+                var minLng = lng.Value - deltaLng;
+                var maxLng = lng.Value + deltaLng;
+
+                query = query.Where(l =>
+                    l.Grocery != null &&
+                    l.Grocery.Latitude != null && l.Grocery.Longitude != null &&
+                    l.Grocery.Latitude >= minLat && l.Grocery.Latitude <= maxLat &&
+                    l.Grocery.Longitude >= minLng && l.Grocery.Longitude <= maxLng);
             }
 
             var listings = await query
@@ -135,10 +155,22 @@ public class ListingsController : ControllerBase
                 listingDtos = withinRadius.Concat(noCoordinates).ToList();
             }
 
+            var clampedPage = Math.Max(1, page);
+            var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+            var total = listingDtos.Count;
+            var paged = listingDtos
+                .Skip((clampedPage - 1) * clampedPageSize)
+                .Take(clampedPageSize)
+                .ToList();
+
             return Ok(new ListingsResponse
             {
                 Message = "Listings retrieved successfully",
-                Data = listingDtos
+                Data = paged,
+                Total = total,
+                Page = clampedPage,
+                PageSize = clampedPageSize,
+                TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
             });
         }
         catch (Exception ex)
@@ -170,7 +202,9 @@ public class ListingsController : ControllerBase
 
     [HttpGet("grocery/my")]
     [Authorize]
-    public async Task<ActionResult<ListingsResponse>> GetMyListings()
+    public async Task<ActionResult<ListingsResponse>> GetMyListings(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         try
         {
@@ -180,11 +214,20 @@ public class ListingsController : ControllerBase
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-            var listings = await _context.ClearanceListings
+            var clampedPage = Math.Max(1, page);
+            var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+
+            var baseQuery = _context.ClearanceListings
+                .Where(l => l.GroceryId.ToString() == userId);
+
+            var total = await baseQuery.CountAsync();
+
+            var listings = await baseQuery
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
-                .Where(l => l.GroceryId.ToString() == userId)
                 .OrderByDescending(l => l.CreatedAt)
+                .Skip((clampedPage - 1) * clampedPageSize)
+                .Take(clampedPageSize)
                 .ToListAsync();
 
             var listingDtos = listings.Select(l => MapListingToDto(l, l.Group)).ToList();
@@ -192,7 +235,11 @@ public class ListingsController : ControllerBase
             return Ok(new ListingsResponse
             {
                 Message = "Your listings retrieved successfully",
-                Data = listingDtos
+                Data = listingDtos,
+                Total = total,
+                Page = clampedPage,
+                PageSize = clampedPageSize,
+                TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
             });
         }
         catch (Exception ex)
@@ -223,7 +270,9 @@ public class ListingsController : ControllerBase
                 return NotFound(new { message = "Grocery store not found" });
             }
 
-            var expiryDate = DateTime.Parse(request.ExpiryDate);
+            if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
+                return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
+
             var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
             var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
 
@@ -280,7 +329,7 @@ public class ListingsController : ControllerBase
                 ExpirationDate = expiryDateUtc,
                 ClearanceDeadline = clearanceDeadlineUtc,
                 Notes = request.Description,
-                Status = "open",
+                Status = ListingStatus.Open,
                 PhotoUrl = request.ImageUrl,
                 PickupTimeStart = pickupTimeStart,
                 PickupTimeEnd = pickupTimeEnd,
@@ -369,13 +418,13 @@ public class ListingsController : ControllerBase
                 return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
             }
 
-            if (listing.Status != "open")
+            if (listing.Status != ListingStatus.Open)
             {
                 var statusMessage = listing.Status switch
                 {
-                    "reserved" => "Cannot delete reserved listing. Wait for pickup completion or cancellation.",
-                    "expired" => "Cannot delete expired listing.",
-                    _ => $"Cannot delete listing with status: {listing.Status}"
+                    ListingStatus.Reserved => "Cannot delete reserved listing. Wait for pickup completion or cancellation.",
+                    ListingStatus.Expired => "Cannot delete expired listing.",
+                    _ => $"Cannot delete listing with status: {listing.Status.ToString().ToLower()}"
                 };
                 return BadRequest(new { message = statusMessage });
             }
@@ -441,7 +490,7 @@ public class ListingsController : ControllerBase
                 return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
             }
 
-            if (listing.Status != "open")
+            if (listing.Status != ListingStatus.Open)
             {
                 return BadRequest(new
                 {
