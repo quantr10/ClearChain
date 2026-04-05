@@ -1,3 +1,5 @@
+using ClearChain.Domain.Enums;
+
 namespace ClearChain.Domain.Entities;
 
 public class PickupRequest
@@ -7,7 +9,7 @@ public class PickupRequest
     public Guid GroceryId { get; set; }
     public Guid? ListingId { get; set; }
     public DateTime PickupDate { get; set; }
-    public string Status { get; set; } = "pending";
+    public PickupRequestStatus Status { get; set; } = PickupRequestStatus.Pending;
     
     public DateTime RequestedAt { get; set; }
     public DateTime? MarkedReadyAt { get; set; }
@@ -17,10 +19,9 @@ public class PickupRequest
     public int? RequestedQuantity { get; set; }
     public string? PickupTime { get; set; }
     public string? Notes { get; set; }
-    public string ListingTitle { get; set; }
-    public string ListingCategory { get; set; }
-    
+    public string ListingTitle { get; set; } = string.Empty;
+    public string ListingCategory { get; set; } = string.Empty;
+
     public Organization? Ngo { get; set; }
     public Organization? Grocery { get; set; }
-    public List<ClearanceListing> Listings { get; set; } = new();
 }

@@ -8,6 +8,7 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
 import com.clearchain.app.presentation.components.SortOption
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -120,7 +121,7 @@ class BrowseListingsViewModel @Inject constructor(
             }
             is BrowseListingsEvent.NavigateToRequestPickup -> {
                 viewModelScope.launch {
-                    _uiEvent.send(UiEvent.Navigate("request_pickup/${event.listingId}"))
+                    _uiEvent.send(UiEvent.Navigate(Screen.RequestPickup.createRoute(event.listingId)))
                 }
             }
             BrowseListingsEvent.ClearError -> _state.update { it.copy(error = null) }

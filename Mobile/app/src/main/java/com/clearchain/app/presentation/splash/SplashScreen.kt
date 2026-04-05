@@ -48,7 +48,7 @@ fun SplashScreen(
                 val pendingScreen = prefs.getString("pending_screen", null)
                 if (pendingScreen != null) {
                     val route = when (pendingScreen) {
-                        "my_requests" -> Screen.Deliveries.route
+                        "my_requests" -> Screen.MyRequests.route
                         "browse_listings" -> Screen.BrowseListings.route
                         "inventory" -> Screen.Inventory.route
                         else -> null

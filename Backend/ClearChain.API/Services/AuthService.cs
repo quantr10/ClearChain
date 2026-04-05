@@ -19,7 +19,8 @@ public class AuthService : IAuthService
 {
     private readonly ApplicationDbContext _context;
     private readonly IJwtService _jwtService;
-    private readonly IConfiguration _configuration;
+    private readonly int _refreshTokenExpiryDays;
+    private readonly int _jwtExpirySeconds;
 
     public AuthService(
         ApplicationDbContext context,
@@ -28,7 +29,8 @@ public class AuthService : IAuthService
     {
         _context = context;
         _jwtService = jwtService;
-        _configuration = configuration;
+        _refreshTokenExpiryDays = int.Parse(configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7");
+        _jwtExpirySeconds = int.Parse(configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60;
     }
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> RegisterAsync(RegisterRequest request)
@@ -88,7 +90,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             OrganizationId = organization.Id,
             Token = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")),
+            ExpiresAt = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
             CreatedAt = DateTime.UtcNow,
             IsRevoked = false
         });
@@ -99,7 +101,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             TokenType = "Bearer",
-            ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
+            ExpiresIn = _jwtExpirySeconds,
             User = MapToDto(organization)
         });
     }
@@ -123,7 +125,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             OrganizationId = user.Id,
             Token = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")),
+            ExpiresAt = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
             CreatedAt = DateTime.UtcNow,
             IsRevoked = false
         });
@@ -134,7 +136,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             TokenType = "Bearer",
-            ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
+            ExpiresIn = _jwtExpirySeconds,
             User = MapToDto(user)
         });
     }
@@ -163,7 +165,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid(),
             OrganizationId = user.Id,
             Token = newRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(int.Parse(_configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7")),
+            ExpiresAt = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays),
             CreatedAt = DateTime.UtcNow,
             IsRevoked = false
         });
@@ -174,7 +176,7 @@ public class AuthService : IAuthService
             AccessToken = newAccessToken,
             RefreshToken = newRefreshToken,
             TokenType = "Bearer",
-            ExpiresIn = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60,
+            ExpiresIn = _jwtExpirySeconds,
             User = MapToDto(user)
         });
     }
