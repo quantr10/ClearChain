@@ -13,8 +13,10 @@ class GetAllListingsUseCase @Inject constructor(
         category: String? = null,
         lat: Double? = null,
         lng: Double? = null,
-        radiusKm: Int? = null
+        radiusKm: Int? = null,
+        page: Int = 1,
+        pageSize: Int = 50
     ): Result<List<Listing>> {
-        return listingRepository.getAllListings(status, category, lat, lng, radiusKm)
+        return listingRepository.getAllListings(status, category, lat, lng, radiusKm, page, pageSize)
     }
 }

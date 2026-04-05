@@ -14,7 +14,10 @@ interface ListingApi {
     ): ListingResponse
 
     @GET("listings/grocery/my")
-    suspend fun getMyListings(): ListingsResponse
+    suspend fun getMyListings(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
+    ): ListingsResponse
 
     @GET("listings/{id}")
     suspend fun getListingById(
@@ -28,7 +31,9 @@ interface ListingApi {
         @Query("category") category: String? = null,
         @Query("lat") lat: Double? = null,
         @Query("lng") lng: Double? = null,
-        @Query("radiusKm") radiusKm: Int? = null
+        @Query("radiusKm") radiusKm: Int? = null,
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 50
     ): ListingsResponse
 
     @PUT("listings/{id}")

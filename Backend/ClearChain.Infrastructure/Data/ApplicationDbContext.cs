@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
 
 namespace ClearChain.Infrastructure.Data;
 
@@ -15,7 +17,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<ClearanceListing> ClearanceListings { get; set; } = null!;
     public DbSet<PickupRequest> PickupRequests { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public DbSet<Inventory> Inventories { get; set; } = null!;
     public DbSet<ListingGroup> ListingGroups { get; set; } = null!;
     public DbSet<FCMToken> FCMTokens { get; set; } = null!;
@@ -30,7 +31,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<ClearanceListing>().ToTable("clearancelistings");
         modelBuilder.Entity<PickupRequest>().ToTable("pickuprequests");
         modelBuilder.Entity<RefreshToken>().ToTable("refreshtokens");
-        modelBuilder.Entity<AuditLog>().ToTable("auditlogs");
         modelBuilder.Entity<Inventory>().ToTable("inventory");
         modelBuilder.Entity<ListingGroup>().ToTable("listinggroups");
         modelBuilder.Entity<FCMToken>().ToTable("fcmtokens");
@@ -67,20 +67,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<FoodImageAnalysis>()
             .HasIndex(f => f.AnalyzedAt);
         
-        // Configure PickupRequest - Listing many-to-many
-        modelBuilder.Entity<PickupRequest>()
-            .HasMany(pr => pr.Listings)
-            .WithMany()
-            .UsingEntity<Dictionary<string, object>>(
-                "pickuprequestlistings",
-                j => j.HasOne<ClearanceListing>()
-                      .WithMany()
-                      .HasForeignKey("listingid"),
-                j => j.HasOne<PickupRequest>()
-                      .WithMany()
-                      .HasForeignKey("pickuprequestid")
-            );
-
         // PickupRequest → Ngo
         modelBuilder.Entity<PickupRequest>()
             .HasOne(pr => pr.Ngo)
@@ -94,6 +80,38 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(pr => pr.GroceryId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Indexes
+        modelBuilder.Entity<Organization>()
+            .HasIndex(o => o.Email).IsUnique();
+
+        modelBuilder.Entity<ClearanceListing>()
+            .HasIndex(cl => cl.Status);
+
+        // Enum → lowercase string converters (match existing DB values)
+        var listingStatusConverter = new ValueConverter<ListingStatus, string>(
+            v => v.ToString().ToLower(),
+            v => Enum.Parse<ListingStatus>(v, true));
+
+        var pickupStatusConverter = new ValueConverter<PickupRequestStatus, string>(
+            v => v.ToString().ToLower(),
+            v => Enum.Parse<PickupRequestStatus>(v, true));
+
+        var inventoryStatusConverter = new ValueConverter<InventoryStatus, string>(
+            v => v.ToString().ToLower(),
+            v => Enum.Parse<InventoryStatus>(v, true));
+
+        modelBuilder.Entity<ClearanceListing>()
+            .Property(cl => cl.Status)
+            .HasConversion(listingStatusConverter);
+
+        modelBuilder.Entity<PickupRequest>()
+            .Property(pr => pr.Status)
+            .HasConversion(pickupStatusConverter);
+
+        modelBuilder.Entity<Inventory>()
+            .Property(i => i.Status)
+            .HasConversion(inventoryStatusConverter);
 
         // Map all column names to lowercase
         foreach (var entity in modelBuilder.Model.GetEntityTypes())

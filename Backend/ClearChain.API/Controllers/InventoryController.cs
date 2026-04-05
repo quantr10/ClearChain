@@ -1,4 +1,5 @@
 using ClearChain.Infrastructure.Data;
+using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.Inventory;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +40,7 @@ public class InventoryController : ControllerBase
             Quantity = item.Quantity,
             Unit = item.Unit,
             ExpiryDate = item.ExpiryDate.ToString("yyyy-MM-dd"),
-            Status = item.Status,
+            Status = item.Status.ToString().ToLower(),
             ReceivedAt = item.ReceivedAt.ToString("o"),
             DistributedAt = item.DistributedAt?.ToString("o"),
             PickupRequestId = item.PickupRequestId.ToString()
@@ -63,9 +64,9 @@ public class InventoryController : ControllerBase
                 .Where(i => i.NgoId.ToString() == userId);
 
             // Filter by status if provided
-            if (!string.IsNullOrEmpty(status))
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<InventoryStatus>(status, ignoreCase: true, out var statusEnum))
             {
-                query = query.Where(i => i.Status.ToLower() == status.ToLower());
+                query = query.Where(i => i.Status == statusEnum);
             }
 
             var items = await query
@@ -108,12 +109,12 @@ public class InventoryController : ControllerBase
                 return NotFound(new { message = "Inventory item not found" });
             }
 
-            if (item.Status != "active")
+            if (item.Status != InventoryStatus.Active)
             {
                 return BadRequest(new { message = "Can only distribute active items" });
             }
 
-            item.Status = "distributed";
+            item.Status = InventoryStatus.Distributed;
             item.DistributedAt = DateTime.UtcNow;
             item.UpdatedAt = DateTime.UtcNow;
 
@@ -155,13 +156,13 @@ public class InventoryController : ControllerBase
 
             var expiredItems = await _context.Inventories
                 .Where(i => i.NgoId.ToString() == userId && 
-                           i.Status == "active" && 
+                           i.Status == InventoryStatus.Active &&
                            i.ExpiryDate < DateTime.UtcNow.Date)
                 .ToListAsync();
 
             foreach (var item in expiredItems)
             {
-                item.Status = "expired";
+                item.Status = InventoryStatus.Expired;
                 item.UpdatedAt = DateTime.UtcNow;
             }
 

@@ -13,9 +13,9 @@ interface PickupRequestRepository {
         notes: String? = null
     ): Result<PickupRequest>
 
-    suspend fun getMyPickupRequests(): Result<List<PickupRequest>>
+    suspend fun getMyPickupRequests(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>>
 
-    suspend fun getGroceryPickupRequests(): Result<List<PickupRequest>>
+    suspend fun getGroceryPickupRequests(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>>
 
     suspend fun getPickupRequestById(id: String): Result<PickupRequest>
 
