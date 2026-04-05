@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 
 private val statusFilters = listOf(
@@ -165,7 +166,7 @@ fun MyListingsScreen(
                                                 ListingCard(
                                                     listing = listing,
                                                     modifier = Modifier.clickable {
-                                                        navController.navigate("listing_detail/${listing.id}")
+                                                        navController.navigate(Screen.ListingDetail.createRoute(listing.id))
                                                     },
                                                     showGroceryInfo = false,
                                                     secondaryActions = if (listing.status == ListingStatus.AVAILABLE) {

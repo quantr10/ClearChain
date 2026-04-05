@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using ClearChain.API.Services;
 using ClearChain.API.DTOs.Organizations;
 using ClearChain.API.DTOs.Common;
+using ClearChain.Domain.Enums;
+using ClearChain.Infrastructure.Data;
 
 namespace ClearChain.API.Controllers;
 
@@ -13,10 +16,12 @@ namespace ClearChain.API.Controllers;
 public class OrganizationsController : ControllerBase
 {
     private readonly IOrganizationService _organizationService;
+    private readonly ApplicationDbContext _context;
 
-    public OrganizationsController(IOrganizationService organizationService)
+    public OrganizationsController(IOrganizationService organizationService, ApplicationDbContext context)
     {
         _organizationService = organizationService;
+        _context = context;
     }
 
     /// <summary>
@@ -75,6 +80,73 @@ public class OrganizationsController : ControllerBase
             organization,
             "Organization retrieved successfully"
         ));
+    }
+
+    /// <summary>
+    /// Get dashboard stats for the current user (NGO or Grocery)
+    /// </summary>
+    [HttpGet("my/stats")]
+    public async Task<IActionResult> GetMyStats()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+            return Unauthorized();
+
+        var org = await _context.Organizations.FindAsync(userGuid);
+        if (org == null) return NotFound();
+
+        if (org.Type == "ngo")
+        {
+            var inventoryCount = await _context.Inventories
+                .CountAsync(i => i.NgoId == userGuid && i.Status == InventoryStatus.Active);
+            var activeRequests = await _context.PickupRequests
+                .CountAsync(pr => pr.NgoId == userGuid &&
+                    (pr.Status == PickupRequestStatus.Pending ||
+                     pr.Status == PickupRequestStatus.Approved ||
+                     pr.Status == PickupRequestStatus.Ready));
+            var distributedCount = await _context.Inventories
+                .CountAsync(i => i.NgoId == userGuid && i.Status == InventoryStatus.Distributed);
+            var availableListings = await _context.ClearanceListings
+                .CountAsync(l => l.Status == ListingStatus.Open);
+
+            return Ok(new
+            {
+                data = new
+                {
+                    inStock = inventoryCount,
+                    activeRequests,
+                    distributed = distributedCount,
+                    availableFood = availableListings
+                }
+            });
+        }
+        else if (org.Type == "grocery")
+        {
+            var activeListings = await _context.ClearanceListings
+                .CountAsync(l => l.GroceryId == userGuid && l.Status == ListingStatus.Open);
+            var pendingRequests = await _context.PickupRequests
+                .CountAsync(pr => pr.GroceryId == userGuid && pr.Status == PickupRequestStatus.Pending);
+            var completedPickups = await _context.PickupRequests
+                .CountAsync(pr => pr.GroceryId == userGuid && pr.Status == PickupRequestStatus.Completed);
+            var foodSaved = await _context.PickupRequests
+                .Where(pr => pr.GroceryId == userGuid && pr.Status == PickupRequestStatus.Completed)
+                .SumAsync(pr => pr.RequestedQuantity ?? 0);
+
+            return Ok(new
+            {
+                data = new
+                {
+                    activeListings,
+                    pendingRequests,
+                    completed = completedPickups,
+                    foodSaved
+                }
+            });
+        }
+
+        return BadRequest(new { message = "Stats not available for this organization type" });
     }
 
     /// <summary>

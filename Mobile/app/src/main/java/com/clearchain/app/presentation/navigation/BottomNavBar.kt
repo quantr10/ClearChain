@@ -79,7 +79,7 @@ private fun getNgoNavigationItems(): List<NavigationItem> {
             label = "Browse"
         ),
         NavigationItem(
-            route = Screen.Deliveries.route,
+            route = Screen.MyRequests.route,
             selectedIcon = Icons.Filled.LocalShipping,
             unselectedIcon = Icons.Outlined.LocalShipping,
             label = "My Requests"

@@ -55,6 +55,7 @@ builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationS
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IImageAnalysisService, AzureVisionService>();
+builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
 
 // ❌ REMOVED: Background service (replaced by Hangfire)
 // builder.Services.AddHostedService<NotificationSchedulerService>();
@@ -174,57 +175,48 @@ if (app.Environment.IsDevelopment())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Hangfire Dashboard (Admin UI for monitoring jobs)
+// Hangfire Dashboard — restricted to admin role
 // Access: https://your-domain/hangfire
 // ═══════════════════════════════════════════════════════════════════════════
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     AppPath = "/",
     DashboardTitle = "ClearChain Background Jobs",
-    // TODO: Add authorization filter in production
-    // Authorization = new[] { new HangfireAuthorizationFilter() }
+    Authorization = new[] { new HangfireAuthorizationFilter() }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Schedule Recurring Jobs (Daily at 2:00 AM UTC)
-// Cron format: "minute hour day month day-of-week"
-// "0 2 * * *" = Every day at 2:00 AM UTC
+// Scheduled Jobs — staggered 5 min apart to avoid DB contention
 // ═══════════════════════════════════════════════════════════════════════════
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expiring-listings",
     job => job.CheckExpiringListings(),
-    "0 2 * * *",  // Daily at 2 AM UTC
-    new RecurringJobOptions
-    {
-        TimeZone = TimeZoneInfo.Utc
-    });
+    "0 2 * * *",   // 02:00 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expired-listings",
     job => job.CheckExpiredListings(),
-    "0 2 * * *",  // Daily at 2 AM UTC
-    new RecurringJobOptions
-    {
-        TimeZone = TimeZoneInfo.Utc
-    });
+    "5 2 * * *",   // 02:05 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expiring-inventory",
     job => job.CheckExpiringInventory(),
-    "0 2 * * *",  // Daily at 2 AM UTC
-    new RecurringJobOptions
-    {
-        TimeZone = TimeZoneInfo.Utc
-    });
+    "10 2 * * *",  // 02:10 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expired-inventory",
     job => job.CheckExpiredInventory(),
-    "0 2 * * *",  // Daily at 2 AM UTC
-    new RecurringJobOptions
-    {
-        TimeZone = TimeZoneInfo.Utc
-    });
+    "15 2 * * *",  // 02:15 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "cleanup-refresh-tokens",
+    job => job.CleanupExpiredRefreshTokens(),
+    "0 3 * * *",   // 03:00 UTC — separate window from notification jobs
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 app.UseCors("ClearChainPolicy");
 

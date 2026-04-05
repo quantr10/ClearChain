@@ -22,56 +22,6 @@ namespace ClearChain.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ClearChain.Domain.Entities.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("action");
-
-                    b.Property<Guid?>("EntityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("entityid");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("entitytype");
-
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("text")
-                        .HasColumnName("ipaddress");
-
-                    b.Property<string>("NewValue")
-                        .HasColumnType("text")
-                        .HasColumnName("newvalue");
-
-                    b.Property<string>("OldValue")
-                        .HasColumnType("text")
-                        .HasColumnName("oldvalue");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("timestamp");
-
-                    b.Property<string>("UserAgent")
-                        .HasColumnType("text")
-                        .HasColumnName("useragent");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("userid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("auditlogs", (string)null);
-                });
-
             modelBuilder.Entity("ClearChain.Domain.Entities.ClearanceListing", b =>
                 {
                     b.Property<Guid>("Id")
@@ -111,10 +61,6 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Property<string>("PhotoUrl")
                         .HasColumnType("text")
                         .HasColumnName("photourl");
-
-                    b.Property<Guid?>("PickupRequestId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("pickuprequestid");
 
                     b.Property<TimeSpan?>("PickupTimeEnd")
                         .HasColumnType("interval")
@@ -555,23 +501,6 @@ namespace ClearChain.Infrastructure.Migrations
                     b.ToTable("refreshtokens", (string)null);
                 });
 
-            modelBuilder.Entity("pickuprequestlistings", b =>
-                {
-                    b.Property<Guid>("listingid")
-                        .HasColumnType("uuid")
-                        .HasColumnName("listingid");
-
-                    b.Property<Guid>("pickuprequestid")
-                        .HasColumnType("uuid")
-                        .HasColumnName("pickuprequestid");
-
-                    b.HasKey("listingid", "pickuprequestid");
-
-                    b.HasIndex("pickuprequestid");
-
-                    b.ToTable("pickuprequestlistings");
-                });
-
             modelBuilder.Entity("ClearChain.Domain.Entities.ClearanceListing", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
@@ -640,21 +569,6 @@ namespace ClearChain.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
-                });
-
-            modelBuilder.Entity("pickuprequestlistings", b =>
-                {
-                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", null)
-                        .WithMany()
-                        .HasForeignKey("listingid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ClearChain.Domain.Entities.PickupRequest", null)
-                        .WithMany()
-                        .HasForeignKey("pickuprequestid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("ClearChain.Domain.Entities.ListingGroup", b =>

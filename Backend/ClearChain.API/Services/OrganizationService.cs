@@ -73,20 +73,6 @@ public class OrganizationService : IOrganizationService
             return (false, "Invalid action. Must be 'approved' or 'rejected'");
 
         organization.UpdatedAt = DateTime.UtcNow;
-
-        var auditLog = new AuditLog
-        {
-            Id = Guid.NewGuid(),
-            UserId = organizationId,
-            Action = $"Organization {action}",
-            EntityType = "Organization",
-            EntityId = organizationId,
-            OldValue = null,
-            NewValue = action,
-            Timestamp = DateTime.UtcNow
-        };
-
-        _context.AuditLogs.Add(auditLog);
         await _context.SaveChangesAsync();
         return (true, $"Organization {action} successfully");
     }

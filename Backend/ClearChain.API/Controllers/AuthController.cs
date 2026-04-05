@@ -17,17 +17,20 @@ public class AuthController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IAdminNotificationService _adminNotificationService;
     private readonly IPushNotificationService _pushNotificationService;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IAuthService authService,
         ApplicationDbContext context,
         IAdminNotificationService adminNotificationService,
-        IPushNotificationService pushNotificationService)
+        IPushNotificationService pushNotificationService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
         _context = context;
         _adminNotificationService = adminNotificationService;
         _pushNotificationService = pushNotificationService;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -64,7 +67,7 @@ public class AuthController : ControllerBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to send admin alert: {ex.Message}");
+                _logger.LogWarning(ex, "Failed to send registration notifications for {Email}", request.Email);
             }
         }
 
@@ -126,36 +129,28 @@ public class AuthController : ControllerBase
         if (user == null)
             return NotFound(new { message = "User not found" });
 
-        var responseData = new
+        var userDto = new OrganizationDto
         {
-            accessToken = "",
-            refreshToken = "",
-            tokenType = "Bearer",
-            expiresIn = 0,
-            user = new OrganizationDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Type = user.Type,
-                Email = user.Email,
-                Phone = user.Phone ?? "",
-                Address = user.Address ?? "",
-                Location = user.Location ?? "",
-                Verified = user.Verified,
-                VerificationStatus = user.VerificationStatus ?? "pending",
-                Hours = user.Hours,
-                ProfilePictureUrl = user.ProfilePictureUrl,
-                CreatedAt = user.CreatedAt.ToString("o"),
-                // ═══ NEW FIELDS (Part 1) ═══
-                Latitude = user.Latitude,
-                Longitude = user.Longitude,
-                ContactPerson = user.ContactPerson,
-                PickupInstructions = user.PickupInstructions,
-                Description = user.Description
-            }
+            Id = user.Id,
+            Name = user.Name,
+            Type = user.Type,
+            Email = user.Email,
+            Phone = user.Phone ?? "",
+            Address = user.Address ?? "",
+            Location = user.Location ?? "",
+            Verified = user.Verified,
+            VerificationStatus = user.VerificationStatus ?? "pending",
+            Hours = user.Hours,
+            ProfilePictureUrl = user.ProfilePictureUrl,
+            CreatedAt = user.CreatedAt.ToString("o"),
+            Latitude = user.Latitude,
+            Longitude = user.Longitude,
+            ContactPerson = user.ContactPerson,
+            PickupInstructions = user.PickupInstructions,
+            Description = user.Description
         };
 
-        return Ok(new { data = responseData });
+        return Ok(new { data = new { user = userDto } });
     }
 
     [Authorize]

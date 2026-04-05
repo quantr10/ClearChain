@@ -1,3 +1,5 @@
+using ClearChain.Domain.Enums;
+
 namespace ClearChain.Domain.Entities;
 
 public class ClearanceListing
@@ -17,17 +19,13 @@ public class ClearanceListing
     public string? Notes { get; set; }
     public string? PhotoUrl { get; set; }
     
-    // Status: "open" (AVAILABLE) or "reserved" (RESERVED)
-    public string Status { get; set; } = "open";
+    public ListingStatus Status { get; set; } = ListingStatus.Open;
     
     // NEW: Tracking split information
     public string SplitReason { get; set; } = "new_listing";  // new_listing, partial_request, merge, cancel_restore
     public Guid? RelatedRequestId { get; set; }  // If RESERVED
     public Guid? SplitFromListingId { get; set; }  // Parent listing ID if split
     public int SplitIndex { get; set; } = 0;  // Order in group
-    
-    // DEPRECATED (keep for backward compatibility)
-    public Guid? PickupRequestId { get; set; }
     
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

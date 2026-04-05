@@ -1,3 +1,5 @@
+using ClearChain.Domain.Enums;
+
 namespace ClearChain.Domain.Entities;
 
 public class Inventory
@@ -10,7 +12,7 @@ public class Inventory
     public decimal Quantity { get; set; }
     public string Unit { get; set; } = string.Empty;
     public DateTime ExpiryDate { get; set; }
-    public string Status { get; set; } = "active"; // active, distributed, expired
+    public InventoryStatus Status { get; set; } = InventoryStatus.Active;
     public DateTime ReceivedAt { get; set; }
     public DateTime? DistributedAt { get; set; }
     public DateTime CreatedAt { get; set; }

@@ -16,10 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.compose.runtime.collectAsState
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,16 +26,8 @@ fun GroceryDashboardScreen(
     navController: NavController,
     viewModel: GroceryDashboardViewModel = hiltViewModel()
 ) {
-    val scope = rememberCoroutineScope()
-    var userName by remember { mutableStateOf("Grocery Store") }
-
-    LaunchedEffect(key1 = true) {
-        scope.launch {
-            viewModel.getCurrentUserUseCase().first()?.let { user ->
-                userName = user.name
-            }
-        }
-    }
+    val userName by viewModel.userName.collectAsState()
+    val stats by viewModel.stats.collectAsState()
 
     Scaffold(
         topBar = {
@@ -90,14 +81,14 @@ fun GroceryDashboardScreen(
                 StatCard(
                     icon = Icons.Default.Inventory,
                     label = "Active Listings",
-                    value = "–",
+                    value = stats?.activeListings?.toString() ?: "–",
                     accentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     icon = Icons.Default.LocalShipping,
                     label = "Pending Requests",
-                    value = "–",
+                    value = stats?.pendingRequests?.toString() ?: "–",
                     accentColor = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.weight(1f)
                 )
@@ -110,14 +101,14 @@ fun GroceryDashboardScreen(
                 StatCard(
                     icon = Icons.Default.CheckCircle,
                     label = "Completed",
-                    value = "–",
+                    value = stats?.completed?.toString() ?: "–",
                     accentColor = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     icon = Icons.Default.Eco,
                     label = "Food Saved",
-                    value = "–",
+                    value = stats?.foodSaved?.toString() ?: "–",
                     accentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )

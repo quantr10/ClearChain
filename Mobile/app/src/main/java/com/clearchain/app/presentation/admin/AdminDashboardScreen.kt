@@ -208,21 +208,21 @@ fun AdminDashboardScreen(
                         icon = Icons.Default.VerifiedUser,
                         title = "Organizations",
                         subtitle = "${state.stats?.totalOrganizations ?: 0} registered",
-                        onClick = { navController.navigate("admin/verification") }
+                        onClick = { navController.navigate(Screen.Verification.route) }
                     )
 
                     DashboardActionCard(
                         icon = Icons.Default.Analytics,
                         title = "Detailed Statistics",
                         subtitle = "View comprehensive analytics",
-                        onClick = { navController.navigate("admin/statistics") }
+                        onClick = { navController.navigate(Screen.AdminStatistics.route) }
                     )
 
                     DashboardActionCard(
                         icon = Icons.Default.History,
                         title = "Transaction History",
                         subtitle = "${state.stats?.totalPickupRequests ?: 0} total requests",
-                        onClick = { navController.navigate("admin/transactions") }
+                        onClick = { navController.navigate(Screen.Transactions.route) }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

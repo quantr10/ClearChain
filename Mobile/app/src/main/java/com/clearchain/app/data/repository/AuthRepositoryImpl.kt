@@ -65,6 +65,15 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout(): Result<Unit> {
         return try {
+            // Revoke refresh token on server before clearing local state
+            val tokens = authTokenDao.getTokens()
+            if (tokens?.refreshToken != null) {
+                try {
+                    authApi.logout(RefreshTokenRequest(tokens.refreshToken))
+                } catch (_: Exception) {
+                    // Non-fatal: local state is still cleared even if server call fails
+                }
+            }
             authTokenDao.clearTokens()
             userDao.clearUsers()
             Result.success(Unit)

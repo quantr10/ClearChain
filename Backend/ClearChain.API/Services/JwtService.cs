@@ -17,40 +17,44 @@ public interface IJwtService
 
 public class JwtService : IJwtService
 {
-    private readonly IConfiguration _configuration;
+    private readonly SymmetricSecurityKey _securityKey;
+    private readonly SigningCredentials _credentials;
+    private readonly int _expiryMinutes;
+    private readonly string _issuer;
+    private readonly string _audience;
 
     public JwtService(IConfiguration configuration)
     {
-        _configuration = configuration;
+        var secret = configuration["JWT_SECRET_KEY"]
+            ?? throw new InvalidOperationException("JWT_SECRET_KEY is not configured");
+        _securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        _credentials = new SigningCredentials(_securityKey, SecurityAlgorithms.HmacSha256);
+        _expiryMinutes = int.Parse(configuration["JWT_EXPIRY_MINUTES"] ?? "60");
+        _issuer = configuration["JWT_ISSUER"] ?? "";
+        _audience = configuration["JWT_AUDIENCE"] ?? "";
     }
 
     public string GenerateAccessToken(Organization user)
     {
-        var securityKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["JWT_SECRET_KEY"]!)
-        );
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Name, user.Name),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),  // ✅ ADD for compatibility
-            new Claim(ClaimTypes.Role, user.Type),  // ✅ ADD - CRITICAL for [Authorize(Roles)]
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Role, user.Type),
             new Claim("type", user.Type),
             new Claim("verified", user.Verified.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
         };
 
-        var expiryMinutes = int.Parse(_configuration["JWT_EXPIRY_MINUTES"] ?? "60");
         var token = new JwtSecurityToken(
-            issuer: _configuration["JWT_ISSUER"],
-            audience: _configuration["JWT_AUDIENCE"],
+            issuer: _issuer,
+            audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
-            signingCredentials: credentials
+            expires: DateTime.UtcNow.AddMinutes(_expiryMinutes),
+            signingCredentials: _credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -67,10 +71,6 @@ public class JwtService : IJwtService
     public ClaimsPrincipal? ValidateToken(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var securityKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["JWT_SECRET_KEY"]!)
-        );
-
         try
         {
             var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -79,11 +79,11 @@ public class JwtService : IJwtService
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = _configuration["JWT_ISSUER"],
-                ValidAudience = _configuration["JWT_AUDIENCE"],
-                IssuerSigningKey = securityKey,
+                ValidIssuer = _issuer,
+                ValidAudience = _audience,
+                IssuerSigningKey = _securityKey,
                 ClockSkew = TimeSpan.Zero,
-                RoleClaimType = ClaimTypes.Role  // ✅ ADD
+                RoleClaimType = ClaimTypes.Role
             }, out _);
 
             return principal;

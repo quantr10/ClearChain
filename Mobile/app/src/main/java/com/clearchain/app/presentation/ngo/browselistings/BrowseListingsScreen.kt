@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +33,7 @@ fun BrowseListingsScreen(
     // First time with no location → redirect to location picker
     LaunchedEffect(state.isLocationSet, state.isCheckingLocation) {
         if (!state.isCheckingLocation && !state.isLocationSet) {
-            navController.navigate("location_picker") {
+            navController.navigate(Screen.LocationPicker.route) {
                 launchSingleTop = true
             }
         }
@@ -86,7 +87,7 @@ fun BrowseListingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 4.dp)
-                                    .clickable { navController.navigate("location_picker_edit") },
+                                    .clickable { navController.navigate(Screen.LocationPickerEdit.route) },
                                 color = MaterialTheme.colorScheme.secondaryContainer,
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -178,7 +179,7 @@ fun BrowseListingsScreen(
                                                 listing = listing,
                                                 showGroceryInfo = true,
                                                 modifier = Modifier.clickable {
-                                                    navController.navigate("listing_detail/${listing.id}")
+                                                    navController.navigate(Screen.ListingDetail.createRoute(listing.id))
                                                 },
                                                 primaryAction = {
                                                     Button(

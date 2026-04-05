@@ -47,7 +47,7 @@ fun NavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // ═══ Auth (No Bottom Bar) ═══
+        // ── Auth ──────────────────────────────────────────
 
         composable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
@@ -64,8 +64,6 @@ fun NavGraph(
             RegisterScreen(navController = navController)
         }
 
-        // ═══ Onboarding (Part 1) — No Bottom Bar ═══
-
         composable(Screen.Onboarding.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             OnboardingScreen(
@@ -77,7 +75,7 @@ fun NavGraph(
             )
         }
 
-        // ═══ Grocery (Show Bottom Bar) ═══
+        // ── Grocery ───────────────────────────────────────
 
         composable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
@@ -99,12 +97,12 @@ fun NavGraph(
             ManageRequestsScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
-                    navController.navigate("request_detail/$requestId")
+                    navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
             )
         }
 
-        // ═══ NGO (Show Bottom Bar) ═══
+        // ── NGO ───────────────────────────────────────────
 
         composable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
@@ -116,12 +114,12 @@ fun NavGraph(
             BrowseListingsScreen(navController = navController)
         }
 
-        composable(Screen.Deliveries.route) {
+        composable(Screen.MyRequests.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             MyRequestsScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
-                    navController.navigate("request_detail/$requestId")
+                    navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
             )
         }
@@ -131,13 +129,49 @@ fun NavGraph(
             InventoryScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToItemDetail = { itemId ->
-                    navController.navigate("inventory_detail/$itemId")
+                    navController.navigate(Screen.InventoryDetail.createRoute(itemId))
+                }
+            )
+        }
+
+        composable(Screen.LocationPicker.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LocationPickerScreen(
+                onLocationSelected = {
+                    navController.navigate(Screen.BrowseListings.route) {
+                        popUpTo(Screen.LocationPicker.route) { inclusive = true }
+                    }
+                },
+                onDismiss = null
+            )
+        }
+
+        composable(Screen.LocationPickerEdit.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LocationPickerScreen(
+                onLocationSelected = { navController.navigateUp() },
+                onDismiss = { navController.navigateUp() }
+            )
+        }
+
+        // ── Detail screens ────────────────────────────────
+
+        composable(
+            route = Screen.ListingDetail.route,
+            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
+            ListingDetailScreen(
+                listingId = listingId,
+                onNavigateBack = { navController.navigateUp() },
+                onRequestPickup = { id ->
+                    navController.navigate(Screen.RequestPickup.createRoute(id))
                 }
             )
         }
 
         composable(
-            route = "request_pickup/{listingId}",
+            route = Screen.RequestPickup.route,
             arguments = listOf(navArgument("listingId") { type = NavType.StringType })
         ) { backStackEntry ->
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
@@ -147,44 +181,8 @@ fun NavGraph(
             )
         }
 
-        composable("location_picker") {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            LocationPickerScreen(
-                onLocationSelected = {
-                    navController.navigate(Screen.BrowseListings.route) {
-                        popUpTo("location_picker") { inclusive = true }
-                    }
-                },
-                onDismiss = null
-            )
-        }
-
-        composable("location_picker_edit") {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            LocationPickerScreen(
-                onLocationSelected = { navController.navigateUp() },
-                onDismiss = { navController.navigateUp() }
-            )
-        }
-
-        // ═══ Detail Screens (Part 3) ═══
-
         composable(
-            route = "listing_detail/{listingId}",
-            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
-            ListingDetailScreen(
-                listingId = listingId,
-                onNavigateBack = { navController.navigateUp() },
-                onRequestPickup = { id ->
-                    navController.navigate("request_pickup/$id")
-                }
-            )
-        }
-
-        composable(
-            route = "request_detail/{requestId}",
+            route = Screen.RequestDetail.route,
             arguments = listOf(navArgument("requestId") { type = NavType.StringType })
         ) { backStackEntry ->
             val requestId = backStackEntry.arguments?.getString("requestId") ?: ""
@@ -195,7 +193,7 @@ fun NavGraph(
         }
 
         composable(
-            route = "inventory_detail/{itemId}",
+            route = Screen.InventoryDetail.route,
             arguments = listOf(navArgument("itemId") { type = NavType.StringType })
         ) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
@@ -203,12 +201,12 @@ fun NavGraph(
                 itemId = itemId,
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
-                    navController.navigate("request_detail/$requestId")
+                    navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
             )
         }
 
-        // ═══ Admin (Show Bottom Bar) ═══
+        // ── Admin ─────────────────────────────────────────
 
         composable(Screen.AdminDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
@@ -225,17 +223,17 @@ fun NavGraph(
             TransactionsScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
-                    navController.navigate("request_detail/$requestId")
+                    navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
             )
         }
 
-        composable("admin/statistics") {
+        composable(Screen.AdminStatistics.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
             StatisticsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        // ═══ Shared ═══
+        // ── Shared ────────────────────────────────────────
 
         composable(Screen.Profile.route) {
             val getCurrentUserUseCase: GetCurrentUserUseCase =
