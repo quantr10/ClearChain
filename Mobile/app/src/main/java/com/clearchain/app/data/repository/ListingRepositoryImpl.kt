@@ -2,6 +2,10 @@ package com.clearchain.app.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.clearchain.app.data.local.dao.ListingDao
+import com.clearchain.app.data.local.dao.UserDao
+import com.clearchain.app.data.local.entity.toEntity
+import com.clearchain.app.data.local.entity.toDomain
 import com.clearchain.app.data.remote.api.ImageAnalysisApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.dto.CreateListingRequest
@@ -10,7 +14,9 @@ import com.clearchain.app.data.remote.dto.UpdateListingQuantityRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
+import com.clearchain.app.util.ImageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -20,28 +26,41 @@ import javax.inject.Inject
 class ListingRepositoryImpl @Inject constructor(
     private val listingApi: ListingApi,
     private val imageAnalysisApi: ImageAnalysisApi,
+    private val listingDao: ListingDao,
+    private val userDao: UserDao,
     @ApplicationContext private val context: Context
 ) : ListingRepository {
 
     override suspend fun createListing(
         title: String, description: String, category: String,
         quantity: Int, unit: String, expiryDate: String,
-        pickupTimeStart: String, pickupTimeEnd: String, imageUrl: String?
+        imageUrl: String?
     ): Result<Listing> {
         return try {
             val response = listingApi.createListing(
                 CreateListingRequest(title, description, category, quantity, unit,
-                    expiryDate, pickupTimeStart, pickupTimeEnd, imageUrl)
+                    expiryDate, imageUrl)
             )
-            Result.success(response.data.toDomain())
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
         } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun getMyListings(page: Int, pageSize: Int): Result<List<Listing>> {
         return try {
             val response = listingApi.getMyListings(page, pageSize)
-            Result.success(response.data.map { it.toDomain() })
-        } catch (e: Exception) { Result.failure(e) }
+            val domain = response.data.map { it.toDomain() }
+            listingDao.upsertAll(domain.map { it.toEntity() })
+            Result.success(domain)
+        } catch (e: Exception) {
+            val currentUser = userDao.getCurrentUser()
+            if (currentUser != null) {
+                val cached = listingDao.observeListingsByGrocery(currentUser.id).first()
+                if (cached.isNotEmpty()) Result.success(cached.map { it.toDomain() })
+                else Result.failure(e)
+            } else Result.failure(e)
+        }
     }
 
     override suspend fun getAllListings(
@@ -50,28 +69,42 @@ class ListingRepositoryImpl @Inject constructor(
         page: Int, pageSize: Int
     ): Result<List<Listing>> {
         return try {
-            val response = listingApi.getAllListings(status, category, lat, lng, radiusKm, page, pageSize)
-            Result.success(response.data.map { it.toDomain() })
-        } catch (e: Exception) { Result.failure(e) }
+            val response = listingApi.getAllListings(status = status, category = category, lat = lat, lng = lng, radiusKm = radiusKm, page = page, pageSize = pageSize)
+            val domain = response.data.map { it.toDomain() }
+            listingDao.upsertAll(domain.map { it.toEntity() })
+            Result.success(domain)
+        } catch (e: Exception) {
+            val cached = listingDao.observeAvailableListings().first()
+            if (cached.isNotEmpty()) Result.success(cached.map { it.toDomain() })
+            else Result.failure(e)
+        }
     }
 
     override suspend fun getListingById(id: String): Result<Listing> {
         return try {
             val response = listingApi.getListingById(id)
-            Result.success(response.data.toDomain())
-        } catch (e: Exception) { Result.failure(e) }
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
+        } catch (e: Exception) {
+            val cached = listingDao.getById(id)
+            if (cached != null) Result.success(cached.toDomain())
+            else Result.failure(e)
+        }
     }
 
     override suspend fun updateListing(
         id: String, title: String, description: String, category: String,
         quantity: Int, unit: String, expiryDate: String,
-        pickupTimeStart: String, pickupTimeEnd: String, imageUrl: String?
+        imageUrl: String?
     ): Result<Listing> {
         return try {
             val response = listingApi.updateListing(id,
                 CreateListingRequest(title, description, category, quantity, unit,
-                    expiryDate, pickupTimeStart, pickupTimeEnd, imageUrl))
-            Result.success(response.data.toDomain())
+                    expiryDate, imageUrl))
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
         } catch (e: Exception) { Result.failure(e) }
     }
 
@@ -86,13 +119,15 @@ class ListingRepositoryImpl @Inject constructor(
         return try {
             val response = listingApi.updateListingQuantity(listingId,
                 UpdateListingQuantityRequest(newQuantity))
-            Result.success(response.data.toDomain())
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
         } catch (e: Exception) { Result.failure(e) }
     }
 
     override suspend fun analyzeImage(imageUri: Uri): Result<FoodAnalysisData> {
         return try {
-            val file = uriToFile(context, imageUri)
+            val file = ImageUtils.compressImage(context, imageUri)
             val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
             val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
             val response = imageAnalysisApi.analyzeImage(multipartBody)
@@ -111,22 +146,13 @@ class ListingRepositoryImpl @Inject constructor(
 
     override suspend fun uploadFoodImage(imageUri: Uri): Result<String> {
         return try {
-            val file = uriToFile(context, imageUri)
-            val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+            val file = ImageUtils.compressImage(context, imageUri)
+            val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
             val response = imageAnalysisApi.uploadFoodImage(multipartBody)
             file.delete()
             if (response.success && response.imageUrl != null) Result.success(response.imageUrl)
             else Result.failure(Exception(response.message))
         } catch (e: Exception) { Result.failure(e) }
-    }
-
-    private fun uriToFile(context: Context, uri: Uri): File {
-        val inputStream = context.contentResolver.openInputStream(uri)
-            ?: throw IllegalStateException("Cannot open input stream from URI")
-        val tempFile = File(context.cacheDir, "temp_image_${System.currentTimeMillis()}.jpg")
-        tempFile.outputStream().use { outputStream -> inputStream.copyTo(outputStream) }
-        inputStream.close()
-        return tempFile
     }
 }

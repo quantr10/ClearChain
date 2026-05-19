@@ -18,4 +18,9 @@ public class OrganizationData
     public bool Verified { get; set; }
     public string VerificationStatus { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
+    public string? DocumentUrl { get; set; }
+    public string? DocumentUrl2 { get; set; }
+    public string? DocumentMimeType { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 }

@@ -9,11 +9,18 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import androidx.core.content.FileProvider
+import com.clearchain.app.util.ImageUtils
 import com.google.accompanist.permissions.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,8 +32,10 @@ fun PhotoPickerDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var photoUri by remember { mutableStateOf<Uri?>(null) }
-    var showPreview by remember { mutableStateOf(false) }  // ✅ NEW
+    var showPreview by remember { mutableStateOf(false) }
+    var isCompressing by remember { mutableStateOf(false) }
 
     // Camera permission state
     val cameraPermissionState = rememberPermissionState(
@@ -71,13 +80,25 @@ fun PhotoPickerDialog(
         )
     }
 
-    // ✅ Show preview dialog if photo selected
     if (showPreview && photoUri != null) {
         PhotoPreviewDialog(
             photoUri = photoUri,
             onConfirm = {
-                onPhotoSelected(photoUri!!)
+                val sourceUri = photoUri!!
+                isCompressing = true
                 showPreview = false
+                scope.launch {
+                    val compressedUri = withContext(Dispatchers.IO) {
+                        try {
+                            val file = ImageUtils.compressImage(context, sourceUri)
+                            Uri.fromFile(file)
+                        } catch (_: Exception) {
+                            sourceUri // fall back to original on error
+                        }
+                    }
+                    isCompressing = false
+                    onPhotoSelected(compressedUri)
+                }
             },
             onRetake = {
                 showPreview = false
@@ -90,18 +111,33 @@ fun PhotoPickerDialog(
                 onDismiss()
             }
         )
+    } else if (isCompressing) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.label_processing_photo)) },
+            text = {
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text(stringResource(R.string.label_compressing_image))
+                }
+            },
+            confirmButton = {}
+        )
     } else {
-        // Original picker dialog
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Add Proof Photo") },
+            title = { Text(stringResource(R.string.label_add_proof_photo)) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Take a photo or choose from gallery to confirm pickup")
-                    
+                    Text(stringResource(R.string.label_proof_photo_hint))
+
                     OutlinedButton(
                         onClick = {
                             if (cameraPermissionState.status.isGranted) {
@@ -115,12 +151,12 @@ fun PhotoPickerDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Camera"
+                            contentDescription = stringResource(R.string.cd_camera)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Take Photo")
+                        Text(stringResource(R.string.action_take_photo_camera))
                     }
-                    
+
                     OutlinedButton(
                         onClick = {
                             galleryLauncher.launch(
@@ -133,17 +169,17 @@ fun PhotoPickerDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PhotoLibrary,
-                            contentDescription = "Gallery"
+                            contentDescription = stringResource(R.string.cd_gallery)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Choose from Gallery")
+                        Text(stringResource(R.string.action_choose_gallery))
                     }
                 }
             },
             confirmButton = { },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

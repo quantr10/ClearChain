@@ -14,7 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
@@ -42,7 +44,7 @@ fun FullPhotoDialog(
             // Photo with pinch-to-zoom
             AsyncImage(
                 model = photoUrl,
-                contentDescription = "Proof Photo",
+                contentDescription = stringResource(R.string.proof_photo),
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer(
@@ -75,7 +77,7 @@ fun FullPhotoDialog(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.close),
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
@@ -84,7 +86,7 @@ fun FullPhotoDialog(
             // Hint text
             if (scale == 1f) {
                 Text(
-                    text = "Pinch to zoom",
+                    text = stringResource(R.string.hint_pinch_to_zoom),
                     color = Color.White.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier

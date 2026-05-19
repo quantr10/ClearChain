@@ -1,8 +1,13 @@
 package com.clearchain.app.presentation.grocery.managerequests
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.R
+import com.clearchain.app.data.remote.api.OrganizationApi
+import com.clearchain.app.data.remote.api.PickupRequestApi
+import com.clearchain.app.data.remote.dto.BulkActionRequest
+import com.clearchain.app.data.remote.dto.BulkRejectRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
@@ -10,6 +15,8 @@ import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,11 +24,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ManageRequestsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getGroceryPickupRequestsUseCase: GetGroceryPickupRequestsUseCase,
     private val approvePickupRequestUseCase: ApprovePickupRequestUseCase,
     private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
     private val markReadyForPickupUseCase: MarkReadyForPickupUseCase,
-    private val signalRService: SignalRService  // ✅ ADD
+    private val pickupRequestApi: PickupRequestApi,
+    private val organizationApi: OrganizationApi,
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ManageRequestsState())
@@ -32,74 +42,32 @@ class ManageRequestsViewModel @Inject constructor(
 
     init {
         loadRequests()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-        // Connect to SignalR (reuse existing connection)
-        viewModelScope.launch {
-            signalRService.connect()
-        }
+        viewModelScope.launch { signalRService.connect() }
 
-        // Listen for connection state
-        viewModelScope.launch {
-            signalRService.connectionState.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> {
-                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
-                    }
-                    is ConnectionState.Error -> {
-                        // Silent fail
-                    }
-                    else -> {}
-                }
-            }
-        }
-
-        // ✅ Listen for NEW pickup requests (important for groceries!)
         viewModelScope.launch {
             signalRService.pickupRequestCreated.collect { request ->
                 loadRequests()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar(
-                        "📢 New pickup request from ${request.ngoName}"
-                    )
-                )
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_request_from, request.ngoName)))
             }
         }
-
-        // ✅ Listen for status changes
         viewModelScope.launch {
-            signalRService.pickupRequestStatusChanged.collect { notification ->
-                loadRequests()
-                
-                val statusMessage = when (notification.newStatus.lowercase()) {
-                    "completed" -> "✅ ${notification.request.ngoName} confirmed pickup"
-                    "cancelled" -> "❌ Request cancelled by NGO"
-                    else -> "Status updated to ${notification.newStatus}"
-                }
-                
-                _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
-            }
+            signalRService.pickupRequestStatusChanged.collect { loadRequests() }
         }
-
-        // ✅ Listen for cancellations
         viewModelScope.launch {
             signalRService.pickupRequestCancelled.collect { request ->
                 loadRequests()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Request cancelled by ${request.ngoName}")
-                )
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled_by, request.ngoName)))
             }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
+        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: ManageRequestsEvent) {
@@ -120,39 +88,59 @@ class ManageRequestsViewModel @Inject constructor(
                 applyFilters()
             }
 
+            // Advanced filter sheet
+            ManageRequestsEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
+            ManageRequestsEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
+            is ManageRequestsEvent.FilterCategoryChanged -> {
+                _state.update { it.copy(filterCategory = event.category) }
+                applyFilters()
+            }
+            is ManageRequestsEvent.FilterPickupDatePresetChanged -> {
+                _state.update { it.copy(filterPickupDatePreset = event.preset) }
+                applyFilters()
+            }
+            ManageRequestsEvent.ClearAdvancedFilters -> {
+                _state.update { it.copy(filterCategory = null, filterPickupDatePreset = null) }
+                applyFilters()
+            }
+
             is ManageRequestsEvent.ApproveRequest -> approveRequest(event.requestId)
             is ManageRequestsEvent.RejectRequest -> rejectRequest(event.requestId)
             is ManageRequestsEvent.MarkReady -> markReadyForPickup(event.requestId)
 
-            ManageRequestsEvent.ClearError -> {
-                _state.update { it.copy(error = null) }
-            }
+            // Bulk selection
+            ManageRequestsEvent.ToggleSelectionMode ->
+                _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
+            is ManageRequestsEvent.ToggleItemSelection ->
+                _state.update {
+                    val updated = if (event.requestId in it.selectedIds)
+                        it.selectedIds - event.requestId
+                    else
+                        it.selectedIds + event.requestId
+                    it.copy(selectedIds = updated)
+                }
+            ManageRequestsEvent.SelectAll ->
+                _state.update { it.copy(selectedIds = it.filteredRequests.map { r -> r.id }.toSet()) }
+            ManageRequestsEvent.DeselectAll ->
+                _state.update { it.copy(selectedIds = emptySet()) }
+            ManageRequestsEvent.BulkApprove -> bulkApprove()
+            is ManageRequestsEvent.BulkReject -> bulkReject(event.reason)
+
+            ManageRequestsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
     private fun loadRequests() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = getGroceryPickupRequestsUseCase()
-
-            result.fold(
+            getGroceryPickupRequestsUseCase().fold(
                 onSuccess = { requests ->
-                    _state.update {
-                        it.copy(
-                            allRequests = requests,
-                            isLoading = false
-                        )
-                    }
+                    _state.update { it.copy(allRequests = requests, isLoading = false) }
                     applyFilters()
+                    fetchNgoReputations(requests.map { it.ngoId }.toSet())
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to load requests"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load requests") }
                 }
             )
         }
@@ -160,30 +148,26 @@ class ManageRequestsViewModel @Inject constructor(
 
     private fun refreshRequests() {
         viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
-
-            val result = getGroceryPickupRequestsUseCase()
-
-            result.fold(
+            _state.update { it.copy(isRefreshing = true) }
+            getGroceryPickupRequestsUseCase().fold(
                 onSuccess = { requests ->
-                    _state.update {
-                        it.copy(
-                            allRequests = requests,
-                            isRefreshing = false
-                        )
-                    }
+                    _state.update { it.copy(allRequests = requests, isRefreshing = false) }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar("Requests refreshed"))
+                    fetchNgoReputations(requests.map { it.ngoId }.toSet())
                 },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = error.message ?: "Failed to refresh requests"
-                        )
-                    }
-                }
+                onFailure = { _state.update { it.copy(isRefreshing = false) } }
             )
+        }
+    }
+
+    private fun fetchNgoReputations(ngoIds: Set<String>) {
+        viewModelScope.launch {
+            val reputations = ngoIds.map { id ->
+                async {
+                    try { id to organizationApi.getNgoReputation(id).data } catch (_: Exception) { null }
+                }
+            }.mapNotNull { it.await() }.toMap()
+            _state.update { it.copy(ngoReputations = reputations) }
         }
     }
 
@@ -195,8 +179,8 @@ class ManageRequestsViewModel @Inject constructor(
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { request ->
                 request.listingTitle.lowercase().contains(query) ||
-                        request.ngoName.lowercase().contains(query) ||
-                        request.notes?.lowercase()?.contains(query) == true
+                request.ngoName.lowercase().contains(query) ||
+                request.notes?.lowercase()?.contains(query) == true
             }
         }
 
@@ -204,12 +188,36 @@ class ManageRequestsViewModel @Inject constructor(
             filtered = filtered.filter { it.status.name == status }
         }
 
+        current.filterCategory?.let { cat ->
+            filtered = filtered.filter { it.listingCategory == cat }
+        }
+
+        current.filterPickupDatePreset?.let { preset ->
+            val today = java.time.LocalDate.now()
+            filtered = when (preset) {
+                "today"     -> filtered.filter { it.pickupDate.take(10) == today.toString() }
+                "this_week" -> filtered.filter {
+                    runCatching {
+                        val d = java.time.LocalDate.parse(it.pickupDate.take(10))
+                        !d.isBefore(today) && !d.isAfter(today.plusDays(6))
+                    }.getOrDefault(false)
+                }
+                "next_30"   -> filtered.filter {
+                    runCatching {
+                        val d = java.time.LocalDate.parse(it.pickupDate.take(10))
+                        !d.isBefore(today) && !d.isAfter(today.plusDays(29))
+                    }.getOrDefault(false)
+                }
+                else -> filtered
+            }
+        }
+
         filtered = when (current.selectedSort.value) {
-            "date_desc" -> filtered.sortedByDescending { it.createdAt }
-            "date_asc" -> filtered.sortedBy { it.createdAt }
-            "pickup_date_asc" -> filtered.sortedBy { it.pickupDate }
+            "date_desc"        -> filtered.sortedByDescending { it.createdAt }
+            "date_asc"         -> filtered.sortedBy { it.createdAt }
+            "pickup_date_asc"  -> filtered.sortedBy { it.pickupDate }
             "pickup_date_desc" -> filtered.sortedByDescending { it.pickupDate }
-            else -> filtered
+            else               -> filtered
         }
 
         _state.update { it.copy(filteredRequests = filtered) }
@@ -217,70 +225,60 @@ class ManageRequestsViewModel @Inject constructor(
 
     private fun approveRequest(requestId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = approvePickupRequestUseCase(requestId)
-
-            result.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Request approved successfully"))
-                    loadRequests()
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: "Failed to approve request",
-                            isLoading = false
-                        )
-                    }
-                }
+            approvePickupRequestUseCase(requestId).fold(
+                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved))); loadRequests() },
+                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to approve") } }
             )
         }
     }
 
     private fun rejectRequest(requestId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = cancelPickupRequestUseCase(requestId)
-
-            result.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Request rejected"))
-                    loadRequests()
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: "Failed to reject request",
-                            isLoading = false
-                        )
-                    }
-                }
+            cancelPickupRequestUseCase(requestId).fold(
+                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected))); loadRequests() },
+                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to reject") } }
             )
         }
     }
 
     private fun markReadyForPickup(requestId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = markReadyForPickupUseCase(requestId)
-
-            result.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Marked as ready for pickup"))
-                    loadRequests()
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: "Failed to mark as ready",
-                            isLoading = false
-                        )
-                    }
-                }
+            markReadyForPickupUseCase(requestId).fold(
+                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_marked_ready))); loadRequests() },
+                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to mark as ready") } }
             )
+        }
+    }
+
+    private fun bulkApprove() {
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            try {
+                val result = pickupRequestApi.bulkApprove(BulkActionRequest(ids))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_requests_approved, result.succeeded)))
+            } catch (e: Exception) {
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_bulk_approve_failed)))
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            loadRequests()
+        }
+    }
+
+    private fun bulkReject(reason: String?) {
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            try {
+                val result = pickupRequestApi.bulkReject(BulkRejectRequest(ids, reason))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_requests_rejected, result.succeeded)))
+            } catch (e: Exception) {
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_bulk_reject_failed)))
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            loadRequests()
         }
     }
 }

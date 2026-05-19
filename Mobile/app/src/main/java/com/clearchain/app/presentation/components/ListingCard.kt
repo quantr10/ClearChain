@@ -1,7 +1,10 @@
 package com.clearchain.app.presentation.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,9 +16,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.clearchain.app.domain.model.*
@@ -28,8 +33,11 @@ import java.util.concurrent.TimeUnit
 fun ListingCard(
     listing: Listing,
     showGroceryInfo: Boolean = false,
+    onClick: (() -> Unit)? = null,
     primaryAction: (@Composable () -> Unit)? = null,
     secondaryActions: (@Composable RowScope.() -> Unit)? = null,
+    topRightAction: (@Composable () -> Unit)? = null,
+    onGroceryAvatarClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val daysUntilExpiry: Long = remember(listing.expiryDate) {
@@ -45,208 +53,311 @@ fun ListingCard(
     val expiryColor = when {
         daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
         daysUntilExpiry <= 3L -> Color(0xFFE65100)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        else                  -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val expiryText = when {
+        daysUntilExpiry < 0   -> stringResource(R.string.listing_expired_label)
+        daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
+        daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
+        daysUntilExpiry in 2..3 -> stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
+        else -> stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(listing.expiryDate))
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
+    val urgencyBannerText: String? = when {
+        daysUntilExpiry < 0L  -> stringResource(R.string.listing_expired_label)
+        daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
+        daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
+        daysUntilExpiry <= 3L -> stringResource(R.string.listing_expiring_soon)
+        else                  -> null
+    }
+    val urgencyBannerColor: Color = when {
+        daysUntilExpiry <= 0L -> Color(0xCCB71C1C)
+        daysUntilExpiry == 1L -> Color(0xCCE65100)
+        else                  -> Color(0xCCF57F17)
+    }
+
+    ClearChainCard(modifier = modifier, onClick = onClick) {
         Column {
-            // Image — always rendered; shows placeholder when URL is absent or loading/broken
-            val imageClip = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-            val imageModifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .clip(imageClip)
+            // ── Image ─────────────────────────────────────────────────────
             val imageUrl = listing.imageUrl?.takeIf { it.isNotBlank() }
-            if (imageUrl != null) {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = listing.title,
-                    modifier = imageModifier,
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+            ) {
+                if (imageUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl).crossfade(true).build(),
+                        contentDescription = listing.title,
+                        modifier     = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) { CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.dp) }
+                        },
+                        error = { FoodImagePlaceholder(Modifier.fillMaxSize()) }
+                    )
+                } else {
+                    FoodImagePlaceholder(Modifier.fillMaxSize())
+                }
+
+                // Urgency banner (bottom-center)
+                if (urgencyBannerText != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(urgencyBannerColor)
+                            .padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            urgencyBannerText.uppercase(),
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color      = Color.White
+                        )
+                    }
+                }
+
+                // Status badge overlay (top-right)
+                Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                    if (listing.isArchived) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = Color(0xCC455A64)
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(28.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
+                            Text(
+                                text       = stringResource(R.string.tab_archived),
+                                style      = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color      = Color.White,
+                                modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
-                    },
-                    error = {
-                        Box(
-                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.BrokenImage,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    } else {
+                        ListingStatusBadge(listing.status)
+                    }
+                }
+
+                // Grocery avatar (bottom-left, Browse mode only)
+                if (onGroceryAvatarClick != null) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp)
+                            .size(38.dp)
+                            .clickable { onGroceryAvatarClick() },
+                        shape           = CircleShape,
+                        color           = MaterialTheme.colorScheme.primaryContainer,
+                        border          = BorderStroke(2.dp, Color.White),
+                        shadowElevation = 3.dp
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text       = listing.groceryName.take(1).uppercase(),
+                                style      = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color      = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
-                )
-            } else {
-                Box(
-                    modifier = imageModifier.background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.ImageNotSupported,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    )
                 }
             }
 
+            // ── Content ───────────────────────────────────────────────────
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Header: Title + Status
+                // Name + category inline, topRightAction on the right
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment     = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = listing.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (showGroceryInfo) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.padding(top = 2.dp)
-                            ) {
-                                Icon(Icons.Default.Store, null, Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(listing.groceryName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text       = listing.title,
+                                style      = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines   = 2,
+                                overflow   = TextOverflow.Ellipsis,
+                                modifier   = Modifier.weight(1f, fill = false)
+                            )
+                            CategoryBadge(listing.category)
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    ListingStatusBadge(status = listing.status)
-                }
-
-                // Category + Quantity
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CategoryBadge(category = listing.category)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.Default.Scale, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary)
-                        Text("${listing.quantity} ${listing.unit}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary)
-                    }
+                    topRightAction?.invoke()
                 }
 
                 // Description
                 if (listing.description.isNotBlank()) {
-                    Text(listing.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Text(
+                        listing.description,
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis)
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                // Expiry + Pickup Time
+                // Quantity
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp),
-                            tint = expiryColor)
-                        Text("Exp: ${DateTimeUtils.formatDate(listing.expiryDate)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = expiryColor)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.AccessTime, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${listing.pickupTimeStart} – ${listing.pickupTimeEnd}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Icon(
+                        Icons.Default.ShoppingCart, null,
+                        Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "${listing.quantity} ${listing.unit}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
-                // Location
+                // Expiry date
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = expiryColor)
+                    Text(
+                        expiryText,
+                        style      = MaterialTheme.typography.labelMedium,
+                        color      = expiryColor,
+                        fontWeight = if (daysUntilExpiry <= 3) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                }
+
+                // Pickup time
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Schedule, null,
+                        Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        listing.groceryHours
+                            ?: stringResource(
+                                R.string.listing_pickup_from,
+                                listing.pickupTimeStart,
+                                listing.pickupTimeEnd
+                            ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Location + distance (browse mode, merged into one row)
                 if (showGroceryInfo && listing.location.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Place, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(listing.location,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-
-                // ═══ NEW: Distance badge (Part 2) ═══
-                listing.distanceKm?.let { distance ->
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(Icons.Default.NearMe, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Place, null, Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            text = "${distance} km away",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                            listing.location,
+                            style    = MaterialTheme.typography.labelMedium,
+                            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
+                        listing.distanceKm?.let { km ->
+                            Text("·", style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.Default.NearMe, null, Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary)
+                            Text(
+                                "${km}km",
+                                style      = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
+                } else if (!showGroceryInfo) {
+                    listing.distanceKm?.let { DistanceBadge(it) }
                 }
 
                 // Actions
                 primaryAction?.invoke()
-
                 secondaryActions?.let {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                        content = it
+                        verticalAlignment     = Alignment.CenterVertically,
+                        content               = it
                     )
                 }
-
-                // Timestamp
-                Text("Posted ${DateTimeUtils.getTimeAgo(listing.createdAt)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
+        }
+    }
+}
+
+@Composable
+private fun FoodImagePlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Default.PhotoCamera,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        )
+    }
+}
+
+@Composable
+private fun QuantityBadge(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(50)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Icon(Icons.Default.Scale, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(text, style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    }
+}
+
+@Composable
+private fun DistanceBadge(km: Double) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(50)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Icon(Icons.Default.NearMe, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text("${km}km", style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }

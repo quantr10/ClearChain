@@ -13,8 +13,6 @@ interface ListingRepository {
         quantity: Int,
         unit: String,
         expiryDate: String,
-        pickupTimeStart: String,
-        pickupTimeEnd: String,
         imageUrl: String? = null
     ): Result<Listing>
 
@@ -41,8 +39,6 @@ interface ListingRepository {
         quantity: Int,
         unit: String,
         expiryDate: String,
-        pickupTimeStart: String,
-        pickupTimeEnd: String,
         imageUrl: String? = null
     ): Result<Listing>
 

@@ -37,15 +37,51 @@ public class PickupRequestsController : ControllerBase
     // ── DELETE api/pickuprequests/{id} ────────────────────────────────────────
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> CancelPickupRequest(Guid id)
+    public async Task<ActionResult> CancelPickupRequest(Guid id, [FromBody] CancelPickupRequestBody? body = null)
     {
         if (!TryGetUserId(out var userId))
             return Unauthorized(new { message = "User not authenticated" });
 
-        var result = await _service.CancelAsync(id, userId);
+        var result = await _service.CancelAsync(id, userId, body?.Reason);
         if (!result.Success) return MapError(result);
 
         return Ok(new PickupRequestResponse { Message = "Pickup request cancelled successfully", Data = result.Data!});
+    }
+
+    // ── PUT api/pickuprequests/bulk-approve ───────────────────────────────────
+
+    [HttpPut("bulk-approve")]
+    public async Task<IActionResult> BulkApprove([FromBody] BulkActionRequest request)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new { message = "User not authenticated" });
+
+        var results = new List<object>();
+        foreach (var id in request.Ids)
+        {
+            var result = await _service.ApproveAsync(id, userId);
+            results.Add(new { id, success = result.Success, message = result.ErrorMessage ?? "Approved" });
+        }
+
+        return Ok(new { message = "Bulk approve completed", results });
+    }
+
+    // ── PUT api/pickuprequests/bulk-reject ────────────────────────────────────
+
+    [HttpPut("bulk-reject")]
+    public async Task<IActionResult> BulkReject([FromBody] BulkRejectRequest request)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new { message = "User not authenticated" });
+
+        var results = new List<object>();
+        foreach (var id in request.Ids)
+        {
+            var result = await _service.CancelAsync(id, userId, request.Reason);
+            results.Add(new { id, success = result.Success, message = result.ErrorMessage ?? "Rejected" });
+        }
+
+        return Ok(new { message = "Bulk reject completed", results });
     }
 
     // ── PUT api/pickuprequests/{id}/picked-up ─────────────────────────────────
@@ -160,4 +196,20 @@ public class PickupRequestsController : ControllerBase
             or PickupRequestServiceError.StorageError => BadRequest(new { message = result.ErrorMessage }),
         _                                    => StatusCode(500, new { message = result.ErrorMessage })
     };
+}
+
+public class CancelPickupRequestBody
+{
+    public string? Reason { get; set; }
+}
+
+public class BulkActionRequest
+{
+    public List<Guid> Ids { get; set; } = new();
+}
+
+public class BulkRejectRequest
+{
+    public List<Guid> Ids { get; set; } = new();
+    public string? Reason { get; set; }
 }

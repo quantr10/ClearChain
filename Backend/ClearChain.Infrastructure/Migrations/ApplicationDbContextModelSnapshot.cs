@@ -29,6 +29,10 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archivedat");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("text")
@@ -53,6 +57,10 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uuid")
                         .HasColumnName("groupid");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isarchived");
 
                     b.Property<string>("Notes")
                         .HasColumnType("text")
@@ -110,13 +118,81 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updatedat");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("viewcount");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GroceryId");
 
                     b.HasIndex("GroupId");
 
+                    b.HasIndex("Status");
+
                     b.ToTable("clearancelistings", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Dispute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdminResolution")
+                        .HasColumnType("text")
+                        .HasColumnName("adminresolution");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<string>("GroceryStatement")
+                        .HasColumnType("text")
+                        .HasColumnName("grocerystatement");
+
+                    b.Property<Guid>("InitiatorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("initiatorid");
+
+                    b.Property<string>("NgoStatement")
+                        .HasColumnType("text")
+                        .HasColumnName("ngostatement");
+
+                    b.Property<string>("PhotoEvidenceUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("photoevidenceurl");
+
+                    b.Property<Guid>("PickupRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pickuprequestid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolvedat");
+
+                    b.Property<Guid?>("ResolvedByAdminId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolvedbyadminid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InitiatorId");
+
+                    b.HasIndex("PickupRequestId");
+
+                    b.ToTable("disputes", (string)null);
                 });
 
             modelBuilder.Entity("ClearChain.Domain.Entities.FCMToken", b =>
@@ -150,12 +226,86 @@ namespace ClearChain.Infrastructure.Migrations
                     b.ToTable("fcmtokens", (string)null);
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.FoodImageAnalysis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AnalyzedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("analyzedat");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("confidence");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<string>("DetectedCategory")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detectedcategory");
+
+                    b.Property<string>("DetectedItems")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detecteditems");
+
+                    b.Property<string>("DetectedName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detectedname");
+
+                    b.Property<DateTime?>("EstimatedExpiryDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("estimatedexpirydate");
+
+                    b.Property<double>("FreshnessScore")
+                        .HasColumnType("double precision")
+                        .HasColumnName("freshnessscore");
+
+                    b.Property<Guid>("GroceryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("groceryid");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("imageurl");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("QualityGrade")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("qualitygrade");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnalyzedAt");
+
+                    b.HasIndex("GroceryId");
+
+                    b.ToTable("foodimageanalyses", (string)null);
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.Inventory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<int>("BeneficiaryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("beneficiarycount");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -174,9 +324,21 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expirydate");
 
+                    b.Property<bool>("IsManuallyAdded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ismanuallyadded");
+
                     b.Property<Guid>("NgoId")
                         .HasColumnType("uuid")
                         .HasColumnName("ngoid");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PhotoUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("photourl");
 
                     b.Property<Guid>("PickupRequestId")
                         .HasColumnType("uuid")
@@ -194,6 +356,10 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("receivedat");
+
+                    b.Property<string>("SourcePickupRequestId")
+                        .HasColumnType("text")
+                        .HasColumnName("sourcepickuprequestid");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -303,6 +469,108 @@ namespace ClearChain.Infrastructure.Migrations
                     b.ToTable("listinggroups", (string)null);
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isread");
+
+                    b.Property<Guid>("PickupRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pickuprequestid");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("readat");
+
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receiverid");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("senderid");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sentat");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PickupRequestId");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("messages", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isread");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("readat");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipientid");
+
+                    b.Property<string>("RelatedId")
+                        .HasColumnType("text")
+                        .HasColumnName("relatedid");
+
+                    b.Property<string>("RelatedType")
+                        .HasColumnType("text")
+                        .HasColumnName("relatedtype");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("RecipientId");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -311,7 +579,6 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("address");
 
@@ -320,14 +587,54 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("authprovider");
 
+                    b.Property<string>("ContactPerson")
+                        .HasColumnType("text")
+                        .HasColumnName("contactperson");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("createdat");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletedat");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("DocumentMimeType")
+                        .HasColumnType("text")
+                        .HasColumnName("documentmimetype");
+
+                    b.Property<string>("DocumentUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("documenturl");
+
+                    b.Property<string>("DocumentUrl2")
+                        .HasColumnType("text")
+                        .HasColumnName("documenturl2");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("email");
+
+                    b.Property<string>("EmailVerificationToken")
+                        .HasColumnType("text")
+                        .HasColumnName("emailverificationtoken");
+
+                    b.Property<DateTime?>("EmailVerificationTokenExpiry")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("emailverificationtokenexpiry");
+
+                    b.Property<bool>("EmailVerified")
+                        .HasColumnType("boolean")
+                        .HasColumnName("emailverified");
+
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failedlogincount");
 
                     b.Property<string>("GoogleId")
                         .HasColumnType("text")
@@ -337,10 +644,25 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("hours");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isdeleted");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
                     b.Property<string>("Location")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("location");
+
+                    b.Property<DateTime?>("LockoutUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lockoutuntil");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -352,9 +674,12 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnName("passwordhash");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<string>("PickupInstructions")
+                        .HasColumnType("text")
+                        .HasColumnName("pickupinstructions");
 
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("text")
@@ -380,6 +705,9 @@ namespace ClearChain.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("organizations", (string)null);
                 });
 
@@ -390,6 +718,10 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text")
+                        .HasColumnName("cancellationreason");
+
                     b.Property<DateTime?>("ConfirmedReceivedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmedreceivedat");
@@ -398,10 +730,26 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("groceryid");
 
+                    b.Property<bool>("IsFragile")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isfragile");
+
+                    b.Property<bool>("IsHeavy")
+                        .HasColumnType("boolean")
+                        .HasColumnName("isheavy");
+
+                    b.Property<string>("LicensePlate")
+                        .HasColumnType("text")
+                        .HasColumnName("licenseplate");
+
                     b.Property<string>("ListingCategory")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("listingcategory");
+
+                    b.Property<string>("ListingExpiryDate")
+                        .HasColumnType("text")
+                        .HasColumnName("listingexpirydate");
 
                     b.Property<Guid?>("ListingId")
                         .HasColumnType("uuid")
@@ -411,6 +759,11 @@ namespace ClearChain.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("listingtitle");
+
+                    b.Property<string>("ListingUnit")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("listingunit");
 
                     b.Property<DateTime?>("MarkedPickedUpAt")
                         .HasColumnType("timestamp with time zone")
@@ -448,10 +801,18 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("requestedquantity");
 
+                    b.Property<bool>("RequiresRefrigeration")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requiresrefrigeration");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
+
+                    b.Property<string>("VehicleType")
+                        .HasColumnType("text")
+                        .HasColumnName("vehicletype");
 
                     b.HasKey("Id");
 
@@ -501,6 +862,132 @@ namespace ClearChain.Infrastructure.Migrations
                     b.ToTable("refreshtokens", (string)null);
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdminNote")
+                        .HasColumnType("text")
+                        .HasColumnName("adminnote");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("text")
+                        .HasColumnName("details");
+
+                    b.Property<Guid?>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listingid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ReporterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporterid");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewedat");
+
+                    b.Property<Guid?>("ReviewedByAdminId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewedbyadminid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("ReporterId");
+
+                    b.ToTable("reports", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<Guid>("PickupRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pickuprequestid");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<Guid>("ReviewedId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewedid");
+
+                    b.Property<Guid>("ReviewerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewerid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewedId");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.HasIndex("PickupRequestId", "ReviewerId")
+                        .IsUnique();
+
+                    b.ToTable("reviews", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.SavedListing", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listingid");
+
+                    b.Property<Guid>("NgoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ngoid");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("savedat");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("NgoId", "ListingId")
+                        .IsUnique();
+
+                    b.ToTable("savedlistings", (string)null);
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.ClearanceListing", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
@@ -519,6 +1006,25 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Navigation("Group");
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Dispute", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Initiator")
+                        .WithMany()
+                        .HasForeignKey("InitiatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.PickupRequest", "PickupRequest")
+                        .WithMany()
+                        .HasForeignKey("PickupRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Initiator");
+
+                    b.Navigation("PickupRequest");
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.FCMToken", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Organization")
@@ -528,6 +1034,17 @@ namespace ClearChain.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.FoodImageAnalysis", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
+                        .WithMany()
+                        .HasForeignKey("GroceryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Grocery");
                 });
 
             modelBuilder.Entity("ClearChain.Domain.Entities.ListingGroup", b =>
@@ -541,18 +1058,56 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Navigation("Grocery");
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Message", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.PickupRequest", "PickupRequest")
+                        .WithMany()
+                        .HasForeignKey("PickupRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PickupRequest");
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.PickupRequest", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
                         .WithMany()
                         .HasForeignKey("GroceryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Ngo")
                         .WithMany()
                         .HasForeignKey("NgoId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Grocery");
@@ -569,6 +1124,70 @@ namespace ClearChain.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Report", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+
+                    b.Navigation("Reporter");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.Review", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.PickupRequest", "PickupRequest")
+                        .WithMany()
+                        .HasForeignKey("PickupRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Reviewed")
+                        .WithMany()
+                        .HasForeignKey("ReviewedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PickupRequest");
+
+                    b.Navigation("Reviewed");
+
+                    b.Navigation("Reviewer");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.SavedListing", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Ngo")
+                        .WithMany()
+                        .HasForeignKey("NgoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+
+                    b.Navigation("Ngo");
                 });
 
             modelBuilder.Entity("ClearChain.Domain.Entities.ListingGroup", b =>

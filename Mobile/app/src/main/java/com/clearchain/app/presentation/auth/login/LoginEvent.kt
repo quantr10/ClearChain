@@ -6,4 +6,5 @@ sealed class LoginEvent {
     object Login : LoginEvent()
     object NavigateToRegister : LoginEvent()
     object ClearError : LoginEvent()
+    object ToggleRememberMe : LoginEvent()
 }

@@ -56,6 +56,7 @@ builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>(
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IImageAnalysisService, AzureVisionService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // ❌ REMOVED: Background service (replaced by Hangfire)
 // builder.Services.AddHostedService<NotificationSchedulerService>();
@@ -191,31 +192,31 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expiring-listings",
     job => job.CheckExpiringListings(),
-    "0 2 * * *",   // 02:00 UTC
+    "0 0 * * *",   // 00:00 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expired-listings",
     job => job.CheckExpiredListings(),
-    "5 2 * * *",   // 02:05 UTC
+    "5 0 * * *",   // 00:05 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expiring-inventory",
     job => job.CheckExpiringInventory(),
-    "10 2 * * *",  // 02:10 UTC
+    "10 0 * * *",  // 00:10 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expired-inventory",
     job => job.CheckExpiredInventory(),
-    "15 2 * * *",  // 02:15 UTC
+    "15 0 * * *",  // 00:15 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "cleanup-refresh-tokens",
     job => job.CleanupExpiredRefreshTokens(),
-    "0 3 * * *",   // 03:00 UTC — separate window from notification jobs
+    "0 1 * * *",   // 01:00 UTC — separate window from notification jobs
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 app.UseCors("ClearChainPolicy");

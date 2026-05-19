@@ -1,15 +1,21 @@
 package com.clearchain.app.presentation.auth.register
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
+import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.domain.usecase.auth.RegisterUseCase
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -17,7 +23,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val registerUseCase: RegisterUseCase
+    @ApplicationContext private val context: Context,
+    private val registerUseCase: RegisterUseCase,
+    private val authApi: AuthApi
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegisterState())
@@ -26,23 +34,66 @@ class RegisterViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private var emailCheckJob: Job? = null
+
     fun onEvent(event: RegisterEvent) {
         when (event) {
             is RegisterEvent.NameChanged ->
                 _state.update { it.copy(name = event.name, nameError = null) }
             is RegisterEvent.TypeChanged ->
                 _state.update { it.copy(type = event.type) }
-            is RegisterEvent.EmailChanged ->
-                _state.update { it.copy(email = event.email, emailError = null) }
-            is RegisterEvent.PasswordChanged ->
-                _state.update { it.copy(password = event.password, passwordError = null) }
+            is RegisterEvent.EmailChanged -> {
+                _state.update { it.copy(email = event.email, emailError = null, emailAvailable = null) }
+                scheduleEmailCheck(event.email)
+            }
+            is RegisterEvent.PasswordChanged -> {
+                _state.update {
+                    it.copy(
+                        password = event.password,
+                        passwordError = null,
+                        passwordStrength = evaluatePasswordStrength(event.password)
+                    )
+                }
+            }
             is RegisterEvent.ConfirmPasswordChanged ->
                 _state.update { it.copy(confirmPassword = event.confirmPassword, confirmPasswordError = null) }
+            RegisterEvent.ToggleTos ->
+                _state.update { it.copy(tosAccepted = !it.tosAccepted, tosError = false) }
             RegisterEvent.Register -> register()
             RegisterEvent.NavigateToLogin ->
                 viewModelScope.launch { _uiEvent.send(UiEvent.NavigateUp) }
             RegisterEvent.ClearError ->
                 _state.update { it.copy(error = null) }
+        }
+    }
+
+    private fun scheduleEmailCheck(email: String) {
+        emailCheckJob?.cancel()
+        if (email.isBlank() || !ValidationUtils.isValidEmail(email)) return
+
+        emailCheckJob = viewModelScope.launch {
+            delay(600)  // 600ms debounce
+            _state.update { it.copy(isCheckingEmail = true) }
+            try {
+                val response = authApi.checkEmail(email)
+                _state.update { it.copy(isCheckingEmail = false, emailAvailable = response.available) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isCheckingEmail = false, emailAvailable = null) }
+            }
+        }
+    }
+
+    private fun evaluatePasswordStrength(password: String): PasswordStrength {
+        if (password.isEmpty()) return PasswordStrength.NONE
+        var score = 0
+        if (password.length >= 8) score++
+        if (password.any { it.isUpperCase() }) score++
+        if (password.any { it.isDigit() }) score++
+        if (password.any { !it.isLetterOrDigit() }) score++
+        return when {
+            score <= 1 -> PasswordStrength.WEAK
+            score == 2 -> PasswordStrength.MEDIUM
+            else -> PasswordStrength.STRONG
         }
     }
 
@@ -65,23 +116,13 @@ class RegisterViewModel @Inject constructor(
             )
 
             result.fold(
-                onSuccess = { (user, _) ->
+                onSuccess = { email ->
                     _state.update { it.copy(isLoading = false) }
-
-                    // ═══ NEW: Always go to Onboarding after register (Part 1) ═══
-                    // Admin skips onboarding (isProfileComplete returns true)
-                    val route = if (user.type.name.lowercase() == "admin") {
-                        Screen.AdminDashboard.route
-                    } else {
-                        Screen.Onboarding.route
-                    }
-
-                    _uiEvent.send(UiEvent.Navigate(route))
-                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome! Let's complete your profile."))
+                    _uiEvent.send(UiEvent.Navigate(Screen.EmailVerification.createRoute(email)))
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Registration failed") }
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Registration failed"))
+                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_registration_failed)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_registration_failed)))
                 }
             )
         }
@@ -91,24 +132,29 @@ class RegisterViewModel @Inject constructor(
         val s = _state.value
         var valid = true
         if (s.name.isBlank()) {
-            _state.update { it.copy(nameError = "Name is required") }; valid = false
+            _state.update { it.copy(nameError = context.getString(R.string.error_name_required)) }; valid = false
         } else if (s.name.length < 3) {
-            _state.update { it.copy(nameError = "Name must be at least 3 characters") }; valid = false
+            _state.update { it.copy(nameError = context.getString(R.string.error_name_min_length)) }; valid = false
         }
         if (s.email.isBlank()) {
-            _state.update { it.copy(emailError = "Email is required") }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }; valid = false
         } else if (!ValidationUtils.isValidEmail(s.email)) {
-            _state.update { it.copy(emailError = "Invalid email format") }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
+        } else if (s.emailAvailable == false) {
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_already_registered)) }; valid = false
         }
         if (s.password.isBlank()) {
-            _state.update { it.copy(passwordError = "Password is required") }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }; valid = false
         } else if (!ValidationUtils.isValidPassword(s.password)) {
-            _state.update { it.copy(passwordError = "Password must be 8+ chars with uppercase, lowercase, and number") }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_complexity)) }; valid = false
         }
         if (s.confirmPassword.isBlank()) {
-            _state.update { it.copy(confirmPasswordError = "Please confirm your password") }; valid = false
+            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_confirm_password_required)) }; valid = false
         } else if (s.password != s.confirmPassword) {
-            _state.update { it.copy(confirmPasswordError = "Passwords do not match") }; valid = false
+            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_passwords_dont_match)) }; valid = false
+        }
+        if (!s.tosAccepted) {
+            _state.update { it.copy(tosError = true) }; valid = false
         }
         return valid
     }

@@ -1,12 +1,16 @@
 package com.clearchain.app.presentation.onboarding
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
+import com.clearchain.app.data.local.OnboardingDraftStore
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -14,8 +18,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val draftStore: OnboardingDraftStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OnboardingState())
@@ -25,7 +31,6 @@ class OnboardingViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
-        // Load current user to pre-fill fields (e.g. app killed mid-wizard)
         viewModelScope.launch {
             val user = getCurrentUserUseCase().first()
             if (user != null) {
@@ -45,6 +50,12 @@ class OnboardingViewModel @Inject constructor(
                         pickupInstructions = user.pickupInstructions ?: ""
                     )
                 }
+            }
+
+            // Check for saved draft
+            val draft = draftStore.draft.first()
+            if (draft != null && draft.savedAt > 0) {
+                _state.update { it.copy(hasSavedDraft = true, showDraftRecoveryDialog = true) }
             }
         }
     }
@@ -79,11 +90,71 @@ class OnboardingViewModel @Inject constructor(
                     )
                 }
             }
+            is OnboardingEvent.DocumentSelected ->
+                _state.update {
+                    it.copy(
+                        verificationDocumentUri = event.uri,
+                        verificationDocumentName = event.name,
+                        documentUploadError = null
+                    )
+                }
+            OnboardingEvent.RemoveDocument ->
+                _state.update {
+                    it.copy(verificationDocumentUri = null, verificationDocumentName = null)
+                }
+            OnboardingEvent.SaveDraft -> saveDraft()
+            OnboardingEvent.RestoreDraft -> restoreDraft()
+            OnboardingEvent.DismissDraftDialog ->
+                _state.update { it.copy(showDraftRecoveryDialog = false) }
             OnboardingEvent.NextStep -> handleNextStep()
             OnboardingEvent.PreviousStep -> handlePreviousStep()
             OnboardingEvent.FinishOnboarding -> {
-                viewModelScope.launch { _uiEvent.send(UiEvent.Navigate("dashboard")) }
+                viewModelScope.launch {
+                    draftStore.clear()
+                    _uiEvent.send(UiEvent.Navigate("dashboard"))
+                }
             }
+        }
+    }
+
+    private fun saveDraft(showConfirmation: Boolean = true) {
+        val s = _state.value
+        viewModelScope.launch {
+            draftStore.save(
+                com.clearchain.app.data.local.OnboardingDraft(
+                    phone = s.phone,
+                    description = s.description,
+                    contactPerson = s.contactPerson,
+                    address = s.address,
+                    city = s.city,
+                    openTime = s.openTime,
+                    closeTime = s.closeTime,
+                    pickupInstructions = s.pickupInstructions,
+                    verificationDocumentUri = s.verificationDocumentUri?.toString() ?: ""
+                )
+            )
+            if (showConfirmation) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_draft_saved)))
+        }
+    }
+
+    private fun restoreDraft() {
+        viewModelScope.launch {
+            val draft = draftStore.draft.first() ?: return@launch
+            _state.update {
+                it.copy(
+                    phone = draft.phone.ifBlank { it.phone },
+                    description = draft.description.ifBlank { it.description },
+                    contactPerson = draft.contactPerson.ifBlank { it.contactPerson },
+                    address = draft.address.ifBlank { it.address },
+                    city = draft.city.ifBlank { it.city },
+                    openTime = draft.openTime.ifBlank { it.openTime },
+                    closeTime = draft.closeTime.ifBlank { it.closeTime },
+                    pickupInstructions = draft.pickupInstructions.ifBlank { it.pickupInstructions },
+                    showDraftRecoveryDialog = false,
+                    hasSavedDraft = false
+                )
+            }
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_draft_restored)))
         }
     }
 
@@ -93,11 +164,11 @@ class OnboardingViewModel @Inject constructor(
             1 -> {
                 var valid = true
                 if (s.phone.isBlank()) {
-                    _state.update { it.copy(phoneError = "Phone number is required") }
+                    _state.update { it.copy(phoneError = context.getString(R.string.error_phone_required)) }
                     valid = false
                 }
                 if ((s.userType == OrganizationType.NGO || s.userType == OrganizationType.GROCERY) && s.contactPerson.isBlank()) {
-                    _state.update { it.copy(contactPersonError = "Contact person is required") }
+                    _state.update { it.copy(contactPersonError = context.getString(R.string.error_contact_person_required)) }
                     valid = false
                 }
                 if (!valid) return
@@ -106,11 +177,11 @@ class OnboardingViewModel @Inject constructor(
             2 -> {
                 var valid = true
                 if (s.address.isBlank()) {
-                    _state.update { it.copy(addressError = "Address is required") }
+                    _state.update { it.copy(addressError = context.getString(R.string.error_address_required)) }
                     valid = false
                 }
                 if (s.city.isBlank()) {
-                    _state.update { it.copy(cityError = "City is required") }
+                    _state.update { it.copy(cityError = context.getString(R.string.error_city_required)) }
                     valid = false
                 }
                 if (!valid) return
@@ -138,19 +209,20 @@ class OnboardingViewModel @Inject constructor(
                     "${s.openTime} - ${s.closeTime}" else null,
                 latitude = s.addressLat,
                 longitude = s.addressLng,
-                contactPerson = s.contactPerson.ifBlank { null },       // ← THÊM
+                contactPerson = s.contactPerson.ifBlank { null },
                 pickupInstructions = s.pickupInstructions.ifBlank { null },
                 description = s.description.ifBlank { null },
             )
 
-
             result.fold(
                 onSuccess = {
                     _state.update { it.copy(isSaving = false, currentStep = it.currentStep + 1) }
+                    // Auto-save draft so progress is preserved if the user exits mid-flow
+                    saveDraft(showConfirmation = false)
                 },
                 onFailure = { error ->
                     _state.update {
-                        it.copy(isSaving = false, error = error.message ?: "Failed to save. Please try again.")
+                        it.copy(isSaving = false, error = error.message ?: context.getString(R.string.error_onboarding_save_failed))
                     }
                 }
             )

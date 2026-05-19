@@ -1,0 +1,1351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClearChain</string>
+
+    <!-- ── General ── -->
+    <string name="ok">OK</string>
+    <string name="cancel">Hủy</string>
+    <string name="confirm">Xác nhận</string>
+    <string name="save">Lưu</string>
+    <string name="delete">Xóa</string>
+    <string name="edit">Chỉnh sửa</string>
+    <string name="submit">Gửi</string>
+    <string name="retry">Thử lại</string>
+    <string name="loading">Đang tải…</string>
+    <string name="error_generic">Có lỗi xảy ra. Vui lòng thử lại.</string>
+    <string name="error_network">Không có kết nối internet. Đang hiển thị dữ liệu đã lưu.</string>
+    <string name="offline_banner">Bạn đang ngoại tuyến. Dữ liệu có thể chưa cập nhật.</string>
+    <string name="last_updated">Cập nhật lần cuối: %1$s</string>
+    <string name="no_data">Chưa có gì ở đây.</string>
+    <string name="pull_to_refresh">Kéo xuống để làm mới</string>
+    <string name="select_all">Chọn tất cả</string>
+    <string name="deselect_all">Bỏ chọn tất cả</string>
+    <string name="search_placeholder">Tìm kiếm…</string>
+    <string name="filter">Lọc</string>
+    <string name="sort">Sắp xếp</string>
+    <string name="sort_by">Sắp xếp theo</string>
+    <string name="close">Đóng</string>
+    <string name="back">Quay lại</string>
+    <string name="done">Xong</string>
+    <string name="skip">Bỏ qua</string>
+    <string name="next">Tiếp theo</string>
+    <string name="continue_label">Tiếp tục</string>
+    <string name="share">Chia sẻ</string>
+    <string name="report">Báo cáo</string>
+    <string name="view_all">Xem tất cả</string>
+    <string name="see_more">Xem thêm</string>
+
+    <!-- ── Auth ── -->
+    <string name="login">Đăng nhập</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="register">Đăng ký</string>
+    <string name="email">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="remember_me">Ghi nhớ đăng nhập</string>
+    <string name="dont_have_account">Chưa có tài khoản?</string>
+    <string name="already_have_account">Đã có tài khoản?</string>
+    <string name="terms_agreement">Tôi đồng ý với Điều khoản Dịch vụ và Chính sách Quyền riêng tư</string>
+    <string name="account_locked">Tài khoản bị khóa. Thử lại sau %1$d phút.</string>
+    <string name="password_strength_weak">Yếu</string>
+    <string name="password_strength_medium">Trung bình</string>
+    <string name="password_strength_strong">Mạnh</string>
+    <string name="email_available">Email có thể sử dụng</string>
+    <string name="email_taken">Email đã được đăng ký</string>
+    <string name="delete_account">Xóa tài khoản</string>
+    <string name="delete_account_confirm">Bạn có chắc không? Thao tác này không thể hoàn tác.</string>
+
+    <!-- ── Dashboard ── -->
+    <string name="hello">Xin chào, %1$s!</string>
+    <string name="profile_complete">Hồ sơ đầy đủ</string>
+    <string name="profile_incomplete">Hoàn thiện hồ sơ của bạn</string>
+    <string name="profile_completeness">%1$d%% hoàn thành</string>
+    <string name="today_summary">Tóm tắt hôm nay</string>
+    <string name="expiring_today">Hết hạn hôm nay</string>
+    <string name="pickups_today">Lấy hàng hôm nay</string>
+    <string name="cleared_today">Đã xử lý hôm nay</string>
+    <string name="recent_activity">Hoạt động gần đây</string>
+    <string name="quick_actions">Thao tác nhanh</string>
+    <string name="weekly_goal">Mục tiêu tuần</string>
+    <string name="upcoming_pickups">Lịch lấy hàng sắp tới</string>
+    <string name="impact_tracker">Tác động của bạn</string>
+    <string name="kg_saved">Đã tiết kiệm %1$s kg</string>
+    <string name="meals_equivalent">≈ %1$s bữa ăn</string>
+    <string name="co2_saved">Giảm %1$s kg CO₂</string>
+
+    <!-- ── Listings ── -->
+    <string name="create_listing">Tạo danh mục</string>
+    <string name="my_listings">Danh mục của tôi</string>
+    <string name="browse_listings">Duyệt thực phẩm</string>
+    <string name="listing_title">Tên sản phẩm</string>
+    <string name="listing_category">Danh mục</string>
+    <string name="listing_quantity">Số lượng</string>
+    <string name="listing_unit">Đơn vị</string>
+    <string name="listing_expiry">Ngày hết hạn</string>
+    <string name="listing_notes">Ghi chú</string>
+    <string name="listing_pickup_time">Khung giờ lấy hàng</string>
+    <string name="archive_listing">Lưu trữ danh mục</string>
+    <string name="unarchive_listing">Khôi phục danh mục</string>
+    <string name="archived_listings">Danh mục đã lưu trữ</string>
+    <string name="expiry_urgency_critical">Hết hạn trong vòng 24 giờ</string>
+    <string name="expiry_urgency_warning">Hết hạn trong 1–2 ngày</string>
+    <string name="bulk_delete">Xóa đã chọn</string>
+    <string name="bulk_archive">Lưu trữ đã chọn</string>
+    <string name="bulk_restore">Khôi phục đã chọn</string>
+    <string name="draft_saved">Bản nháp đã lưu</string>
+    <string name="draft_recovered">Bản nháp được khôi phục. Tiếp tục từ nơi bạn dừng lại?</string>
+    <string name="preview_listing">Xem trước</string>
+    <string name="listing_just_listed">Vừa đăng</string>
+    <string name="listing_hours_ago">%1$d giờ trước</string>
+    <string name="listing_expiring_soon">Sắp hết hạn</string>
+    <string name="save_listing">Lưu danh mục</string>
+    <string name="unsave_listing">Bỏ lưu</string>
+    <string name="saved_listings">Danh mục đã lưu</string>
+    <string name="similar_listings">Danh mục tương tự</string>
+
+    <!-- ── Pickup requests ── -->
+    <string name="pickup_requests">Yêu cầu lấy hàng</string>
+    <string name="my_requests">Yêu cầu của tôi</string>
+    <string name="request_pickup">Yêu cầu lấy hàng</string>
+    <string name="approve">Chấp nhận</string>
+    <string name="reject">Từ chối</string>
+    <string name="cancel_request">Hủy yêu cầu</string>
+    <string name="cancellation_reason">Lý do hủy</string>
+    <string name="vehicle_type">Loại phương tiện</string>
+    <string name="license_plate">Biển số xe</string>
+    <string name="requires_refrigeration">Cần bảo quản lạnh</string>
+    <string name="fragile_items">Hàng dễ vỡ</string>
+    <string name="heavy_items">Hàng nặng</string>
+    <string name="bulk_approve">Chấp nhận đã chọn</string>
+    <string name="bulk_reject">Từ chối đã chọn</string>
+    <string name="status_pending">Đang chờ</string>
+    <string name="status_approved">Đã chấp nhận</string>
+    <string name="status_ready">Sẵn sàng lấy hàng</string>
+    <string name="status_completed">Hoàn thành</string>
+    <string name="status_cancelled">Đã hủy</string>
+    <string name="status_rejected">Đã từ chối</string>
+
+    <!-- ── Inventory ── -->
+    <string name="inventory">Kho hàng</string>
+    <string name="add_manual_item">Thêm thủ công</string>
+    <string name="distribute">Đánh dấu đã phân phát</string>
+    <string name="beneficiary_count">Số người thụ hưởng</string>
+    <string name="export_csv">Xuất CSV</string>
+    <string name="category_breakdown">Phân loại danh mục</string>
+    <string name="expiring_soon_alert">%1$d mặt hàng hết hạn trong 48 giờ</string>
+    <string name="item_source">Nguồn: %1$s</string>
+    <string name="item_history">Lịch sử mặt hàng</string>
+
+    <!-- ── Reviews ── -->
+    <string name="rate_and_review">Đánh giá lần lấy hàng này</string>
+    <string name="your_rating">Đánh giá của bạn</string>
+    <string name="your_comment">Nhận xét (tùy chọn)</string>
+    <string name="review_submitted">Đã gửi đánh giá. Cảm ơn!</string>
+    <string name="avg_rating">TB: %1$.1f ★</string>
+    <string name="reviews_count">%1$d đánh giá</string>
+
+    <!-- ── Disputes ── -->
+    <string name="open_dispute">Báo cáo sự cố</string>
+    <string name="dispute_reason">Vấn đề gì đã xảy ra?</string>
+    <string name="dispute_statement">Mô tả sự cố</string>
+    <string name="dispute_photo">Thêm ảnh bằng chứng</string>
+    <string name="dispute_status_open">Đang mở</string>
+    <string name="dispute_status_under_review">Đang xem xét</string>
+    <string name="dispute_status_resolved">Đã giải quyết</string>
+    <string name="dispute_status_dismissed">Đã đóng</string>
+
+    <!-- ── Notifications ── -->
+    <string name="notifications">Thông báo</string>
+    <string name="mark_all_read">Đánh dấu tất cả đã đọc</string>
+    <string name="no_notifications">Chưa có thông báo</string>
+    <string name="unread_count">%1$d chưa đọc</string>
+
+    <!-- ── Settings ── -->
+    <string name="settings">Cài đặt</string>
+    <string name="notifications_settings">Tùy chọn thông báo</string>
+    <string name="theme">Giao diện</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
+    <string name="theme_system">Mặc định hệ thống</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="distance_unit">Đơn vị khoảng cách</string>
+    <string name="km">km</string>
+    <string name="miles">dặm</string>
+    <string name="notif_new_listing">Thực phẩm mới gần đây</string>
+    <string name="notif_request_update">Cập nhật yêu cầu lấy hàng</string>
+    <string name="notif_expiry_reminder">Nhắc nhở hết hạn</string>
+
+    <!-- ── Profile ── -->
+    <string name="my_profile">Hồ sơ của tôi</string>
+    <string name="account_stats">Thống kê tài khoản</string>
+    <string name="member_since">Thành viên từ %1$s</string>
+    <string name="total_pickups">%1$d lần lấy hàng hoàn thành</string>
+    <string name="activity_log">Nhật ký hoạt động</string>
+    <string name="change_password">Đổi mật khẩu</string>
+    <string name="verification_status">Trạng thái xác minh</string>
+    <string name="verification_pending">Đang chờ xem xét</string>
+    <string name="verification_approved">Đã xác minh ✓</string>
+    <string name="verification_rejected">Bị từ chối — nhấn để gửi lại</string>
+    <string name="upload_document">Tải tài liệu lên</string>
+    <string name="save_draft">Lưu bản nháp</string>
+
+    <!-- ── Admin ── -->
+    <string name="admin_dashboard">Bảng điều khiển quản trị</string>
+    <string name="verification_queue">Hàng đợi xác minh</string>
+    <string name="transactions">Giao dịch</string>
+    <string name="statistics">Thống kê</string>
+    <string name="system_health">Trạng thái hệ thống</string>
+    <string name="alert_feed">Cảnh báo</string>
+    <string name="approve_with_checklist">Chấp nhận (danh sách kiểm tra)</string>
+    <string name="reject_with_reason">Từ chối kèm lý do</string>
+    <string name="date_range">Khoảng thời gian</string>
+    <string name="preset_today">Hôm nay</string>
+    <string name="preset_week">Tuần này</string>
+    <string name="preset_month">Tháng này</string>
+    <string name="preset_quarter">Quý này</string>
+    <string name="preset_all">Tất cả</string>
+    <string name="leaderboard">Bảng xếp hạng</string>
+    <string name="top_stores">Cửa hàng hàng đầu</string>
+    <string name="top_ngos">NGO hàng đầu</string>
+
+    <!-- ── Help ── -->
+    <string name="help">Trợ giúp &amp; hỗ trợ</string>
+    <string name="faq">Câu hỏi thường gặp</string>
+    <string name="contact_support">Liên hệ hỗ trợ</string>
+    <string name="about">Giới thiệu</string>
+    <string name="app_version">Phiên bản %1$s</string>
+    <string name="terms_of_service">Điều khoản Dịch vụ</string>
+    <string name="privacy_policy">Chính sách Quyền riêng tư</string>
+
+    <!-- ── Dashboard ── -->
+    <string name="ngo_dashboard_subtitle">Giúp giảm lãng phí thực phẩm trong cộng đồng của bạn</string>
+    <string name="grocery_dashboard_subtitle">Quản lý danh sách thực phẩm dư thừa của bạn</string>
+    <string name="role_ngo">Tổ chức</string>
+    <string name="role_grocery">Cửa hàng</string>
+    <string name="section_overview">Tổng quan</string>
+    <string name="section_your_impact">Đóng góp của bạn</string>
+    <string name="section_weekly_goal">Mục tiêu tuần</string>
+    <string name="section_todays_pickups">Lấy hàng hôm nay</string>
+    <string name="section_quick_actions">Thao tác nhanh</string>
+    <string name="section_todays_summary">Tóm tắt hôm nay</string>
+    <string name="section_recent_activity">Hoạt động gần đây</string>
+    <string name="stat_in_stock">Trong kho</string>
+    <string name="stat_active_requests">Yêu cầu đang xử lý</string>
+    <string name="stat_distributed">Đã phân phát</string>
+    <string name="stat_available_food">Thực phẩm có sẵn</string>
+    <string name="stat_active_listings">Danh mục đang đăng</string>
+    <string name="stat_pending_requests">Yêu cầu đang chờ</string>
+    <string name="stat_completed">Hoàn thành</string>
+    <string name="stat_food_saved_kg">Thực phẩm đã tiết kiệm (kg)</string>
+    <string name="action_browse_food">Duyệt thực phẩm</string>
+    <string name="action_browse_food_subtitle">Tìm thực phẩm dư thừa gần đây</string>
+    <string name="action_my_requests">Yêu cầu của tôi</string>
+    <string name="action_my_requests_subtitle">Xem và theo dõi yêu cầu lấy hàng</string>
+    <string name="action_inventory">Kho hàng</string>
+    <string name="action_inventory_subtitle">Quản lý các mặt hàng đã nhận</string>
+    <string name="action_create_listing">Tạo danh mục</string>
+    <string name="action_create_listing_subtitle">Thêm thực phẩm dư thừa mới</string>
+    <string name="action_my_listings">Danh mục của tôi</string>
+    <string name="action_my_listings_subtitle">Xem và quản lý danh mục của bạn</string>
+    <string name="action_pickup_requests">Yêu cầu lấy hàng</string>
+    <string name="action_pickup_requests_subtitle">Quản lý yêu cầu lấy hàng từ NGO</string>
+    <string name="impact_food_saved">Thực phẩm đã tiết kiệm</string>
+    <string name="impact_meals">Bữa ăn</string>
+    <string name="impact_co2">Giảm CO₂</string>
+    <string name="chip_expiring">Hết hạn</string>
+    <string name="chip_pickups">Lấy hàng</string>
+    <string name="chip_cleared">Đã xử lý</string>
+    <string name="chip_listing_created">Đã đăng</string>
+    <string name="chip_requests_received">YC Nhận</string>
+    <string name="chip_requests_created">YC Tạo</string>
+    <string name="chip_distributed">Đã phân phát</string>
+    <string name="profile_completeness_cta">Hoàn thiện hồ sơ để mở khóa tất cả tính năng</string>
+    <string name="weekly_pickups">Lần lấy hàng trong tuần</string>
+    <string name="goal_reached">Đạt mục tiêu! Làm tốt lắm tuần này.</string>
+    <string name="goal_remaining">Còn %1$d lần nữa để đạt mục tiêu tuần</string>
+    <string name="view_all_pickups">Xem tất cả %1$d lần lấy hàng</string>
+
+    <!-- ── Status badges ── -->
+    <string name="status_available">Có sẵn</string>
+    <string name="status_reserved">Đã đặt</string>
+    <string name="status_expired">Đã hết hạn</string>
+    <string name="status_active">Đang hoạt động</string>
+    <string name="status_distributed">Đã phân phát</string>
+
+    <!-- ── Listing card ── -->
+    <string name="listing_expired_label">Đã hết hạn</string>
+    <string name="listing_expires_today">Hết hạn hôm nay</string>
+    <string name="listing_expires_tomorrow">Hết hạn ngày mai</string>
+    <string name="listing_expires_in_days">Hết hạn trong %1$d ngày</string>
+    <string name="listing_expires_on">Hết hạn vào %1$s</string>
+    <string name="listing_pickup_from">Lấy hàng từ %1$s – %2$s</string>
+    <string name="listing_posted">Đăng %1$s</string>
+
+    <!-- ── Request card ── -->
+    <string name="request_from">Từ: %1$s</string>
+    <string name="request_to">Đến: %1$s</string>
+    <string name="request_at">Tại: %1$s</string>
+    <string name="request_admin_route">%1$s → %2$s</string>
+    <string name="label_requested_on">Yêu cầu vào %1$s</string>
+    <string name="label_approved_on">Đã duyệt vào %1$s lúc %2$s</string>
+    <string name="label_ready_pickup_by">Sẵn sàng lấy trước %1$s lúc %2$s</string>
+    <string name="label_completed_on">Hoàn thành vào %1$s</string>
+    <string name="label_cancelled_on">Đã hủy vào %1$s</string>
+    <string name="label_rejected_on">Đã từ chối vào %1$s</string>
+    <string name="label_category">Danh mục</string>
+    <string name="label_qty">SL</string>
+    <string name="label_date">Ngày</string>
+    <string name="label_time">Giờ</string>
+    <string name="proof_photo">Ảnh bằng chứng</string>
+    <string name="view_full">Xem toàn màn hình</string>
+    <string name="waiting_for_confirm">Đang chờ %1$s xác nhận</string>
+    <string name="note_waiting_grocery_prepare">Đang chờ %1$s chuẩn bị yêu cầu của bạn</string>
+    <string name="mark_ready_for_pickup">Đánh dấu sẵn sàng lấy hàng</string>
+    <string name="confirm_pickup_photo">Xác nhận lấy hàng với ảnh</string>
+    <string name="dialog_approve_title">Phê duyệt yêu cầu?</string>
+    <string name="dialog_approve_message">Phê duyệt lấy hàng từ %1$s với %2$d mặt hàng?</string>
+    <string name="dialog_reject_title">Từ chối yêu cầu?</string>
+    <string name="dialog_reject_message">Từ chối yêu cầu từ %1$s? Số lượng sẽ được hoàn lại.</string>
+    <string name="dialog_ready_title">Đánh dấu sẵn sàng?</string>
+    <string name="dialog_ready_message">Đánh dấu sẵn sàng lấy hàng? %1$s sẽ được thông báo.</string>
+    <string name="dialog_cancel_title">Hủy yêu cầu?</string>
+    <string name="dialog_cancel_message">Bạn có chắc muốn hủy yêu cầu lấy hàng này?</string>
+
+    <!-- ── Auth ── -->
+    <string name="welcome_back">Chào mừng trở lại</string>
+    <string name="sign_in_to_account">Đăng nhập vào tài khoản của bạn</string>
+    <string name="email_address">Địa chỉ email</string>
+    <string name="enter_password">Nhập mật khẩu của bạn</string>
+    <string name="sign_in">Đăng nhập</string>
+    <string name="create_new_account">Tạo tài khoản mới</string>
+    <string name="create_your_account">Tạo tài khoản của bạn</string>
+    <string name="join_clearchain">Tham gia ClearChain</string>
+    <string name="i_represent_a">Tôi đại diện cho…</string>
+    <string name="role_grocery_title">Siêu thị / Trung tâm</string>
+    <string name="role_grocery_subtitle">Đăng thực phẩm dư thừa</string>
+    <string name="role_ngo_title">Tổ chức / Ngân hàng thực phẩm</string>
+    <string name="role_ngo_subtitle">Nhận quyên góp</string>
+    <string name="org_name_label">Tên tổ chức</string>
+    <string name="org_name_placeholder">vd. Siêu thị Green Valley</string>
+    <string name="create_account">Tạo tài khoản</string>
+    <string name="must_accept_tos">Bạn phải chấp nhận Điều khoản Dịch vụ để tiếp tục</string>
+    <string name="password_placeholder">Tối thiểu 8 ký tự, chữ hoa, số</string>
+    <string name="confirm_password_placeholder">Nhập lại mật khẩu</string>
+    <string name="ngo_completion_rate">%1$d%% hoàn thành · %2$d lần lấy hàng</string>
+
+    <!-- ── Bottom navigation ── -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_inventory">Kho hàng</string>
+    <string name="nav_browse">Duyệt</string>
+    <string name="nav_requests">Yêu cầu</string>
+    <string name="nav_profile">Hồ sơ</string>
+    <string name="label_profile">Hồ sơ</string>
+    <string name="nav_listings">Danh mục</string>
+    <string name="nav_add">Thêm</string>
+    <string name="nav_verify">Xác minh</string>
+    <string name="nav_history">Lịch sử</string>
+    <string name="nav_stats">Thống kê</string>
+
+    <!-- ── Chat ── -->
+    <string name="messages">Tin nhắn</string>
+    <string name="type_message">Nhập tin nhắn…</string>
+    <string name="send">Gửi</string>
+    <string name="no_messages">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện!</string>
+
+    <!-- ── Splash ── -->
+    <string name="splash_tagline">Giảm lãng phí thực phẩm, từng bước một</string>
+
+    <!-- ── Inventory Detail ── -->
+    <string name="inventory_detail_title">Chi tiết kho</string>
+    <string name="edit_item_title">Sửa mục</string>
+    <string name="generate_qr_label">Tạo nhãn QR</string>
+    <string name="edit_item">Sửa mục</string>
+    <string name="failed_to_load_item">Không thể tải mục</string>
+    <string name="section_quantity">Số lượng</string>
+    <string name="section_lifecycle">Vòng đời mục</string>
+    <string name="section_source">Truy xuất nguồn gốc</string>
+    <string name="origin_chain">Chuỗi nguồn gốc</string>
+    <string name="donated_by">Được quyên góp bởi</string>
+    <string name="label_listing">Niêm yết</string>
+    <string name="label_pickup_date">Ngày lấy hàng</string>
+    <string name="label_original_qty">Số lượng ban đầu</string>
+    <string name="label_notes">Ghi chú</string>
+    <string name="view_full_request">Xem yêu cầu lấy hàng đầy đủ</string>
+    <string name="loading_source_info">Đang tải thông tin nguồn…</string>
+    <string name="section_documentation">Tài liệu</string>
+    <string name="doc_photo_description">Ảnh tài liệu</string>
+    <string name="tap_to_expand">Nhấn để phóng to</string>
+    <string name="replace_photo">Thay ảnh</string>
+    <string name="no_photo_attached">Chưa có ảnh đính kèm</string>
+    <string name="uploading">Đang tải lên…</string>
+    <string name="attach_photo">Đính kèm ảnh</string>
+    <string name="status_active_info">Mục này đang hoạt động và sẵn sàng phân phối.</string>
+    <string name="status_distributed_info">Mục này đã được phân phối thành công.</string>
+    <string name="status_expired_info">Mục này đã hết hạn — vui lòng xử lý đúng cách.</string>
+    <string name="section_item_details">Chi tiết mục</string>
+    <string name="label_product_name">Tên sản phẩm *</string>
+    <string name="label_quantity_required">Số lượng *</string>
+    <string name="label_unit">Đơn vị</string>
+    <string name="label_expiry_date_format">Ngày hết hạn * (YYYY-MM-DD)</string>
+    <string name="dialog_close">Đóng</string>
+    <string name="share_item_label">Chia sẻ nhãn mục</string>
+    <string name="inventory_step_received">Đã nhận</string>
+    <string name="inventory_step_distributed">Đã phân phối</string>
+    <string name="inventory_step_expired">Đã hết hạn</string>
+    <string name="inventory_step_expires">Hết hạn</string>
+    <string name="qr_item_label_title">Nhãn QR mục</string>
+    <string name="label_product">Sản phẩm</string>
+    <string name="label_category_short">Danh mục</string>
+    <string name="label_quantity_short">Số lượng</string>
+    <string name="label_expires_short">Hết hạn</string>
+    <string name="label_id">Mã</string>
+    <string name="btn_share_label">Chia sẻ nhãn</string>
+
+    <!-- ── Location Picker ── -->
+    <string name="location_picker_title">Chọn vị trí</string>
+    <string name="location_detecting">Đang xác định vị trí của bạn…</string>
+    <string name="location_move_to_select">Di chuyển bản đồ để chọn</string>
+    <string name="location_search_radius">Bán kính tìm kiếm</string>
+    <string name="location_current">Hiện tại</string>
+    <string name="location_profile">Hồ sơ</string>
+    <string name="location_search_hint">Thành phố, địa chỉ hoặc địa danh…</string>
+    <string name="location_choose_this">Chọn vị trí này</string>
+    <string name="location_error_detect">Không thể xác định vị trí. Sử dụng tìm kiếm hoặc các nút bên dưới.</string>
+    <string name="location_error_gps">Không thể lấy vị trí. Hãy bật GPS.</string>
+    <string name="location_search_title">Tìm kiếm địa điểm</string>
+
+    <!-- ── Onboarding ── -->
+    <string name="onboarding_continue">Tiếp tục</string>
+    <string name="onboarding_back">Quay lại</string>
+    <string name="onboarding_complete">Hoàn tất</string>
+    <string name="onboarding_get_started">Bắt đầu</string>
+    <string name="onboarding_step_label">Bước %1$d / %2$d</string>
+    <string name="onboarding_step_your_info">Thông tin của bạn</string>
+    <string name="onboarding_step_location">Vị trí</string>
+    <string name="onboarding_step_all_set">Hoàn tất</string>
+    <string name="onboarding_setup_profile">Thiết lập hồ sơ</string>
+    <string name="onboarding_save_draft">Lưu bản nháp</string>
+    <string name="onboarding_draft_title">Tiếp tục từ lần trước?</string>
+    <string name="onboarding_draft_message">Bạn có bản nháp đã lưu. Bạn muốn tiếp tục từ đó không?</string>
+    <string name="onboarding_restore_draft">Khôi phục bản nháp</string>
+    <string name="onboarding_start_fresh">Bắt đầu lại</string>
+    <string name="onboarding_welcome">Chào mừng đến ClearChain!</string>
+    <string name="onboarding_grocery_intro">Hãy thiết lập hồ sơ để bắt đầu quyên góp thực phẩm.</string>
+    <string name="onboarding_ngo_intro">Hãy thiết lập hồ sơ để bắt đầu nhận thực phẩm quyên góp.</string>
+    <string name="onboarding_phone_label">Số điện thoại</string>
+    <string name="onboarding_about_label">Giới thiệu tổ chức</string>
+    <string name="onboarding_about_placeholder">Chia sẻ về tổ chức của bạn…</string>
+    <string name="onboarding_contact_label">Người liên hệ</string>
+    <string name="onboarding_contact_placeholder">Tên người liên hệ chính</string>
+    <string name="onboarding_location_heading">Bạn đang ở đâu?</string>
+    <string name="onboarding_location_subtitle">Giúp chúng tôi kết nối bạn với các đối tác gần đây.</string>
+    <string name="onboarding_address_label">Địa chỉ</string>
+    <string name="onboarding_address_placeholder">Bắt đầu nhập địa chỉ…</string>
+    <string name="onboarding_city_label">Thành phố</string>
+    <string name="onboarding_city_placeholder">TP. Hồ Chí Minh</string>
+    <string name="onboarding_hours_label">Giờ hoạt động</string>
+    <string name="onboarding_hours_opens">Mở cửa</string>
+    <string name="onboarding_hours_closes">Đóng cửa</string>
+    <string name="onboarding_pickup_instructions_label">Hướng dẫn lấy hàng</string>
+    <string name="onboarding_pickup_instructions_placeholder">Ví dụ: Cửa sau, hỏi tại quầy dịch vụ</string>
+    <string name="onboarding_doc_label">Tài liệu xác minh</string>
+    <string name="onboarding_doc_subtitle">Tải lên giấy phép kinh doanh hoặc chứng nhận NGO (tùy chọn, giúp xác minh nhanh hơn)</string>
+    <string name="onboarding_doc_selected">Tài liệu đã chọn</string>
+    <string name="onboarding_upload_document">Tải lên tài liệu</string>
+    <string name="onboarding_remove_icon">Xóa</string>
+    <string name="onboarding_all_set">Tất cả đã sẵn sàng!</string>
+    <string name="onboarding_grocery_complete">Hồ sơ của bạn đã hoàn tất. Hãy tạo niêm yết thực phẩm và giúp giảm lãng phí.</string>
+    <string name="onboarding_ngo_complete">Hồ sơ của bạn đã hoàn tất. Duyệt và yêu cầu thực phẩm dư thừa từ các cửa hàng gần bạn.</string>
+    <string name="onboarding_feature_create">Tạo niêm yết thực phẩm</string>
+    <string name="onboarding_feature_requests">Nhận yêu cầu lấy hàng</string>
+    <string name="onboarding_feature_impact">Theo dõi tác động của bạn</string>
+    <string name="onboarding_feature_browse">Duyệt niêm yết gần đây</string>
+    <string name="onboarding_feature_pickups">Yêu cầu lấy hàng</string>
+    <string name="onboarding_feature_inventory">Quản lý kho</string>
+
+    <!-- Dashboard shared -->
+    <string name="section_activity_trend">Xu hướng hoạt động</string>
+    <string name="label_actions_this_week">Hoạt động tuần này</string>
+
+    <!-- Admin Dashboard -->
+    <string name="stat_completion_rate">Tỷ lệ hoàn thành</string>
+    <string name="admin_completion_detail">%1$d trong %2$d yêu cầu đã hoàn thành</string>
+    <string name="section_request_status_breakdown">Phân tích trạng thái yêu cầu</string>
+    <string name="section_org_types">Loại tổ chức</string>
+    <string name="org_type_groceries">Cửa hàng thực phẩm</string>
+    <string name="org_type_ngos">NGO</string>
+    <string name="org_type_unverified">Chưa xác minh</string>
+    <string name="admin_total_verified">tổng đã xác minh</string>
+    <string name="section_alert_feed">Nguồn cảnh báo</string>
+    <string name="section_new_orgs_30d">Tổ chức mới (30 ngày)</string>
+    <string name="admin_new_orgs_count">%1$d tổ chức mới trong tháng này</string>
+    <string name="label_30_days">30 ngày</string>
+    <string name="section_system_health">Sức khỏe hệ thống</string>
+    <string name="label_database">Cơ sở dữ liệu</string>
+    <string name="admin_pending_verif">đang chờ xác minh</string>
+    <string name="admin_unread_notif">thông báo chưa đọc</string>
+
+    <!-- Analytics -->
+    <string name="analytics_food_impact">Tác động thực phẩm</string>
+    <string name="analytics_listings_overview">Tổng quan niêm yết</string>
+    <string name="analytics_food_cleared">Thực phẩm đã xử lý</string>
+    <string name="analytics_food_saved_label">kg thực phẩm tiết kiệm</string>
+    <string name="analytics_pickup_perf">Hiệu suất lấy hàng</string>
+    <string name="analytics_completion_rate">Tỷ lệ hoàn thành</string>
+    <string name="analytics_completed_of_total">%1$d trong %2$d lần lấy hàng hoàn thành</string>
+    <string name="analytics_inventory_summary">Tóm tắt kho</string>
+    <string name="analytics_inventory_status">Trạng thái kho</string>
+    <string name="analytics_impact">Tác động</string>
+    <string name="analytics_estimated_meals">Bữa ăn ước tính</string>
+    <string name="analytics_co2_avoided">CO₂ tránh được</string>
+    <string name="analytics_request_activity">Hoạt động yêu cầu</string>
+    <string name="analytics_success_rate">Tỷ lệ thành công</string>
+    <string name="analytics_completed_pickups">Lần lấy hàng hoàn thành</string>
+    <string name="status_in_stock">Còn hàng</string>
+
+    <!-- Email Verification -->
+    <string name="email_verify_title">Xác minh email</string>
+    <string name="email_verify_subtitle">Kiểm tra hộp thư đến</string>
+    <string name="email_verify_sent">Mã 6 chữ số đã được gửi đến %1$s</string>
+    <string name="email_code_label">Mã 6 chữ số</string>
+    <string name="email_resend_sending">Đang gửi…</string>
+    <string name="email_resend_cooldown">Gửi lại sau %1$d giây</string>
+    <string name="email_resend_label">Gửi lại mã</string>
+
+    <!-- Dispute -->
+    <string name="dispute_info_text">Tranh chấp được xem xét trong vòng 48 giờ. Cung cấp càng nhiều chi tiết càng tốt.</string>
+    <string name="dispute_reason_label">Lý do *</string>
+    <string name="dispute_reason_poor_condition">Tình trạng thực phẩm kém</string>
+    <string name="dispute_reason_wrong_items">Nhận sai hàng</string>
+    <string name="dispute_reason_quantity">Số lượng không khớp</string>
+    <string name="dispute_reason_expired">Hàng đã hết hạn</string>
+    <string name="dispute_reason_not_available">Hàng không có tại điểm lấy</string>
+    <string name="dispute_reason_other">Khác</string>
+    <string name="dispute_reason_no_show">Tổ chức NGO không đến lấy hàng</string>
+    <string name="dispute_reason_time_violation">Không đúng giờ lấy hàng</string>
+    <string name="dispute_reason_damage">Hàng bị hư hỏng trong khi lấy</string>
+    <string name="dispute_reason_wrong_qty_taken">Lấy sai số lượng</string>
+    <string name="dispute_reason_behavior">Hành vi không phù hợp</string>
+    <string name="dispute_statement_label">Trình bày *</string>
+    <string name="dispute_statement_hint">Mô tả chi tiết những gì đã xảy ra…</string>
+    <string name="dispute_submit">Gửi tranh chấp</string>
+
+    <!-- Create Listing -->
+    <string name="create_listing_subtitle">Điền thông tin bên dưới để đăng thực phẩm dư thừa.</string>
+    <string name="create_listing_draft_saved">Nháp đã lưu lúc %1$s</string>
+    <string name="section_food_details">Chi tiết thực phẩm</string>
+    <string name="section_schedule">Lịch trình</string>
+    <string name="label_title">Tiêu đề *</string>
+    <string name="label_title_placeholder">Ví dụ: Bánh mì tươi các loại</string>
+    <string name="label_description">Mô tả</string>
+    <string name="label_description_placeholder">Mô tả các mặt hàng thực phẩm…</string>
+    <string name="label_expiry_date">Ngày hết hạn *</string>
+    <string name="label_pickup_hours_from_profile">Giờ nhận hàng (từ hồ sơ của bạn)</string>
+    <string name="label_pickup_hours_not_set">Chưa đặt — thêm giờ hoạt động trong Hồ sơ</string>
+    <string name="btn_create_listing">Tạo niêm yết</string>
+
+    <!-- Manage Requests -->
+    <string name="manage_reject_title">Từ chối %1$d yêu cầu?</string>
+    <string name="manage_reject_optional_reason">Bạn có thể cung cấp lý do:</string>
+    <string name="manage_reject_reason_label">Lý do (tùy chọn)</string>
+    <string name="action_reject_all">Từ chối tất cả</string>
+    <string name="selected_count">Đã chọn %1$d</string>
+    <string name="action_exit_selection">Thoát chọn</string>
+    <string name="action_approve_bulk">Duyệt (%1$d)</string>
+    <string name="action_reject_bulk">Từ chối (%1$d)</string>
+
+    <!-- My Listings -->
+    <string name="action_archive">Lưu trữ</string>
+    <string name="action_delete_count">Xóa (%1$d)</string>
+    <string name="tab_active">Đang hoạt động</string>
+    <string name="tab_available">Có sẵn</string>
+    <string name="tab_list_view">Danh sách</string>
+    <string name="tab_map_view">Bản đồ</string>
+    <string name="tab_archived">Đã lưu trữ</string>
+    <string name="tab_archived_count">Đã lưu trữ (%1$d)</string>
+    <string name="search_listings_placeholder">Tìm kiếm niêm yết…</string>
+
+    <!-- Browse Listings -->
+    <string name="action_request_pickup">Yêu cầu lấy hàng</string>
+    <string name="action_clear_all">Xóa tất cả</string>
+    <string name="filter_quantity_range">Khoảng số lượng</string>
+    <string name="action_apply_filters">Áp dụng bộ lọc</string>
+    <string name="filter_category">Danh mục</string>
+    <string name="filter_expiry_within">Hết hạn trong</string>
+    <string name="filter_has_requests">Chỉ có yêu cầu lấy hàng</string>
+    <string name="filter_pickup_date">Ngày lấy hàng</string>
+    <string name="filter_listing_category">Danh mục sản phẩm</string>
+    <string name="filter_org_type">Loại tổ chức</string>
+    <string name="filter_expiry_urgency">Mức độ hết hạn</string>
+    <string name="filter_min_freshness">Độ tươi tối thiểu</string>
+    <string name="filter_max_distance">Khoảng cách tối đa</string>
+    <string name="filter_date_range">Phạm vi ngày</string>
+    <string name="filter_any">Tất cả</string>
+    <string name="filter_default">Mặc định</string>
+    <string name="filter_past">Đã qua</string>
+    <string name="hint_search_organizations">Tìm kiếm tổ chức…</string>
+    <string name="hint_search_requests">Tìm theo mặt hàng, NGO…</string>
+
+    <!-- Inventory -->
+    <string name="action_distribute_count">Phân phối (%1$d)</string>
+    <string name="search_inventory_placeholder">Tìm kiếm kho…</string>
+
+    <!-- Listing Detail -->
+    <string name="section_details">Chi tiết</string>
+    <string name="label_pickup_window">Khung giờ lấy hàng</string>
+    <string name="label_distance">Khoảng cách</string>
+    <string name="distance_km_away">%1$.1f km</string>
+    <string name="section_availability">Tình trạng</string>
+    <string name="label_available">Còn lại</string>
+    <string name="section_similar_listings">Niêm yết tương tự</string>
+    <string name="section_about_us">Về chúng tôi</string>
+    <string name="action_get_directions">Chỉ đường</string>
+    <string name="label_grocery_store">Cửa hàng thực phẩm</string>
+    <string name="error_failed_load_listing">Không thể tải niêm yết</string>
+    <string name="badge_live">TRỰC TIẾP</string>
+    <string name="report_listing_title">Báo cáo niêm yết</string>
+    <string name="report_listing_subtitle">Giúp chúng tôi giữ nền tảng an toàn và đáng tin cậy.</string>
+    <string name="report_reason_inaccurate">Thông tin không chính xác</string>
+    <string name="report_reason_already_gone">Thực phẩm đã hết</string>
+    <string name="report_reason_spam">Spam hoặc trùng lặp</string>
+    <string name="report_reason_inappropriate">Nội dung không phù hợp</string>
+    <string name="report_reason_other">Khác</string>
+    <string name="btn_submit">Gửi</string>
+
+    <!-- My Requests -->
+    <string name="uploading_photo">Đang tải ảnh…</string>
+    <string name="uploading_photo_attempt">Đang tải ảnh… (Lần %1$d/3)</string>
+
+    <!-- Profile -->
+    <string name="error_failed_load_profile">Không thể tải hồ sơ</string>
+
+    <!-- Verification Queue -->
+    <string name="action_reject_all_batch">Từ chối tất cả</string>
+    <string name="action_approve_all_batch">Duyệt tất cả</string>
+    <string name="verification_batch_mode_hint">Chế độ hàng loạt — nhấn để chọn</string>
+
+    <!-- Admin Transactions -->
+    <string name="search_transactions_placeholder">Tìm kiếm giao dịch…</string>
+    <string name="admin_transactions_empty">Không tìm thấy giao dịch</string>
+
+    <!-- Dialog and action strings -->
+    <string name="action_restore">Khôi phục</string>
+    <string name="action_edit_qty">Sửa số lượng</string>
+    <string name="label_edit_quantity">Sửa số lượng</string>
+    <string name="label_new_quantity">Số lượng mới</string>
+    <string name="action_view_details">Xem chi tiết đầy đủ</string>
+    <string name="action_take_photo">Chụp hoặc chọn ảnh</string>
+    <string name="action_apply_ai">Áp dụng gợi ý AI</string>
+    <string name="action_add">Thêm</string>
+    <string name="label_beneficiaries_count">Số người thụ hưởng?</string>
+    <string name="label_export_transactions">Xuất giao dịch</string>
+    <string name="verification_checklist_title">Danh sách xác minh</string>
+    <string name="verification_confirm_items">Vui lòng xác nhận tất cả trước khi duyệt:</string>
+    <string name="verification_approve_org">Duyệt tổ chức</string>
+    <string name="verification_reject_org">Từ chối tổ chức</string>
+    <string name="verification_select_reason">Chọn lý do mẫu hoặc nhập lý do tùy chỉnh:</string>
+    <string name="label_rejection_reason">Lý do từ chối</string>
+    <string name="label_pickup_preview">Lấy hàng: %1$s – %2$s</string>
+
+    <!-- Statistics Screen -->
+    <string name="section_organizations">Tổ chức</string>
+    <string name="section_listings">Niêm yết</string>
+    <string name="section_pickup_requests">Yêu cầu lấy hàng</string>
+    <string name="section_platform_impact">Tác động nền tảng</string>
+    <string name="section_daily_activity">Hoạt động hàng ngày</string>
+    <string name="section_period_comparison">So sánh kỳ</string>
+    <string name="section_category_breakdown">Phân tích danh mục</string>
+    <string name="section_leaderboards">Bảng xếp hạng</string>
+    <string name="section_geographic_distribution">Phân bổ địa lý</string>
+    <string name="stat_org_overview">Tổng quan tổ chức</string>
+    <string name="stat_food_listings">Niêm yết thực phẩm</string>
+    <string name="stat_request_status">Phân tích trạng thái yêu cầu</string>
+    <string name="stat_verified">Đã xác minh</string>
+    <string name="stat_unverified">Chưa xác minh</string>
+    <string name="stat_reserved">Đã đặt</string>
+    <string name="label_date_range">Khoảng thời gian</string>
+    <string name="section_completion_rate">Tỷ lệ hoàn thành</string>
+    <string name="section_impact">Tác động môi trường &amp; xã hội</string>
+    <string name="stat_food_saved">Thực phẩm tiết kiệm</string>
+    <string name="stat_meals">Bữa ăn</string>
+    <string name="stat_co2_avoided">CO₂ tránh được</string>
+    <string name="stat_beneficiaries">Người thụ hưởng</string>
+    <string name="leaderboard_no_data">Chưa có dữ liệu bảng xếp hạng</string>
+    <string name="leaderboard_no_data_subtitle">Lần lấy hàng hoàn thành sẽ xuất hiện ở đây</string>
+
+    <!-- Verification Queue filter tabs -->
+    <string name="filter_all_count">Tất cả (%1$d)</string>
+    <string name="filter_pending_count">Chờ duyệt (%1$d)</string>
+    <string name="filter_approved_count">Đã duyệt (%1$d)</string>
+    <string name="filter_rejected_count">Bị từ chối (%1$d)</string>
+
+    <!-- Shared filter/tab labels -->
+    <string name="filter_all">Tất cả</string>
+    <string name="transactions_empty_subtitle">Giao dịch sẽ xuất hiện ở đây khi có yêu cầu được tạo</string>
+    <string name="stat_total">Tổng</string>
+    <string name="stat_overdue">Quá hạn</string>
+
+    <!-- Analytics compound strings -->
+    <string name="analytics_food_saved_total">Tổng thực phẩm tiết kiệm khỏi lãng phí</string>
+    <string name="analytics_completed_of_requests">%1$d hoàn thành trong %2$d yêu cầu</string>
+    <string name="analytics_completed_pickups_count">%1$d lần lấy hàng hoàn thành</string>
+    <string name="analytics_pickup_completion_rate">Tỷ lệ hoàn thành lấy hàng</string>
+    <string name="analytics_request_success_rate">Tỷ lệ thành công yêu cầu</string>
+    <string name="analytics_total_label">Tổng</string>
+
+    <!-- Admin Dashboard compound strings -->
+    <!-- Date range presets -->
+    <string name="preset_all_time">Tất cả thời gian</string>
+    <string name="preset_this_week">Tuần này</string>
+    <string name="preset_this_month">Tháng này</string>
+    <string name="preset_custom">Tùy chỉnh</string>
+    <string name="label_select_start_date">Chọn ngày bắt đầu</string>
+    <string name="label_select_end_date">Chọn ngày kết thúc</string>
+
+    <!-- Inventory / distribution -->
+    <string name="action_distribute_confirm">Phân phối</string>
+    <string name="action_mark_distributed">Đánh dấu đã phân phối</string>
+    <string name="label_beneficiaries_optional">Tùy chọn ghi lại số người nhận thực phẩm này:</string>
+    <string name="label_number_people_optional">Số người (tùy chọn)</string>
+    <string name="mark_distributed_confirm">Xác nhận rằng \"%1$s\" đã được phân phối đến người thụ hưởng?</string>
+
+    <!-- Shared dialog / misc -->
+    <string name="action_update">Cập nhật</string>
+    <string name="add_item_manually">Thêm mặt hàng thủ công</string>
+    <string name="action_add_to_inventory">Thêm vào kho</string>
+
+    <!-- Heatmap labels -->
+    <string name="label_less">Ít hơn</string>
+    <string name="label_more">Nhiều hơn</string>
+
+    <!-- Verification Queue -->
+    <string name="hint_rejection_reason">Giải thích lý do từ chối tổ chức</string>
+
+    <!-- Photo picker / proof -->
+    <string name="label_processing_photo">Đang xử lý ảnh</string>
+    <string name="label_compressing_image">Đang nén ảnh…</string>
+    <string name="label_add_proof_photo">Thêm ảnh xác nhận</string>
+    <string name="label_proof_photo_hint">Chụp ảnh hoặc chọn từ thư viện để xác nhận lấy hàng</string>
+    <string name="action_take_photo_camera">Chụp ảnh</string>
+    <string name="action_choose_gallery">Chọn từ thư viện</string>
+    <string name="label_confirm_pickup">Xác nhận lấy hàng</string>
+    <string name="msg_submit_photo_proof">Gửi ảnh này làm bằng chứng lấy hàng?</string>
+    <string name="action_submit">Gửi</string>
+    <string name="label_reject_request">Từ chối yêu cầu?</string>
+    <string name="msg_reject_request_notice">Điều này sẽ thông báo cho NGO rằng yêu cầu của họ đã bị từ chối.</string>
+    <string name="hint_type_message">Nhập tin nhắn…</string>
+
+    <!-- My Requests review dialog -->
+    <string name="label_rate_experience">Đánh giá trải nghiệm của bạn</string>
+    <string name="label_comments_optional">Nhận xét (tùy chọn)</string>
+    <string name="hint_pickup_experience">Trải nghiệm lấy hàng của bạn như thế nào?</string>
+
+    <!-- Profile -->
+    <string name="label_complete">Hoàn thành</string>
+    <string name="label_change_password">Đổi mật khẩu</string>
+    <string name="label_current_password">Mật khẩu hiện tại</string>
+    <string name="label_new_password">Mật khẩu mới</string>
+    <string name="label_confirm_new_password">Xác nhận mật khẩu mới</string>
+    <string name="label_delete_account">Xóa tài khoản</string>
+    <string name="label_confirm_password">Xác nhận mật khẩu của bạn</string>
+
+    <!-- Photo preview -->
+    <string name="action_retake">Chụp lại</string>
+    <string name="action_confirm_upload">Xác nhận &amp; Tải lên</string>
+    <string name="action_retry_upload">Thử tải lại</string>
+
+    <!-- My Requests -->
+    <string name="action_review">Đánh giá</string>
+    <string name="action_receipt">Biên lai</string>
+    <string name="action_dispute">Khiếu nại</string>
+    <string name="action_submit_review">Gửi đánh giá</string>
+    <string name="action_show">Hiển thị</string>
+    <string name="cd_download_receipt">Tải biên lai</string>
+    <string name="label_expires_date">Hết hạn %1$s</string>
+    <string name="label_quantity_format">Số lượng: %1$s</string>
+
+    <!-- NGO Dashboard -->
+    <string name="action_browse_all_listings">Xem tất cả niêm yết</string>
+    <string name="action_view_more">Xem thêm</string>
+
+    <!-- Profile -->
+    <string name="action_save">Lưu</string>
+    <string name="action_change">Thay đổi</string>
+    <string name="msg_delete_account_warning">Hành động này không thể hoàn tác. Tất cả dữ liệu của bạn sẽ bị xóa.</string>
+
+    <!-- Request Detail -->
+    <string name="action_mark_ready">Đánh dấu sẵn sàng lấy hàng</string>
+    <string name="action_confirm_pickup_photo">Xác nhận lấy hàng bằng ảnh</string>
+    <string name="action_file_dispute">Gửi khiếu nại</string>
+    <string name="advanced_filters">Bộ lọc nâng cao</string>
+    <string name="label_ai_food_analysis">Phân tích thực phẩm AI</string>
+    <string name="label_analyzing_food">Đang phân tích thực phẩm…</string>
+    <string name="label_listing_preview">Xem trước niêm yết</string>
+
+    <string name="admin_org_total_verified">Tổng: %1$d  •  Đã xác minh: %2$d</string>
+    <string name="admin_pending_verif_count">%1$d đang chờ</string>
+    <string name="admin_unread_notif_count">%1$d chưa đọc</string>
+
+    <!-- Role labels -->
+    <string name="role_admin">Quản trị viên</string>
+
+    <!-- Admin dashboard subtitles -->
+    <string name="admin_pending_approvals">%1$d đang chờ duyệt</string>
+    <string name="admin_total_requests">%1$d yêu cầu</string>
+
+    <!-- Shared empty state -->
+    <string name="empty_try_filters">Thử điều chỉnh tìm kiếm hoặc bộ lọc</string>
+
+    <!-- Transactions empty states -->
+    <string name="empty_no_transactions_filter">Không có giao dịch phù hợp bộ lọc</string>
+
+    <!-- Verification Queue empty states -->
+    <string name="empty_no_organizations">Chưa có tổ chức nào</string>
+    <string name="empty_no_organizations_subtitle">Tổ chức sẽ xuất hiện ở đây khi đăng ký</string>
+    <string name="empty_no_org_category">Không có tổ chức trong danh mục này</string>
+    <string name="empty_no_org_category_subtitle">Chuyển bộ lọc để xem tổ chức khác</string>
+
+    <!-- Manage Requests / NGO My Requests empty states -->
+    <string name="empty_no_pickup_requests">Chưa có yêu cầu lấy hàng nào</string>
+    <string name="empty_requests_grocery_subtitle">Yêu cầu từ NGO sẽ xuất hiện ở đây</string>
+    <string name="empty_requests_ngo_subtitle">Duyệt niêm yết thực phẩm để tạo yêu cầu đầu tiên</string>
+    <string name="empty_no_requests_filter">Không có yêu cầu phù hợp bộ lọc</string>
+
+    <!-- My Listings empty states -->
+    <string name="empty_no_listings">Chưa có niêm yết nào</string>
+    <string name="empty_no_listings_subtitle">Tạo niêm yết đầu tiên để bắt đầu</string>
+    <string name="empty_no_listings_filter">Không có niêm yết phù hợp bộ lọc</string>
+
+    <!-- Browse Listings empty states -->
+    <string name="empty_no_saved_listings">Không có niêm yết đã lưu</string>
+    <string name="empty_no_saved_subtitle">Nhấn trái tim trên niêm yết để lưu</string>
+    <string name="empty_no_nearby_listings">Không có niêm yết gần đây</string>
+    <string name="empty_no_nearby_subtitle">Thử tăng khoảng cách hoặc kiểm tra lại sau</string>
+    <string name="empty_no_listings_browse_filter">Không có niêm yết phù hợp bộ lọc</string>
+
+    <!-- Inventory empty states -->
+    <string name="empty_no_inventory">Kho hàng trống</string>
+    <string name="empty_no_inventory_subtitle">Mặt hàng sẽ xuất hiện sau khi xác nhận lấy hàng</string>
+    <string name="empty_no_inventory_filter">Không có mặt hàng phù hợp bộ lọc</string>
+
+    <!-- NGO Dashboard -->
+    <string name="section_nearby_listings">Danh sách gần đây</string>
+    <string name="label_food_expiring_soon">Thực phẩm sắp hết hạn</string>
+    <string name="msg_listings_expiring">%1$d danh sách sắp hết hạn trong 3 ngày. Hãy nhanh chóng để tránh lãng phí.</string>
+    <string name="action_browse_now">Duyệt ngay</string>
+    <string name="label_your_location">Vị trí của bạn</string>
+    <string name="label_n_available">%1$d có sẵn</string>
+    <string name="label_n_listings_nearby">%1$d danh sách gần đây</string>
+
+    <!-- Timeline steps -->
+    <string name="timeline_request_submitted">Đã gửi yêu cầu</string>
+    <string name="timeline_submitted_desc">NGO đã gửi yêu cầu lấy hàng</string>
+    <string name="timeline_approved_by_store">Cửa hàng đã duyệt</string>
+    <string name="timeline_approved_desc">Cửa hàng đã chấp thuận yêu cầu</string>
+    <string name="timeline_ready_for_pickup">Sẵn sàng lấy hàng</string>
+    <string name="timeline_ready_desc">Hàng hóa đã được chuẩn bị và đang chờ</string>
+    <string name="timeline_pickup_confirmed">Đã xác nhận lấy hàng</string>
+    <string name="timeline_confirmed_desc">NGO đã xác nhận bằng ảnh chứng minh</string>
+
+    <!-- Empty / error states -->
+    <string name="empty_no_results_query">Không có kết quả cho \"%1$s\"</string>
+    <string name="error_something_went_wrong">Đã có lỗi xảy ra</string>
+    <string name="action_try_again">Thử lại</string>
+    <string name="msg_failed_load_requests">Không thể tải yêu cầu</string>
+    <string name="msg_failed_load_listings">Không thể tải danh sách</string>
+    <string name="msg_failed_load_inventory">Không thể tải kho hàng</string>
+    <string name="msg_failed_load_request">Không thể tải yêu cầu</string>
+
+    <!-- Request Pickup form -->
+    <string name="hint_max_quantity">Tối đa: %1$s %2$s</string>
+    <string name="label_pickup_date_section">Ngày lấy hàng</string>
+    <string name="label_pickup_time_field">Giờ lấy hàng</string>
+    <string name="hint_select_time_slot">Chọn khung giờ</string>
+    <string name="label_pickup_time_window">Giờ lấy hàng — %1$s đến %2$s</string>
+    <string name="label_transport_method">Phương tiện vận chuyển</string>
+    <string name="label_special_handling">Yêu cầu đặc biệt</string>
+    <string name="label_needs_refrigeration">Cần bảo quản lạnh</string>
+    <string name="label_heavy_load">Hàng nặng (&gt;20 kg)</string>
+    <string name="label_notes_optional">Ghi chú (tuỳ chọn)</string>
+    <string name="hint_additional_instructions">Hướng dẫn bổ sung…</string>
+    <string name="label_pickup_details_section">Chi tiết lấy hàng</string>
+    <string name="label_expiry_field">Hạn sử dụng</string>
+    <string name="action_submit_request">Gửi yêu cầu</string>
+    <string name="label_estimated_trip">Thời gian di chuyển: %1$d phút</string>
+    <string name="label_distance_via">%1$s km · qua %2$s</string>
+
+    <!-- Public Profile stats -->
+    <string name="label_n_reviews">%1$d đánh giá</string>
+    <string name="label_pickups_done">Đã lấy hàng</string>
+    <string name="label_pickups_completed">Đã hoàn thành</string>
+    <string name="label_contact_location">Liên hệ &amp; Địa điểm</string>
+    <string name="label_contact_prefix">Liên hệ: %1$s</string>
+
+    <!-- Profile view sections -->
+    <string name="section_contact">Liên hệ</string>
+    <string name="section_location_hours">Địa điểm &amp; Giờ hoạt động</string>
+    <string name="section_org_details">Chi tiết tổ chức</string>
+    <string name="section_team_members">Thành viên</string>
+    <string name="section_account">Tài khoản</string>
+    <string name="label_gps_coordinates">Toạ độ GPS</string>
+    <string name="label_not_set">Chưa đặt</string>
+    <string name="label_analytics">Phân tích</string>
+    <string name="label_help_faq">Trợ giúp &amp; FAQ</string>
+    <string name="label_member_since_field">Thành viên từ</string>
+    <string name="label_no_recent_activity">Không có hoạt động gần đây</string>
+    <string name="action_show_less">Ẩn bớt</string>
+    <string name="action_show_more">Hiện thêm %1$d</string>
+    <string name="label_account_owner">Chủ tài khoản</string>
+    <string name="label_owner_badge">Chủ</string>
+    <string name="label_contact_person">Người liên hệ</string>
+    <string name="label_contact_badge">Liên hệ</string>
+    <string name="label_invite_team_member">Mời thành viên</string>
+    <string name="label_coming_soon">Sắp ra mắt</string>
+    <string name="msg_org_under_review">Tổ chức của bạn đang được xem xét. Bạn sẽ được thông báo khi được duyệt (thường 1–3 ngày làm việc).</string>
+    <string name="msg_verification_rejected_profile">Xác minh bị từ chối. Liên hệ hỗ trợ để giải quyết và nộp lại.</string>
+    <string name="msg_profile_pct_complete">Hồ sơ %1$d%% hoàn thiện</string>
+    <string name="msg_fields_filled">%1$d/%2$d trường bắt buộc đã điền</string>
+    <string name="msg_missing_fields">Thiếu: %1$s</string>
+    <string name="label_stat_requests">Yêu cầu</string>
+    <string name="label_verified_badge">Đã xác minh</string>
+    <string name="label_pending_review_badge">Đang xem xét</string>
+    <string name="label_rejected_badge">Bị từ chối</string>
+    <string name="label_change_photo">Đổi ảnh</string>
+    <string name="cd_profile_photo_of">Ảnh hồ sơ của %1$s</string>
+
+    <!-- Profile edit mode -->
+    <string name="section_general">Chung</string>
+    <string name="label_edit_profile">Chỉnh sửa hồ sơ</string>
+    <string name="hint_org_description">Mô tả ngắn về tổ chức của bạn…</string>
+    <string name="label_city_location">Thành phố / Địa điểm</string>
+    <string name="label_opening_time">Giờ mở cửa</string>
+    <string name="label_closing_time">Giờ đóng cửa</string>
+    <string name="label_contact_person_star">Người liên hệ *</string>
+    <string name="hint_contact_person">Tên người liên hệ chính</string>
+    <string name="hint_pickup_instructions_long">Cửa sau, hỏi tại quầy dịch vụ…</string>
+    <string name="hint_phone_profile">+84 123 456 789</string>
+    <string name="action_save_changes">Lưu thay đổi</string>
+
+    <!-- Password dialog errors -->
+    <string name="error_current_password_required">Cần nhập mật khẩu hiện tại</string>
+    <string name="error_new_password_required">Cần nhập mật khẩu mới</string>
+    <string name="error_password_min_length">Ít nhất 8 ký tự</string>
+    <string name="error_password_needs_uppercase">Cần có chữ in hoa</string>
+    <string name="error_password_needs_number">Cần có số</string>
+    <string name="error_passwords_dont_match">Mật khẩu không khớp</string>
+    <string name="label_show_password">Hiện mật khẩu</string>
+    <string name="label_hide_password">Ẩn mật khẩu</string>
+
+    <!-- My Listings delete confirm -->
+    <string name="msg_delete_listing_confirm">Xóa \"%1$s\"? Không thể hoàn tác.</string>
+
+    <!-- Search placeholders -->
+    <string name="hint_search_by_item_ngo">Tìm theo mặt hàng, NGO…</string>
+    <string name="hint_search_by_name_grocery">Tìm theo tên, cửa hàng…</string>
+    <string name="hint_search_by_item_grocery">Tìm theo mặt hàng, cửa hàng…</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_refresh">Làm mới</string>
+    <string name="cd_export_pdf">Xuất PDF</string>
+    <string name="cd_export">Xuất</string>
+    <string name="cd_dismiss">Bỏ qua</string>
+    <string name="cd_camera">Máy ảnh</string>
+    <string name="cd_gallery">Thư viện</string>
+    <string name="cd_preview_image">Xem trước</string>
+    <string name="cd_remove_image">Xóa ảnh</string>
+    <string name="cd_add_photo">Thêm ảnh</string>
+    <string name="cd_full_size_image">Ảnh toàn màn hình</string>
+    <string name="cd_report_listing_icon">Báo cáo</string>
+    <string name="cd_upload_failed">Tải lên thất bại</string>
+    <string name="cd_clear_notifications">Xóa tất cả thông báo</string>
+    <string name="cd_view_profile">Xem hồ sơ</string>
+    <string name="action_view_grocery_profile">Xem hồ sơ cửa hàng</string>
+    <string name="action_view_ngo_profile">Xem hồ sơ NGO</string>
+    <string name="cd_image_n">Ảnh %1$d</string>
+    <string name="cd_star_n">%1$d sao</string>
+    <string name="cd_proof_of_pickup">Bằng chứng lấy hàng</string>
+    <string name="cd_saved_only">Đã lưu</string>
+    <string name="label_expiry_date_field">Ngày hết hạn</string>
+    <string name="greeting_hi">Xin chào, %1$s</string>
+    <string name="cd_edit">Chỉnh sửa</string>
+    <string name="cd_preview">Xem trước</string>
+    <string name="label_ai_analyze_hint">AI sẽ phân tích thực phẩm và tự động điền thông tin</string>
+    <string name="cd_primary_image">Ảnh chính</string>
+    <string name="cd_additional_image">Ảnh phụ %1$d</string>
+    <string name="label_primary_badge">Chính</string>
+    <string name="label_no_title">(chưa có tiêu đề)</string>
+    <string name="label_quality_grade">Chất lượng %1$s</string>
+    <string name="label_freshness_score">%1$d/100 tươi</string>
+    <string name="label_confidence_pct">%1$d%% độ tin cậy</string>
+    <string name="hint_quantity_number">10</string>
+    <string name="cd_share">Chia sẻ</string>
+    <string name="label_live">Trực tiếp</string>
+    <string name="label_posted_time_ago">Đăng %1$s</string>
+    <string name="cd_listing_image_n">Ảnh %2$d của %1$s</string>
+    <string name="label_exp_short">HH: %1$s</string>
+    <string name="error_failed_load_request">Không thể tải yêu cầu</string>
+    <string name="label_request_information">Thông tin yêu cầu</string>
+    <string name="label_more_from_store">Thêm từ cửa hàng này</string>
+    <string name="label_ngo_party">Tổ chức từ thiện</string>
+    <string name="label_grocery_party">Cửa hàng thực phẩm</string>
+    <string name="label_item">Mặt hàng</string>
+    <string name="label_pickup_time">Thời gian lấy hàng</string>
+    <string name="label_grocery">Cửa hàng</string>
+    <string name="label_ngo">NGO</string>
+    <string name="label_actions">Hành động</string>
+    <string name="msg_complete_checklist">Hoàn thành tất cả mục kiểm tra để xác nhận lấy hàng</string>
+    <string name="label_tap_view_full">Nhấn để xem toàn màn hình</string>
+    <string name="label_messages_section">Tin nhắn</string>
+    <string name="label_current_status">Hiện tại</string>
+    <string name="msg_no_messages">Chưa có tin nhắn. Hãy bắt đầu cuộc trò chuyện.</string>
+    <string name="cd_send">Gửi</string>
+    <string name="label_timeline_submitted">Đã gửi</string>
+    <string name="label_timeline_approved">Đã duyệt</string>
+    <string name="label_timeline_ready">Sẵn sàng lấy hàng</string>
+    <string name="label_timeline_completed">Hoàn thành</string>
+    <string name="label_status_submitted">Yêu cầu của bạn đã được gửi.</string>
+    <string name="label_status_approved">Yêu cầu của bạn đã được duyệt.</string>
+    <string name="label_status_ready">Yêu cầu của bạn sẵn sàng để lấy hàng.</string>
+    <string name="label_status_completed">Yêu cầu của bạn đã hoàn thành.</string>
+    <string name="label_requested_on_at">Được yêu cầu vào %1$s lúc %2$s</string>
+    <string name="label_completed_on_at">Hoàn thành vào %1$s lúc %2$s</string>
+    <string name="label_pickup_on_at">Lấy hàng vào %1$s lúc %2$s</string>
+    <string name="checklist_item_1">Số lượng khớp với yêu cầu</string>
+    <string name="checklist_item_2">Hàng hóa được đóng gói / niêm phong đúng cách</string>
+    <string name="checklist_item_3">Tất cả mặt hàng còn trong hạn sử dụng</string>
+    <string name="checklist_item_4">Đáp ứng yêu cầu nhiệt độ (ướp lạnh nếu cần)</string>
+    <string name="checklist_item_5">Đã ghi nhận biên lai / xác nhận thu</string>
+    <string name="label_pickup_verification_checklist">Danh sách kiểm tra lấy hàng</string>
+    <string name="label_name">Tên</string>
+    <string name="hint_email_you">ban@example.com</string>
+    <string name="hint_email_org">tochuc@example.com</string>
+    <string name="msg_account_locked">Tài khoản bị khóa. Thử lại sau %1$d phút.</string>
+    <string name="tos_agree_prefix">Tôi đồng ý với </string>
+    <string name="tos_agree_and"> và </string>
+
+    <!-- Snackbar messages (ViewModel) -->
+    <string name="snack_request_approved">Đã duyệt yêu cầu</string>
+    <string name="snack_marked_ready">Đã đánh dấu sẵn sàng lấy hàng</string>
+    <string name="snack_request_rejected">Đã từ chối yêu cầu</string>
+    <string name="snack_pickup_confirmed">Đã xác nhận lấy hàng!</string>
+    <string name="snack_action_failed">Hành động thất bại</string>
+    <string name="snack_new_request_from">Yêu cầu lấy hàng mới từ %1$s</string>
+    <string name="snack_request_cancelled_by">Yêu cầu bị hủy bởi %1$s</string>
+    <string name="snack_n_requests_approved">Đã duyệt %1$d yêu cầu</string>
+    <string name="snack_n_requests_rejected">Đã từ chối %1$d yêu cầu</string>
+    <string name="snack_new_listing">Có danh sách mới: %1$s</string>
+    <string name="snack_listings_refreshed">Đã làm mới danh sách</string>
+    <string name="snack_listing_deleted">Đã xóa danh sách</string>
+    <string name="snack_listing_archived">Đã lưu trữ danh sách</string>
+    <string name="snack_listing_restored">Đã khôi phục danh sách</string>
+    <string name="snack_n_listings_deleted">Đã xóa %1$d danh sách</string>
+    <string name="snack_n_listings_archived">Đã lưu trữ %1$d danh sách</string>
+    <string name="snack_n_listings_restored">Đã khôi phục %1$d danh sách</string>
+    <string name="n_listings_selected">Đã chọn %1$d sản phẩm</string>
+    <string name="snack_quantity_updated">Đã cập nhật số lượng</string>
+    <string name="snack_draft_saved">Đã lưu nháp</string>
+    <string name="snack_draft_restored">Đã khôi phục nháp</string>
+    <string name="snack_image_upload_failed">Tải ảnh thất bại: %1$s</string>
+    <string name="snack_listing_created">Tạo danh sách thành công!</string>
+    <string name="snack_analysis_failed">Phân tích thất bại: %1$s</string>
+    <string name="snack_ai_applied">Đã áp dụng gợi ý AI! Vui lòng xem lại.</string>
+    <string name="snack_ai_detected">AI phát hiện: %1$s (%2$d%% độ tin cậy)</string>
+    <string name="snack_profile_updated">Cập nhật hồ sơ thành công</string>
+    <string name="snack_password_changed">Đổi mật khẩu thành công</string>
+    <string name="snack_avatar_updated">Cập nhật ảnh đại diện thành công</string>
+    <string name="snack_account_deleted">Xóa tài khoản thành công</string>
+    <string name="snack_new_inventory_item">Nhận mặt hàng mới: %1$s</string>
+    <string name="snack_no_inventory_export">Không có dữ liệu tồn kho để xuất</string>
+    <string name="snack_csv_saved">CSV đã lưu vào Tải xuống</string>
+    <string name="snack_csv_failed">Lưu CSV thất bại</string>
+    <string name="snack_export_failed">Xuất thất bại: %1$s</string>
+    <string name="snack_inventory_refreshed">Đã làm mới tồn kho</string>
+    <string name="snack_n_items_distributed">Đã phân phối %1$d mặt hàng</string>
+    <string name="snack_item_distributed">Đã đánh dấu mặt hàng là đã phân phối</string>
+    <string name="snack_distributed_to_beneficiaries">Đã phân phối cho %1$d người thụ hưởng</string>
+    <string name="snack_item_added">Đã thêm mặt hàng vào kho</string>
+    <string name="snack_new_admin_notification">%1$s mới: %2$s</string>
+    <string name="snack_new_transaction">Giao dịch: %1$s</string>
+    <string name="snack_stats_refreshed">Đã làm mới thống kê</string>
+    <string name="snack_new_registration">%1$s mới đăng ký: %2$s</string>
+    <string name="snack_approved_orgs">Đã duyệt %1$d/%2$d tổ chức</string>
+    <string name="snack_rejected_orgs">Đã từ chối %1$d/%2$d tổ chức</string>
+    <string name="snack_org_approved">Đã duyệt tổ chức</string>
+    <string name="snack_org_rejected">Đã từ chối tổ chức</string>
+    <string name="snack_orgs_refreshed">Đã làm mới tổ chức</string>
+    <string name="snack_transactions_refreshed">Đã làm mới giao dịch</string>
+    <string name="snack_no_data_export">Không có dữ liệu để xuất</string>
+    <string name="snack_pdf_saved">PDF đã lưu vào Tải xuống</string>
+    <string name="snack_pdf_failed">Lưu PDF thất bại</string>
+    <string name="snack_welcome_back">Chào mừng trở lại, %1$s!</string>
+    <string name="snack_dispute_submitted">Đã gửi khiếu nại. Nhóm chúng tôi sẽ xem xét trong 24 giờ.</string>
+    <string name="snack_cannot_retry">Không thể thử lại: Đã đạt số lần tối đa</string>
+    <string name="snack_request_submitted">Đã gửi yêu cầu lấy hàng thành công!</string>
+    <string name="snack_email_verified">Email đã xác minh! Chào mừng đến ClearChain.</string>
+    <string name="snack_code_resent">Đã gửi lại mã xác minh đến %1$s</string>
+    <string name="snack_request_cancelled">Đã hủy yêu cầu</string>
+    <string name="snack_requests_refreshed">Đã làm mới yêu cầu</string>
+    <string name="snack_pickup_confirmed_photo">Đã xác nhận lấy hàng với ảnh!</string>
+    <string name="snack_receipt_failed">Không thể tạo biên lai</string>
+    <string name="snack_review_submitted">Cảm ơn bạn đã đánh giá!</string>
+    <string name="snack_receipt_title">Biên lai lấy hàng — %1$s</string>
+    <string name="label_pickup_receipt">Biên lai lấy hàng</string>
+    <string name="snack_your_request_approved">Yêu cầu của bạn đã được duyệt!</string>
+    <string name="snack_food_ready_pickup">Thực phẩm đã sẵn sàng để lấy!</string>
+    <string name="snack_pickup_completed">Đã lấy hàng xong</string>
+    <string name="snack_request_rejected_by_grocery">Yêu cầu của bạn bị từ chối bởi cửa hàng</string>
+    <string name="snack_status_updated_to">Trạng thái cập nhật thành %1$s</string>
+    <string name="hint_pinch_to_zoom">Chụm để thu phóng</string>
+    <string name="msg_try_again_later">Vui lòng thử lại sau hoặc liên hệ hỗ trợ nếu sự cố tiếp tục.</string>
+    <string name="cd_profile_picture_of">Ảnh đại diện của %1$s</string>
+    <string name="label_upload_failed">Tải lên thất bại</string>
+
+    <!-- Org type short labels (chart legends) -->
+    <string name="org_type_grocery">Cửa hàng</string>
+    <string name="org_type_ngo">NGO</string>
+    <!-- Statistics comparison metric labels -->
+    <string name="label_completed_pickups">Lần lấy hàng hoàn thành</string>
+    <string name="label_food_saved">Thực phẩm tiết kiệm</string>
+    <string name="label_new_listings">Danh sách mới</string>
+    <string name="label_vs_yesterday">so với Hôm qua</string>
+    <string name="label_vs_prev_week">so với Tuần trước</string>
+    <string name="label_vs_prev_month">so với Tháng trước</string>
+    <string name="label_vs_prev_period">so với Kỳ trước</string>
+
+    <!-- Admin / misc UI labels -->
+    <string name="label_admin">Quản trị viên</string>
+    <string name="label_email">Email</string>
+    <string name="label_phone">Điện thoại</string>
+    <string name="label_location">Địa điểm</string>
+    <string name="msg_not_provided">Chưa cung cấp</string>
+    <string name="label_overdue">Quá hạn</string>
+    <string name="label_submitted">Đã gửi</string>
+    <string name="label_pickup_short">Lấy hàng</string>
+    <string name="label_to">Đến</string>
+    <string name="label_doc_n">Tài liệu %1$d</string>
+    <string name="cd_collapse">Thu gọn</string>
+    <string name="cd_expand">Mở rộng</string>
+    <string name="cd_exit_batch_mode">Thoát chế độ hàng loạt</string>
+    <string name="cd_batch_select">Chọn hàng loạt</string>
+    <string name="label_quantity_units">%1$d đơn vị</string>
+    <string name="label_pickup_at">%1$s lúc %2$s</string>
+
+    <!-- Verification checklist items -->
+    <string name="verify_check_1">Tên tổ chức hợp lệ và đầy đủ</string>
+    <string name="verify_check_2">Địa chỉ email đã được xác minh</string>
+    <string name="verify_check_3">Đã cung cấp số điện thoại</string>
+    <string name="verify_check_4">Đã cung cấp địa chỉ thực tế</string>
+    <string name="verify_check_5">Đã xác minh đăng ký kinh doanh hoặc tư cách từ thiện</string>
+    <string name="verify_check_6">Đã xác định người liên hệ</string>
+
+    <!-- Rejection template reasons -->
+    <string name="reject_template_1">Hồ sơ không đầy đủ — vui lòng nộp lại với đầy đủ thông tin</string>
+    <string name="reject_template_2">Không thể xác minh đăng ký kinh doanh</string>
+    <string name="reject_template_3">Không thể xác minh địa chỉ tổ chức</string>
+    <string name="reject_template_4">Thông tin liên hệ có vẻ không hợp lệ</string>
+    <string name="reject_template_5">Phát hiện tài khoản trùng lặp</string>
+    <string name="reject_template_6">Không đáp ứng tiêu chí đủ điều kiện</string>
+
+    <!-- PDF label keys -->
+    <string name="pdf_generated_by">Được tạo bởi ClearChain</string>
+    <string name="label_reference_id">Mã tham chiếu</string>
+    <string name="label_food_item">Thực phẩm</string>
+    <string name="label_from">Từ</string>
+    <string name="label_status">Trạng thái</string>
+    <string name="pdf_stats_title">Báo cáo thống kê ClearChain</string>
+    <string name="pdf_stats_generated">Tạo lúc: %1$s  •  Kỳ: %2$s</string>
+    <string name="pdf_platform_overview">Tổng quan nền tảng</string>
+    <string name="label_total_organizations">Tổng tổ chức</string>
+    <string name="label_grocery_stores">Cửa hàng thực phẩm</string>
+    <string name="label_ngos">NGO</string>
+    <string name="label_verified">Đã xác minh</string>
+    <string name="label_total_listings">Tổng danh sách</string>
+    <string name="label_active_listings">Danh sách đang hoạt động</string>
+    <string name="label_total_requests">Tổng yêu cầu</string>
+    <string name="label_completed_requests">Yêu cầu hoàn thành</string>
+    <string name="label_pending_requests">Yêu cầu đang chờ</string>
+    <string name="label_total_food_saved_kg">Tổng thực phẩm tiết kiệm (kg)</string>
+    <string name="label_impact">Tác động</string>
+    <string name="label_kg_saved">Kg đã tiết kiệm</string>
+    <string name="label_meals_equivalent">Tương đương bữa ăn</string>
+    <string name="label_co2_saved_kg">CO₂ tiết kiệm (kg)</string>
+    <string name="label_beneficiaries">Người thụ hưởng</string>
+
+    <!-- Validation errors -->
+    <string name="error_email_required">Email là bắt buộc</string>
+    <string name="error_email_invalid_format">Định dạng email không hợp lệ</string>
+    <string name="error_password_required">Mật khẩu là bắt buộc</string>
+    <string name="error_login_failed">Đăng nhập thất bại</string>
+    <string name="error_name_required">Tên là bắt buộc</string>
+    <string name="error_name_min_length">Tên phải có ít nhất 3 ký tự</string>
+    <string name="error_name_min_chars">Ít nhất 3 ký tự</string>
+    <string name="error_email_already_registered">Email đã được đăng ký</string>
+    <string name="error_password_complexity">Mật khẩu phải có 8+ ký tự gồm chữ hoa, chữ thường và số</string>
+    <string name="error_confirm_password_required">Vui lòng xác nhận mật khẩu</string>
+    <string name="error_registration_failed">Đăng ký thất bại</string>
+    <string name="error_title_required">Tiêu đề là bắt buộc</string>
+    <string name="error_title_min_length">Tiêu đề phải có ít nhất 3 ký tự</string>
+    <string name="error_description_required">Mô tả là bắt buộc</string>
+    <string name="error_quantity_required">Số lượng là bắt buộc</string>
+    <string name="error_quantity_positive">Số lượng phải lớn hơn 0</string>
+    <string name="error_unit_required">Đơn vị là bắt buộc</string>
+    <string name="error_expiry_required">Ngày hết hạn là bắt buộc</string>
+    <string name="error_date_format_yyyy_mm_dd">Định dạng ngày không hợp lệ. Dùng YYYY-MM-DD</string>
+    <string name="error_pickup_start_required">Thời gian bắt đầu lấy hàng là bắt buộc</string>
+    <string name="error_time_format_hhmm_start">Định dạng giờ không hợp lệ. Dùng HH:MM (vd: 09:00)</string>
+    <string name="error_pickup_end_required">Thời gian kết thúc lấy hàng là bắt buộc</string>
+    <string name="error_time_format_hhmm_end">Định dạng giờ không hợp lệ. Dùng HH:MM (vd: 17:00)</string>
+    <string name="error_end_time_before_start">Thời gian kết thúc phải sau thời gian bắt đầu</string>
+    <string name="error_create_listing_failed">Không thể tạo danh sách</string>
+    <string name="error_phone_required">Số điện thoại là bắt buộc</string>
+    <string name="error_contact_person_required">Người liên hệ là bắt buộc</string>
+    <string name="error_address_required">Địa chỉ là bắt buộc</string>
+    <string name="error_city_required">Thành phố là bắt buộc</string>
+    <string name="error_onboarding_save_failed">Lưu thất bại. Vui lòng thử lại.</string>
+    <string name="error_phone_invalid">Số điện thoại không hợp lệ</string>
+    <string name="error_update_profile_failed">Không thể cập nhật hồ sơ</string>
+    <string name="error_enter_6_digit_code">Nhập mã 6 chữ số</string>
+    <string name="error_verification_failed">Xác minh thất bại</string>
+    <string name="error_resend_code_failed">Không thể gửi lại mã</string>
+    <string name="error_fill_required_fields">Vui lòng điền đầy đủ các trường bắt buộc</string>
+    <string name="error_item_save_failed">Lưu thất bại</string>
+    <string name="error_load_item_failed">Không thể tải mục</string>
+    <string name="error_upload_failed">Tải lên thất bại</string>
+    <string name="error_load_statistics">Không thể tải thống kê</string>
+    <string name="error_refresh_failed">Không thể làm mới</string>
+    <string name="error_refresh_statistics">Không thể làm mới thống kê</string>
+    <string name="error_load_transactions">Không thể tải giao dịch</string>
+    <string name="error_refresh_transactions">Không thể làm mới giao dịch</string>
+    <string name="error_approve_failed">Không thể phê duyệt</string>
+    <string name="error_reject_failed">Không thể từ chối</string>
+    <string name="error_load_orgs">Không thể tải tổ chức</string>
+
+    <!-- UI component defaults -->
+    <string name="cd_hide_password">Ẩn mật khẩu</string>
+    <string name="cd_show_password">Hiện mật khẩu</string>
+    <string name="btn_confirm">Xác nhận</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_delete">Xóa</string>
+    <string name="placeholder_search">Tìm kiếm…</string>
+    <string name="cd_select_date">Chọn ngày</string>
+    <string name="cd_clear_search">Xóa tìm kiếm</string>
+    <string name="label_address">Địa chỉ</string>
+    <string name="placeholder_start_typing_address">Bắt đầu nhập địa chỉ…</string>
+
+    <!-- Sort option labels -->
+    <string name="sort_newest">Mới nhất</string>
+    <string name="sort_oldest">Cũ nhất</string>
+    <string name="sort_a_to_z">A–Z</string>
+    <string name="sort_z_to_a">Z–A</string>
+    <string name="sort_expiring_soon">Sắp hết hạn</string>
+    <string name="sort_expiring_later">Hết hạn muộn hơn</string>
+
+    <!-- Admin activity titles and descriptions -->
+    <string name="activity_title_new_org">%1$s mới đã đăng ký</string>
+    <string name="activity_title_transaction">Giao dịch hoàn thành</string>
+    <string name="activity_title_stats_updated">Thống kê nền tảng đã cập nhật</string>
+    <string name="activity_desc_new_org">%1$s từ %2$s</string>
+    <string name="activity_desc_transaction">%1$s nhận %2$s %3$s từ %4$s</string>
+    <string name="activity_desc_stats">%1$s tổng, %2$s hoàn thành hôm nay</string>
+    <string name="cd_org_type">Tổ chức %1$s</string>
+    <string name="error_delete_listing_failed">Không thể xóa danh sách</string>
+    <string name="error_archive_listing_failed">Không thể lưu trữ danh sách</string>
+    <string name="error_restore_listing_failed">Không thể khôi phục danh sách</string>
+    <string name="error_bulk_approve_failed">Duyệt hàng loạt thất bại</string>
+    <string name="error_bulk_reject_failed">Từ chối hàng loạt thất bại</string>
+    <string name="error_load_inventory">Không thể tải tồn kho</string>
+    <string name="error_refresh_inventory">Không thể làm mới tồn kho</string>
+    <string name="error_load_requests">Không thể tải yêu cầu</string>
+    <string name="error_refresh_requests">Không thể làm mới yêu cầu</string>
+    <string name="error_cancel_request_failed">Không thể hủy yêu cầu</string>
+    <string name="error_upload_photo_failed">Không thể tải ảnh lên</string>
+    <string name="error_submit_review_failed">Không thể gửi đánh giá</string>
+    <string name="error_analysis_failed">Phân tích thất bại</string>
+    <string name="label_grocery_store_name">Cửa hàng thực phẩm</string>
+    <string name="note_vehicle">Phương tiện: %1$s</string>
+    <string name="note_needs_refrigeration">Cần làm lạnh</string>
+    <string name="note_fragile_items">Hàng dễ vỡ</string>
+    <string name="note_heavy_load">Hàng nặng</string>
+    <string name="msg_attempt_n_of_n">Lần thử %1$d / %2$d</string>
+    <string name="msg_max_retry_reached">Đã đạt số lần thử tối đa</string>
+    <string name="error_submit_request_failed">Không thể gửi yêu cầu</string>
+    <string name="error_change_password_failed">Không thể đổi mật khẩu</string>
+    <string name="error_delete_account_failed">Không thể xóa tài khoản</string>
+
+    <!-- Pickup scheduling calendar (ManageRequests) -->
+    <string name="label_calendar_view">Lịch</string>
+    <string name="label_list_view">Danh sách</string>
+    <string name="cd_switch_to_calendar">Chuyển sang chế độ lịch</string>
+    <string name="cd_switch_to_list">Chuyển sang chế độ danh sách</string>
+    <string name="cd_switch_to_map">Chuyển sang chế độ bản đồ</string>
+    <string name="cd_prev_month">Tháng trước</string>
+    <string name="cd_next_month">Tháng sau</string>
+
+    <!-- Browse listings accessibility -->
+    <string name="cd_save_listing">Lưu niêm yết</string>
+    <string name="cd_remove_from_saved">Xóa khỏi đã lưu</string>
+    <string name="cd_toggle_selection_mode">Chuyển chế độ chọn</string>
+    <string name="cd_exit_selection">Thoát chế độ chọn</string>
+    <string name="cd_create_listing">Tạo niêm yết</string>
+    <string name="cd_select_multiple">Chọn nhiều</string>
+    <string name="cd_add_item_manually">Thêm mục thủ công</string>
+    <string name="cd_change_location">Thay đổi vị trí</string>
+    <string name="cd_return_to_location">Quay lại vị trí của tôi</string>
+    <string name="cd_select_time">Chọn giờ</string>
+    <string name="cd_back">Quay lại</string>
+    <string name="cd_edit_profile">Chỉnh sửa hồ sơ</string>
+    <string name="label_no_requests_on_date">Không có yêu cầu vào ngày này</string>
+    <string name="label_requests_on_date">%1$d yêu cầu vào %2$s</string>
+    <string name="label_tap_date_hint">Nhấn ngày để lọc · nhấn lại để xóa</string>
+    <string name="label_all_dates">Tất cả ngày</string>
+
+    <!-- Generic inline validation errors (used in composable dialogs) -->
+    <string name="error_invalid_number">Số không hợp lệ</string>
+    <string name="error_must_be_positive">Phải lớn hơn 0</string>
+    <string name="error_same_as_current">Giống với giá trị hiện tại</string>
+    <string name="label_current_qty">Hiện tại: %1$d %2$s</string>
+    <string name="error_select_reason">Vui lòng chọn lý do</string>
+
+    <!-- RequestPickup validation errors -->
+    <string name="error_listing_not_found">Không tìm thấy niêm yết</string>
+    <string name="error_quantity_invalid">Vui lòng nhập số lượng hợp lệ</string>
+    <string name="error_quantity_exceeds">Số lượng vượt quá mức khả dụng (%1$d %2$s)</string>
+    <string name="error_pickup_date_required">Vui lòng chọn ngày lấy hàng</string>
+    <string name="error_pickup_time_required">Vui lòng chọn giờ lấy hàng</string>
+    <string name="error_pickup_date_past">Ngày lấy hàng không thể trong quá khứ</string>
+    <string name="error_pickup_date_after_expiry">Ngày lấy hàng không thể sau ngày hết hạn (%1$s)</string>
+    <string name="error_invalid_date_format">Định dạng ngày không hợp lệ</string>
+    <string name="uploading_image">Đang tải hình ảnh…</string>
+
+    <!-- Vehicle type labels -->
+    <string name="vehicle_walk">Đi bộ</string>
+    <string name="vehicle_bicycle">Xe đạp</string>
+    <string name="vehicle_motorcycle">Xe máy</string>
+    <string name="vehicle_car">Xe hơi</string>
+    <string name="vehicle_van">Xe tải</string>
+
+    <!-- Review rating labels -->
+    <string name="review_rating_poor">Kém</string>
+    <string name="review_rating_below_avg">Dưới trung bình</string>
+    <string name="review_rating_average">Trung bình</string>
+    <string name="review_rating_good">Tốt</string>
+    <string name="review_rating_excellent">Xuất sắc!</string>
+
+    <!-- Food category labels -->
+    <string name="category_fruits">Trái cây</string>
+    <string name="category_vegetables">Rau củ</string>
+    <string name="category_dairy">Sữa và sản phẩm sữa</string>
+    <string name="category_bakery">Bánh mì và đồ nướng</string>
+    <string name="category_meat">Thịt</string>
+    <string name="category_seafood">Hải sản</string>
+    <string name="category_packaged">Thực phẩm đóng gói</string>
+    <string name="category_beverages">Đồ uống</string>
+    <string name="category_other">Khác</string>
+
+    <!-- Listing status labels -->
+    <string name="status_listing_available">Còn hàng</string>
+    <string name="status_listing_reserved">Đã đặt</string>
+    <string name="status_listing_completed">Hoàn thành</string>
+    <string name="status_listing_expired">Hết hạn</string>
+</resources>

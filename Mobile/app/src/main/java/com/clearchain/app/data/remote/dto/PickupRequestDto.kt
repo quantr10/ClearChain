@@ -12,7 +12,11 @@ data class CreatePickupRequestRequest(
     val requestedQuantity: Int,
     val pickupDate: String,
     val pickupTime: String,
-    val notes: String? = null
+    val notes: String? = null,
+    val vehicleType: String? = null,
+    val requiresRefrigeration: Boolean = false,
+    val isFragile: Boolean = false,
+    val isHeavy: Boolean = false
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -20,6 +24,18 @@ data class CreatePickupRequestRequest(
 data class UpdatePickupRequestStatusRequest(
     val status: String
 )
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class BulkActionRequest(val ids: List<String>)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class BulkRejectRequest(val ids: List<String>, val reason: String? = null)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class BulkActionResponse(val message: String, val succeeded: Int = 0, val failed: Int = 0)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -55,8 +71,18 @@ data class PickupRequestData(
     val notes: String?,
     val listingTitle: String,
     val listingCategory: String,
+    val listingExpiryDate: String? = null,
+    val listingUnit: String = "",
     val createdAt: String,
-    val proofPhotoUrl: String? = null  // ✅ NEW
+    val proofPhotoUrl: String? = null,
+    val markedReadyAt: String? = null,
+    val markedPickedUpAt: String? = null,
+    val confirmedReceivedAt: String? = null,
+    val vehicleType: String? = null,
+    val requiresRefrigeration: Boolean = false,
+    val isFragile: Boolean = false,
+    val isHeavy: Boolean = false,
+    val listingDescription: String? = null
 )
 
 // Extension function
@@ -69,11 +95,13 @@ fun PickupRequestData.toDomain(): PickupRequest {
         groceryId = groceryId,
         groceryName = groceryName,
         status = when (status.lowercase()) {
-            "pending" -> PickupRequestStatus.PENDING
-            "approved" -> PickupRequestStatus.APPROVED
-            "ready" -> PickupRequestStatus.READY
+            "pending"   -> PickupRequestStatus.PENDING
+            "approved"  -> PickupRequestStatus.APPROVED
+            "ready"     -> PickupRequestStatus.READY
             "completed" -> PickupRequestStatus.COMPLETED
-            else -> PickupRequestStatus.PENDING
+            "cancelled" -> PickupRequestStatus.CANCELLED
+            "rejected"  -> PickupRequestStatus.REJECTED
+            else        -> PickupRequestStatus.PENDING
         },
         requestedQuantity = requestedQuantity,
         pickupDate = pickupDate,
@@ -81,7 +109,17 @@ fun PickupRequestData.toDomain(): PickupRequest {
         notes = notes,
         listingTitle = listingTitle,
         listingCategory = listingCategory,
+        listingExpiryDate = listingExpiryDate,
+        listingUnit = listingUnit,
         createdAt = createdAt,
-        proofPhotoUrl = proofPhotoUrl  // ✅ NEW
+        proofPhotoUrl = proofPhotoUrl,
+        markedReadyAt = markedReadyAt,
+        markedPickedUpAt = markedPickedUpAt,
+        confirmedReceivedAt = confirmedReceivedAt,
+        vehicleType = vehicleType,
+        requiresRefrigeration = requiresRefrigeration,
+        isFragile = isFragile,
+        isHeavy = isHeavy,
+        listingDescription = listingDescription
     )
 }

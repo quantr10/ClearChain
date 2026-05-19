@@ -13,8 +13,6 @@ data class CreateListingRequest(
     val quantity: Int,
     val unit: String,
     val expiryDate: String,
-    val pickupTimeStart: String,
-    val pickupTimeEnd: String,
     val imageUrl: String? = null
 )
 
@@ -63,7 +61,21 @@ data class ListingData(
     val groupSummary: ListingGroupSummaryDto? = null,
 
     // ═══ NEW (Part 2): Distance from NGO ═══
-    val distanceKm: Double? = null
+    val distanceKm: Double? = null,
+
+    // ═══ Analytics + Archive ═══
+    val viewCount: Int = 0,
+    val requestCount: Int = 0,
+    val isArchived: Boolean = false,
+    val archivedAt: String? = null,
+    val imageUrls: List<String> = emptyList(),
+
+    // ═══ Grocery coordinates (for map pins) ═══
+    val groceryLatitude: Double? = null,
+    val groceryLongitude: Double? = null,
+
+    // ═══ Grocery operating hours (live from profile) ═══
+    val groceryHours: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -130,6 +142,15 @@ fun ListingData.toDomain(): Listing {
             )
         },
         // NEW (Part 2)
-        distanceKm = distanceKm
+        distanceKm = distanceKm,
+        // Analytics + Archive
+        viewCount = viewCount,
+        requestCount = requestCount,
+        isArchived = isArchived,
+        archivedAt = archivedAt,
+        imageUrls = imageUrls,
+        groceryLatitude = groceryLatitude,
+        groceryLongitude = groceryLongitude,
+        groceryHours = groceryHours
     )
 }

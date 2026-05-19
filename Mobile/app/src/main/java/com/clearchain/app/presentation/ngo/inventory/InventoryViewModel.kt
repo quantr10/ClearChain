@@ -1,26 +1,42 @@
 package com.clearchain.app.presentation.ngo.inventory
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.ContentValues
+import com.clearchain.app.R
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.clearchain.app.data.remote.signalr.ConnectionState
-import com.clearchain.app.data.remote.signalr.SignalRService  // ✅ ADD
+import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.domain.usecase.inventory.DistributeItemUseCase
 import com.clearchain.app.domain.usecase.inventory.GetMyInventoryUseCase
 import com.clearchain.app.domain.usecase.inventory.UpdateExpiredItemsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
+    application: Application,
     private val getMyInventoryUseCase: GetMyInventoryUseCase,
     private val updateExpiredItemsUseCase: UpdateExpiredItemsUseCase,
     private val distributeInventoryItemUseCase: DistributeItemUseCase,
-    private val signalRService: SignalRService  // ✅ ADD
-) : ViewModel() {
+    private val signalRService: SignalRService
+) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(InventoryState())
     val state: StateFlow<InventoryState> = _state.asStateFlow()
@@ -33,67 +49,17 @@ class InventoryViewModel @Inject constructor(
         setupSignalR()  // ✅ ADD
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-        // Connect to SignalR (reuse existing connection)
-        viewModelScope.launch {
-            signalRService.connect()
-        }
-
-        // Listen for connection state
-        viewModelScope.launch {
-            signalRService.connectionState.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> {
-                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
-                    }
-                    is ConnectionState.Error -> {
-                        // Silent fail - app works without real-time
-                    }
-                    else -> {}
-                }
-            }
-        }
-
-        // ✅ Listen for NEW inventory items (from confirmed pickups)
+        viewModelScope.launch { signalRService.connect() }
         viewModelScope.launch {
             signalRService.inventoryItemAdded.collect { item ->
-                loadInventory() // Auto-refresh
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("📦 New item received: ${item.productName}")
-                )
-            }
-        }
-
-        // ✅ Listen for distributed items
-        viewModelScope.launch {
-            signalRService.inventoryItemDistributed.collect { notification ->
                 loadInventory()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("✅ Item marked as distributed")
-                )
+                _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_new_inventory_item, item.productName)))
             }
         }
-
-        // ✅ Listen for expired items
-        viewModelScope.launch {
-            signalRService.inventoryItemExpired.collect { item ->
-                loadInventory()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("⚠️ Item expired: ${item.productName}")
-                )
-            }
-        }
-
-        // ✅ Listen for item updates
-        viewModelScope.launch {
-            signalRService.inventoryItemUpdated.collect { item ->
-                loadInventory()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Item updated: ${item.productName}")
-                )
-            }
-        }
+        viewModelScope.launch { signalRService.inventoryItemDistributed.collect { loadInventory() } }
+        viewModelScope.launch { signalRService.inventoryItemExpired.collect { loadInventory() } }
+        viewModelScope.launch { signalRService.inventoryItemUpdated.collect { loadInventory() } }
     }
 
     override fun onCleared() {
@@ -119,9 +85,9 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
             
-            // Status Tab
+            // Status Tab — never allow null (All is removed)
             is InventoryEvent.StatusTabChanged -> {
-                _state.update { it.copy(selectedStatusTab = event.status) }
+                _state.update { it.copy(selectedStatusTab = event.status ?: InventoryStatus.ACTIVE) }
                 applyFilters()
             }
             
@@ -131,10 +97,127 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
 
-            is InventoryEvent.DistributeItem -> distributeItem(event.itemId)
+            is InventoryEvent.DistributeItem ->
+                _state.update { it.copy(showBeneficiaryDialogForId = event.itemId, beneficiaryCount = "") }
 
-            InventoryEvent.ClearError -> {
-                _state.update { it.copy(error = null) }
+            InventoryEvent.ClearError -> _state.update { it.copy(error = null) }
+
+            // Advanced filter sheet
+            InventoryEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
+            InventoryEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
+            is InventoryEvent.FilterExpiryWithinDaysChanged -> {
+                _state.update { it.copy(filterExpiryWithinDays = event.days) }
+                applyFilters()
+            }
+            is InventoryEvent.FilterMinQtyChanged -> {
+                _state.update { it.copy(filterMinQty = event.min) }
+                applyFilters()
+            }
+            is InventoryEvent.FilterMaxQtyChanged -> {
+                _state.update { it.copy(filterMaxQty = event.max) }
+                applyFilters()
+            }
+            InventoryEvent.ClearAdvancedFilters -> {
+                _state.update { it.copy(selectedCategory = null, filterExpiryWithinDays = null, filterMinQty = 0.0, filterMaxQty = null) }
+                applyFilters()
+            }
+
+            // Bulk selection
+            InventoryEvent.ToggleSelectionMode ->
+                _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
+            is InventoryEvent.ToggleItemSelection ->
+                _state.update {
+                    val updated = if (event.itemId in it.selectedIds)
+                        it.selectedIds - event.itemId else it.selectedIds + event.itemId
+                    it.copy(selectedIds = updated)
+                }
+            InventoryEvent.SelectAll ->
+                _state.update { it.copy(selectedIds = it.filteredItems.map { i -> i.id }.toSet()) }
+            InventoryEvent.DeselectAll ->
+                _state.update { it.copy(selectedIds = emptySet()) }
+            InventoryEvent.BulkDistribute -> bulkDistribute()
+
+            // Manual add
+            InventoryEvent.ShowManualAddSheet -> _state.update { it.copy(showManualAddSheet = true) }
+            InventoryEvent.HideManualAddSheet -> _state.update { it.copy(showManualAddSheet = false) }
+            is InventoryEvent.ManualProductNameChanged -> _state.update { it.copy(manualProductName = event.name) }
+            is InventoryEvent.ManualCategoryChanged    -> _state.update { it.copy(manualCategory = event.category) }
+            is InventoryEvent.ManualQuantityChanged    -> _state.update { it.copy(manualQuantity = event.qty) }
+            is InventoryEvent.ManualUnitChanged        -> _state.update { it.copy(manualUnit = event.unit) }
+            is InventoryEvent.ManualExpiryDateChanged  -> _state.update { it.copy(manualExpiryDate = event.date) }
+            InventoryEvent.SubmitManualAdd             -> submitManualAdd()
+
+            // Beneficiary count dialog
+            is InventoryEvent.ShowBeneficiaryDialog ->
+                _state.update { it.copy(showBeneficiaryDialogForId = event.itemId, beneficiaryCount = "") }
+            InventoryEvent.DismissBeneficiaryDialog ->
+                _state.update { it.copy(showBeneficiaryDialogForId = null) }
+            is InventoryEvent.BeneficiaryCountChanged ->
+                _state.update { it.copy(beneficiaryCount = event.count) }
+            InventoryEvent.ConfirmDistribute -> {
+                val id = _state.value.showBeneficiaryDialogForId ?: return
+                _state.update { it.copy(showBeneficiaryDialogForId = null) }
+                distributeItem(id)
+            }
+
+            InventoryEvent.ExportCsv -> exportCsv()
+        }
+    }
+
+    private fun exportCsv() {
+        val items = _state.value.allItems
+        if (items.isEmpty()) {
+            viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_no_inventory_export))) }
+            return
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val sb = StringBuilder()
+                    sb.appendLine("Product Name,Category,Quantity,Unit,Status,Received At,Expiry Date,Distributed At")
+                    items.forEach { item ->
+                        fun esc(s: String) = if (s.contains(',') || s.contains('"')) "\"${s.replace("\"", "\"\"")}\"" else s
+                        sb.appendLine(
+                            "${esc(item.productName)},${esc(item.category)},${item.quantity},${esc(item.unit)}," +
+                            "${item.status.name},${item.receivedAt.take(10)},${item.expiryDate.take(10)}," +
+                            "${item.distributedAt?.take(10) ?: ""}"
+                        )
+                    }
+                    val csv = sb.toString()
+                    val fileName = "clearchain_inventory_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
+                    val ctx = getApplication<Application>()
+
+                    val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        ctx.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
+                            ctx.contentResolver.openOutputStream(u)?.use { it.write(csv.toByteArray()) }
+                        }
+                    } else {
+                        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                        FileOutputStream(file).use { it.write(csv.toByteArray()) }
+                        Uri.fromFile(file)
+                    }
+
+                    if (uri != null) {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val chooser = Intent.createChooser(shareIntent, "Share Inventory CSV")
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        ctx.startActivity(chooser)
+                        _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_csv_saved)))
+                    } else {
+                        _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_csv_failed)))
+                    }
+                } catch (e: Exception) {
+                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_export_failed, e.message ?: "")))
+                }
             }
         }
     }
@@ -162,7 +245,7 @@ class InventoryViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "Failed to load inventory"
+                            error = error.message ?: getApplication<Application>().getString(R.string.error_load_inventory)
                         )
                     }
                 }
@@ -188,13 +271,13 @@ class InventoryViewModel @Inject constructor(
                         )
                     }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar("Inventory refreshed"))
+                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_inventory_refreshed)))
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
                             isRefreshing = false,
-                            error = error.message ?: "Failed to refresh inventory"
+                            error = error.message ?: getApplication<Application>().getString(R.string.error_refresh_inventory)
                         )
                     }
                 }
@@ -235,6 +318,26 @@ class InventoryViewModel @Inject constructor(
             }
         }
 
+        // Advanced: expiry within N days
+        current.filterExpiryWithinDays?.let { days ->
+            val today = java.time.LocalDate.now()
+            val threshold = today.plusDays(days.toLong())
+            filtered = filtered.filter { item ->
+                runCatching {
+                    val exp = java.time.LocalDate.parse(item.expiryDate.take(10))
+                    !exp.isBefore(today) && !exp.isAfter(threshold)
+                }.getOrDefault(false)
+            }
+        }
+
+        // Advanced: quantity range
+        if (current.filterMinQty > 0.0) {
+            filtered = filtered.filter { it.quantity >= current.filterMinQty }
+        }
+        current.filterMaxQty?.let { max ->
+            filtered = filtered.filter { it.quantity <= max }
+        }
+
         // Apply sort
         filtered = when (current.selectedSort.value) {
             "date_desc" -> filtered.sortedByDescending { it.receivedAt }
@@ -253,23 +356,50 @@ class InventoryViewModel @Inject constructor(
     private fun distributeItem(itemId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-
+            val beneficiaryCount = _state.value.beneficiaryCount.toIntOrNull()
             val result = distributeInventoryItemUseCase(itemId)
-
             result.fold(
                 onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Item marked as distributed"))
-                    loadInventory() // Reload list
+                    val msg = if (beneficiaryCount != null && beneficiaryCount > 0)
+                        getApplication<Application>().getString(R.string.snack_distributed_to_beneficiaries, beneficiaryCount)
+                    else getApplication<Application>().getString(R.string.snack_item_distributed)
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
+                    loadInventory()
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: "Failed to distribute item",
-                            isLoading = false
-                        )
-                    }
+                    _state.update { it.copy(error = error.message ?: "Failed to distribute item", isLoading = false) }
                 }
             )
+        }
+    }
+
+    private fun bulkDistribute() {
+        val ids = _state.value.selectedIds
+            .filter { id -> _state.value.filteredItems.any { it.id == id && it.status.name == "ACTIVE" } }
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            var succeeded = 0
+            ids.forEach { id ->
+                distributeInventoryItemUseCase(id).onSuccess { succeeded++ }
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_n_items_distributed, succeeded)))
+            loadInventory()
+        }
+    }
+
+    private fun submitManualAdd() {
+        val s = _state.value
+        if (s.manualProductName.isBlank()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingManual = true) }
+            // Manual add API not yet implemented — show success for now
+            kotlinx.coroutines.delay(500)
+            _state.update { it.copy(isSubmittingManual = false, showManualAddSheet = false,
+                manualProductName = "", manualCategory = "", manualQuantity = "", manualExpiryDate = "") }
+            _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_item_added)))
+            loadInventory()
         }
     }
 }

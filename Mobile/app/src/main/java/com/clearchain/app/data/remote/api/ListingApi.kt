@@ -29,11 +29,12 @@ interface ListingApi {
     suspend fun getAllListings(
         @Query("status") status: String? = null,
         @Query("category") category: String? = null,
+        @Query("groceryId") groceryId: String? = null,
         @Query("lat") lat: Double? = null,
         @Query("lng") lng: Double? = null,
         @Query("radiusKm") radiusKm: Int? = null,
         @Query("page") page: Int = 1,
-        @Query("pageSize") pageSize: Int = 50
+        @Query("pageSize") pageSize: Int = 10
     ): ListingsResponse
 
     @PUT("listings/{id}")
@@ -52,4 +53,10 @@ interface ListingApi {
         @Path("id") listingId: String,
         @Body request: UpdateListingQuantityRequest
     ): ListingResponse
+
+    @PUT("listings/{id}/archive")
+    suspend fun archiveListing(@Path("id") id: String): ListingResponse
+
+    @PUT("listings/{id}/unarchive")
+    suspend fun unarchiveListing(@Path("id") id: String): ListingResponse
 }

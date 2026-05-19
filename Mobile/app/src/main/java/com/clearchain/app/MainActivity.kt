@@ -1,6 +1,7 @@
 package com.clearchain.app
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -10,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.rememberNavController
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.navigation.BottomNavBar
@@ -38,9 +41,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        // Apply stored locale before the Activity inflates any resources
+        val lang = newBase.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
+            .getString("language", "en") ?: "en"
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+        super.attachBaseContext(newBase)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // ✅ Handle notification deep link FIRST
         handleNotificationIntent(intent)
         

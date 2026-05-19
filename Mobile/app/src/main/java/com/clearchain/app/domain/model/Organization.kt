@@ -23,7 +23,11 @@ data class Organization(
     val longitude: Double? = null,
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    // ═══ Document fields ═══
+    val documentUrl: String? = null,
+    val documentUrl2: String? = null,
+    val documentMimeType: String? = null
 ) {
     fun isProfileComplete(): Boolean {
         val commonComplete = phone.isNotBlank() &&

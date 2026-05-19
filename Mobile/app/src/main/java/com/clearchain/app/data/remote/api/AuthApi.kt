@@ -8,7 +8,17 @@ interface AuthApi {
     @POST("auth/register")
     suspend fun register(
         @Body request: RegisterRequest
+    ): MessageResponse
+
+    @POST("auth/verify-email")
+    suspend fun verifyEmail(
+        @Body request: VerifyEmailRequest
     ): AuthResponse
+
+    @POST("auth/resend-verification")
+    suspend fun resendVerification(
+        @Body request: ResendVerificationRequest
+    ): MessageResponse
 
     @POST("auth/login")
     suspend fun login(
@@ -35,4 +45,10 @@ interface AuthApi {
 
     @POST("auth/fcm-token")
     suspend fun registerFCMToken(@Body request: RegisterFCMTokenRequest): ApiResponse<Unit>
+
+    @GET("auth/check-email")
+    suspend fun checkEmail(@Query("email") email: String): EmailAvailabilityResponse
+
+    @DELETE("auth/account")
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest): MessageResponse
 }

@@ -1,12 +1,16 @@
 package com.clearchain.app.presentation.auth.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
+import com.clearchain.app.data.local.AuthPreferenceStore
 import com.clearchain.app.domain.usecase.auth.LoginUseCase
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -14,7 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase
+    @ApplicationContext private val context: Context,
+    private val loginUseCase: LoginUseCase,
+    private val authPreferenceStore: AuthPreferenceStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
@@ -22,6 +28,20 @@ class LoginViewModel @Inject constructor(
 
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+
+    init {
+        // Load saved email and remember me preference
+        viewModelScope.launch {
+            combine(
+                authPreferenceStore.rememberMe,
+                authPreferenceStore.savedEmail
+            ) { rememberMe, savedEmail -> rememberMe to savedEmail }
+                .first()
+                .let { (rememberMe, savedEmail) ->
+                    _state.update { it.copy(rememberMe = rememberMe, email = savedEmail) }
+                }
+        }
+    }
 
     fun onEvent(event: LoginEvent) {
         when (event) {
@@ -33,7 +53,9 @@ class LoginViewModel @Inject constructor(
             LoginEvent.NavigateToRegister ->
                 viewModelScope.launch { _uiEvent.send(UiEvent.Navigate("register")) }
             LoginEvent.ClearError ->
-                _state.update { it.copy(error = null) }
+                _state.update { it.copy(error = null, isLockedOut = false) }
+            LoginEvent.ToggleRememberMe ->
+                _state.update { it.copy(rememberMe = !it.rememberMe) }
         }
     }
 
@@ -42,7 +64,7 @@ class LoginViewModel @Inject constructor(
         val currentState = _state.value
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null, isLockedOut = false) }
 
             val result = loginUseCase(
                 email = currentState.email,
@@ -51,9 +73,13 @@ class LoginViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { (user, _) ->
+                    // Save or clear remember-me preference
+                    authPreferenceStore.saveRememberMe(
+                        enabled = currentState.rememberMe,
+                        email = if (currentState.rememberMe) currentState.email else ""
+                    )
                     _state.update { it.copy(isLoading = false) }
 
-                    // ═══ NEW: isProfileComplete() check (Part 1) ═══
                     val route = if (!user.isProfileComplete()) {
                         Screen.Onboarding.route
                     } else {
@@ -66,26 +92,41 @@ class LoginViewModel @Inject constructor(
                     }
 
                     _uiEvent.send(UiEvent.Navigate(route))
-                    _uiEvent.send(UiEvent.ShowSnackbar("Welcome back, ${user.name}!"))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_welcome_back, user.name)))
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Login failed") }
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Login failed"))
+                    val message = error.message ?: context.getString(R.string.error_login_failed)
+                    // Detect lockout: "Account locked. Try again in X minutes."
+                    val lockoutMinutes = parseLockoutMinutes(message)
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = message,
+                            isLockedOut = lockoutMinutes > 0,
+                            lockoutMinutes = lockoutMinutes
+                        )
+                    }
                 }
             )
         }
+    }
+
+    private fun parseLockoutMinutes(message: String): Int {
+        // Backend format: "Account locked. Try again in X minutes."
+        val regex = Regex("""(\d+)\s+minute""")
+        return regex.find(message)?.groupValues?.get(1)?.toIntOrNull() ?: 0
     }
 
     private fun validateInputs(): Boolean {
         val s = _state.value
         var valid = true
         if (s.email.isBlank()) {
-            _state.update { it.copy(emailError = "Email is required") }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }; valid = false
         } else if (!ValidationUtils.isValidEmail(s.email)) {
-            _state.update { it.copy(emailError = "Invalid email format") }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
         }
         if (s.password.isBlank()) {
-            _state.update { it.copy(passwordError = "Password is required") }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }; valid = false
         }
         return valid
     }

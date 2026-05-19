@@ -24,16 +24,17 @@ public class CreateListingRequest
     [Required]
     public string ExpiryDate { get; set; } = string.Empty;  // yyyy-MM-dd
 
-    // ✅ ADD: Pickup time window
-    [Required]
-    [RegularExpression(@"^([0-1][0-9]|2[0-3]):[0-5][0-9]$", 
-        ErrorMessage = "Invalid time format. Use HH:mm (e.g., 09:00)")]
-    public string PickupTimeStart { get; set; } = string.Empty;  // HH:mm
-
-    [Required]
-    [RegularExpression(@"^([0-1][0-9]|2[0-3]):[0-5][0-9]$", 
-        ErrorMessage = "Invalid time format. Use HH:mm (e.g., 17:00)")]
-    public string PickupTimeEnd { get; set; } = string.Empty;  // HH:mm
+    // Pickup window is derived from the grocery's operating hours in their profile.
+    // These are kept as optional for backward compatibility with existing data only.
+    public string? PickupTimeStart { get; set; }
+    public string? PickupTimeEnd { get; set; }
 
     public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Multiple image URLs. If provided, ImageUrl is ignored and this list is serialized
+    /// as a JSON array into the PhotoUrl column. Max 5 images.
+    /// </summary>
+    [MaxLength(5)]
+    public List<string>? ImageUrls { get; set; }
 }

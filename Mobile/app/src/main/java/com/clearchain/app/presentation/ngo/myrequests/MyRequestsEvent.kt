@@ -19,9 +19,28 @@ sealed class MyRequestsEvent {
         val photoUri: Uri
     ) : MyRequestsEvent()
     
-    // ✅ NEW: Retry failed upload
     object RetryFailedUpload : MyRequestsEvent()
     object DismissUploadError : MyRequestsEvent()
-    
+
+    // Rate & review
+    data class ShowReviewDialog(val requestId: String) : MyRequestsEvent()
+    object DismissReviewDialog : MyRequestsEvent()
+    data class ReviewRatingChanged(val rating: Int) : MyRequestsEvent()
+    data class ReviewCommentChanged(val comment: String) : MyRequestsEvent()
+    object SubmitReview : MyRequestsEvent()
+
+    // Dispute
+    data class DisputeRequest(val requestId: String) : MyRequestsEvent()
+
+    // PDF receipt
+    data class GenerateReceipt(val requestId: String) : MyRequestsEvent()
+
     object ClearError : MyRequestsEvent()
+
+    // Advanced filter sheet
+    object ShowFilterSheet : MyRequestsEvent()
+    object HideFilterSheet : MyRequestsEvent()
+    data class FilterCategoryChanged(val category: String?) : MyRequestsEvent()
+    data class FilterPickupDatePresetChanged(val preset: String?) : MyRequestsEvent()
+    object ClearAdvancedFilters : MyRequestsEvent()
 }

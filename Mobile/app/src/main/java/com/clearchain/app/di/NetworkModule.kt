@@ -2,6 +2,7 @@ package com.clearchain.app.di
 
 import com.clearchain.app.data.remote.api.*
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
+import com.clearchain.app.data.remote.interceptor.RetryInterceptor
 import com.clearchain.app.util.Constants
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -38,12 +39,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideRetryInterceptor(): RetryInterceptor = RetryInterceptor()
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
+        retryInterceptor: RetryInterceptor,
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(retryInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -101,10 +108,38 @@ object NetworkModule {
         return retrofit.create(ImageAnalysisApi::class.java)
     }
 
-    // ✅ ADD: Provide OrganizationApi
     @Provides
     @Singleton
-    fun provideOrganizationApi(retrofit: Retrofit): OrganizationApi {
-        return retrofit.create(OrganizationApi::class.java)
-    }
+    fun provideOrganizationApi(retrofit: Retrofit): OrganizationApi =
+        retrofit.create(OrganizationApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNotificationApi(retrofit: Retrofit): NotificationApi =
+        retrofit.create(NotificationApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMessageApi(retrofit: Retrofit): MessageApi =
+        retrofit.create(MessageApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideReviewApi(retrofit: Retrofit): ReviewApi =
+        retrofit.create(ReviewApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideDisputeApi(retrofit: Retrofit): DisputeApi =
+        retrofit.create(DisputeApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideSavedListingApi(retrofit: Retrofit): SavedListingApi =
+        retrofit.create(SavedListingApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideReportApi(retrofit: Retrofit): ReportApi =
+        retrofit.create(ReportApi::class.java)
 }

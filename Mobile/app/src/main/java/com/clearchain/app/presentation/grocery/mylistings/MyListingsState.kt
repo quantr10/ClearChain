@@ -1,16 +1,13 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// MyListingsState.kt - UPDATED WITH FOOD CATEGORY FILTERS & STATUS TABS
-// ═══════════════════════════════════════════════════════════════════════════════
-
 package com.clearchain.app.presentation.grocery.mylistings
 
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
-import com.clearchain.app.domain.model.ListingStatus
-import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.presentation.components.CommonSortOptions
 import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
+
+enum class MyListingsTab { AVAILABLE, ARCHIVED, RESERVED, EXPIRED }
 
 data class MyListingsState(
     val allListings: List<Listing> = emptyList(),
@@ -28,32 +25,33 @@ data class MyListingsState(
         CommonSortOptions.NAME_DESC,
     ),
 
-    // NEW: Status as TABS (not chips)
-    val selectedStatusTab: ListingStatus? = null, // null = All
-
-    // NEW: Category as CHIPS (food categories)
+    val activeTab: MyListingsTab = MyListingsTab.AVAILABLE,
     val selectedCategory: String? = null,
     val availableCategoryFilters: List<FilterChipData> = listOf(
-        FilterChipData(null, "All")
+        FilterChipData(null, labelResId = R.string.filter_all)
     ) + FoodCategory.entries.map {
-        FilterChipData(it.name, it.displayName())
+        FilterChipData(it.name, labelResId = it.labelResId)
     },
 
+    // Advanced filter sheet
+    val showFilterSheet: Boolean = false,
+    val filterExpiryWithinDays: Int? = null,
+    val filterHasRequests: Boolean = false,
+
+    // Bulk selection
+    val isSelectionMode: Boolean = false,
+    val selectedIds: Set<String> = emptySet(),
+
     val isLoading: Boolean = false,
+    val isBulkOperating: Boolean = false,
     val error: String? = null,
     val isRefreshing: Boolean = false
 ) {
-    // Backward compatibility
     val listings: List<Listing> get() = filteredListings
-
-//    // Helper to get counts for each tab
-//    fun getStatusCounts(): Map<ListingStatus?, Int> {
-//        return mapOf(
-//            null to allListings.size, // All
-//            ListingStatus.AVAILABLE to allListings.count { it.status == ListingStatus.AVAILABLE },
-//            ListingStatus.RESERVED to allListings.count { it.status == ListingStatus.RESERVED },
-//            ListingStatus.COMPLETED to allListings.count { it.status == ListingStatus.COMPLETED },
-//            ListingStatus.EXPIRED to allListings.count { it.status == ListingStatus.EXPIRED }
-//        )
-//    }
+    val selectedCount: Int get() = selectedIds.size
+    val allSelected: Boolean get() = filteredListings.isNotEmpty() && selectedIds.containsAll(filteredListings.map { it.id })
+    val activeFilterCount: Int get() =
+        (if (selectedCategory != null) 1 else 0) +
+        (if (filterExpiryWithinDays != null) 1 else 0) +
+        (if (filterHasRequests) 1 else 0)
 }

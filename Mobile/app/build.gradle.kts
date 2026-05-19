@@ -127,6 +127,9 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
+    // AppCompat (per-app locale switching via AppCompatDelegate)
+    implementation(libs.androidx.appcompat)
+
     // SignalR
     implementation("com.microsoft.signalr:signalr:8.0.0")
 

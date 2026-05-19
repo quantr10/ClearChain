@@ -4,4 +4,7 @@ sealed class StatisticsEvent {
     object LoadStatistics : StatisticsEvent()
     object RefreshStatistics : StatisticsEvent()
     object ClearError : StatisticsEvent()
+    object ExportPdf : StatisticsEvent()
+
+    data class PresetChanged(val preset: String) : StatisticsEvent()
 }

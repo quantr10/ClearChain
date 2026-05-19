@@ -7,7 +7,7 @@ public interface IStorageService
     Task<string> UploadPickupProofAsync(Stream fileStream, string fileName);
     Task<bool> DeleteFileAsync(string fileUrl);
     Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId);
-
+    Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string bucket);
 }
 
 public class SupabaseStorageService : IStorageService
@@ -125,6 +125,45 @@ public class SupabaseStorageService : IStorageService
             throw new Exception($"Failed to upload food image: {ex.Message}", ex);
         }
     }
+    public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string bucket)
+    {
+        try
+        {
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var extension = Path.GetExtension(fileName);
+            var uniqueFileName = $"{timestamp}_{Guid.NewGuid()}{extension}";
+
+            using var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            var fileBytes = memoryStream.ToArray();
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
+            httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
+
+            var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{bucket}/{uniqueFileName}";
+
+            using var content = new ByteArrayContent(fileBytes);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                string.IsNullOrEmpty(contentType) ? "application/octet-stream" : contentType);
+
+            var response = await httpClient.PostAsync(uploadUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Upload failed: {errorContent}");
+            }
+
+            return $"{_supabaseUrl}/storage/v1/object/public/{bucket}/{uniqueFileName}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading file {FileName} to bucket {Bucket}", fileName, bucket);
+            throw new Exception($"Failed to upload file: {ex.Message}", ex);
+        }
+    }
+
     public async Task<bool> DeleteFileAsync(string fileUrl)
     {
         try
