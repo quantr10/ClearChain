@@ -10,6 +10,8 @@ import com.clearchain.app.data.remote.dto.ChangePasswordRequest
 import com.clearchain.app.data.remote.dto.LoginRequest
 import com.clearchain.app.data.remote.dto.RefreshTokenRequest
 import com.clearchain.app.data.remote.dto.RegisterRequest
+import com.clearchain.app.data.remote.dto.ResendVerificationRequest
+import com.clearchain.app.data.remote.dto.VerifyEmailRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
@@ -27,10 +29,19 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun register(
         name: String, type: String, email: String,
         password: String, fcmToken: String?
-    ): Result<Pair<Organization, AuthTokens>> {
+    ): Result<String> {
         return try {
             val request = RegisterRequest(name = name, type = type, email = email, password = password, fcmToken = fcmToken)
-            val response = authApi.register(request)
+            authApi.register(request)
+            Result.success(email)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun verifyEmail(email: String, code: String): Result<Pair<Organization, AuthTokens>> {
+        return try {
+            val response = authApi.verifyEmail(VerifyEmailRequest(email, code))
             val (organization, tokens) = response.data.toDomain()
 
             userDao.clearUsers()
@@ -38,8 +49,17 @@ class AuthRepositoryImpl @Inject constructor(
                 accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
                 expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
             ))
-            userDao.insertUser(organization.toEntity())  // uses canonical from UserEntity.kt
+            userDao.insertUser(organization.toEntity())
             Result.success(Pair(organization, tokens))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun resendVerification(email: String): Result<Unit> {
+        return try {
+            authApi.resendVerification(ResendVerificationRequest(email))
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -28,6 +28,22 @@ public class Organization
     public string? PickupInstructions { get; set; }   // Grocery only
     public string? Description { get; set; }          // Both roles
     
+    // ═══ Auth security ═══
+    public int FailedLoginCount { get; set; } = 0;
+    public DateTime? LockoutUntil { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
+
+    // ═══ Email verification ═══
+    public bool EmailVerified { get; set; } = false;
+    public string? EmailVerificationToken { get; set; }
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
+
+    // ═══ Onboarding documents ═══
+    public string? DocumentUrl { get; set; }        // Primary verification doc (business reg / charity cert)
+    public string? DocumentUrl2 { get; set; }       // Secondary document (optional)
+    public string? DocumentMimeType { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

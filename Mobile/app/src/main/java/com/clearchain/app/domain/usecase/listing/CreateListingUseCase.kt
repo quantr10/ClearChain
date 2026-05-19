@@ -14,26 +14,12 @@ class CreateListingUseCase @Inject constructor(
         quantity: Int,
         unit: String,
         expiryDate: String,
-        pickupTimeStart: String,
-        pickupTimeEnd: String,
         imageUrl: String? = null
     ): Result<Listing> {
-        // Validate inputs
-        if (title.isBlank()) {
-            return Result.failure(Exception("Title cannot be empty"))
-        }
-
-        if (description.isBlank()) {
-            return Result.failure(Exception("Description cannot be empty"))
-        }
-
-        if (quantity <= 0) {
-            return Result.failure(Exception("Quantity must be greater than 0"))
-        }
-
-        if (unit.isBlank()) {
-            return Result.failure(Exception("Unit cannot be empty"))
-        }
+        if (title.isBlank()) return Result.failure(Exception("Title cannot be empty"))
+        if (description.isBlank()) return Result.failure(Exception("Description cannot be empty"))
+        if (quantity <= 0) return Result.failure(Exception("Quantity must be greater than 0"))
+        if (unit.isBlank()) return Result.failure(Exception("Unit cannot be empty"))
 
         return listingRepository.createListing(
             title = title.trim(),
@@ -42,8 +28,6 @@ class CreateListingUseCase @Inject constructor(
             quantity = quantity,
             unit = unit.trim(),
             expiryDate = expiryDate,
-            pickupTimeStart = pickupTimeStart,
-            pickupTimeEnd = pickupTimeEnd,
             imageUrl = imageUrl
         )
     }

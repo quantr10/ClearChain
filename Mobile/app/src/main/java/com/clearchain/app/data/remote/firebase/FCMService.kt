@@ -11,6 +11,8 @@ import com.clearchain.app.MainActivity
 import com.clearchain.app.R
 import com.clearchain.app.data.local.database.ClearChainDatabase
 import com.clearchain.app.data.local.entity.FCMTokenEntity
+import com.clearchain.app.data.local.entity.NotificationEntity
+import java.util.UUID
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,10 +56,29 @@ class FCMService : FirebaseMessagingService() {
         Log.d(TAG, "📩 Message received from: ${message.from}")
         Log.d(TAG, "📦 Data: ${message.data}")
         
-        message.notification?.let { notification ->
-            val title = notification.title ?: "ClearChain"
-            val body = notification.body ?: ""
-            
+        val title = message.notification?.title ?: message.data["title"] ?: "ClearChain"
+        val body = message.notification?.body ?: message.data["body"] ?: ""
+
+        serviceScope.launch {
+            try {
+                database.notificationDao().insert(
+                    NotificationEntity(
+                        id = message.messageId ?: UUID.randomUUID().toString(),
+                        type = message.data["type"] ?: "general",
+                        title = title,
+                        body = body,
+                        relatedId = message.data["relatedId"],
+                        relatedType = message.data["relatedType"],
+                        isRead = false,
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error saving notification", e)
+            }
+        }
+
+        if (message.notification != null) {
             showNotification(title, body, message.data)
         }
     }

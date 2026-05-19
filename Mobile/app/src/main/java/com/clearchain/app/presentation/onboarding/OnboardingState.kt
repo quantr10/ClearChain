@@ -1,9 +1,10 @@
 package com.clearchain.app.presentation.onboarding
 
+import android.net.Uri
 import com.clearchain.app.domain.model.OrganizationType
 
 data class OnboardingState(
-    val currentStep: Int = 1,           // 1, 2, or 3
+    val currentStep: Int = 1,
     val totalSteps: Int = 3,
     val userType: OrganizationType = OrganizationType.GROCERY,
     val userName: String = "",
@@ -11,19 +12,28 @@ data class OnboardingState(
     // Step 1 fields
     val phone: String = "",
     val description: String = "",
-    val contactPerson: String = "",     // NGO only
+    val contactPerson: String = "",
     val phoneError: String? = null,
     val contactPersonError: String? = null,
 
     // Step 2 fields
     val address: String = "",
-    val city: String = "",              // maps to Organization.location
+    val city: String = "",
     val openTime: String = "",
     val closeTime: String = "",
-    val pickupInstructions: String = "", // Grocery only
+    val pickupInstructions: String = "",
     val addressError: String? = null,
     val cityError: String? = null,
-    
+
+    // Document upload (verification)
+    val verificationDocumentUri: Uri? = null,
+    val verificationDocumentName: String? = null,
+    val isUploadingDocument: Boolean = false,
+    val documentUploadError: String? = null,
+
+    // Draft
+    val hasSavedDraft: Boolean = false,
+    val showDraftRecoveryDialog: Boolean = false,
 
     // General
     val isSaving: Boolean = false,

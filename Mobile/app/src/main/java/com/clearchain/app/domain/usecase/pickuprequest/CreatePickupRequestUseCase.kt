@@ -12,17 +12,18 @@ class CreatePickupRequestUseCase @Inject constructor(
         requestedQuantity: Int,
         pickupDate: String,
         pickupTime: String,
-        notes: String? = null
+        notes: String? = null,
+        vehicleType: String? = null,
+        requiresRefrigeration: Boolean = false,
+        isFragile: Boolean = false,
+        isHeavy: Boolean = false
     ): Result<PickupRequest> {
-        // Validate inputs
         if (requestedQuantity <= 0) {
             return Result.failure(Exception("Quantity must be greater than 0"))
         }
-
         if (pickupDate.isBlank()) {
             return Result.failure(Exception("Pickup date is required"))
         }
-
         if (pickupTime.isBlank()) {
             return Result.failure(Exception("Pickup time is required"))
         }
@@ -32,7 +33,11 @@ class CreatePickupRequestUseCase @Inject constructor(
             requestedQuantity = requestedQuantity,
             pickupDate = pickupDate,
             pickupTime = pickupTime,
-            notes = notes
+            notes = notes,
+            vehicleType = vehicleType,
+            requiresRefrigeration = requiresRefrigeration,
+            isFragile = isFragile,
+            isHeavy = isHeavy
         )
     }
 }

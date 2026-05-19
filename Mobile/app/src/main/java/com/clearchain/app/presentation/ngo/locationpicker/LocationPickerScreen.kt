@@ -15,14 +15,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.local.LocationPreferenceStore
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.domain.model.LocationPreference
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -308,11 +311,16 @@ fun LocationPickerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Choose a location", fontWeight = FontWeight.Bold) },
-                actions = { onDismiss?.let { IconButton(onClick = it) { Icon(Icons.Default.Close, "Close") } } }
+            SimpleTopBar(
+                title   = stringResource(R.string.location_picker_title),
+                actions = {
+                    onDismiss?.let {
+                        IconButton(onClick = it) { Icon(Icons.Default.Close, stringResource(R.string.dialog_close)) }
+                    }
+                }
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         // Show loading while initializing
         if (state.isInitializing) {
@@ -323,7 +331,7 @@ fun LocationPickerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(16.dp))
-                    Text("Detecting your location...",
+                    Text(stringResource(R.string.location_detecting),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -378,7 +386,7 @@ fun LocationPickerScreen(
                     Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (state.isReverseGeocoding) CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
                         else Icon(Icons.Default.Place, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text(state.displayName.ifBlank { "Move map to select" }, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(state.displayName.ifBlank { stringResource(R.string.location_move_to_select) }, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -392,7 +400,7 @@ fun LocationPickerScreen(
                 Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
                     Column(Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Search Radius", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.location_search_radius), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primary) {
                                 Text("${state.radiusKm} km", Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                             }
@@ -418,7 +426,7 @@ fun LocationPickerScreen(
                         if (state.isLoadingGps) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                         else Icon(Icons.Default.MyLocation, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Current", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                        Text(stringResource(R.string.location_current), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                     }
                     if (state.hasProfileLocation) {
                         ElevatedButton(
@@ -427,22 +435,22 @@ fun LocationPickerScreen(
                         ) {
                             Icon(Icons.Default.Person, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Profile", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                            Text(stringResource(R.string.location_profile), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                         }
                     }
                 }
 
                 // Search
-                Text("Search for a place", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.location_search_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = state.searchQuery,
                     onValueChange = { viewModel.onSearchQueryChanged(it, geocoder) },
-                    placeholder = { Text("City, address, or landmark...") },
+                    placeholder = { Text(stringResource(R.string.location_search_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
                     trailingIcon = {
                         when {
                             state.isSearching -> CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            state.searchQuery.isNotBlank() -> IconButton(onClick = { viewModel.clearSearch() }) { Icon(Icons.Default.Clear, "Clear", Modifier.size(18.dp)) }
+                            state.searchQuery.isNotBlank() -> IconButton(onClick = { viewModel.clearSearch() }) { Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), Modifier.size(18.dp)) }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), singleLine = true,
@@ -494,7 +502,7 @@ fun LocationPickerScreen(
                 ) {
                     Icon(Icons.Default.Check, null, Modifier.size(22.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text("Choose this location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.location_choose_this), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(8.dp))
             }

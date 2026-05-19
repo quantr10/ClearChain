@@ -17,6 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.clearchain.app.R
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -38,12 +40,14 @@ fun AddressSuggestionField(
     value: String,
     onValueChange: (String) -> Unit,
     onAddressSelected: (AddressSuggestion) -> Unit,
-    label: String = "Address",
-    placeholder: String = "Start typing an address...",
+    label: String = "",
+    placeholder: String = "",
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
     val context = LocalContext.current
+    val resolvedLabel = label.ifEmpty { stringResource(R.string.label_address) }
+    val resolvedPlaceholder = placeholder.ifEmpty { stringResource(R.string.placeholder_start_typing_address) }
     val geocoder = remember { Geocoder(context, Locale.getDefault()) }
     val scope = rememberCoroutineScope()
 
@@ -91,8 +95,8 @@ fun AddressSuggestionField(
                     showSuggestions = false
                 }
             },
-            label = { Text(label) },
-            placeholder = { Text(placeholder) },
+            label = { Text(resolvedLabel) },
+            placeholder = { Text(resolvedPlaceholder) },
             leadingIcon = { Icon(Icons.Default.Home, null) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,

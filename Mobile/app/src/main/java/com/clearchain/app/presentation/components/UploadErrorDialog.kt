@@ -8,8 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 
 @Composable
 fun UploadErrorDialog(
@@ -23,14 +25,14 @@ fun UploadErrorDialog(
         icon = {
             Icon(
                 imageVector = Icons.Default.CloudOff,
-                contentDescription = "Upload Failed",
+                contentDescription = stringResource(R.string.cd_upload_failed),
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(48.dp)
             )
         },
         title = {
             Text(
-                text = "Upload Failed",
+                text = stringResource(R.string.label_upload_failed),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -48,7 +50,7 @@ fun UploadErrorDialog(
                 if (!canRetry) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Please try again later or contact support if the problem persists.",
+                        text = stringResource(R.string.msg_try_again_later),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -67,7 +69,7 @@ fun UploadErrorDialog(
                         contentDescription = null
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Retry Upload")
+                    Text(stringResource(R.string.action_retry_upload))
                 }
             }
         },
@@ -76,7 +78,7 @@ fun UploadErrorDialog(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (canRetry) "Cancel" else "Close")
+                Text(if (canRetry) stringResource(R.string.cancel) else stringResource(R.string.close))
             }
         }
     )

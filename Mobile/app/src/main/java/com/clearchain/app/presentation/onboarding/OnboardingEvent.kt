@@ -1,5 +1,7 @@
 package com.clearchain.app.presentation.onboarding
 
+import android.net.Uri
+
 sealed class OnboardingEvent {
     // Step 1 field changes
     data class PhoneChanged(val value: String) : OnboardingEvent()
@@ -14,8 +16,17 @@ sealed class OnboardingEvent {
     data class PickupInstructionsChanged(val value: String) : OnboardingEvent()
     data class AddressSelected(val address: String, val city: String, val lat: Double, val lng: Double) : OnboardingEvent()
 
+    // Document upload
+    data class DocumentSelected(val uri: Uri, val name: String) : OnboardingEvent()
+    object RemoveDocument : OnboardingEvent()
+
+    // Draft actions
+    object SaveDraft : OnboardingEvent()
+    object RestoreDraft : OnboardingEvent()
+    object DismissDraftDialog : OnboardingEvent()
+
     // Navigation between steps
-    object NextStep : OnboardingEvent()          // validate → save API → advance
-    object PreviousStep : OnboardingEvent()      // go back one step (no API call)
-    object FinishOnboarding : OnboardingEvent()  // Step 3 "Get Started" → navigate to Dashboard
+    object NextStep : OnboardingEvent()
+    object PreviousStep : OnboardingEvent()
+    object FinishOnboarding : OnboardingEvent()
 }

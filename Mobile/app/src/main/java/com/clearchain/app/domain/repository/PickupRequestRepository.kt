@@ -10,7 +10,11 @@ interface PickupRequestRepository {
         requestedQuantity: Int,
         pickupDate: String,
         pickupTime: String,
-        notes: String? = null
+        notes: String? = null,
+        vehicleType: String? = null,
+        requiresRefrigeration: Boolean = false,
+        isFragile: Boolean = false,
+        isHeavy: Boolean = false
     ): Result<PickupRequest>
 
     suspend fun getMyPickupRequests(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>>

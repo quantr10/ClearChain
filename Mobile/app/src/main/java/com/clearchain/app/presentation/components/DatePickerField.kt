@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.clearchain.app.R
 import java.time.Instant
 import java.time.ZoneId
 
@@ -20,7 +22,7 @@ import java.time.ZoneId
 fun DatePickerField(
     value: String,
     onDateSelected: (String) -> Unit,
-    label: String,
+    label: String = "",
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     errorMessage: String? = null,
@@ -33,11 +35,11 @@ fun DatePickerField(
         value = value,
         onValueChange = {},
         readOnly = true,
-        label = { Text(label) },
+        label = if (label.isNotEmpty()) { { Text(label) } } else null,
         leadingIcon = { Icon(Icons.Default.CalendarToday, null) },
         trailingIcon = {
             IconButton(onClick = { if (enabled) showPicker = true }) {
-                Icon(Icons.Default.DateRange, "Select date")
+                Icon(Icons.Default.DateRange, stringResource(R.string.cd_select_date))
             }
         },
         modifier = modifier
@@ -63,10 +65,10 @@ fun DatePickerField(
                         onDateSelected(date.toString()) // "YYYY-MM-DD"
                     }
                     showPicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) }
             }
         ) {
             DatePicker(state = datePickerState)

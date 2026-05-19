@@ -39,6 +39,28 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideListingDao(database: ClearChainDatabase) = database.listingDao()
+
+    @Provides
+    @Singleton
+    fun providePickupRequestDao(database: ClearChainDatabase) = database.pickupRequestDao()
+
+    @Provides
+    @Singleton
+    fun provideInventoryDao(database: ClearChainDatabase) = database.inventoryDao()
+
+    @Provides
+    @Singleton
+    fun provideNotificationDao(database: ClearChainDatabase) = database.notificationDao()
+
+    @Provides
+    @Singleton
+    fun provideSettingsStore(
+        @ApplicationContext context: Context
+    ) = com.clearchain.app.data.local.SettingsStore(context)
+
+    @Provides
+    @Singleton
     fun provideNetworkUtils(
         @ApplicationContext context: Context
     ): NetworkUtils {

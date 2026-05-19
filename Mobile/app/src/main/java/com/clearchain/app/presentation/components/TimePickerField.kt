@@ -8,6 +8,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.clearchain.app.R
 
 /**
  * Reusable time picker field — shows Material3 TimePicker in a dialog.
@@ -35,7 +37,7 @@ fun TimePickerField(
         leadingIcon = { Icon(Icons.Default.AccessTime, null) },
         trailingIcon = {
             IconButton(onClick = { if (enabled) showPicker = true }) {
-                Icon(Icons.Default.Schedule, "Select time")
+                Icon(Icons.Default.Schedule, stringResource(R.string.cd_select_time))
             }
         },
         modifier = modifier
@@ -58,10 +60,10 @@ fun TimePickerField(
                     val m = timePickerState.minute.toString().padStart(2, '0')
                     onTimeSelected("$h:$m")
                     showPicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) }
             },
             text = { TimePicker(state = timePickerState) }
         )

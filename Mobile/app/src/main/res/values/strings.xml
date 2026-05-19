@@ -1,3 +1,1350 @@
 <resources>
     <string name="app_name">ClearChain</string>
+
+    <!-- ── General ── -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="submit">Submit</string>
+    <string name="retry">Retry</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_network">No internet connection. Showing cached data.</string>
+    <string name="offline_banner">You\'re offline. Some data may be outdated.</string>
+    <string name="last_updated">Last updated: %1$s</string>
+    <string name="no_data">Nothing here yet.</string>
+    <string name="pull_to_refresh">Pull down to refresh</string>
+    <string name="select_all">Select all</string>
+    <string name="deselect_all">Deselect all</string>
+    <string name="search_placeholder">Search…</string>
+    <string name="filter">Filter</string>
+    <string name="sort">Sort</string>
+    <string name="sort_by">Sort by</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="done">Done</string>
+    <string name="skip">Skip</string>
+    <string name="next">Next</string>
+    <string name="continue_label">Continue</string>
+    <string name="share">Share</string>
+    <string name="report">Report</string>
+    <string name="view_all">View all</string>
+    <string name="see_more">See more</string>
+
+    <!-- ── Auth ── -->
+    <string name="login">Log in</string>
+    <string name="logout">Log out</string>
+    <string name="register">Register</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="remember_me">Remember me</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="terms_agreement">I agree to the Terms of Service and Privacy Policy</string>
+    <string name="account_locked">Account locked. Try again in %1$d minute(s).</string>
+    <string name="password_strength_weak">Weak</string>
+    <string name="password_strength_medium">Medium</string>
+    <string name="password_strength_strong">Strong</string>
+    <string name="email_available">Email is available</string>
+    <string name="email_taken">Email is already registered</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_confirm">Are you sure? This cannot be undone.</string>
+
+    <!-- ── Dashboard ── -->
+    <string name="hello">Hello, %1$s!</string>
+    <string name="profile_complete">Profile complete</string>
+    <string name="profile_incomplete">Complete your profile</string>
+    <string name="profile_completeness">%1$d%% complete</string>
+    <string name="today_summary">Today\'s summary</string>
+    <string name="expiring_today">Expiring today</string>
+    <string name="pickups_today">Pickups today</string>
+    <string name="cleared_today">Cleared today</string>
+    <string name="recent_activity">Recent activity</string>
+    <string name="quick_actions">Quick actions</string>
+    <string name="weekly_goal">Weekly goal</string>
+    <string name="upcoming_pickups">Upcoming pickups</string>
+    <string name="impact_tracker">Your impact</string>
+    <string name="kg_saved">%1$s kg saved</string>
+    <string name="meals_equivalent">≈ %1$s meals</string>
+    <string name="co2_saved">%1$s kg CO₂ prevented</string>
+
+    <!-- ── Listings ── -->
+    <string name="create_listing">Create listing</string>
+    <string name="my_listings">My listings</string>
+    <string name="browse_listings">Browse food</string>
+    <string name="listing_title">Product name</string>
+    <string name="listing_category">Category</string>
+    <string name="listing_quantity">Quantity</string>
+    <string name="listing_unit">Unit</string>
+    <string name="listing_expiry">Expiry date</string>
+    <string name="listing_notes">Notes</string>
+    <string name="listing_pickup_time">Pickup window</string>
+    <string name="archive_listing">Archive listing</string>
+    <string name="unarchive_listing">Restore listing</string>
+    <string name="archived_listings">Archived listings</string>
+    <string name="expiry_urgency_critical">Expires in less than 24 hours</string>
+    <string name="expiry_urgency_warning">Expires in 1–2 days</string>
+    <string name="bulk_delete">Delete selected</string>
+    <string name="bulk_archive">Archive selected</string>
+    <string name="bulk_restore">Restore selected</string>
+    <string name="draft_saved">Draft saved</string>
+    <string name="draft_recovered">Draft recovered. Continue where you left off?</string>
+    <string name="preview_listing">Preview</string>
+    <string name="listing_just_listed">Just listed</string>
+    <string name="listing_hours_ago">%1$d hours ago</string>
+    <string name="listing_expiring_soon">Expiring soon</string>
+    <string name="save_listing">Save listing</string>
+    <string name="unsave_listing">Remove from saved</string>
+    <string name="saved_listings">Saved listings</string>
+    <string name="similar_listings">Similar listings</string>
+
+    <!-- ── Pickup requests ── -->
+    <string name="pickup_requests">Pickup requests</string>
+    <string name="my_requests">My requests</string>
+    <string name="request_pickup">Request pickup</string>
+    <string name="approve">Approve</string>
+    <string name="reject">Reject</string>
+    <string name="cancel_request">Cancel request</string>
+    <string name="cancellation_reason">Reason for cancellation</string>
+    <string name="vehicle_type">Vehicle type</string>
+    <string name="license_plate">License plate</string>
+    <string name="requires_refrigeration">Requires refrigeration</string>
+    <string name="fragile_items">Fragile items</string>
+    <string name="heavy_items">Heavy items</string>
+    <string name="bulk_approve">Approve selected</string>
+    <string name="bulk_reject">Reject selected</string>
+    <string name="status_pending">Pending</string>
+    <string name="status_approved">Approved</string>
+    <string name="status_ready">Ready for pickup</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_rejected">Rejected</string>
+
+    <!-- ── Inventory ── -->
+    <string name="inventory">Inventory</string>
+    <string name="add_manual_item">Add item manually</string>
+    <string name="distribute">Mark as distributed</string>
+    <string name="beneficiary_count">Number of beneficiaries</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="category_breakdown">Category breakdown</string>
+    <string name="expiring_soon_alert">%1$d items expiring within 48 hours</string>
+    <string name="item_source">Source: %1$s</string>
+    <string name="item_history">Item history</string>
+
+    <!-- ── Reviews ── -->
+    <string name="rate_and_review">Rate this pickup</string>
+    <string name="your_rating">Your rating</string>
+    <string name="your_comment">Comment (optional)</string>
+    <string name="review_submitted">Review submitted. Thank you!</string>
+    <string name="avg_rating">Avg: %1$.1f ★</string>
+    <string name="reviews_count">%1$d review(s)</string>
+
+    <!-- ── Disputes ── -->
+    <string name="open_dispute">Report an issue</string>
+    <string name="dispute_reason">What went wrong?</string>
+    <string name="dispute_statement">Describe the issue</string>
+    <string name="dispute_photo">Add photo evidence</string>
+    <string name="dispute_status_open">Open</string>
+    <string name="dispute_status_under_review">Under review</string>
+    <string name="dispute_status_resolved">Resolved</string>
+    <string name="dispute_status_dismissed">Dismissed</string>
+
+    <!-- ── Notifications ── -->
+    <string name="notifications">Notifications</string>
+    <string name="mark_all_read">Mark all as read</string>
+    <string name="no_notifications">No notifications yet</string>
+    <string name="unread_count">%1$d unread</string>
+
+    <!-- ── Settings ── -->
+    <string name="settings">Settings</string>
+    <string name="notifications_settings">Notification preferences</string>
+    <string name="theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System default</string>
+    <string name="language">Language</string>
+    <string name="distance_unit">Distance unit</string>
+    <string name="km">km</string>
+    <string name="miles">miles</string>
+    <string name="notif_new_listing">New food listings nearby</string>
+    <string name="notif_request_update">Pickup request updates</string>
+    <string name="notif_expiry_reminder">Expiry reminders</string>
+
+    <!-- ── Profile ── -->
+    <string name="my_profile">My profile</string>
+    <string name="account_stats">Account stats</string>
+    <string name="member_since">Member since %1$s</string>
+    <string name="total_pickups">%1$d pickups completed</string>
+    <string name="activity_log">Activity log</string>
+    <string name="change_password">Change password</string>
+    <string name="verification_status">Verification status</string>
+    <string name="verification_pending">Pending review</string>
+    <string name="verification_approved">Verified ✓</string>
+    <string name="verification_rejected">Rejected — tap to resubmit</string>
+    <string name="upload_document">Upload document</string>
+    <string name="save_draft">Save draft</string>
+
+    <!-- ── Admin ── -->
+    <string name="admin_dashboard">Admin dashboard</string>
+    <string name="verification_queue">Verification queue</string>
+    <string name="transactions">Transactions</string>
+    <string name="statistics">Statistics</string>
+    <string name="system_health">System health</string>
+    <string name="alert_feed">Alerts</string>
+    <string name="approve_with_checklist">Approve (checklist)</string>
+    <string name="reject_with_reason">Reject with reason</string>
+    <string name="date_range">Date range</string>
+    <string name="preset_today">Today</string>
+    <string name="preset_week">This week</string>
+    <string name="preset_month">This month</string>
+    <string name="preset_quarter">This quarter</string>
+    <string name="preset_all">All time</string>
+    <string name="leaderboard">Leaderboard</string>
+    <string name="top_stores">Top stores</string>
+    <string name="top_ngos">Top NGOs</string>
+
+    <!-- ── Help ── -->
+    <string name="help">Help &amp; support</string>
+    <string name="faq">FAQ</string>
+    <string name="contact_support">Contact support</string>
+    <string name="about">About</string>
+    <string name="app_version">Version %1$s</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="privacy_policy">Privacy Policy</string>
+
+    <!-- ── Dashboard ── -->
+    <string name="ngo_dashboard_subtitle">Help reduce food waste in your community</string>
+    <string name="grocery_dashboard_subtitle">Manage your surplus food listings</string>
+    <string name="role_ngo">NGO</string>
+    <string name="role_grocery">Grocery</string>
+    <string name="section_overview">Overview</string>
+    <string name="section_your_impact">Your Impact</string>
+    <string name="section_weekly_goal">Weekly Goal</string>
+    <string name="section_todays_pickups">Today\'s Pickups</string>
+    <string name="section_quick_actions">Quick Actions</string>
+    <string name="section_todays_summary">Today\'s Summary</string>
+    <string name="section_recent_activity">Recent Activity</string>
+    <string name="stat_in_stock">In Stock</string>
+    <string name="stat_active_requests">Active Requests</string>
+    <string name="stat_distributed">Distributed</string>
+    <string name="stat_available_food">Available Food</string>
+    <string name="stat_active_listings">Active Listings</string>
+    <string name="stat_pending_requests">Pending Requests</string>
+    <string name="stat_completed">Completed</string>
+    <string name="stat_food_saved_kg">Food Saved (kg)</string>
+    <string name="action_browse_food">Browse Food</string>
+    <string name="action_browse_food_subtitle">Find available surplus food nearby</string>
+    <string name="action_my_requests">My Requests</string>
+    <string name="action_my_requests_subtitle">View and track your pickup requests</string>
+    <string name="action_inventory">Inventory</string>
+    <string name="action_inventory_subtitle">Manage collected food items</string>
+    <string name="action_create_listing">Create Listing</string>
+    <string name="action_create_listing_subtitle">Add new surplus food items</string>
+    <string name="action_my_listings">My Listings</string>
+    <string name="action_my_listings_subtitle">View and manage your listings</string>
+    <string name="action_pickup_requests">Pickup Requests</string>
+    <string name="action_pickup_requests_subtitle">Manage pickup requests from NGOs</string>
+    <string name="impact_food_saved">Food Saved</string>
+    <string name="impact_meals">Meals</string>
+    <string name="impact_co2">CO₂ Reduced</string>
+    <string name="chip_expiring">Expiring</string>
+    <string name="chip_pickups">Pickups</string>
+    <string name="chip_cleared">Cleared</string>
+    <string name="chip_listing_created">Listed</string>
+    <string name="chip_requests_received">Requests In</string>
+    <string name="chip_requests_created">Requests Out</string>
+    <string name="chip_distributed">Distributed</string>
+    <string name="profile_completeness_cta">Complete your profile to unlock all features</string>
+    <string name="weekly_pickups">Weekly Pickups</string>
+    <string name="goal_reached">Goal reached! Great work this week.</string>
+    <string name="goal_remaining">%1$d more to reach your weekly goal</string>
+    <string name="view_all_pickups">View all %1$d pickups</string>
+
+    <!-- ── Status badges ── -->
+    <string name="status_available">Available</string>
+    <string name="status_reserved">Reserved</string>
+    <string name="status_expired">Expired</string>
+    <string name="status_active">Active</string>
+    <string name="status_distributed">Distributed</string>
+
+    <!-- ── Listing card ── -->
+    <string name="listing_expired_label">Expired</string>
+    <string name="listing_expires_today">Expires today</string>
+    <string name="listing_expires_tomorrow">Expires tomorrow</string>
+    <string name="listing_expires_in_days">Expires in %1$dd</string>
+    <string name="listing_expires_on">Expires on %1$s</string>
+    <string name="listing_pickup_from">Pick up from %1$s – %2$s</string>
+    <string name="listing_posted">Posted %1$s</string>
+
+    <!-- ── Request card ── -->
+    <string name="request_from">From: %1$s</string>
+    <string name="request_to">To: %1$s</string>
+    <string name="request_at">At: %1$s</string>
+    <string name="request_admin_route">%1$s → %2$s</string>
+    <string name="label_requested_on">Requested on %1$s</string>
+    <string name="label_approved_on">Approved on %1$s at %2$s</string>
+    <string name="label_ready_pickup_by">Ready to pickup by %1$s at %2$s</string>
+    <string name="label_completed_on">Completed on %1$s</string>
+    <string name="label_cancelled_on">Cancelled on %1$s</string>
+    <string name="label_rejected_on">Rejected on %1$s</string>
+    <string name="label_category">Category</string>
+    <string name="label_qty">Qty</string>
+    <string name="label_date">Date</string>
+    <string name="label_time">Time</string>
+    <string name="proof_photo">Proof Photo</string>
+    <string name="view_full">View full</string>
+    <string name="waiting_for_confirm">Waiting for %1$s to confirm</string>
+    <string name="note_waiting_grocery_prepare">Waiting for %1$s to prepare your request</string>
+    <string name="mark_ready_for_pickup">Mark Ready for Pickup</string>
+    <string name="confirm_pickup_photo">Confirm Pickup with Photo</string>
+    <string name="dialog_approve_title">Approve Request?</string>
+    <string name="dialog_approve_message">Approve pickup from %1$s for %2$d items?</string>
+    <string name="dialog_reject_title">Reject Request?</string>
+    <string name="dialog_reject_message">Reject request from %1$s? Quantity will be restored.</string>
+    <string name="dialog_ready_title">Mark Ready?</string>
+    <string name="dialog_ready_message">Mark as ready for pickup? %1$s will be notified.</string>
+    <string name="dialog_cancel_title">Cancel Request?</string>
+    <string name="dialog_cancel_message">Are you sure you want to cancel this pickup request?</string>
+
+    <!-- ── Auth ── -->
+    <string name="welcome_back">Welcome back</string>
+    <string name="sign_in_to_account">Sign in to your account</string>
+    <string name="email_address">Email address</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="create_new_account">Create New Account</string>
+    <string name="create_your_account">Create your account</string>
+    <string name="join_clearchain">Join ClearChain</string>
+    <string name="i_represent_a">I represent a…</string>
+    <string name="role_grocery_title">Grocery / Mall</string>
+    <string name="role_grocery_subtitle">List surplus food</string>
+    <string name="role_ngo_title">NGO / Food Bank</string>
+    <string name="role_ngo_subtitle">Receive donations</string>
+    <string name="org_name_label">Organization Name</string>
+    <string name="org_name_placeholder">e.g. Green Valley Market</string>
+    <string name="create_account">Create Account</string>
+    <string name="must_accept_tos">You must accept the Terms of Service to continue</string>
+    <string name="password_placeholder">Min 8 chars, uppercase, number</string>
+    <string name="confirm_password_placeholder">Re-enter your password</string>
+    <string name="ngo_completion_rate">%1$d%% completion · %2$d pickups</string>
+
+    <!-- ── Bottom navigation ── -->
+    <string name="nav_home">Home</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_browse">Browse</string>
+    <string name="nav_requests">Requests</string>
+    <string name="nav_profile">Profile</string>
+    <string name="label_profile">Profile</string>
+    <string name="nav_listings">Listings</string>
+    <string name="nav_add">Add</string>
+    <string name="nav_verify">Verify</string>
+    <string name="nav_history">History</string>
+    <string name="nav_stats">Stats</string>
+
+    <!-- ── Chat ── -->
+    <string name="messages">Messages</string>
+    <string name="type_message">Type a message…</string>
+    <string name="send">Send</string>
+    <string name="no_messages">No messages yet. Start the conversation!</string>
+
+    <!-- ── Splash ── -->
+    <string name="splash_tagline">Clearing food waste, one chain at a time</string>
+
+    <!-- ── Inventory Detail ── -->
+    <string name="inventory_detail_title">Inventory Detail</string>
+    <string name="edit_item_title">Edit Item</string>
+    <string name="generate_qr_label">Generate QR label</string>
+    <string name="edit_item">Edit item</string>
+    <string name="failed_to_load_item">Failed to load item</string>
+    <string name="section_quantity">Quantity</string>
+    <string name="section_lifecycle">Item Lifecycle</string>
+    <string name="section_source">Source Traceability</string>
+    <string name="origin_chain">Origin Chain</string>
+    <string name="donated_by">Donated by</string>
+    <string name="label_listing">Listing</string>
+    <string name="label_pickup_date">Pickup date</string>
+    <string name="label_original_qty">Original qty</string>
+    <string name="label_notes">Notes</string>
+    <string name="view_full_request">View Full Pickup Request</string>
+    <string name="loading_source_info">Loading source info…</string>
+    <string name="section_documentation">Documentation</string>
+    <string name="doc_photo_description">Documentation photo</string>
+    <string name="tap_to_expand">Tap to expand</string>
+    <string name="replace_photo">Replace Photo</string>
+    <string name="no_photo_attached">No photo attached</string>
+    <string name="uploading">Uploading…</string>
+    <string name="attach_photo">Attach Photo</string>
+    <string name="status_active_info">This item is active and ready to be distributed.</string>
+    <string name="status_distributed_info">This item has been distributed successfully.</string>
+    <string name="status_expired_info">This item has expired — dispose of properly.</string>
+    <string name="section_item_details">Item Details</string>
+    <string name="label_product_name">Product Name *</string>
+    <string name="label_quantity_required">Quantity *</string>
+    <string name="label_unit">Unit</string>
+    <string name="label_expiry_date_format">Expiry Date * (YYYY-MM-DD)</string>
+    <string name="dialog_close">Close</string>
+    <string name="share_item_label">Share item label</string>
+    <string name="inventory_step_received">Received</string>
+    <string name="inventory_step_distributed">Distributed</string>
+    <string name="inventory_step_expired">Expired</string>
+    <string name="inventory_step_expires">Expires</string>
+    <string name="qr_item_label_title">Item QR Label</string>
+    <string name="label_product">Product</string>
+    <string name="label_category_short">Category</string>
+    <string name="label_quantity_short">Quantity</string>
+    <string name="label_expires_short">Expires</string>
+    <string name="label_id">ID</string>
+    <string name="btn_share_label">Share Label</string>
+
+    <!-- ── Location Picker ── -->
+    <string name="location_picker_title">Choose Location</string>
+    <string name="location_detecting">Detecting your location…</string>
+    <string name="location_move_to_select">Move map to select</string>
+    <string name="location_search_radius">Search Radius</string>
+    <string name="location_current">Current</string>
+    <string name="location_profile">Profile</string>
+    <string name="location_search_hint">City, address, or landmark…</string>
+    <string name="location_choose_this">Choose this location</string>
+    <string name="location_error_detect">Could not detect location. Use search or buttons below.</string>
+    <string name="location_error_gps">Could not get location. Enable GPS.</string>
+    <string name="location_search_title">Search for a place</string>
+
+    <!-- ── Onboarding ── -->
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_complete">Complete</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_step_label">Step %1$d of %2$d</string>
+    <string name="onboarding_step_your_info">Your Info</string>
+    <string name="onboarding_step_location">Location</string>
+    <string name="onboarding_step_all_set">All Set</string>
+    <string name="onboarding_setup_profile">Set Up Profile</string>
+    <string name="onboarding_save_draft">Save draft</string>
+    <string name="onboarding_draft_title">Resume where you left off?</string>
+    <string name="onboarding_draft_message">You have a saved draft. Would you like to continue from where you left off?</string>
+    <string name="onboarding_restore_draft">Restore draft</string>
+    <string name="onboarding_start_fresh">Start fresh</string>
+    <string name="onboarding_welcome">Welcome to ClearChain!</string>
+    <string name="onboarding_grocery_intro">Let\'s set up your profile so you can start donating food.</string>
+    <string name="onboarding_ngo_intro">Let\'s set up your profile so you can start receiving donations.</string>
+    <string name="onboarding_phone_label">Phone Number</string>
+    <string name="onboarding_about_label">About your organization</string>
+    <string name="onboarding_about_placeholder">Tell others about your organization…</string>
+    <string name="onboarding_contact_label">Contact Person</string>
+    <string name="onboarding_contact_placeholder">Name of primary contact</string>
+    <string name="onboarding_location_heading">Where are you located?</string>
+    <string name="onboarding_location_subtitle">Help us connect you with nearby partners.</string>
+    <string name="onboarding_address_label">Address</string>
+    <string name="onboarding_address_placeholder">Start typing an address…</string>
+    <string name="onboarding_city_label">City</string>
+    <string name="onboarding_city_placeholder">Ho Chi Minh City</string>
+    <string name="onboarding_hours_label">Operating Hours</string>
+    <string name="onboarding_hours_opens">Opens</string>
+    <string name="onboarding_hours_closes">Closes</string>
+    <string name="onboarding_pickup_instructions_label">Pickup Instructions</string>
+    <string name="onboarding_pickup_instructions_placeholder">e.g. Back door, ask at service counter</string>
+    <string name="onboarding_doc_label">Verification Document</string>
+    <string name="onboarding_doc_subtitle">Upload business registration or NGO certificate (optional, speeds up verification)</string>
+    <string name="onboarding_doc_selected">Document selected</string>
+    <string name="onboarding_upload_document">Upload Document</string>
+    <string name="onboarding_remove_icon">Remove</string>
+    <string name="onboarding_all_set">You\'re All Set!</string>
+    <string name="onboarding_grocery_complete">Your profile is complete. Start creating food listings and help reduce waste in your community.</string>
+    <string name="onboarding_ngo_complete">Your profile is complete. Browse and request surplus food from stores near you.</string>
+    <string name="onboarding_feature_create">Create food listings</string>
+    <string name="onboarding_feature_requests">Get pickup requests</string>
+    <string name="onboarding_feature_impact">Track your impact</string>
+    <string name="onboarding_feature_browse">Browse nearby listings</string>
+    <string name="onboarding_feature_pickups">Request pickups</string>
+    <string name="onboarding_feature_inventory">Manage inventory</string>
+
+    <!-- Dashboard shared -->
+    <string name="section_activity_trend">Activity Trend</string>
+    <string name="label_actions_this_week">Actions this week</string>
+
+    <!-- Admin Dashboard -->
+    <string name="stat_completion_rate">Completion Rate</string>
+    <string name="admin_completion_detail">%1$d of %2$d requests completed</string>
+    <string name="section_request_status_breakdown">Request Status Breakdown</string>
+    <string name="section_org_types">Organization Types</string>
+    <string name="org_type_groceries">Grocery Stores</string>
+    <string name="org_type_ngos">NGOs</string>
+    <string name="org_type_unverified">Unverified</string>
+    <string name="admin_total_verified">total verified</string>
+    <string name="section_alert_feed">Alert Feed</string>
+    <string name="section_new_orgs_30d">New Organizations (30d)</string>
+    <string name="admin_new_orgs_count">%1$d new organizations this month</string>
+    <string name="label_30_days">30 days</string>
+    <string name="section_system_health">System Health</string>
+    <string name="label_database">Database</string>
+    <string name="admin_pending_verif">pending verifications</string>
+    <string name="admin_unread_notif">unread notifications</string>
+
+    <!-- Analytics -->
+    <string name="analytics_food_impact">Food Impact</string>
+    <string name="analytics_listings_overview">Listings Overview</string>
+    <string name="analytics_food_cleared">Food Cleared</string>
+    <string name="analytics_food_saved_label">kg food saved</string>
+    <string name="analytics_pickup_perf">Pickup Performance</string>
+    <string name="analytics_completion_rate">Completion Rate</string>
+    <string name="analytics_completed_of_total">%1$d of %2$d pickups completed</string>
+    <string name="analytics_inventory_summary">Inventory Summary</string>
+    <string name="analytics_inventory_status">Inventory Status</string>
+    <string name="analytics_impact">Impact</string>
+    <string name="analytics_estimated_meals">Estimated Meals</string>
+    <string name="analytics_co2_avoided">CO₂ Avoided</string>
+    <string name="analytics_request_activity">Request Activity</string>
+    <string name="analytics_success_rate">Success Rate</string>
+    <string name="analytics_completed_pickups">Completed Pickups</string>
+    <string name="status_in_stock">In Stock</string>
+
+    <!-- Email Verification -->
+    <string name="email_verify_title">Verify your email</string>
+    <string name="email_verify_subtitle">Check your inbox</string>
+    <string name="email_verify_sent">A 6-digit code was sent to %1$s</string>
+    <string name="email_code_label">6-digit code</string>
+    <string name="email_resend_sending">Sending…</string>
+    <string name="email_resend_cooldown">Resend in %1$ds</string>
+    <string name="email_resend_label">Resend code</string>
+
+    <!-- Dispute -->
+    <string name="dispute_info_text">Disputes are reviewed within 48 hours. Provide as much detail as possible.</string>
+    <string name="dispute_reason_label">Reason *</string>
+    <string name="dispute_reason_poor_condition">Poor food condition</string>
+    <string name="dispute_reason_wrong_items">Wrong items received</string>
+    <string name="dispute_reason_quantity">Quantity mismatch</string>
+    <string name="dispute_reason_expired">Items already expired</string>
+    <string name="dispute_reason_not_available">Items not available at pickup</string>
+    <string name="dispute_reason_other">Other</string>
+    <string name="dispute_reason_no_show">NGO did not show up</string>
+    <string name="dispute_reason_time_violation">Pickup time not respected</string>
+    <string name="dispute_reason_damage">Items damaged during pickup</string>
+    <string name="dispute_reason_wrong_qty_taken">Wrong quantity taken</string>
+    <string name="dispute_reason_behavior">Inappropriate behavior</string>
+    <string name="dispute_statement_label">Statement *</string>
+    <string name="dispute_statement_hint">Describe what happened in detail…</string>
+    <string name="dispute_submit">Submit Dispute</string>
+
+    <!-- Create Listing -->
+    <string name="create_listing_subtitle">Fill in the details below to list your surplus food.</string>
+    <string name="create_listing_draft_saved">Draft saved at %1$s</string>
+    <string name="section_food_details">Food Details</string>
+    <string name="section_schedule">Schedule</string>
+    <string name="label_title">Title *</string>
+    <string name="label_title_placeholder">e.g. Fresh Bread Assortment</string>
+    <string name="label_description">Description</string>
+    <string name="label_description_placeholder">Describe the food items…</string>
+    <string name="label_expiry_date">Expiry Date *</string>
+    <string name="label_pickup_hours_from_profile">Pickup hours (from your profile)</string>
+    <string name="label_pickup_hours_not_set">Not set — add operating hours in your Profile</string>
+    <string name="btn_create_listing">Create Listing</string>
+
+    <!-- Manage Requests -->
+    <string name="manage_reject_title">Reject %1$d requests?</string>
+    <string name="manage_reject_optional_reason">Optionally provide a reason:</string>
+    <string name="manage_reject_reason_label">Reason (optional)</string>
+    <string name="action_reject_all">Reject All</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="action_exit_selection">Exit Selection</string>
+    <string name="action_approve_bulk">Approve (%1$d)</string>
+    <string name="action_reject_bulk">Reject (%1$d)</string>
+
+    <!-- My Listings -->
+    <string name="action_archive">Archive</string>
+    <string name="action_delete_count">Delete (%1$d)</string>
+    <string name="tab_active">Active</string>
+    <string name="tab_available">Available</string>
+    <string name="tab_list_view">List</string>
+    <string name="tab_map_view">Map</string>
+    <string name="tab_archived">Archived</string>
+    <string name="tab_archived_count">Archived (%1$d)</string>
+    <string name="search_listings_placeholder">Search listings…</string>
+
+    <!-- Browse Listings -->
+    <string name="action_request_pickup">Request Pickup</string>
+    <string name="action_clear_all">Clear All</string>
+    <string name="filter_quantity_range">Quantity range</string>
+    <string name="action_apply_filters">Apply Filters</string>
+    <string name="filter_category">Category</string>
+    <string name="filter_expiry_within">Expiry within</string>
+    <string name="filter_has_requests">Has pickup requests only</string>
+    <string name="filter_pickup_date">Pickup date</string>
+    <string name="filter_listing_category">Listing category</string>
+    <string name="filter_org_type">Organization type</string>
+    <string name="filter_expiry_urgency">Expiry urgency</string>
+    <string name="filter_min_freshness">Minimum freshness</string>
+    <string name="filter_max_distance">Max distance</string>
+    <string name="filter_date_range">Date range</string>
+    <string name="filter_any">Any</string>
+    <string name="filter_default">Default</string>
+    <string name="filter_past">Past</string>
+    <string name="hint_search_organizations">Search organizations…</string>
+    <string name="hint_search_requests">Search by item, NGO…</string>
+
+    <!-- Inventory -->
+    <string name="action_distribute_count">Distribute (%1$d)</string>
+    <string name="search_inventory_placeholder">Search inventory…</string>
+
+    <!-- Listing Detail -->
+    <string name="section_details">Details</string>
+    <string name="label_pickup_window">Pickup Window</string>
+    <string name="label_distance">Distance</string>
+    <string name="distance_km_away">%1$.1f km away</string>
+    <string name="section_availability">Availability</string>
+    <string name="label_available">Available</string>
+    <string name="section_similar_listings">Similar Listings</string>
+    <string name="section_about_us">About Us</string>
+    <string name="action_get_directions">Get directions</string>
+    <string name="label_grocery_store">Grocery Store</string>
+    <string name="error_failed_load_listing">Failed to load listing</string>
+    <string name="badge_live">LIVE</string>
+    <string name="report_listing_title">Report Listing</string>
+    <string name="report_listing_subtitle">Help us keep the platform safe and reliable.</string>
+    <string name="report_reason_inaccurate">Inaccurate information</string>
+    <string name="report_reason_already_gone">Food already gone</string>
+    <string name="report_reason_spam">Spam or duplicate</string>
+    <string name="report_reason_inappropriate">Inappropriate content</string>
+    <string name="report_reason_other">Other</string>
+    <string name="btn_submit">Submit</string>
+
+    <!-- My Requests -->
+    <string name="uploading_photo">Uploading photo…</string>
+    <string name="uploading_photo_attempt">Uploading photo… (Attempt %1$d/3)</string>
+
+    <!-- Profile -->
+    <string name="error_failed_load_profile">Failed to load profile</string>
+
+    <!-- Verification Queue -->
+    <string name="action_reject_all_batch">Reject All</string>
+    <string name="action_approve_all_batch">Approve All</string>
+    <string name="verification_batch_mode_hint">Batch mode — tap to select</string>
+
+    <!-- Admin Transactions -->
+    <string name="search_transactions_placeholder">Search transactions…</string>
+    <string name="admin_transactions_empty">No transactions found</string>
+
+    <!-- Dialog and action strings -->
+    <string name="action_restore">Restore</string>
+    <string name="action_edit_qty">Edit Qty</string>
+    <string name="label_edit_quantity">Edit Quantity</string>
+    <string name="label_new_quantity">New Quantity</string>
+    <string name="action_view_details">View Full Details</string>
+    <string name="action_take_photo">Take or Choose a Photo</string>
+    <string name="action_apply_ai">Apply AI Suggestions</string>
+    <string name="action_add">Add</string>
+    <string name="label_beneficiaries_count">How many beneficiaries?</string>
+    <string name="label_export_transactions">Export Transactions</string>
+    <string name="verification_checklist_title">Verification Checklist</string>
+    <string name="verification_confirm_items">Please confirm all items before approving:</string>
+    <string name="verification_approve_org">Approve Organization</string>
+    <string name="verification_reject_org">Reject Organization</string>
+    <string name="verification_select_reason">Select a template reason or write a custom one:</string>
+    <string name="label_rejection_reason">Rejection reason</string>
+    <string name="label_pickup_preview">Pickup: %1$s – %2$s</string>
+
+    <!-- Statistics Screen -->
+    <string name="section_organizations">Organizations</string>
+    <string name="section_listings">Listings</string>
+    <string name="section_pickup_requests">Pickup Requests</string>
+    <string name="section_platform_impact">Platform Impact</string>
+    <string name="section_daily_activity">Daily Activity</string>
+    <string name="section_period_comparison">Period Comparison</string>
+    <string name="section_category_breakdown">Category Breakdown</string>
+    <string name="section_leaderboards">Leaderboards</string>
+    <string name="section_geographic_distribution">Geographic Distribution</string>
+    <string name="stat_org_overview">Organization Overview</string>
+    <string name="stat_food_listings">Food Listings</string>
+    <string name="stat_request_status">Request Status Breakdown</string>
+    <string name="stat_verified">Verified</string>
+    <string name="stat_unverified">Unverified</string>
+    <string name="stat_reserved">Reserved</string>
+    <string name="label_date_range">Date Range</string>
+    <string name="section_completion_rate">Completion Rate</string>
+    <string name="section_impact">Environmental &amp; Social Impact</string>
+    <string name="stat_food_saved">Food Saved</string>
+    <string name="stat_meals">Meals</string>
+    <string name="stat_co2_avoided">CO₂ Avoided</string>
+    <string name="stat_beneficiaries">Beneficiaries</string>
+    <string name="leaderboard_no_data">No leaderboard data</string>
+    <string name="leaderboard_no_data_subtitle">Complete pickups will appear here</string>
+
+    <!-- Verification Queue filter tabs -->
+    <string name="filter_all_count">All (%1$d)</string>
+    <string name="filter_pending_count">Pending (%1$d)</string>
+    <string name="filter_approved_count">Approved (%1$d)</string>
+    <string name="filter_rejected_count">Rejected (%1$d)</string>
+
+    <!-- Shared filter/tab labels -->
+    <string name="filter_all">All</string>
+    <string name="transactions_empty_subtitle">Transactions will appear here when requests are created</string>
+    <string name="stat_total">Total</string>
+    <string name="stat_overdue">Overdue</string>
+
+    <!-- Analytics compound strings -->
+    <string name="analytics_food_saved_total">Total food saved from waste</string>
+    <string name="analytics_completed_of_requests">%1$d completed of %2$d total requests</string>
+    <string name="analytics_completed_pickups_count">%1$d completed pickups</string>
+    <string name="analytics_pickup_completion_rate">Pickup completion rate</string>
+    <string name="analytics_request_success_rate">Request success rate</string>
+    <string name="analytics_total_label">Total</string>
+
+    <!-- Admin Dashboard compound strings -->
+    <string name="admin_org_total_verified">Total: %1$d  •  Verified: %2$d</string>
+    <string name="admin_pending_verif_count">%1$d pending</string>
+    <string name="admin_unread_notif_count">%1$d unread</string>
+
+    <!-- Date range presets -->
+    <string name="preset_all_time">All time</string>
+    <string name="preset_this_week">This week</string>
+    <string name="preset_this_month">This month</string>
+    <string name="preset_custom">Custom</string>
+    <string name="label_select_start_date">Select start date</string>
+    <string name="label_select_end_date">Select end date</string>
+
+    <!-- Inventory / distribution -->
+    <string name="action_distribute_confirm">Distribute</string>
+    <string name="action_mark_distributed">Mark as Distributed</string>
+    <string name="label_beneficiaries_optional">Optionally record how many people received this food:</string>
+    <string name="label_number_people_optional">Number of people (optional)</string>
+    <string name="mark_distributed_confirm">Confirm that \"%1$s\" has been distributed to beneficiaries?</string>
+
+    <!-- Shared dialog / misc -->
+    <string name="action_update">Update</string>
+    <string name="add_item_manually">Add Item Manually</string>
+    <string name="action_add_to_inventory">Add to Inventory</string>
+
+    <!-- Heatmap labels -->
+    <string name="label_less">Less</string>
+    <string name="label_more">More</string>
+
+    <!-- Verification Queue -->
+    <string name="hint_rejection_reason">Explain why the organization is rejected</string>
+
+    <!-- Photo picker / proof -->
+    <string name="label_processing_photo">Processing Photo</string>
+    <string name="label_compressing_image">Compressing image…</string>
+    <string name="label_add_proof_photo">Add Proof Photo</string>
+    <string name="label_proof_photo_hint">Take a photo or choose from gallery to confirm pickup</string>
+    <string name="action_take_photo_camera">Take Photo</string>
+    <string name="action_choose_gallery">Choose from Gallery</string>
+    <string name="label_confirm_pickup">Confirm Pickup</string>
+    <string name="msg_submit_photo_proof">Submit this photo as proof of pickup?</string>
+    <string name="action_submit">Submit</string>
+    <string name="label_reject_request">Reject Request?</string>
+    <string name="msg_reject_request_notice">This will notify the NGO that their request has been rejected.</string>
+    <string name="hint_type_message">Type a message…</string>
+
+    <!-- My Requests review dialog -->
+    <string name="label_rate_experience">Rate your experience</string>
+    <string name="label_comments_optional">Comments (optional)</string>
+    <string name="hint_pickup_experience">How was your pickup experience?</string>
+
+    <!-- Profile -->
+    <string name="label_complete">Complete</string>
+    <string name="label_change_password">Change Password</string>
+    <string name="label_current_password">Current Password</string>
+    <string name="label_new_password">New Password</string>
+    <string name="label_confirm_new_password">Confirm New Password</string>
+    <string name="label_delete_account">Delete Account</string>
+    <string name="label_confirm_password">Confirm your password</string>
+
+    <!-- Photo preview -->
+    <string name="action_retake">Retake</string>
+    <string name="action_confirm_upload">Confirm &amp; Upload</string>
+    <string name="action_retry_upload">Retry Upload</string>
+
+    <!-- My Requests -->
+    <string name="action_review">Review</string>
+    <string name="action_receipt">Receipt</string>
+    <string name="action_dispute">Dispute</string>
+    <string name="action_submit_review">Submit Review</string>
+    <string name="action_show">Show</string>
+    <string name="cd_download_receipt">Download receipt</string>
+    <string name="label_expires_date">Expires %1$s</string>
+    <string name="label_quantity_format">Quantity: %1$s</string>
+
+    <!-- NGO Dashboard -->
+    <string name="action_browse_all_listings">Browse All Listings</string>
+    <string name="action_view_more">View more</string>
+
+    <!-- Profile -->
+    <string name="action_save">Save</string>
+    <string name="action_change">Change</string>
+    <string name="msg_delete_account_warning">This action is permanent and cannot be undone. All your data will be deleted.</string>
+
+    <!-- Request Detail -->
+    <string name="action_mark_ready">Mark as Ready for Pickup</string>
+    <string name="action_confirm_pickup_photo">Confirm Pickup with Photo</string>
+    <string name="action_file_dispute">File a Dispute</string>
+    <string name="advanced_filters">Advanced Filters</string>
+    <string name="label_ai_food_analysis">AI Food Analysis</string>
+    <string name="label_analyzing_food">Analyzing your food…</string>
+    <string name="label_listing_preview">Listing Preview</string>
+
+    <!-- Role labels -->
+    <string name="role_admin">Admin</string>
+
+    <!-- Admin dashboard subtitles -->
+    <string name="admin_pending_approvals">%1$d pending approvals</string>
+    <string name="admin_total_requests">%1$d total requests</string>
+
+    <!-- Shared empty state -->
+    <string name="empty_try_filters">Try adjusting your search or filters</string>
+
+    <!-- Transactions empty states -->
+    <string name="empty_no_transactions_filter">No transactions match your filters</string>
+
+    <!-- Verification Queue empty states -->
+    <string name="empty_no_organizations">No organizations yet</string>
+    <string name="empty_no_organizations_subtitle">Organizations will appear here when they register</string>
+    <string name="empty_no_org_category">No organizations in this category</string>
+    <string name="empty_no_org_category_subtitle">Switch filter to see other organizations</string>
+
+    <!-- Manage Requests / NGO My Requests empty states -->
+    <string name="empty_no_pickup_requests">No pickup requests yet</string>
+    <string name="empty_requests_grocery_subtitle">Requests from NGOs will appear here</string>
+    <string name="empty_requests_ngo_subtitle">Browse food listings to make your first request</string>
+    <string name="empty_no_requests_filter">No requests match your filters</string>
+
+    <!-- My Listings empty states -->
+    <string name="empty_no_listings">No listings yet</string>
+    <string name="empty_no_listings_subtitle">Create your first listing to get started</string>
+    <string name="empty_no_listings_filter">No listings match your filters</string>
+
+    <!-- Browse Listings empty states -->
+    <string name="empty_no_saved_listings">No saved listings</string>
+    <string name="empty_no_saved_subtitle">Tap the heart on any listing to save it</string>
+    <string name="empty_no_nearby_listings">No available listings nearby</string>
+    <string name="empty_no_nearby_subtitle">Try increasing your distance or check back later</string>
+    <string name="empty_no_listings_browse_filter">No listings match your filters</string>
+
+    <!-- Inventory empty states -->
+    <string name="empty_no_inventory">No items in inventory</string>
+    <string name="empty_no_inventory_subtitle">Items will appear here after pickup confirmations</string>
+    <string name="empty_no_inventory_filter">No items match your filters</string>
+
+    <!-- NGO Dashboard -->
+    <string name="section_nearby_listings">Nearby Available Listings</string>
+    <string name="label_food_expiring_soon">Food Expiring Soon</string>
+    <string name="msg_listings_expiring">%1$d listing(s) expiring within 3 days. Act fast to avoid waste.</string>
+    <string name="action_browse_now">Browse Now</string>
+    <string name="label_your_location">Your location</string>
+    <string name="label_n_available">%1$d available</string>
+    <string name="label_n_listings_nearby">%1$d listing(s) nearby</string>
+
+    <!-- Timeline steps -->
+    <string name="timeline_request_submitted">Request Submitted</string>
+    <string name="timeline_submitted_desc">NGO submitted pickup request</string>
+    <string name="timeline_approved_by_store">Approved by Store</string>
+    <string name="timeline_approved_desc">Grocery store approved the request</string>
+    <string name="timeline_ready_for_pickup">Ready for Pickup</string>
+    <string name="timeline_ready_desc">Items are prepared and waiting</string>
+    <string name="timeline_pickup_confirmed">Pickup Confirmed</string>
+    <string name="timeline_confirmed_desc">NGO confirmed pickup with photo proof</string>
+
+    <!-- Empty / error states -->
+    <string name="empty_no_results_query">No results for \"%1$s\"</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="action_try_again">Try Again</string>
+    <string name="msg_failed_load_requests">Failed to load requests</string>
+    <string name="msg_failed_load_listings">Failed to load listings</string>
+    <string name="msg_failed_load_inventory">Failed to load inventory</string>
+    <string name="msg_failed_load_request">Failed to load request</string>
+
+    <!-- Request Pickup form -->
+    <string name="hint_max_quantity">Max: %1$s %2$s</string>
+    <string name="label_pickup_date_section">Pickup Date</string>
+    <string name="label_pickup_time_field">Pickup Time</string>
+    <string name="hint_select_time_slot">Select a time slot</string>
+    <string name="label_pickup_time_window">Pickup Time — %1$s to %2$s</string>
+    <string name="label_transport_method">Transport Method</string>
+    <string name="label_special_handling">Special Handling</string>
+    <string name="label_needs_refrigeration">Needs refrigeration</string>
+    <string name="label_heavy_load">Heavy load (&gt;20 kg)</string>
+    <string name="label_notes_optional">Notes (Optional)</string>
+    <string name="hint_additional_instructions">Any additional instructions…</string>
+    <string name="label_pickup_details_section">Pickup Details</string>
+    <string name="label_expiry_field">Expiry</string>
+    <string name="action_submit_request">Submit Request</string>
+    <string name="label_estimated_trip">Estimated trip: %1$d min</string>
+    <string name="label_distance_via">%1$s km away · via %2$s</string>
+
+    <!-- Public Profile stats -->
+    <string name="label_n_reviews">%1$d reviews</string>
+    <string name="label_pickups_done">Pickups done</string>
+    <string name="label_pickups_completed">Pickups completed</string>
+    <string name="label_contact_location">Contact &amp; Location</string>
+    <string name="label_contact_prefix">Contact: %1$s</string>
+
+    <!-- Profile view sections -->
+    <string name="section_contact">Contact</string>
+    <string name="section_location_hours">Location &amp; Hours</string>
+    <string name="section_org_details">Organization Details</string>
+    <string name="section_team_members">Team Members</string>
+    <string name="section_account">Account</string>
+    <string name="label_gps_coordinates">GPS Coordinates</string>
+    <string name="label_not_set">Not set</string>
+    <string name="label_analytics">Analytics</string>
+    <string name="label_help_faq">Help &amp; FAQ</string>
+    <string name="label_member_since_field">Member Since</string>
+    <string name="label_no_recent_activity">No recent activity</string>
+    <string name="action_show_less">Show less</string>
+    <string name="action_show_more">Show %1$d more</string>
+    <string name="label_account_owner">Account Owner</string>
+    <string name="label_owner_badge">Owner</string>
+    <string name="label_contact_person">Contact Person</string>
+    <string name="label_contact_badge">Contact</string>
+    <string name="label_invite_team_member">Invite Team Member</string>
+    <string name="label_coming_soon">Coming soon</string>
+    <string name="msg_org_under_review">Your organization is under review. You\'ll be notified once approved (usually 1–3 business days).</string>
+    <string name="msg_verification_rejected_profile">Verification rejected. Contact support to resolve this and re-submit.</string>
+    <string name="msg_profile_pct_complete">Profile %1$d%% complete</string>
+    <string name="msg_fields_filled">%1$d of %2$d required fields filled</string>
+    <string name="msg_missing_fields">Missing: %1$s</string>
+    <string name="label_stat_requests">Requests</string>
+    <string name="label_verified_badge">Verified</string>
+    <string name="label_pending_review_badge">Pending Review</string>
+    <string name="label_rejected_badge">Rejected</string>
+    <string name="label_change_photo">Change photo</string>
+    <string name="cd_profile_photo_of">Profile photo of %1$s</string>
+
+    <!-- Profile edit mode -->
+    <string name="section_general">General</string>
+    <string name="label_edit_profile">Edit Profile</string>
+    <string name="hint_org_description">Briefly describe your organization…</string>
+    <string name="label_city_location">City / Location</string>
+    <string name="label_opening_time">Opening Time</string>
+    <string name="label_closing_time">Closing Time</string>
+    <string name="label_contact_person_star">Contact Person *</string>
+    <string name="hint_contact_person">Primary contact name</string>
+    <string name="hint_pickup_instructions_long">Back door, ask at service counter…</string>
+    <string name="hint_phone_profile">+84 123 456 789</string>
+    <string name="action_save_changes">Save Changes</string>
+
+    <!-- Password dialog errors -->
+    <string name="error_current_password_required">Current password required</string>
+    <string name="error_new_password_required">New password required</string>
+    <string name="error_password_min_length">At least 8 characters</string>
+    <string name="error_password_needs_uppercase">Needs an uppercase letter</string>
+    <string name="error_password_needs_number">Needs a number</string>
+    <string name="error_passwords_dont_match">Passwords don\'t match</string>
+    <string name="label_show_password">Show password</string>
+    <string name="label_hide_password">Hide password</string>
+
+    <!-- My Listings delete confirm -->
+    <string name="msg_delete_listing_confirm">Delete \"%1$s\"? This cannot be undone.</string>
+
+    <!-- Search placeholders -->
+    <string name="hint_search_by_item_ngo">Search by item, NGO…</string>
+    <string name="hint_search_by_name_grocery">Search by name, grocery…</string>
+    <string name="hint_search_by_item_grocery">Search by item, grocery…</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_refresh">Refresh</string>
+    <string name="cd_export_pdf">Export PDF</string>
+    <string name="cd_export">Export</string>
+    <string name="cd_dismiss">Dismiss</string>
+    <string name="cd_camera">Camera</string>
+    <string name="cd_gallery">Gallery</string>
+    <string name="cd_preview_image">Preview</string>
+    <string name="cd_remove_image">Remove image</string>
+    <string name="cd_add_photo">Add photo</string>
+    <string name="cd_full_size_image">Full size image</string>
+    <string name="cd_report_listing_icon">Report listing</string>
+    <string name="cd_upload_failed">Upload Failed</string>
+    <string name="cd_clear_notifications">Clear all notifications</string>
+    <string name="cd_view_profile">View profile</string>
+    <string name="action_view_grocery_profile">View Grocery Profile</string>
+    <string name="action_view_ngo_profile">View NGO Profile</string>
+    <string name="cd_image_n">Image %1$d</string>
+    <string name="cd_star_n">%1$d star</string>
+    <string name="cd_proof_of_pickup">Proof of pickup</string>
+    <string name="cd_saved_only">Saved only</string>
+    <string name="label_expiry_date_field">Expiry Date</string>
+    <string name="greeting_hi">Hi, %1$s</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_preview">Preview</string>
+    <string name="label_ai_analyze_hint">AI will analyze the food and auto-fill details for you</string>
+    <string name="cd_primary_image">Primary image</string>
+    <string name="cd_additional_image">Additional image %1$d</string>
+    <string name="label_primary_badge">Primary</string>
+    <string name="label_no_title">(no title)</string>
+    <string name="label_quality_grade">%1$s quality</string>
+    <string name="label_freshness_score">%1$d/100 fresh</string>
+    <string name="label_confidence_pct">%1$d%% conf.</string>
+    <string name="hint_quantity_number">10</string>
+    <string name="cd_share">Share</string>
+    <string name="label_live">Live</string>
+    <string name="label_posted_time_ago">Posted %1$s</string>
+    <string name="cd_listing_image_n">%1$s image %2$d</string>
+    <string name="label_exp_short">Exp: %1$s</string>
+    <string name="error_failed_load_request">Failed to load request</string>
+    <string name="label_request_information">Request Information</string>
+    <string name="label_more_from_store">More from this store</string>
+    <string name="label_ngo_party">NGO</string>
+    <string name="label_grocery_party">Grocery Store</string>
+    <string name="label_item">Item</string>
+    <string name="label_pickup_time">Pickup Time</string>
+    <string name="label_grocery">Grocery</string>
+    <string name="label_ngo">NGO</string>
+    <string name="label_actions">Actions</string>
+    <string name="msg_complete_checklist">Complete all checklist items to confirm pickup</string>
+    <string name="label_tap_view_full">Tap to view full size</string>
+    <string name="label_messages_section">Messages</string>
+    <string name="label_current_status">Current</string>
+    <string name="msg_no_messages">No messages yet. Start the conversation.</string>
+    <string name="cd_send">Send</string>
+    <string name="label_timeline_submitted">Submitted</string>
+    <string name="label_timeline_approved">Approved</string>
+    <string name="label_timeline_ready">Ready for Pickup</string>
+    <string name="label_timeline_completed">Completed</string>
+    <string name="label_status_submitted">Your request is submitted.</string>
+    <string name="label_status_approved">Your request is approved.</string>
+    <string name="label_status_ready">Your request is ready to pickup.</string>
+    <string name="label_status_completed">Your request is completed.</string>
+    <string name="label_requested_on_at">Requested on %1$s at %2$s</string>
+    <string name="label_completed_on_at">Completed on %1$s at %2$s</string>
+    <string name="label_pickup_on_at">Pickup on %1$s at %2$s</string>
+    <string name="checklist_item_1">Quantity matches the requested amount</string>
+    <string name="checklist_item_2">Items are correctly packaged / sealed</string>
+    <string name="checklist_item_3">All items are within their expiry date</string>
+    <string name="checklist_item_4">Temperature requirements met (refrigerated if needed)</string>
+    <string name="checklist_item_5">Collection receipt / confirmation noted</string>
+    <string name="label_pickup_verification_checklist">Pickup Verification Checklist</string>
+    <string name="label_name">Name</string>
+    <string name="hint_email_you">you@example.com</string>
+    <string name="hint_email_org">org@example.com</string>
+    <string name="msg_account_locked">Account locked. Try again in %1$d minute(s).</string>
+    <string name="tos_agree_prefix">I agree to the </string>
+    <string name="tos_agree_and"> and </string>
+
+    <!-- Snackbar messages (ViewModel) -->
+    <string name="snack_request_approved">Request approved</string>
+    <string name="snack_marked_ready">Marked as ready for pickup</string>
+    <string name="snack_request_rejected">Request rejected</string>
+    <string name="snack_pickup_confirmed">Pickup confirmed!</string>
+    <string name="snack_action_failed">Action failed</string>
+    <string name="snack_new_request_from">New pickup request from %1$s</string>
+    <string name="snack_request_cancelled_by">Request cancelled by %1$s</string>
+    <string name="snack_n_requests_approved">%1$d request(s) approved</string>
+    <string name="snack_n_requests_rejected">%1$d request(s) rejected</string>
+    <string name="snack_new_listing">New listing available: %1$s</string>
+    <string name="snack_listings_refreshed">Listings refreshed</string>
+    <string name="snack_listing_deleted">Listing deleted</string>
+    <string name="snack_listing_archived">Listing archived</string>
+    <string name="snack_listing_restored">Listing restored</string>
+    <string name="snack_n_listings_deleted">%1$d listing(s) deleted</string>
+    <string name="snack_n_listings_archived">%1$d listing(s) archived</string>
+    <string name="snack_n_listings_restored">%1$d listing(s) restored</string>
+    <string name="n_listings_selected">%1$d listing(s) selected</string>
+    <string name="snack_quantity_updated">Quantity updated</string>
+    <string name="snack_draft_saved">Draft saved</string>
+    <string name="snack_draft_restored">Draft restored</string>
+    <string name="snack_image_upload_failed">Image upload failed: %1$s</string>
+    <string name="snack_listing_created">Listing created successfully!</string>
+    <string name="snack_analysis_failed">Analysis failed: %1$s</string>
+    <string name="snack_ai_applied">AI suggestions applied! Please review and adjust.</string>
+    <string name="snack_ai_detected">AI detected: %1$s (%2$d%% confidence)</string>
+    <string name="snack_profile_updated">Profile updated successfully</string>
+    <string name="snack_password_changed">Password changed successfully</string>
+    <string name="snack_avatar_updated">Avatar updated successfully</string>
+    <string name="snack_account_deleted">Account deleted successfully</string>
+    <string name="snack_new_inventory_item">New item received: %1$s</string>
+    <string name="snack_no_inventory_export">No inventory data to export</string>
+    <string name="snack_csv_saved">CSV saved to Downloads</string>
+    <string name="snack_csv_failed">Failed to save CSV</string>
+    <string name="snack_export_failed">Export failed: %1$s</string>
+    <string name="snack_inventory_refreshed">Inventory refreshed</string>
+    <string name="snack_n_items_distributed">%1$d item(s) distributed</string>
+    <string name="snack_item_distributed">Item marked as distributed</string>
+    <string name="snack_distributed_to_beneficiaries">Distributed to %1$d beneficiaries</string>
+    <string name="snack_item_added">Item added to inventory</string>
+    <string name="snack_new_admin_notification">New %1$s: %2$s</string>
+    <string name="snack_new_transaction">Transaction: %1$s</string>
+    <string name="snack_stats_refreshed">Statistics refreshed</string>
+    <string name="snack_new_registration">New %1$s registered: %2$s</string>
+    <string name="snack_approved_orgs">Approved %1$d of %2$d organizations</string>
+    <string name="snack_rejected_orgs">Rejected %1$d of %2$d organizations</string>
+    <string name="snack_org_approved">Organization approved</string>
+    <string name="snack_org_rejected">Organization rejected</string>
+    <string name="snack_orgs_refreshed">Organizations refreshed</string>
+    <string name="snack_transactions_refreshed">Transactions refreshed</string>
+    <string name="snack_no_data_export">No data to export</string>
+    <string name="snack_pdf_saved">PDF saved to Downloads</string>
+    <string name="snack_pdf_failed">Failed to save PDF</string>
+    <string name="snack_welcome_back">Welcome back, %1$s!</string>
+    <string name="snack_dispute_submitted">Dispute submitted. Our team will review within 24 hours.</string>
+    <string name="snack_cannot_retry">Cannot retry: Maximum attempts reached</string>
+    <string name="snack_request_submitted">Pickup request submitted successfully!</string>
+    <string name="snack_email_verified">Email verified! Welcome to ClearChain.</string>
+    <string name="snack_code_resent">Verification code resent to %1$s</string>
+    <string name="snack_request_cancelled">Request cancelled</string>
+    <string name="snack_requests_refreshed">Requests refreshed</string>
+    <string name="snack_pickup_confirmed_photo">Pickup confirmed with photo!</string>
+    <string name="snack_receipt_failed">Failed to generate receipt</string>
+    <string name="snack_review_submitted">Thank you for your review!</string>
+    <string name="snack_receipt_title">Pickup Receipt — %1$s</string>
+    <string name="label_pickup_receipt">Pickup Receipt</string>
+    <string name="snack_your_request_approved">Your request has been approved!</string>
+    <string name="snack_food_ready_pickup">Food is ready for pickup!</string>
+    <string name="snack_pickup_completed">Pickup completed</string>
+    <string name="snack_request_rejected_by_grocery">Your request was rejected by the grocery</string>
+    <string name="snack_status_updated_to">Status updated to %1$s</string>
+    <string name="hint_pinch_to_zoom">Pinch to zoom</string>
+    <string name="msg_try_again_later">Please try again later or contact support if the problem persists.</string>
+    <string name="cd_profile_picture_of">Profile picture of %1$s</string>
+    <string name="label_upload_failed">Upload Failed</string>
+
+    <!-- Org type short labels (chart legends) -->
+    <string name="org_type_grocery">Grocery</string>
+    <string name="org_type_ngo">NGO</string>
+    <!-- Statistics comparison metric labels -->
+    <string name="label_completed_pickups">Completed Pickups</string>
+    <string name="label_food_saved">Food Saved</string>
+    <string name="label_new_listings">New Listings</string>
+    <string name="label_vs_yesterday">vs Yesterday</string>
+    <string name="label_vs_prev_week">vs Previous Week</string>
+    <string name="label_vs_prev_month">vs Previous Month</string>
+    <string name="label_vs_prev_period">vs Previous Period</string>
+
+    <!-- Admin / misc UI labels -->
+    <string name="label_admin">Admin</string>
+    <string name="label_email">Email</string>
+    <string name="label_phone">Phone</string>
+    <string name="label_location">Location</string>
+    <string name="msg_not_provided">Not provided</string>
+    <string name="label_overdue">Overdue</string>
+    <string name="label_submitted">Submitted</string>
+    <string name="label_pickup_short">Pickup</string>
+    <string name="label_to">To</string>
+    <string name="label_doc_n">Document %1$d</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+    <string name="cd_exit_batch_mode">Exit batch mode</string>
+    <string name="cd_batch_select">Batch select</string>
+    <string name="label_quantity_units">%1$d units</string>
+    <string name="label_pickup_at">%1$s at %2$s</string>
+
+    <!-- Verification checklist items -->
+    <string name="verify_check_1">Organization name is valid and complete</string>
+    <string name="verify_check_2">Email address is verified</string>
+    <string name="verify_check_3">Phone number provided</string>
+    <string name="verify_check_4">Physical address provided</string>
+    <string name="verify_check_5">Business registration or charity status verified</string>
+    <string name="verify_check_6">Contact person identified</string>
+
+    <!-- Rejection template reasons -->
+    <string name="reject_template_1">Incomplete documentation — please resubmit with all required fields</string>
+    <string name="reject_template_2">Unable to verify business registration</string>
+    <string name="reject_template_3">Organization address could not be verified</string>
+    <string name="reject_template_4">Contact information appears invalid</string>
+    <string name="reject_template_5">Duplicate account detected</string>
+    <string name="reject_template_6">Does not meet eligibility criteria</string>
+
+    <!-- PDF label keys -->
+    <string name="pdf_generated_by">Generated by ClearChain</string>
+    <string name="label_reference_id">Reference ID</string>
+    <string name="label_food_item">Food Item</string>
+    <string name="label_from">From</string>
+    <string name="label_status">Status</string>
+    <string name="pdf_stats_title">ClearChain Statistics Report</string>
+    <string name="pdf_stats_generated">Generated: %1$s  •  Period: %2$s</string>
+    <string name="pdf_platform_overview">Platform Overview</string>
+    <string name="label_total_organizations">Total Organizations</string>
+    <string name="label_grocery_stores">Grocery Stores</string>
+    <string name="label_ngos">NGOs</string>
+    <string name="label_verified">Verified</string>
+    <string name="label_total_listings">Total Listings</string>
+    <string name="label_active_listings">Active Listings</string>
+    <string name="label_total_requests">Total Requests</string>
+    <string name="label_completed_requests">Completed Requests</string>
+    <string name="label_pending_requests">Pending Requests</string>
+    <string name="label_total_food_saved_kg">Total Food Saved (kg)</string>
+    <string name="label_impact">Impact</string>
+    <string name="label_kg_saved">Kg Saved</string>
+    <string name="label_meals_equivalent">Meals Equivalent</string>
+    <string name="label_co2_saved_kg">CO₂ Saved (kg)</string>
+    <string name="label_beneficiaries">Beneficiaries</string>
+
+    <!-- Validation errors -->
+    <string name="error_email_required">Email is required</string>
+    <string name="error_email_invalid_format">Invalid email format</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_login_failed">Login failed</string>
+    <string name="error_name_required">Name is required</string>
+    <string name="error_name_min_length">Name must be at least 3 characters</string>
+    <string name="error_name_min_chars">At least 3 characters</string>
+    <string name="error_email_already_registered">Email is already registered</string>
+    <string name="error_password_complexity">Password must be 8+ chars with uppercase, lowercase, and number</string>
+    <string name="error_confirm_password_required">Please confirm your password</string>
+    <string name="error_registration_failed">Registration failed</string>
+    <string name="error_title_required">Title is required</string>
+    <string name="error_title_min_length">Title must be at least 3 characters</string>
+    <string name="error_description_required">Description is required</string>
+    <string name="error_quantity_required">Quantity is required</string>
+    <string name="error_quantity_positive">Quantity must be greater than 0</string>
+    <string name="error_unit_required">Unit is required</string>
+    <string name="error_expiry_required">Expiry date is required</string>
+    <string name="error_date_format_yyyy_mm_dd">Invalid date format. Use YYYY-MM-DD</string>
+    <string name="error_pickup_start_required">Pickup start time is required</string>
+    <string name="error_time_format_hhmm_start">Invalid time format. Use HH:MM (e.g., 09:00)</string>
+    <string name="error_pickup_end_required">Pickup end time is required</string>
+    <string name="error_time_format_hhmm_end">Invalid time format. Use HH:MM (e.g., 17:00)</string>
+    <string name="error_end_time_before_start">End time must be after start time</string>
+    <string name="error_create_listing_failed">Failed to create listing</string>
+    <string name="error_phone_required">Phone number is required</string>
+    <string name="error_contact_person_required">Contact person is required</string>
+    <string name="error_address_required">Address is required</string>
+    <string name="error_city_required">City is required</string>
+    <string name="error_onboarding_save_failed">Failed to save. Please try again.</string>
+    <string name="error_phone_invalid">Invalid phone number</string>
+    <string name="error_update_profile_failed">Failed to update profile</string>
+    <string name="error_enter_6_digit_code">Enter the 6-digit code</string>
+    <string name="error_verification_failed">Verification failed</string>
+    <string name="error_resend_code_failed">Failed to resend code</string>
+    <string name="error_fill_required_fields">Please fill in all required fields</string>
+    <string name="error_item_save_failed">Save failed</string>
+    <string name="error_load_item_failed">Failed to load item</string>
+    <string name="error_upload_failed">Upload failed</string>
+    <string name="error_load_statistics">Failed to load statistics</string>
+    <string name="error_refresh_failed">Failed to refresh</string>
+    <string name="error_refresh_statistics">Failed to refresh statistics</string>
+    <string name="error_load_transactions">Failed to load transactions</string>
+    <string name="error_refresh_transactions">Failed to refresh transactions</string>
+    <string name="error_approve_failed">Failed to approve</string>
+    <string name="error_reject_failed">Failed to reject</string>
+    <string name="error_load_orgs">Failed to load organizations</string>
+
+    <!-- UI component defaults -->
+    <string name="cd_hide_password">Hide password</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_delete">Delete</string>
+    <string name="placeholder_search">Search…</string>
+    <string name="cd_select_date">Select date</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="label_address">Address</string>
+    <string name="placeholder_start_typing_address">Start typing an address…</string>
+
+    <!-- Sort option labels -->
+    <string name="sort_newest">Newest</string>
+    <string name="sort_oldest">Oldest</string>
+    <string name="sort_a_to_z">A–Z</string>
+    <string name="sort_z_to_a">Z–A</string>
+    <string name="sort_expiring_soon">Expiring Soon</string>
+    <string name="sort_expiring_later">Expiring Later</string>
+
+    <!-- Admin activity titles and descriptions -->
+    <string name="activity_title_new_org">New %1$s registered</string>
+    <string name="activity_title_transaction">Transaction completed</string>
+    <string name="activity_title_stats_updated">Platform stats updated</string>
+    <string name="activity_desc_new_org">%1$s from %2$s</string>
+    <string name="activity_desc_transaction">%1$s received %2$s %3$s from %4$s</string>
+    <string name="activity_desc_stats">%1$s total, %2$s completed today</string>
+    <string name="cd_org_type">%1$s organization</string>
+    <string name="error_delete_listing_failed">Failed to delete listing</string>
+    <string name="error_archive_listing_failed">Failed to archive listing</string>
+    <string name="error_restore_listing_failed">Failed to restore listing</string>
+    <string name="error_bulk_approve_failed">Bulk approve failed</string>
+    <string name="error_bulk_reject_failed">Bulk reject failed</string>
+    <string name="error_load_inventory">Failed to load inventory</string>
+    <string name="error_refresh_inventory">Failed to refresh inventory</string>
+    <string name="error_load_requests">Failed to load requests</string>
+    <string name="error_refresh_requests">Failed to refresh requests</string>
+    <string name="error_cancel_request_failed">Failed to cancel request</string>
+    <string name="error_upload_photo_failed">Failed to upload photo</string>
+    <string name="error_submit_review_failed">Failed to submit review</string>
+    <string name="error_analysis_failed">Analysis failed</string>
+    <string name="label_grocery_store_name">Grocery Store</string>
+    <string name="note_vehicle">Vehicle: %1$s</string>
+    <string name="note_needs_refrigeration">Needs refrigeration</string>
+    <string name="note_fragile_items">Fragile items</string>
+    <string name="note_heavy_load">Heavy load</string>
+    <string name="msg_attempt_n_of_n">Attempt %1$d of %2$d</string>
+    <string name="msg_max_retry_reached">Maximum retry attempts reached</string>
+    <string name="error_submit_request_failed">Failed to submit request</string>
+    <string name="error_change_password_failed">Failed to change password</string>
+    <string name="error_delete_account_failed">Failed to delete account</string>
+
+    <!-- Pickup scheduling calendar (ManageRequests) -->
+    <string name="label_calendar_view">Calendar</string>
+    <string name="label_list_view">List</string>
+    <string name="cd_switch_to_calendar">Switch to calendar view</string>
+    <string name="cd_switch_to_list">Switch to list view</string>
+    <string name="cd_switch_to_map">Switch to map view</string>
+    <string name="cd_prev_month">Previous month</string>
+    <string name="cd_next_month">Next month</string>
+
+    <!-- Browse listings accessibility -->
+    <string name="cd_save_listing">Save listing</string>
+    <string name="cd_remove_from_saved">Remove from saved</string>
+    <string name="cd_toggle_selection_mode">Toggle selection mode</string>
+    <string name="cd_exit_selection">Exit selection</string>
+    <string name="cd_create_listing">Create listing</string>
+    <string name="cd_select_multiple">Select multiple</string>
+    <string name="cd_add_item_manually">Add item manually</string>
+    <string name="cd_change_location">Change location</string>
+    <string name="cd_return_to_location">Return to my location</string>
+    <string name="cd_select_time">Select time</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_edit_profile">Edit profile</string>
+    <string name="label_no_requests_on_date">No requests on this date</string>
+    <string name="label_requests_on_date">%1$d request(s) on %2$s</string>
+    <string name="label_tap_date_hint">Tap a date to filter · tap again to clear</string>
+    <string name="label_all_dates">All dates</string>
+
+    <!-- Generic inline validation errors (used in composable dialogs) -->
+    <string name="error_invalid_number">Invalid number</string>
+    <string name="error_must_be_positive">Must be greater than 0</string>
+    <string name="error_same_as_current">Same as current</string>
+    <string name="label_current_qty">Current: %1$d %2$s</string>
+    <string name="error_select_reason">Please select a reason</string>
+
+    <!-- RequestPickup validation errors -->
+    <string name="error_listing_not_found">Listing not found</string>
+    <string name="error_quantity_invalid">Please enter a valid quantity</string>
+    <string name="error_quantity_exceeds">Quantity exceeds available amount (%1$d %2$s)</string>
+    <string name="error_pickup_date_required">Please select a pickup date</string>
+    <string name="error_pickup_time_required">Please select a pickup time</string>
+    <string name="error_pickup_date_past">Pickup date cannot be in the past</string>
+    <string name="error_pickup_date_after_expiry">Pickup date cannot be after expiry date (%1$s)</string>
+    <string name="error_invalid_date_format">Invalid date format</string>
+    <string name="uploading_image">Uploading image…</string>
+
+    <!-- Vehicle type labels -->
+    <string name="vehicle_walk">Walking</string>
+    <string name="vehicle_bicycle">Bicycle</string>
+    <string name="vehicle_motorcycle">Motorcycle</string>
+    <string name="vehicle_car">Car</string>
+    <string name="vehicle_van">Van / Truck</string>
+
+    <!-- Review rating labels -->
+    <string name="review_rating_poor">Poor</string>
+    <string name="review_rating_below_avg">Below average</string>
+    <string name="review_rating_average">Average</string>
+    <string name="review_rating_good">Good</string>
+    <string name="review_rating_excellent">Excellent!</string>
+
+    <!-- Food category labels -->
+    <string name="category_fruits">Fruits</string>
+    <string name="category_vegetables">Vegetables</string>
+    <string name="category_dairy">Dairy</string>
+    <string name="category_bakery">Bakery</string>
+    <string name="category_meat">Meat</string>
+    <string name="category_seafood">Seafood</string>
+    <string name="category_packaged">Packaged Foods</string>
+    <string name="category_beverages">Beverages</string>
+    <string name="category_other">Other</string>
+
+    <!-- Listing status labels -->
+    <string name="status_listing_available">Available</string>
+    <string name="status_listing_reserved">Reserved</string>
+    <string name="status_listing_completed">Completed</string>
+    <string name="status_listing_expired">Expired</string>
 </resources>

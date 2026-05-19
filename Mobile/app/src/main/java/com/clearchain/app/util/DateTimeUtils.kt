@@ -10,7 +10,7 @@ object DateTimeUtils {
     private const val ISO_8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
     private const val DISPLAY_DATE_FORMAT = "MMM dd, yyyy"
     private const val DISPLAY_TIME_FORMAT = "hh:mm a"
-    private const val DISPLAY_DATETIME_FORMAT = "MMM dd, yyyy hh:mm a"
+    private const val DISPLAY_DATETIME_FORMAT = "MMM dd, yyyy 'at' hh:mm a"
 
     fun formatDate(isoDate: String): String {
         val formats = listOf(ISO_8601_FORMAT, "yyyy-MM-dd")
@@ -21,6 +21,15 @@ object DateTimeUtils {
             } catch (_: Exception) {}
         }
         return isoDate
+    }
+
+    fun formatTime(isoDate: String): String {
+        return try {
+            val date = SimpleDateFormat(ISO_8601_FORMAT, Locale.getDefault()).parse(isoDate)
+            SimpleDateFormat(DISPLAY_TIME_FORMAT, Locale.getDefault()).format(date ?: Date())
+        } catch (_: Exception) {
+            isoDate
+        }
     }
 
     fun formatDateTime(isoDate: String): String {

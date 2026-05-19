@@ -10,7 +10,8 @@ data class InventoryItem(
     val status: InventoryStatus,
     val receivedAt: String,
     val distributedAt: String?,
-    val pickupRequestId: String? = null  // ← THÊM
+    val pickupRequestId: String? = null,
+    val photoUrl: String? = null
 )
 
 enum class InventoryStatus {

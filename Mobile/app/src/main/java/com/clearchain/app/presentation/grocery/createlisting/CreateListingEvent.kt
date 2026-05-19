@@ -9,8 +9,6 @@ sealed class CreateListingEvent {
     data class QuantityChanged(val quantity: String) : CreateListingEvent()
     data class UnitChanged(val unit: String) : CreateListingEvent()
     data class ExpiryDateChanged(val date: String) : CreateListingEvent()
-    data class PickupTimeStartChanged(val time: String) : CreateListingEvent()
-    data class PickupTimeEndChanged(val time: String) : CreateListingEvent()
     data class ImageUrlChanged(val url: String) : CreateListingEvent()
     data class ImageSelected(val uri: Uri) : CreateListingEvent()
 
@@ -22,4 +20,14 @@ sealed class CreateListingEvent {
     object ApplyAISuggestions : CreateListingEvent()
     object ToggleImagePicker : CreateListingEvent()
     object ClearImage : CreateListingEvent()
+
+    // Multi-image
+    data class AddImage(val uri: Uri) : CreateListingEvent()
+    data class RemoveImage(val index: Int) : CreateListingEvent()
+    data class ReorderImages(val fromIndex: Int, val toIndex: Int) : CreateListingEvent()
+
+    // Draft & Preview
+    object TogglePreview : CreateListingEvent()
+    object RestoreDraft : CreateListingEvent()
+    object ClearDraft : CreateListingEvent()
 }

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs head:*)",
+      "Bash(grep -E \"\\\\.\\(cs|kt\\)$\")",
+      "Bash(find /d/Projects/ClearChain/Backend/ClearChain.API/Controllers -type f -name \"*.cs\" -exec basename {} \\\\;)"
+    ]
+  }
+}

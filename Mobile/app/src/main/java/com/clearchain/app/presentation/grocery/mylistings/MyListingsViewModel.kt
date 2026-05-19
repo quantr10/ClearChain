@@ -1,15 +1,20 @@
 package com.clearchain.app.presentation.grocery.mylistings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
+import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.signalr.ConnectionState
-import com.clearchain.app.data.remote.signalr.SignalRService  // ✅ ADD
+import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.DeleteListingUseCase
 import com.clearchain.app.domain.usecase.listing.GetMyListingsUseCase
 import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,10 +22,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MyListingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getMyListingsUseCase: GetMyListingsUseCase,
     private val deleteListingUseCase: DeleteListingUseCase,
     private val updateListingQuantityUseCase: UpdateListingQuantityUseCase,
-    private val signalRService: SignalRService  // ✅ ADD
+    private val listingApi: ListingApi,
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyListingsState())
@@ -31,102 +38,32 @@ class MyListingsViewModel @Inject constructor(
 
     init {
         loadListings()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-        // Connect to SignalR (reuse existing connection)
-        viewModelScope.launch {
-            signalRService.connect()
-        }
+        viewModelScope.launch { signalRService.connect() }
 
-        // Listen for connection state
         viewModelScope.launch {
-            signalRService.connectionState.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> {
-                        _uiEvent.send(UiEvent.ShowSnackbar("✅ Real-time updates enabled"))
-                    }
-                    is ConnectionState.Error -> {
-                        // Silent fail - app works without real-time
-                    }
-                    else -> {}
-                }
-            }
+            signalRService.listingCreated.collect { loadListings() }
         }
-
-        // ✅ Listen for listing created (confirmation when grocery creates)
         viewModelScope.launch {
-            signalRService.listingCreated.collect { listing ->
-                loadListings()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("✅ New listing created: ${listing.title}")
-                )
-            }
+            signalRService.listingDeleted.collect { loadListings() }
         }
-
-        // ✅ Listen for listing deleted (confirmation)
         viewModelScope.launch {
-            signalRService.listingDeleted.collect { notification ->
-                loadListings()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Listing deleted")
-                )
-            }
+            signalRService.listingUpdated.collect { loadListings() }
         }
-
-        // ✅ Listen for quantity changes (confirmation)
         viewModelScope.launch {
-            signalRService.listingQuantityChanged.collect { notification ->
-                loadListings()
-                val change = if (notification.newQuantity > notification.oldQuantity) {
-                    "increased"
-                } else {
-                    "decreased"
-                }
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Quantity $change: ${notification.listing.title}")
-                )
-            }
+            signalRService.pickupRequestCreated.collect { loadListings() }
         }
-
-        // ✅ Listen for listing updates (general updates)
         viewModelScope.launch {
-            signalRService.listingUpdated.collect { listing ->
-                loadListings()
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Listing updated: ${listing.title}")
-                )
-            }
-        }
-
-        // ✅ CRITICAL: Listen for pickup requests (listings become RESERVED!)
-        viewModelScope.launch {
-            signalRService.pickupRequestCreated.collect { request ->
-                loadListings() // Auto-refresh to show status change
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("📝 New pickup request for: ${request.listingTitle}")
-                )
-            }
-        }
-
-        // ✅ Listen for pickup request cancellations (listings become AVAILABLE again!)
-        viewModelScope.launch {
-            signalRService.pickupRequestCancelled.collect { request ->
-                loadListings() // Auto-refresh
-                _uiEvent.send(
-                    UiEvent.ShowSnackbar("Request cancelled: ${request.listingTitle}")
-                )
-            }
+            signalRService.pickupRequestCancelled.collect { loadListings() }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
+        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: MyListingsEvent) {
@@ -134,8 +71,9 @@ class MyListingsViewModel @Inject constructor(
             MyListingsEvent.LoadListings -> loadListings()
             MyListingsEvent.RefreshListings -> refreshListings()
             is MyListingsEvent.DeleteListing -> deleteListing(event.listingId)
+            is MyListingsEvent.ArchiveListing -> archiveListing(event.listingId)
+            is MyListingsEvent.UnarchiveListing -> unarchiveListing(event.listingId)
 
-            // Search & Sort
             is MyListingsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -144,52 +82,67 @@ class MyListingsViewModel @Inject constructor(
                 _state.update { it.copy(selectedSort = event.option) }
                 applyFilters()
             }
-
-            // Status Tab
-            is MyListingsEvent.StatusTabChanged -> {
-                _state.update { it.copy(selectedStatusTab = event.status) }
+            is MyListingsEvent.TabChanged -> {
+                _state.update { it.copy(activeTab = event.tab, isSelectionMode = false, selectedIds = emptySet()) }
                 applyFilters()
             }
-
-            // Category Filter
             is MyListingsEvent.CategoryFilterChanged -> {
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
             }
 
-            is MyListingsEvent.UpdateListingQuantity -> {
-                updateListingQuantity(event.listingId, event.newQuantity)
+            // Advanced filter sheet
+            MyListingsEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
+            MyListingsEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
+            is MyListingsEvent.FilterExpiryWithinDaysChanged -> {
+                _state.update { it.copy(filterExpiryWithinDays = event.days) }
+                applyFilters()
+            }
+            is MyListingsEvent.FilterHasRequestsChanged -> {
+                _state.update { it.copy(filterHasRequests = event.enabled) }
+                applyFilters()
+            }
+            MyListingsEvent.ClearAdvancedFilters -> {
+                _state.update { it.copy(selectedCategory = null, filterExpiryWithinDays = null, filterHasRequests = false) }
+                applyFilters()
             }
 
-            MyListingsEvent.ClearError -> {
+            // Bulk selection
+            MyListingsEvent.ToggleSelectionMode ->
+                _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
+            is MyListingsEvent.ToggleItemSelection ->
+                _state.update {
+                    val updated = if (event.listingId in it.selectedIds)
+                        it.selectedIds - event.listingId
+                    else
+                        it.selectedIds + event.listingId
+                    it.copy(selectedIds = updated, isSelectionMode = updated.isNotEmpty())
+                }
+            MyListingsEvent.SelectAll ->
+                _state.update { it.copy(selectedIds = it.filteredListings.map { l -> l.id }.toSet()) }
+            MyListingsEvent.DeselectAll ->
+                _state.update { it.copy(selectedIds = emptySet()) }
+            MyListingsEvent.BulkDelete -> bulkDelete()
+            MyListingsEvent.BulkArchive -> bulkArchive()
+            MyListingsEvent.BulkRestore -> bulkRestore()
+
+            is MyListingsEvent.UpdateListingQuantity ->
+                updateListingQuantity(event.listingId, event.newQuantity)
+            MyListingsEvent.ClearError ->
                 _state.update { it.copy(error = null) }
-            }
         }
     }
 
     private fun loadListings() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = getMyListingsUseCase()
-
-            result.fold(
+            getMyListingsUseCase().fold(
                 onSuccess = { listings ->
-                    _state.update {
-                        it.copy(
-                            allListings = listings,
-                            isLoading = false
-                        )
-                    }
+                    _state.update { it.copy(allListings = listings, isLoading = false) }
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Failed to load listings"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load listings") }
                 }
             )
         }
@@ -197,46 +150,97 @@ class MyListingsViewModel @Inject constructor(
 
     private fun refreshListings() {
         viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
-
-            val result = getMyListingsUseCase()
-
-            result.fold(
+            _state.update { it.copy(isRefreshing = true) }
+            getMyListingsUseCase().fold(
                 onSuccess = { listings ->
-                    _state.update {
-                        it.copy(
-                            allListings = listings,
-                            isRefreshing = false
-                        )
-                    }
+                    _state.update { it.copy(allListings = listings, isRefreshing = false) }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar("Listings refreshed"))
                 },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = error.message ?: "Failed to refresh listings"
-                        )
-                    }
-                }
+                onFailure = { _state.update { it.copy(isRefreshing = false) } }
             )
         }
     }
 
     private fun deleteListing(listingId: String) {
         viewModelScope.launch {
-            val result = deleteListingUseCase(listingId)
-
-            result.fold(
+            deleteListingUseCase(listingId).fold(
                 onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Listing deleted"))
-                    loadListings() // Reload after delete
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_deleted)))
+                    loadListings()
                 },
                 onFailure = { error ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to delete listing"))
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_delete_listing_failed)))
                 }
             )
+        }
+    }
+
+    private fun archiveListing(listingId: String) {
+        viewModelScope.launch {
+            try {
+                listingApi.archiveListing(listingId)
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_archived)))
+                loadListings()
+            } catch (e: Exception) {
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_archive_listing_failed)))
+            }
+        }
+    }
+
+    private fun unarchiveListing(listingId: String) {
+        viewModelScope.launch {
+            try {
+                listingApi.unarchiveListing(listingId)
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_restored)))
+                loadListings()
+            } catch (e: Exception) {
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_restore_listing_failed)))
+            }
+        }
+    }
+
+    private fun bulkDelete() {
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            var success = 0
+            ids.forEach { id ->
+                deleteListingUseCase(id).onSuccess { success++ }
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_deleted, success)))
+            loadListings()
+        }
+    }
+
+    private fun bulkArchive() {
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            var success = 0
+            ids.forEach { id ->
+                try { listingApi.archiveListing(id); success++ } catch (_: Exception) {}
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_archived, success)))
+            loadListings()
+        }
+    }
+
+    private fun bulkRestore() {
+        val ids = _state.value.selectedIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            _state.update { it.copy(isBulkOperating = true) }
+            var success = 0
+            ids.forEach { id ->
+                try { listingApi.unarchiveListing(id); success++ } catch (_: Exception) {}
+            }
+            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_restored, success)))
+            loadListings()
         }
     }
 
@@ -244,40 +248,50 @@ class MyListingsViewModel @Inject constructor(
         val current = _state.value
         var filtered = current.allListings
 
-        // Apply STATUS TAB filter (first priority)
-        current.selectedStatusTab?.let { status ->
-            filtered = filtered.filter { it.status == status }
+        filtered = when (current.activeTab) {
+            MyListingsTab.AVAILABLE -> filtered.filter { !it.isArchived && it.status == ListingStatus.AVAILABLE }
+            MyListingsTab.ARCHIVED  -> filtered.filter { it.isArchived }
+            MyListingsTab.RESERVED  -> filtered.filter { !it.isArchived && it.status == ListingStatus.RESERVED }
+            MyListingsTab.EXPIRED   -> filtered.filter { !it.isArchived && it.status == ListingStatus.EXPIRED }
         }
 
-        // Apply search
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { listing ->
                 listing.title.lowercase().contains(query) ||
-                        listing.description.lowercase().contains(query) ||
-                        listing.location.lowercase().contains(query) ||
-                        listing.category.displayName().lowercase().contains(query)
+                listing.description.lowercase().contains(query) ||
+                listing.location.lowercase().contains(query) ||
+                listing.category.displayName().lowercase().contains(query)
             }
         }
 
-        // Apply CATEGORY CHIP filter
         current.selectedCategory?.let { category ->
+            filtered = filtered.filter { it.category.name == category }
+        }
+
+        current.filterExpiryWithinDays?.let { days ->
+            val threshold = java.time.LocalDate.now().plusDays(days.toLong())
             filtered = filtered.filter { listing ->
-                listing.category.name == category
+                runCatching {
+                    !java.time.LocalDate.parse(listing.expiryDate.take(10)).isAfter(threshold)
+                }.getOrDefault(true)
             }
         }
 
-        // Apply sort
+        if (current.filterHasRequests) {
+            filtered = filtered.filter { it.requestCount > 0 }
+        }
+
         filtered = when (current.selectedSort.value) {
-            "date_desc" -> filtered.sortedByDescending { it.createdAt }
-            "date_asc" -> filtered.sortedBy { it.createdAt }
-            "name_asc" -> filtered.sortedBy { it.title }
-            "name_desc" -> filtered.sortedByDescending { it.title }
+            "date_desc"     -> filtered.sortedByDescending { it.createdAt }
+            "date_asc"      -> filtered.sortedBy { it.createdAt }
+            "name_asc"      -> filtered.sortedBy { it.title }
+            "name_desc"     -> filtered.sortedByDescending { it.title }
             "quantity_desc" -> filtered.sortedByDescending { it.quantity }
-            "quantity_asc" -> filtered.sortedBy { it.quantity }
-            "expiry_asc" -> filtered.sortedBy { it.expiryDate }
-            "expiry_desc" -> filtered.sortedByDescending { it.expiryDate }
-            else -> filtered
+            "quantity_asc"  -> filtered.sortedBy { it.quantity }
+            "expiry_asc"    -> filtered.sortedBy { it.expiryDate }
+            "expiry_desc"   -> filtered.sortedByDescending { it.expiryDate }
+            else            -> filtered
         }
 
         _state.update { it.copy(filteredListings = filtered) }
@@ -285,19 +299,13 @@ class MyListingsViewModel @Inject constructor(
 
     private fun updateListingQuantity(listingId: String, newQuantity: Int) {
         viewModelScope.launch {
-            val result = updateListingQuantityUseCase(listingId, newQuantity)
-            
-            result.fold(
+            updateListingQuantityUseCase(listingId, newQuantity).fold(
                 onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar("Quantity updated"))
-                    loadListings() // Reload after update
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_quantity_updated)))
+                    loadListings()
                 },
                 onFailure = { error ->
-                    _uiEvent.send(
-                        UiEvent.ShowSnackbar(
-                            error.message ?: "Failed to update quantity"
-                        )
-                    )
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to update quantity"))
                 }
             )
         }

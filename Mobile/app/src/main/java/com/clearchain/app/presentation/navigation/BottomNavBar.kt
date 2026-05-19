@@ -1,13 +1,22 @@
 package com.clearchain.app.presentation.navigation
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 
 @Composable
@@ -19,24 +28,29 @@ fun BottomNavBar(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val items = when (userType) {
-        OrganizationType.NGO -> getNgoNavigationItems()
+        OrganizationType.NGO     -> getNgoNavigationItems()
         OrganizationType.GROCERY -> getGroceryNavigationItems()
-        OrganizationType.ADMIN -> getAdminNavigationItems()
+        OrganizationType.ADMIN   -> getAdminNavigationItems()
     }
 
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp
+    ) {
         items.forEach { item ->
             val isSelected = currentRoute == item.route
+            val iconSize by animateDpAsState(
+                targetValue = if (isSelected) 26.dp else 24.dp,
+                animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                label = "icon_size"
+            )
 
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
-                            // Pop up to the start destination to avoid building up a large stack
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -45,122 +59,43 @@ fun BottomNavBar(
                 icon = {
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label
+                        contentDescription = stringResource(item.labelResId),
+                        modifier = Modifier.size(iconSize)
                     )
                 },
-                label = { Text(item.label) }
+                label = { Text(stringResource(item.labelResId), style = MaterialTheme.typography.labelSmall) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// NGO Navigation Items
-// ═══════════════════════════════════════════════════════════════════════════════
+private fun getNgoNavigationItems(): List<NavigationItem> = listOf(
+    NavigationItem(Screen.NgoDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
+    NavigationItem(Screen.Inventory.route, Icons.Filled.Inventory, Icons.Outlined.Inventory2, R.string.nav_inventory),
+    NavigationItem(Screen.BrowseListings.route, Icons.Filled.RestaurantMenu, Icons.Outlined.RestaurantMenu, R.string.nav_browse),
+    NavigationItem(Screen.MyRequests.route, Icons.Filled.LocalShipping, Icons.Outlined.LocalShipping, R.string.nav_requests),
+    NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
+)
 
-private fun getNgoNavigationItems(): List<NavigationItem> {
-    return listOf(
-        NavigationItem(
-            route = Screen.NgoDashboard.route,
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home,
-            label = "Home"
-        ),
-        NavigationItem(
-            route = Screen.Inventory.route,
-            selectedIcon = Icons.Filled.Inventory,
-            unselectedIcon = Icons.Outlined.Inventory2,
-            label = "Inventory"
-        ),
-        NavigationItem(
-            route = Screen.BrowseListings.route,
-            selectedIcon = Icons.Filled.RestaurantMenu,
-            unselectedIcon = Icons.Outlined.RestaurantMenu,
-            label = "Browse"
-        ),
-        NavigationItem(
-            route = Screen.MyRequests.route,
-            selectedIcon = Icons.Filled.LocalShipping,
-            unselectedIcon = Icons.Outlined.LocalShipping,
-            label = "My Requests"
-        ),
-        NavigationItem(
-            route = Screen.Profile.route,
-            selectedIcon = Icons.Filled.Person,
-            unselectedIcon = Icons.Outlined.Person,
-            label = "Profile"
-        )
-    )
-}
+private fun getGroceryNavigationItems(): List<NavigationItem> = listOf(
+    NavigationItem(Screen.GroceryDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
+    NavigationItem(Screen.MyListings.route, Icons.Filled.List, Icons.Outlined.List, R.string.nav_listings),
+    NavigationItem(Screen.CreateListing.route, Icons.Filled.AddCircle, Icons.Outlined.AddCircle, R.string.nav_add),
+    NavigationItem(Screen.PickupRequests.route, Icons.Filled.LocalShipping, Icons.Outlined.LocalShipping, R.string.nav_requests),
+    NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
+)
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Grocery Navigation Items
-// ═══════════════════════════════════════════════════════════════════════════════
-
-private fun getGroceryNavigationItems(): List<NavigationItem> {
-    return listOf(
-        NavigationItem(
-            route = Screen.GroceryDashboard.route,
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home,
-            label = "Home"
-        ),
-        NavigationItem(
-            route = Screen.MyListings.route,
-            selectedIcon = Icons.Filled.List,
-            unselectedIcon = Icons.Outlined.List,
-            label = "Listings"
-        ),
-        NavigationItem(
-            route = Screen.CreateListing.route,
-            selectedIcon = Icons.Filled.Add,
-            unselectedIcon = Icons.Outlined.Add,
-            label = "Add"
-        ),
-        NavigationItem(
-            route = Screen.PickupRequests.route,
-            selectedIcon = Icons.Filled.LocalShipping,
-            unselectedIcon = Icons.Outlined.LocalShipping,
-            label = "Requests"
-        ),
-        NavigationItem(
-            route = Screen.Profile.route,
-            selectedIcon = Icons.Filled.Person,
-            unselectedIcon = Icons.Outlined.Person,
-            label = "Profile"
-        )
-    )
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Admin Navigation Items
-// ═══════════════════════════════════════════════════════════════════════════════
-
-private fun getAdminNavigationItems(): List<NavigationItem> {
-    return listOf(
-        NavigationItem(
-            route = Screen.AdminDashboard.route,
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home,
-            label = "Home"
-        ),
-        NavigationItem(
-            route = Screen.Verification.route,
-            selectedIcon = Icons.Filled.VerifiedUser,
-            unselectedIcon = Icons.Outlined.VerifiedUser,
-            label = "Verify"
-        ),
-        NavigationItem(
-            route = Screen.Transactions.route,
-            selectedIcon = Icons.Filled.History,
-            unselectedIcon = Icons.Outlined.History,
-            label = "History"
-        ),
-        NavigationItem(
-            route = Screen.Profile.route,
-            selectedIcon = Icons.Filled.Person,
-            unselectedIcon = Icons.Outlined.Person,
-            label = "Profile"
-        )
-    )
-}
+private fun getAdminNavigationItems(): List<NavigationItem> = listOf(
+    NavigationItem(Screen.AdminDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
+    NavigationItem(Screen.Verification.route, Icons.Filled.VerifiedUser, Icons.Outlined.VerifiedUser, R.string.nav_verify),
+    NavigationItem(Screen.Transactions.route, Icons.Filled.History, Icons.Outlined.History, R.string.nav_history),
+    NavigationItem(Screen.AdminStatistics.route, Icons.Filled.BarChart, Icons.Outlined.BarChart, R.string.nav_stats),
+    NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
+)

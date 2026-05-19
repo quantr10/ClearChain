@@ -89,7 +89,23 @@ data class RegisterFCMTokenRequest(val fcmToken: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
+data class VerifyEmailRequest(val email: String, val code: String)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ResendVerificationRequest(val email: String)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 data class ApiResponse<T>(val message: String? = null, val data: T? = null)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class EmailAvailabilityResponse(val available: Boolean, val message: String? = null)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class DeleteAccountRequest(val password: String)
 
 // ═══ UPDATED toDomain() includes new fields (Part 1) ═══
 fun OrganizationDto.toDomain(): Organization {

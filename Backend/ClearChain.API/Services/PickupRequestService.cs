@@ -29,7 +29,7 @@ public record PickupRequestServiceResult(
 public interface IPickupRequestService
 {
     Task<PickupRequestServiceResult> CreateAsync(Guid ngoId, CreatePickupRequestRequest request);
-    Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId);
+    Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null);
     Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName);
     Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId);
     Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize);
@@ -96,7 +96,8 @@ public class PickupRequestService : IPickupRequestService
 
         var (reservedListing, pickupRequest) = SplitListing(
             listing, listing.Group, request.RequestedQuantity,
-            pickupDateUtc, request.PickupTime, request.Notes, ngoId);
+            pickupDateUtc, request.PickupTime, request.Notes, ngoId,
+            request.VehicleType, request.RequiresRefrigeration, request.IsFragile, request.IsHeavy);
 
         _context.PickupRequests.Add(pickupRequest);
         await _context.SaveChangesAsync();
@@ -108,7 +109,7 @@ public class PickupRequestService : IPickupRequestService
         return new PickupRequestServiceResult(true, Data: data);
     }
 
-    public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId)
+    public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null)
     {
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
@@ -134,6 +135,7 @@ public class PickupRequestService : IPickupRequestService
         try
         {
             pr.Status = isGroceryRejecting ? PickupRequestStatus.Rejected : PickupRequestStatus.Cancelled;
+            pr.CancellationReason = reason;
             pr.ListingId = null;
 
             if (listing?.Group != null)
@@ -296,6 +298,19 @@ public class PickupRequestService : IPickupRequestService
                 Unit = listing?.Unit ?? "",
                 CompletedAt = DateTime.UtcNow
             });
+
+            var today = DateTime.UtcNow.Date;
+            await _adminNotificationService.NotifyStatsUpdated(new PlatformStatsNotification
+            {
+                TotalNGOs       = await _context.Organizations.CountAsync(o => o.Type == "ngo"),
+                TotalGroceries  = await _context.Organizations.CountAsync(o => o.Type == "grocery"),
+                TotalDonations  = await _context.PickupRequests.CountAsync(),
+                ActiveListings  = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open),
+                PendingRequests = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending),
+                CompletedToday  = await _context.PickupRequests.CountAsync(r =>
+                    r.Status == PickupRequestStatus.Completed && r.RequestedAt.Date == today),
+                UpdatedAt = DateTime.UtcNow
+            });
         }
         catch (Exception ex)
         {
@@ -331,6 +346,7 @@ public class PickupRequestService : IPickupRequestService
         {
             if (string.IsNullOrEmpty(data.ListingTitle)) data.ListingTitle = listing.ProductName;
             if (string.IsNullOrEmpty(data.ListingCategory)) data.ListingCategory = listing.Category;
+            data.ListingDescription = listing.Notes;
         }
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -367,7 +383,40 @@ public class PickupRequestService : IPickupRequestService
             .Take(clampedSize)
             .ToListAsync();
 
-        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, clampedPage, clampedSize));
+        // Build NGO pickup-rate map for all distinct NGOs in this page
+        var ngoIds = items.Select(pr => pr.NgoId).Distinct().ToList();
+        var ngoStats = await _context.PickupRequests
+            .Where(pr => ngoIds.Contains(pr.NgoId))
+            .GroupBy(pr => pr.NgoId)
+            .Select(g => new
+            {
+                NgoId = g.Key,
+                Total = g.Count(),
+                Completed = g.Count(x => x.Status == PickupRequestStatus.Completed)
+            })
+            .ToDictionaryAsync(x => x.NgoId);
+
+        var dtos = items.Select(pr =>
+        {
+            double? rate = null;
+            int completed = 0;
+            if (ngoStats.TryGetValue(pr.NgoId, out var stats) && stats.Total > 0)
+            {
+                rate = Math.Round((double)stats.Completed / stats.Total, 2);
+                completed = stats.Completed;
+            }
+            return MapToData(pr, ngoPickupRate: rate, ngoTotalCompleted: completed);
+        }).ToList();
+
+        return new PickupRequestServiceResult(true, ListData: new PickupRequestsResponse
+        {
+            Message = "Pickup requests retrieved successfully",
+            Data = dtos,
+            Total = total,
+            Page = clampedPage,
+            PageSize = clampedSize,
+            TotalPages = (int)Math.Ceiling((double)total / clampedSize)
+        });
     }
 
     public async Task<PickupRequestServiceResult> ApproveAsync(Guid requestId, Guid groceryId)
@@ -450,7 +499,9 @@ public class PickupRequestService : IPickupRequestService
         Guid? listingId = null,
         string? ngoName = null,
         string? groceryName = null,
-        string? proofPhotoUrl = null)
+        string? proofPhotoUrl = null,
+        double? ngoPickupRate = null,
+        int ngoTotalCompleted = 0)
     {
         return new PickupRequestData
         {
@@ -467,8 +518,19 @@ public class PickupRequestService : IPickupRequestService
             Notes = pr.Notes ?? "",
             ListingTitle = pr.ListingTitle ?? "",
             ListingCategory = pr.ListingCategory ?? "",
+            ListingExpiryDate = pr.ListingExpiryDate,
+            ListingUnit = pr.ListingUnit ?? "",
             CreatedAt = pr.RequestedAt.ToString("o"),
-            ProofPhotoUrl = proofPhotoUrl ?? pr.ProofPhotoUrl
+            ProofPhotoUrl = proofPhotoUrl ?? pr.ProofPhotoUrl,
+            NgoPickupRate = ngoPickupRate,
+            NgoTotalCompleted = ngoTotalCompleted,
+            MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
+            MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
+            ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
+            VehicleType = pr.VehicleType,
+            RequiresRefrigeration = pr.RequiresRefrigeration,
+            IsFragile = pr.IsFragile,
+            IsHeavy = pr.IsHeavy
         };
     }
 
@@ -489,7 +551,9 @@ public class PickupRequestService : IPickupRequestService
     private (ClearanceListing reservedListing, PickupRequest request) SplitListing(
         ClearanceListing sourceListing, ListingGroup group,
         int requestedQuantity, DateTime pickupDate,
-        string pickupTime, string? notes, Guid ngoId)
+        string pickupTime, string? notes, Guid ngoId,
+        string? vehicleType = null, bool requiresRefrigeration = false,
+        bool isFragile = false, bool isHeavy = false)
     {
         var requestId = Guid.NewGuid();
 
@@ -508,7 +572,11 @@ public class PickupRequestService : IPickupRequestService
                 ListingId = sourceListing.Id, PickupDate = pickupDate,
                 Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
                 RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
-                ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category
+                ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
+                ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
+                ListingUnit = sourceListing.Unit,
+                VehicleType = vehicleType, RequiresRefrigeration = requiresRefrigeration,
+                IsFragile = isFragile, IsHeavy = isHeavy
             });
         }
 
@@ -543,7 +611,11 @@ public class PickupRequestService : IPickupRequestService
             ListingId = reservedListing.Id, PickupDate = pickupDate,
             Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
             RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
-            ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category
+            ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
+            ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
+            ListingUnit = sourceListing.Unit,
+            VehicleType = vehicleType, RequiresRefrigeration = requiresRefrigeration,
+            IsFragile = isFragile, IsHeavy = isHeavy
         });
     }
 

@@ -7,6 +7,9 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object Onboarding : Screen("onboarding")
+    object EmailVerification : Screen("email_verification/{email}") {
+        fun createRoute(email: String) = "email_verification/${java.net.URLEncoder.encode(email, "UTF-8")}"
+    }
 
     // ── Grocery ───────────────────────────────────────────
     object GroceryDashboard : Screen("grocery_dashboard")
@@ -44,4 +47,15 @@ sealed class Screen(val route: String) {
 
     // ── Shared ────────────────────────────────────────────
     object Profile : Screen("profile")
+    object Settings : Screen("settings")
+    object NotificationInbox : Screen("notifications")
+    object Analytics : Screen("analytics")
+    object Help : Screen("help")
+
+    object PublicProfile : Screen("public_profile/{orgId}") {
+        fun createRoute(orgId: String) = "public_profile/$orgId"
+    }
+    object Dispute : Screen("dispute/{pickupRequestId}") {
+        fun createRoute(pickupRequestId: String) = "dispute/$pickupRequestId"
+    }
 }

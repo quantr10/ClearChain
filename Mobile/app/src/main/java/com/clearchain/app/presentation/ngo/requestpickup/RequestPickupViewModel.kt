@@ -1,19 +1,26 @@
 package com.clearchain.app.presentation.ngo.requestpickup
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
+import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.usecase.listing.GetListingByIdUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.CreatePickupRequestUseCase
 import com.clearchain.app.util.Resource
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
 class RequestPickupViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getListingByIdUseCase: GetListingByIdUseCase,
     private val createPickupRequestUseCase: CreatePickupRequestUseCase
 ) : ViewModel() {
@@ -44,6 +51,27 @@ class RequestPickupViewModel @Inject constructor(
                 _state.update { it.copy(notes = event.notes) }
             }
 
+            is RequestPickupEvent.VehicleTypeChanged -> {
+                _state.update { s ->
+                    s.copy(
+                        vehicleType = event.vehicleType,
+                        estimatedTripMinutes = s.listing?.distanceKm?.let { km ->
+                            computeEtaMinutes(km, event.vehicleType)
+                        }
+                    )
+                }
+            }
+            RequestPickupEvent.ToggleRefrigeration ->
+                _state.update { it.copy(needsRefrigeration = !it.needsRefrigeration) }
+            RequestPickupEvent.ToggleFragile ->
+                _state.update { it.copy(fragileItems = !it.fragileItems) }
+            RequestPickupEvent.ToggleHeavyLoad ->
+                _state.update { it.copy(heavyLoad = !it.heavyLoad) }
+
+            is RequestPickupEvent.TimeSlotSelected -> {
+                _state.update { it.copy(selectedTimeSlot = event.slot, pickupTime = event.slot) }
+            }
+
             RequestPickupEvent.SubmitRequest -> submitRequest()
 
             RequestPickupEvent.ClearError -> {
@@ -63,11 +91,16 @@ class RequestPickupViewModel @Inject constructor(
                     }
 
                     is Resource.Success -> {
+                        val listing = result.data
                         _state.update {
                             it.copy(
-                                listing = result.data,
-                                quantity = result.data?.quantity?.toString() ?: "",
-                                isLoading = false
+                                listing = listing,
+                                quantity = listing?.quantity?.toString() ?: "",
+                                isLoading = false,
+                                availableTimeSlots = listing?.let { l -> generateTimeSlots(l) } ?: emptyList(),
+                                estimatedTripMinutes = listing?.distanceKm?.let { km ->
+                                    computeEtaMinutes(km, it.vehicleType)
+                                }
                             )
                         }
                     }
@@ -75,7 +108,7 @@ class RequestPickupViewModel @Inject constructor(
                     is Resource.Error -> {
                         _state.update {
                             it.copy(
-                                error = result.message ?: "Failed to load listing",
+                                error = result.message ?: context.getString(R.string.error_failed_load_listing),
                                 isLoading = false
                             )
                         }
@@ -85,31 +118,57 @@ class RequestPickupViewModel @Inject constructor(
         }
     }
 
+    private fun generateTimeSlots(listing: Listing): List<String> {
+        return runCatching {
+            val fmt = DateTimeFormatter.ofPattern("HH:mm")
+            val start = LocalTime.parse(listing.pickupTimeStart.take(5), fmt)
+            val end   = LocalTime.parse(listing.pickupTimeEnd.take(5), fmt)
+            val slots = mutableListOf<String>()
+            var current = start
+            while (!current.isAfter(end.minusMinutes(30))) {
+                slots.add(current.format(fmt))
+                current = current.plusMinutes(30)
+            }
+            slots
+        }.getOrDefault(emptyList())
+    }
+
+    private fun computeEtaMinutes(distanceKm: Double, vehicleType: VehicleType): Int {
+        val speedKmh = when (vehicleType) {
+            VehicleType.WALK       -> 5.0
+            VehicleType.BICYCLE    -> 15.0
+            VehicleType.MOTORCYCLE -> 40.0
+            VehicleType.CAR        -> 50.0
+            VehicleType.VAN        -> 40.0
+        }
+        return ((distanceKm / speedKmh) * 60).toInt().coerceAtLeast(1)
+    }
+
     private fun submitRequest() {
     val listing = _state.value.listing
     if (listing == null) {
-        _state.update { it.copy(error = "Listing not found") }
+        _state.update { it.copy(error = context.getString(R.string.error_listing_not_found)) }
         return
     }
 
     val quantity = _state.value.quantity.toIntOrNull()
     if (quantity == null || quantity <= 0) {
-        _state.update { it.copy(error = "Please enter a valid quantity") }
+        _state.update { it.copy(error = context.getString(R.string.error_quantity_invalid)) }
         return
     }
 
     if (quantity > listing.quantity) {
-        _state.update { it.copy(error = "Quantity exceeds available amount (${listing.quantity} ${listing.unit})") }
+        _state.update { it.copy(error = context.getString(R.string.error_quantity_exceeds, listing.quantity, listing.unit)) }
         return
     }
 
     if (_state.value.pickupDate.isBlank()) {
-        _state.update { it.copy(error = "Please select a pickup date") }
+        _state.update { it.copy(error = context.getString(R.string.error_pickup_date_required)) }
         return
     }
 
     if (_state.value.pickupTime.isBlank()) {
-        _state.update { it.copy(error = "Please select a pickup time") }
+        _state.update { it.copy(error = context.getString(R.string.error_pickup_time_required)) }
         return
     }
 
@@ -118,36 +177,35 @@ class RequestPickupViewModel @Inject constructor(
         val pickupDate = java.time.LocalDate.parse(_state.value.pickupDate)
         val today = java.time.LocalDate.now()
         val expiryDate = java.time.LocalDate.parse(listing.expiryDate)
-        
-        // Check if pickup date is in the past
+
         if (pickupDate.isBefore(today)) {
-            _state.update { 
-                it.copy(error = "Pickup date cannot be in the past") 
-            }
+            _state.update { it.copy(error = context.getString(R.string.error_pickup_date_past)) }
             return
         }
-        
-        // Check if pickup date is after expiry date
+
         if (pickupDate.isAfter(expiryDate)) {
-            _state.update { 
-                it.copy(error = "Pickup date cannot be after expiry date (${listing.expiryDate})") 
-            }
+            _state.update { it.copy(error = context.getString(R.string.error_pickup_date_after_expiry, listing.expiryDate)) }
             return
         }
     } catch (e: Exception) {
-        _state.update { it.copy(error = "Invalid date format") }
+        _state.update { it.copy(error = context.getString(R.string.error_invalid_date_format)) }
         return
     }
 
     viewModelScope.launch {
         _state.update { it.copy(isLoading = true, error = null) }
 
+        val s = _state.value
         val result = createPickupRequestUseCase(
             listingId = listing.id,
             requestedQuantity = quantity,
-            pickupDate = _state.value.pickupDate,
-            pickupTime = _state.value.pickupTime,
-            notes = _state.value.notes.ifBlank { null }
+            pickupDate = s.pickupDate,
+            pickupTime = s.pickupTime,
+            notes = s.notes.ifBlank { null },
+            vehicleType = s.vehicleType.name.lowercase(),
+            requiresRefrigeration = s.needsRefrigeration,
+            isFragile = s.fragileItems,
+            isHeavy = s.heavyLoad
         )
 
         result.fold(
@@ -158,13 +216,13 @@ class RequestPickupViewModel @Inject constructor(
                         isSuccess = true
                     )
                 }
-                _uiEvent.send(UiEvent.ShowSnackbar("Pickup request submitted successfully!"))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_submitted)))
                 _uiEvent.send(UiEvent.NavigateUp)
             },
             onFailure = { error ->
                 _state.update {
                     it.copy(
-                        error = error.message ?: "Failed to submit request",
+                        error = error.message ?: context.getString(R.string.error_submit_request_failed),
                         isLoading = false
                     )
                 }

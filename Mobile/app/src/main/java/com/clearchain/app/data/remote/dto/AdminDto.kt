@@ -2,6 +2,9 @@ package com.clearchain.app.data.remote.dto
 
 import android.annotation.SuppressLint
 import com.clearchain.app.domain.model.AdminStats
+import com.clearchain.app.domain.model.Organization
+import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.domain.model.VerificationStatus
 import kotlinx.serialization.Serializable
 
 // ─── Organization DTOs ─────────────────────────────────────────────────────────
@@ -18,7 +21,12 @@ data class AdminOrganizationDto(
     val location: String,
     val verified: Boolean,
     val verificationStatus: String,
-    val createdAt: String
+    val createdAt: String,
+    val documentUrl: String? = null,
+    val documentUrl2: String? = null,
+    val documentMimeType: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -94,3 +102,27 @@ fun AdminStatsDto.toDomain(): AdminStats {
         totalFoodSaved        = totalFoodSaved
     )
 }
+
+fun AdminOrganizationDto.toDomain(): Organization = Organization(
+    id = id, name = name,
+    type = when (type.uppercase()) {
+        "GROCERY" -> OrganizationType.GROCERY
+        "NGO"     -> OrganizationType.NGO
+        "ADMIN"   -> OrganizationType.ADMIN
+        else      -> OrganizationType.NGO
+    },
+    email = email, phone = phone,
+    address = address, location = location,
+    verified = verified,
+    verificationStatus = when (verificationStatus.uppercase()) {
+        "APPROVED", "VERIFIED" -> VerificationStatus.APPROVED
+        "REJECTED"             -> VerificationStatus.REJECTED
+        else                   -> VerificationStatus.PENDING
+    },
+    hours = null, profilePictureUrl = null, createdAt = createdAt,
+    documentUrl = documentUrl,
+    documentUrl2 = documentUrl2,
+    documentMimeType = documentMimeType,
+    latitude = latitude,
+    longitude = longitude
+)

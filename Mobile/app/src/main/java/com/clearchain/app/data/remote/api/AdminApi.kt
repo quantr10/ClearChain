@@ -21,9 +21,27 @@ interface AdminApi {
         @Path("id") id: String
     ): OrganizationResponse
 
-    @GET("admin/statistics")
+    @GET("admin/statistics/overview")
     suspend fun getStatistics(): AdminStatsResponse
+
+    @GET("admin/statistics")
+    suspend fun getDetailedStatistics(
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("preset") preset: String = "all"
+    ): AdminDetailedStatsResponse
+
+    @GET("admin/health")
+    suspend fun getSystemHealth(): AdminHealthResponse
+
+    @GET("admin/alerts")
+    suspend fun getAlertFeed(): AdminAlertFeedResponse
 
     @GET("admin/pickuprequests")
     suspend fun getAllPickupRequests(): PickupRequestsResponse
+
+    @GET("admin/user-growth")
+    suspend fun getUserGrowth(
+        @Query("days") days: Int = 30
+    ): UserGrowthResponse
 }

@@ -5,6 +5,7 @@ using ClearChain.API.Services;
 using ClearChain.API.DTOs.Auth;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Controllers;
@@ -39,31 +40,61 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var (success, message, response) = await _authService.RegisterAsync(request);
+        var (success, message, newOrg) = await _authService.RegisterAsync(request);
 
         if (!success)
             return BadRequest(new { message });
 
-        if (response?.User != null)
+        if (newOrg != null)
         {
             try
             {
                 var orgData = new ClearChain.API.DTOs.Admin.OrganizationData
                 {
-                    Id = response.User.Id.ToString(),
-                    Name = response.User.Name,
-                    Email = response.User.Email,
-                    Type = response.User.Type,
-                    Phone = response.User.Phone,
-                    Address = response.User.Address,
-                    Location = response.User.Location ?? "",
-                    Verified = response.User.Verified,
-                    VerificationStatus = response.User.VerificationStatus,
-                    CreatedAt = response.User.CreatedAt
+                    Id = newOrg.Id.ToString(),
+                    Name = newOrg.Name,
+                    Email = newOrg.Email,
+                    Type = newOrg.Type,
+                    Phone = newOrg.Phone ?? "",
+                    Address = newOrg.Address ?? "",
+                    Location = newOrg.Location ?? "",
+                    Verified = newOrg.Verified,
+                    VerificationStatus = newOrg.VerificationStatus,
+                    CreatedAt = newOrg.CreatedAt.ToString("o")
                 };
 
                 await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
                 await _pushNotificationService.SendWelcomeNotification(orgData);
+
+                await _adminNotificationService.NotifyNewOrganizationRegistered(new OrganizationRegisteredNotification
+                {
+                    OrganizationId = newOrg.Id.ToString(),
+                    Name           = newOrg.Name,
+                    Type           = newOrg.Type,
+                    Email          = newOrg.Email,
+                    Location       = newOrg.Location ?? newOrg.Address ?? "",
+                    RegisteredAt   = newOrg.CreatedAt
+                });
+
+                var totalNgos      = await _context.Organizations.CountAsync(o => o.Type == "ngo");
+                var totalGroceries = await _context.Organizations.CountAsync(o => o.Type == "grocery");
+                var totalDonations = await _context.PickupRequests.CountAsync();
+                var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
+                var pendingReqs    = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending);
+                var today          = DateTime.UtcNow.Date;
+                var completedToday = await _context.PickupRequests.CountAsync(r =>
+                    r.Status == PickupRequestStatus.Completed && r.RequestedAt.Date == today);
+
+                await _adminNotificationService.NotifyStatsUpdated(new PlatformStatsNotification
+                {
+                    TotalNGOs       = totalNgos,
+                    TotalGroceries  = totalGroceries,
+                    TotalDonations  = totalDonations,
+                    ActiveListings  = activeListings,
+                    PendingRequests = pendingReqs,
+                    CompletedToday  = completedToday,
+                    UpdatedAt       = DateTime.UtcNow
+                });
             }
             catch (Exception ex)
             {
@@ -71,7 +102,35 @@ public class AuthController : ControllerBase
             }
         }
 
+        return Ok(new { message });
+    }
+
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var (success, message, response) = await _authService.VerifyEmailAsync(request.Email, request.Code);
+
+        if (!success)
+            return BadRequest(new { message });
+
         return Ok(new { message, data = response });
+    }
+
+    [HttpPost("resend-verification")]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var (success, message) = await _authService.ResendVerificationAsync(request.Email);
+
+        if (!success)
+            return BadRequest(new { message });
+
+        return Ok(new { message });
     }
 
     [HttpPost("login")]
@@ -172,6 +231,34 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Current password is incorrect" });
 
         return Ok(new { message = "Password changed successfully" });
+    }
+
+    // GET api/auth/check-email?email=...
+    [HttpGet("check-email")]
+    public async Task<IActionResult> CheckEmailAvailable([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { message = "Email is required" });
+
+        var (available, message) = await _authService.CheckEmailAvailableAsync(email);
+        return Ok(new { available, message });
+    }
+
+    // DELETE api/auth/account
+    [Authorize]
+    [HttpDelete("account")]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? User.FindFirst("sub")?.Value;
+
+        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+            return Unauthorized(new { message = "Invalid token" });
+
+        var (success, message) = await _authService.DeleteAccountAsync(userGuid, request.Password);
+        if (!success) return BadRequest(new { message });
+
+        return Ok(new { message });
     }
 
     [HttpPost("fcm-token")]

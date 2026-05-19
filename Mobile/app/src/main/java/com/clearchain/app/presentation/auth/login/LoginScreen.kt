@@ -1,30 +1,34 @@
 package com.clearchain.app.presentation.auth.login
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.clearchain.app.presentation.components.ClearChainButton
-import com.clearchain.app.presentation.components.ClearChainOutlinedButton
-import com.clearchain.app.presentation.components.ClearChainTextField
+import com.clearchain.app.presentation.auth.AuthDivider
+import com.clearchain.app.presentation.auth.AuthHeader
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
+import com.clearchain.app.ui.theme.*
 import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavController,
@@ -32,18 +36,17 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var formVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = true) {
+    LaunchedEffect(Unit) { delay(150); formVisible = true }
+
+    LaunchedEffect(true) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is UiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
-                }
-                is UiEvent.Navigate -> {
-                    navController.navigate(event.route) {
-                        if (event.route != Screen.Register.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                is UiEvent.Navigate -> navController.navigate(event.route) {
+                    if (event.route != Screen.Register.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 }
                 else -> Unit
@@ -52,144 +55,122 @@ fun LoginScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
         ) {
-            // Logo
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer
+            AuthHeader(subtitle = stringResource(R.string.welcome_back))
+
+            AnimatedVisibility(
+                visible = formVisible,
+                enter   = fadeIn() + slideInVertically { it / 4 }
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Eco,
-                        contentDescription = "ClearChain",
-                        modifier = Modifier.size(44.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Title
-            Text(
-                text = "Welcome Back",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Sign in to continue",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Email field
-            ClearChainTextField(
-                value = state.email,
-                onValueChange = { viewModel.onEvent(LoginEvent.EmailChanged(it)) },
-                label = "Email",
-                placeholder = "your.email@example.com",
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null)
-                },
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next,
-                isError = state.emailError != null,
-                errorMessage = state.emailError,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password field
-            ClearChainTextField(
-                value = state.password,
-                onValueChange = { viewModel.onEvent(LoginEvent.PasswordChanged(it)) },
-                label = "Password",
-                placeholder = "Enter your password",
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = null)
-                },
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-                onImeAction = { viewModel.onEvent(LoginEvent.Login) },
-                isPassword = true,
-                isError = state.passwordError != null,
-                errorMessage = state.passwordError,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Login button
-            ClearChainButton(
-                text = "Sign In",
-                onClick = { viewModel.onEvent(LoginEvent.Login) },
-                loading = state.isLoading,
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Divider
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(modifier = Modifier.weight(1f))
-                Text(
-                    text = "OR",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                HorizontalDivider(modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Register button
-            ClearChainOutlinedButton(
-                text = "Create New Account",
-                onClick = {
-                    navController.navigate(Screen.Register.route)
-                },
-                enabled = !state.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Error message
-            if (state.error != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = state.error!!,
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        text       = stringResource(R.string.sign_in_to_account),
+                        style      = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    ClearChainTextField(
+                        value         = state.email,
+                        onValueChange = { viewModel.onEvent(LoginEvent.EmailChanged(it)) },
+                        label         = stringResource(R.string.email_address),
+                        placeholder   = stringResource(R.string.hint_email_you),
+                        leadingIcon   = { Icon(Icons.Default.Email, null) },
+                        keyboardType  = KeyboardType.Email,
+                        imeAction     = ImeAction.Next,
+                        isError       = state.emailError != null,
+                        errorMessage  = state.emailError,
+                        enabled       = !state.isLoading && !state.isLockedOut
+                    )
+
+                    ClearChainTextField(
+                        value         = state.password,
+                        onValueChange = { viewModel.onEvent(LoginEvent.PasswordChanged(it)) },
+                        label         = stringResource(R.string.password),
+                        placeholder   = stringResource(R.string.enter_password),
+                        leadingIcon   = { Icon(Icons.Default.Lock, null) },
+                        keyboardType  = KeyboardType.Password,
+                        imeAction     = ImeAction.Done,
+                        onImeAction   = { if (!state.isLockedOut) viewModel.onEvent(LoginEvent.Login) },
+                        isPassword    = true,
+                        isError       = state.passwordError != null,
+                        errorMessage  = state.passwordError,
+                        enabled       = !state.isLoading && !state.isLockedOut
+                    )
+
+                    // ── Remember me + Forgot password row ──────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Checkbox(
+                                checked = state.rememberMe,
+                                onCheckedChange = { viewModel.onEvent(LoginEvent.ToggleRememberMe) },
+                                enabled = !state.isLoading
+                            )
+                            Text(
+                                text  = stringResource(R.string.remember_me),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        TextButton(onClick = {}) {
+                            Text(
+                                text  = stringResource(R.string.forgot_password),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // ── Error / lockout banner ─────────────────────────────
+                    AnimatedVisibility(
+                        visible = state.error != null,
+                        enter   = fadeIn(),
+                        exit    = fadeOut()
+                    ) {
+                        if (state.isLockedOut) {
+                            AlertBanner(
+                                message = stringResource(R.string.msg_account_locked, state.lockoutMinutes),
+                                type    = AlertType.WARNING,
+                                icon    = Icons.Default.Lock
+                            )
+                        } else {
+                            AlertBanner(
+                                message = state.error ?: "",
+                                type    = AlertType.ERROR,
+                                icon    = Icons.Default.ErrorOutline
+                            )
+                        }
+                    }
+
+                    ClearChainButton(
+                        text    = stringResource(R.string.sign_in),
+                        onClick = { viewModel.onEvent(LoginEvent.Login) },
+                        loading = state.isLoading,
+                        enabled = !state.isLoading && !state.isLockedOut
+                    )
+
+                    AuthDivider()
+
+                    ClearChainOutlinedButton(
+                        text    = stringResource(R.string.create_new_account),
+                        onClick = { navController.navigate(Screen.Register.route) },
+                        enabled = !state.isLoading
                     )
                 }
             }

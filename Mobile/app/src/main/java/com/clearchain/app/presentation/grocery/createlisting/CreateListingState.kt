@@ -10,9 +10,10 @@ data class CreateListingState(
     val quantity: String = "",
     val unit: String = "kg",
     val expiryDate: String = "",
-    val pickupTimeStart: String = "",
-    val pickupTimeEnd: String = "",
     val imageUrl: String = "",
+
+    // Grocery's operating hours (loaded from profile, not editable here)
+    val groceryHours: String? = null,
 
     // Errors
     val titleError: String? = null,
@@ -20,8 +21,6 @@ data class CreateListingState(
     val quantityError: String? = null,
     val unitError: String? = null,
     val expiryDateError: String? = null,
-    val pickupTimeStartError: String? = null,
-    val pickupTimeEndError: String? = null,
 
     // UI State
     val isLoading: Boolean = false,
@@ -34,5 +33,12 @@ data class CreateListingState(
     val isAnalyzing: Boolean = false,
     val analysisResult: FoodAnalysisData? = null,
     val showImagePicker: Boolean = false,
-    val analysisError: String? = null
+    val analysisError: String? = null,
+
+    // Multi-image
+    val selectedImages: List<Uri> = emptyList(),  // first image is primary for upload
+
+    // Draft & Preview
+    val isPreviewMode: Boolean = false,
+    val draftSavedAt: Long? = null
 )

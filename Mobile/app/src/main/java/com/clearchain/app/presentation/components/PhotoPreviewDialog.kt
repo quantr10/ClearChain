@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.clearchain.app.R
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -52,7 +54,7 @@ fun PhotoPreviewDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.close),
                         tint = Color.White
                     )
                 }
@@ -68,7 +70,7 @@ fun PhotoPreviewDialog(
                 ) {
                     AsyncImage(
                         model = photoUri,
-                        contentDescription = "Preview",
+                        contentDescription = stringResource(R.string.cd_preview_image),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
                     )
@@ -88,14 +90,14 @@ fun PhotoPreviewDialog(
                             contentColor = Color.White
                         )
                     ) {
-                        Text("Retake")
+                        Text(stringResource(R.string.action_retake))
                     }
 
                     Button(
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Confirm & Upload")
+                        Text(stringResource(R.string.action_confirm_upload))
                     }
                 }
             }
