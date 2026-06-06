@@ -121,8 +121,28 @@ class RegisterViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.Navigate(Screen.EmailVerification.createRoute(email)))
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_registration_failed)) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_registration_failed)))
+                    val raw = error.message ?: ""
+                    val (emailErr, passwordErr) = when {
+                        raw.contains("409") || raw.contains("Conflict", ignoreCase = true)
+                            || raw.contains("already", ignoreCase = true)
+                            -> context.getString(R.string.error_email_taken) to null
+                        raw.contains("500") || raw.contains("502") || raw.contains("503") ->
+                            null to context.getString(R.string.error_server)
+                        raw.contains("Unable to resolve host", ignoreCase = true)
+                            || raw.contains("timeout", ignoreCase = true)
+                            || raw.contains("connect", ignoreCase = true) ->
+                            null to context.getString(R.string.error_no_internet)
+                        else ->
+                            null to raw.ifBlank { context.getString(R.string.error_registration_failed) }
+                    }
+                    _state.update {
+                        it.copy(
+                            isLoading     = false,
+                            error         = null,
+                            emailError    = emailErr,
+                            passwordError = passwordErr
+                        )
+                    }
                 }
             )
         }

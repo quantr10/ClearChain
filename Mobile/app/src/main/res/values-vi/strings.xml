@@ -541,7 +541,7 @@
     <string name="label_description">Mô tả</string>
     <string name="label_description_placeholder">Mô tả các mặt hàng thực phẩm…</string>
     <string name="label_expiry_date">Ngày hết hạn *</string>
-    <string name="label_pickup_hours_from_profile">Giờ nhận hàng (từ hồ sơ của bạn)</string>
+    <string name="label_pickup_hours_from_profile">Giờ nhận hàng</string>
     <string name="label_pickup_hours_not_set">Chưa đặt — thêm giờ hoạt động trong Hồ sơ</string>
     <string name="btn_create_listing">Tạo niêm yết</string>
 
@@ -636,7 +636,8 @@
     <string name="label_new_quantity">Số lượng mới</string>
     <string name="action_view_details">Xem chi tiết đầy đủ</string>
     <string name="action_take_photo">Chụp hoặc chọn ảnh</string>
-    <string name="action_apply_ai">Áp dụng gợi ý AI</string>
+    <string name="action_apply_ai">Áp dụng AI</string>
+    <string name="action_enter_manually">Nhập thủ công</string>
     <string name="action_add">Thêm</string>
     <string name="label_beneficiaries_count">Số người thụ hưởng?</string>
     <string name="label_export_transactions">Xuất giao dịch</string>
@@ -730,6 +731,9 @@
     <string name="action_take_photo_camera">Chụp ảnh</string>
     <string name="action_choose_gallery">Chọn từ thư viện</string>
     <string name="label_confirm_pickup">Xác nhận lấy hàng</string>
+    <string name="label_add_photo_proof">Thêm ảnh bằng chứng</string>
+    <string name="msg_choose_photo_source">Bạn muốn thêm ảnh lấy hàng bằng cách nào?</string>
+    <string name="label_photo_preview">Xem trước ảnh</string>
     <string name="msg_submit_photo_proof">Gửi ảnh này làm bằng chứng lấy hàng?</string>
     <string name="action_submit">Gửi</string>
     <string name="label_reject_request">Từ chối yêu cầu?</string>
@@ -970,7 +974,7 @@
     <string name="greeting_hi">Xin chào, %1$s</string>
     <string name="cd_edit">Chỉnh sửa</string>
     <string name="cd_preview">Xem trước</string>
-    <string name="label_ai_analyze_hint">AI sẽ phân tích thực phẩm và tự động điền thông tin</string>
+    <string name="label_ai_analyze_hint">AI sẽ phân tích và tự động điền thông tin</string>
     <string name="cd_primary_image">Ảnh chính</string>
     <string name="cd_additional_image">Ảnh phụ %1$d</string>
     <string name="label_primary_badge">Chính</string>
@@ -978,6 +982,9 @@
     <string name="label_quality_grade">Chất lượng %1$s</string>
     <string name="label_freshness_score">%1$d/100 tươi</string>
     <string name="label_confidence_pct">%1$d%% độ tin cậy</string>
+    <string name="label_stat_confidence">Độ tin cậy</string>
+    <string name="label_stat_quality">Chất lượng</string>
+    <string name="label_stat_freshness">Độ tươi</string>
     <string name="hint_quantity_number">10</string>
     <string name="cd_share">Chia sẻ</string>
     <string name="label_live">Trực tiếp</string>

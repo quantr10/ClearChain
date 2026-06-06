@@ -100,7 +100,8 @@ fun TransactionsScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Row(
                 modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SearchBar(
                     query         = state.searchQuery,
@@ -113,9 +114,11 @@ fun TransactionsScreen(
                         if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
                     }
                 ) {
-                    IconButton(onClick = { viewModel.onEvent(TransactionsEvent.ShowFilterSheet) }) {
-                        Icon(Icons.Default.Tune, stringResource(R.string.advanced_filters))
-                    }
+                    ClearChainActionIconButton(
+                        icon               = Icons.Default.Tune,
+                        contentDescription = stringResource(R.string.advanced_filters),
+                        onClick            = { viewModel.onEvent(TransactionsEvent.ShowFilterSheet) }
+                    )
                 }
             }
 

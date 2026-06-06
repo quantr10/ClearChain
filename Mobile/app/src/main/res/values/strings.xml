@@ -75,6 +75,7 @@
 
     <!-- ── Listings ── -->
     <string name="create_listing">Create listing</string>
+    <string name="edit_listing">Edit listing</string>
     <string name="my_listings">My listings</string>
     <string name="browse_listings">Browse food</string>
     <string name="listing_title">Product name</string>
@@ -314,7 +315,7 @@
     <!-- ── Auth ── -->
     <string name="welcome_back">Welcome back</string>
     <string name="sign_in_to_account">Sign in to your account</string>
-    <string name="email_address">Email address</string>
+    <string name="email_address">Email</string>
     <string name="enter_password">Enter your password</string>
     <string name="sign_in">Sign In</string>
     <string name="create_new_account">Create New Account</string>
@@ -540,7 +541,7 @@
     <string name="label_description">Description</string>
     <string name="label_description_placeholder">Describe the food items…</string>
     <string name="label_expiry_date">Expiry Date *</string>
-    <string name="label_pickup_hours_from_profile">Pickup hours (from your profile)</string>
+    <string name="label_pickup_hours_from_profile">Pickup hours</string>
     <string name="label_pickup_hours_not_set">Not set — add operating hours in your Profile</string>
     <string name="btn_create_listing">Create Listing</string>
 
@@ -635,7 +636,8 @@
     <string name="label_new_quantity">New Quantity</string>
     <string name="action_view_details">View Full Details</string>
     <string name="action_take_photo">Take or Choose a Photo</string>
-    <string name="action_apply_ai">Apply AI Suggestions</string>
+    <string name="action_apply_ai">Apply AI</string>
+    <string name="action_enter_manually">Enter Manually</string>
     <string name="action_add">Add</string>
     <string name="label_beneficiaries_count">How many beneficiaries?</string>
     <string name="label_export_transactions">Export Transactions</string>
@@ -733,6 +735,9 @@
     <string name="action_take_photo_camera">Take Photo</string>
     <string name="action_choose_gallery">Choose from Gallery</string>
     <string name="label_confirm_pickup">Confirm Pickup</string>
+    <string name="label_add_photo_proof">Add Photo Proof</string>
+    <string name="msg_choose_photo_source">How would you like to add your pickup photo?</string>
+    <string name="label_photo_preview">Photo Preview</string>
     <string name="msg_submit_photo_proof">Submit this photo as proof of pickup?</string>
     <string name="action_submit">Submit</string>
     <string name="label_reject_request">Reject Request?</string>
@@ -743,6 +748,9 @@
     <string name="label_rate_experience">Rate your experience</string>
     <string name="label_comments_optional">Comments (optional)</string>
     <string name="hint_pickup_experience">How was your pickup experience?</string>
+    <string name="label_ngo_rating">Rating from NGO</string>
+    <string name="label_reviewed_by">Reviewed by %1$s</string>
+    <string name="hint_not_yet_rated">Not yet rated for this pickup</string>
 
     <!-- Profile -->
     <string name="label_complete">Complete</string>
@@ -969,7 +977,7 @@
     <string name="greeting_hi">Hi, %1$s</string>
     <string name="cd_edit">Edit</string>
     <string name="cd_preview">Preview</string>
-    <string name="label_ai_analyze_hint">AI will analyze the food and auto-fill details for you</string>
+    <string name="label_ai_analyze_hint">AI will analyze and auto-fill details for you</string>
     <string name="cd_primary_image">Primary image</string>
     <string name="cd_additional_image">Additional image %1$d</string>
     <string name="label_primary_badge">Primary</string>
@@ -977,6 +985,9 @@
     <string name="label_quality_grade">%1$s quality</string>
     <string name="label_freshness_score">%1$d/100 fresh</string>
     <string name="label_confidence_pct">%1$d%% conf.</string>
+    <string name="label_stat_confidence">Confidence</string>
+    <string name="label_stat_quality">Quality</string>
+    <string name="label_stat_freshness">Freshness</string>
     <string name="hint_quantity_number">10</string>
     <string name="cd_share">Share</string>
     <string name="label_live">Live</string>
@@ -1047,6 +1058,7 @@
     <string name="snack_draft_restored">Draft restored</string>
     <string name="snack_image_upload_failed">Image upload failed: %1$s</string>
     <string name="snack_listing_created">Listing created successfully!</string>
+    <string name="snack_listing_updated">Listing updated successfully!</string>
     <string name="snack_analysis_failed">Analysis failed: %1$s</string>
     <string name="snack_ai_applied">AI suggestions applied! Please review and adjust.</string>
     <string name="snack_ai_detected">AI detected: %1$s (%2$d%% confidence)</string>
@@ -1176,6 +1188,12 @@
     <string name="error_email_invalid_format">Invalid email format</string>
     <string name="error_password_required">Password is required</string>
     <string name="error_login_failed">Login failed</string>
+    <string name="error_wrong_credentials">Incorrect email or password</string>
+    <string name="error_account_not_found">No account found with this email</string>
+    <string name="error_too_many_attempts">Too many login attempts. Please wait and try again</string>
+    <string name="error_server">Server error. Please try again later</string>
+    <string name="error_no_internet">No internet connection. Please check your network</string>
+    <string name="error_email_taken">This email is already registered</string>
     <string name="error_name_required">Name is required</string>
     <string name="error_name_min_length">Name must be at least 3 characters</string>
     <string name="error_name_min_chars">At least 3 characters</string>

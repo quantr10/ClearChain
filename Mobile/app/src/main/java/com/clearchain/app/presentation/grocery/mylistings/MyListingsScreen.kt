@@ -10,6 +10,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
@@ -164,7 +165,8 @@ fun MyListingsScreen(
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(
                             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SearchBar(
                                 query       = state.searchQuery,
@@ -177,9 +179,11 @@ fun MyListingsScreen(
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
                                 }
                             ) {
-                                IconButton(onClick = { viewModel.onEvent(MyListingsEvent.ShowFilterSheet) }) {
-                                    Icon(Icons.Default.Tune, stringResource(R.string.advanced_filters))
-                                }
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.Tune,
+                                    contentDescription = stringResource(R.string.advanced_filters),
+                                    onClick            = { viewModel.onEvent(MyListingsEvent.ShowFilterSheet) }
+                                )
                             }
                         }
 
@@ -187,9 +191,9 @@ fun MyListingsScreen(
                         Row(
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp)
+                                .padding(horizontal = 12.dp)
                                 .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val tabs = listOf(
                                 MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
@@ -201,7 +205,8 @@ fun MyListingsScreen(
                                 FilterChip(
                                     selected = state.activeTab == tab,
                                     onClick  = { viewModel.onEvent(MyListingsEvent.TabChanged(tab)) },
-                                    label    = { Text(label) }
+                                    label    = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                                    shape    = RoundedCornerShape(50)
                                 )
                             }
                         }
@@ -290,7 +295,7 @@ fun MyListingsScreen(
                                                 topRightAction  = if (!state.isSelectionMode && (listing.isArchived || listing.status == ListingStatus.AVAILABLE)) {
                                                     {
                                                         IconButton(
-                                                            onClick  = { showEditQty = true },
+                                                            onClick  = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
                                                             modifier = Modifier.size(32.dp)
                                                         ) {
                                                             Icon(

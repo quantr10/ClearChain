@@ -232,9 +232,9 @@ class ProfileViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_profile_updated)))
                 },
                 onFailure = { e ->
-                    _state.update {
-                        it.copy(isSavingProfile = false, error = e.message ?: getApplication<Application>().getString(R.string.error_update_profile_failed))
-                    }
+                    val msg = e.message ?: getApplication<Application>().getString(R.string.error_update_profile_failed)
+                    _state.update { it.copy(isSavingProfile = false, error = msg) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -270,9 +270,9 @@ class ProfileViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_password_changed)))
                 },
                 onFailure = { e ->
-                    _state.update {
-                        it.copy(isChangingPassword = false, error = e.message ?: getApplication<Application>().getString(R.string.error_change_password_failed))
-                    }
+                    val msg = e.message ?: getApplication<Application>().getString(R.string.error_change_password_failed)
+                    _state.update { it.copy(isChangingPassword = false, error = msg) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }

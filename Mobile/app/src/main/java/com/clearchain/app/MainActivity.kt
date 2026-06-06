@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -83,7 +84,9 @@ class MainActivity : ComponentActivity() {
                     ) { paddingValues ->
                         NavGraph(
                             navController = navController,
-                            modifier = Modifier.padding(paddingValues),
+                            modifier = Modifier
+                                .padding(paddingValues)
+                                .consumeWindowInsets(paddingValues),
                             onShowBottomBar = { show, type ->
                                 showBottomBar = show
                                 userType = type

@@ -2,6 +2,7 @@ package com.clearchain.app.presentation.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -99,6 +100,28 @@ fun ClearChainTextButton(
         colors = ButtonDefaults.textButtonColors(contentColor = contentColor)
     ) {
         Text(text = text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+fun ClearChainActionIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    val context = LocalContext.current
+    Surface(
+        onClick         = { HapticUtils.tick(context); onClick() },
+        modifier        = modifier.size(24.dp),
+        shape           = CircleShape,
+        color           = containerColor
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription, Modifier.size(18.dp), tint = tint)
+        }
     }
 }
 

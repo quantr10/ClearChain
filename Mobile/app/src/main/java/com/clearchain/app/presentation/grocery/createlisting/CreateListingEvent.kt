@@ -20,6 +20,7 @@ sealed class CreateListingEvent {
     object ApplyAISuggestions : CreateListingEvent()
     object ToggleImagePicker : CreateListingEvent()
     object ClearImage : CreateListingEvent()
+    object DismissAnalysis : CreateListingEvent()
 
     // Multi-image
     data class AddImage(val uri: Uri) : CreateListingEvent()

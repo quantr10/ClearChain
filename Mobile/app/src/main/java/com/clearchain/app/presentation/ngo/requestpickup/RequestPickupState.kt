@@ -20,7 +20,7 @@ data class RequestPickupState(
     val notes: String = "",
 
     // Vehicle & special handling
-    val vehicleType: VehicleType = VehicleType.CAR,
+    val vehicleType: VehicleType? = null,
     val needsRefrigeration: Boolean = false,
     val fragileItems: Boolean = false,
     val heavyLoad: Boolean = false,

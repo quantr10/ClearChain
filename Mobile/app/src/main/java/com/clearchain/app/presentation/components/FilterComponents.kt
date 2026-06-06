@@ -1,8 +1,12 @@
 package com.clearchain.app.presentation.components
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
@@ -33,33 +37,62 @@ fun SearchBar(
     modifier: Modifier = Modifier,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
-    OutlinedTextField(
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val borderColor = if (isFocused) MaterialTheme.colorScheme.primary
+                      else MaterialTheme.colorScheme.outlineVariant
+
+    BasicTextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
-        leadingIcon = {
-            Icon(
-                Icons.Default.Search,
-                null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        trailingIcon = {
-            if (trailingIcon != null) {
-                trailingIcon()
-            } else if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        modifier = modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .border(1.dp, borderColor, ShapeMedium)
+            .padding(horizontal = 12.dp),
+        textStyle = MaterialTheme.typography.labelLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+        singleLine = true,
+        interactionSource = interactionSource,
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Search, null,
+                    Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Box(Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(
+                            placeholder,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                    innerTextField()
+                }
+                if (trailingIcon != null) {
+                    trailingIcon()
+                } else if (query.isNotEmpty()) {
+                    IconButton(
+                        onClick = { onQueryChange("") },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Clear,
+                            stringResource(R.string.cd_clear_search),
+                            Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-        },
-        singleLine = true,
-        shape = ShapeMedium,
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedBorderColor = MaterialTheme.colorScheme.primary
-        )
+        }
     )
 }
 
@@ -188,9 +221,6 @@ fun FilterChipsRow(
                     onFilterSelected(if (selectedFilter == filter.value) null else filter.value)
                 },
                 label = { Text(filter.labelResId?.let { stringResource(it) } ?: filter.label, style = MaterialTheme.typography.labelMedium) },
-                leadingIcon = if (selectedFilter == filter.value) {
-                    { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                } else null,
                 shape = RoundedCornerShape(50)
             )
         }

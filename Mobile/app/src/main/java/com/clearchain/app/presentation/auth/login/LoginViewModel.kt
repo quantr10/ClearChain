@@ -95,16 +95,55 @@ class LoginViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_welcome_back, user.name)))
                 },
                 onFailure = { error ->
-                    val message = error.message ?: context.getString(R.string.error_login_failed)
-                    // Detect lockout: "Account locked. Try again in X minutes."
-                    val lockoutMinutes = parseLockoutMinutes(message)
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = message,
-                            isLockedOut = lockoutMinutes > 0,
-                            lockoutMinutes = lockoutMinutes
-                        )
+                    val raw = error.message ?: ""
+                    val lockoutMinutes = parseLockoutMinutes(raw)
+                    if (lockoutMinutes > 0) {
+                        _state.update {
+                            it.copy(isLoading = false, error = raw, isLockedOut = true, lockoutMinutes = lockoutMinutes)
+                        }
+                    } else {
+                        // Route each error to the appropriate field instead of a banner
+                        val isSystemError = raw.contains("429") || raw.contains("Too Many", ignoreCase = true)
+                            || raw.contains("500") || raw.contains("502") || raw.contains("503")
+                            || raw.contains("Unable to resolve host", ignoreCase = true)
+                            || raw.contains("timeout", ignoreCase = true)
+                            || raw.contains("connect", ignoreCase = true)
+
+                        val systemMsg = when {
+                            raw.contains("429") || raw.contains("Too Many", ignoreCase = true) ->
+                                context.getString(R.string.error_too_many_attempts)
+                            raw.contains("500") || raw.contains("502") || raw.contains("503") ->
+                                context.getString(R.string.error_server)
+                            raw.contains("Unable to resolve host", ignoreCase = true)
+                                || raw.contains("timeout", ignoreCase = true)
+                                || raw.contains("connect", ignoreCase = true) ->
+                                context.getString(R.string.error_no_internet)
+                            else -> null
+                        }
+
+                        val (emailErr, passwordErr) = when {
+                            isSystemError -> null to null  // handled via all 3 patterns below
+                            raw.contains("401") || raw.contains("Unauthorized", ignoreCase = true) ->
+                                "" to context.getString(R.string.error_wrong_credentials)
+                            raw.contains("404") || raw.contains("Not Found", ignoreCase = true) ->
+                                context.getString(R.string.error_account_not_found) to null
+                            else ->
+                                null to raw.ifBlank { context.getString(R.string.error_login_failed) }
+                        }
+
+                        _state.update {
+                            it.copy(
+                                isLoading     = false,
+                                error         = null,
+                                emailError    = emailErr,
+                                passwordError = passwordErr,
+                                systemError   = systemMsg
+                            )
+                        }
+
+                        if (systemMsg != null) {
+                            _uiEvent.send(UiEvent.ShowSnackbar(systemMsg))
+                        }
                     }
                 }
             )

@@ -133,7 +133,7 @@ fun RegisterScreen(
                         onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
                         label         = stringResource(R.string.org_name_label),
                         placeholder   = stringResource(R.string.org_name_placeholder),
-                        leadingIcon   = { Icon(Icons.Default.Business, null) },
+                        leadingIcon   = Icons.Default.Business,
                         imeAction     = ImeAction.Next,
                         isError       = state.nameError != null,
                         errorMessage  = state.nameError,
@@ -147,7 +147,7 @@ fun RegisterScreen(
                             onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
                             label         = stringResource(R.string.email_address),
                             placeholder   = stringResource(R.string.hint_email_org),
-                            leadingIcon   = { Icon(Icons.Default.Email, null) },
+                            leadingIcon   = Icons.Default.Email,
                             trailingIcon  = {
                                 when {
                                     state.isCheckingEmail -> CircularProgressIndicator(
@@ -184,7 +184,7 @@ fun RegisterScreen(
                             onValueChange = { viewModel.onEvent(RegisterEvent.PasswordChanged(it)) },
                             label         = stringResource(R.string.password),
                             placeholder   = stringResource(R.string.password_placeholder),
-                            leadingIcon   = { Icon(Icons.Default.Lock, null) },
+                            leadingIcon   = Icons.Default.Lock,
                             keyboardType  = KeyboardType.Password,
                             imeAction     = ImeAction.Next,
                             isPassword    = true,
@@ -202,7 +202,7 @@ fun RegisterScreen(
                         onValueChange = { viewModel.onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
                         label         = stringResource(R.string.confirm_password),
                         placeholder   = stringResource(R.string.confirm_password_placeholder),
-                        leadingIcon   = { Icon(Icons.Default.LockOpen, null) },
+                        leadingIcon   = Icons.Default.LockOpen,
                         keyboardType  = KeyboardType.Password,
                         imeAction     = ImeAction.Done,
                         isPassword    = true,
@@ -257,19 +257,16 @@ fun RegisterScreen(
                         }
                     }
 
-                    AnimatedVisibility(visible = state.error != null, enter = fadeIn(), exit = fadeOut()) {
-                        AlertBanner(
-                            message = state.error ?: "",
-                            type    = AlertType.ERROR,
-                            icon    = Icons.Default.ErrorOutline
-                        )
-                    }
-
                     ClearChainButton(
                         text    = stringResource(R.string.create_account),
                         onClick = { viewModel.onEvent(RegisterEvent.Register) },
                         loading = state.isLoading,
                         enabled = !state.isLoading
+                                && state.name.isNotBlank()
+                                && state.email.isNotBlank()
+                                && state.password.isNotBlank()
+                                && state.confirmPassword.isNotBlank()
+                                && state.tosAccepted
                     )
 
                     AuthDivider()

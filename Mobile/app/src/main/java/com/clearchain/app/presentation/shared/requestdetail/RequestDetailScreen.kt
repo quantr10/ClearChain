@@ -33,9 +33,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -104,6 +104,7 @@ data class RequestDetailState(
     val isLoadingMessages: Boolean = false,
     val similarListings: List<Listing> = emptyList(),
     val myReview: ReviewData? = null,
+    val ngoReview: ReviewData? = null,
     val isLoadingReview: Boolean = false,
     val isSubmittingReview: Boolean = false,
     val showAutoRatingSheet: Boolean = false,
@@ -158,7 +159,11 @@ class RequestDetailViewModel @Inject constructor(
                     loadGroceryProfile(req.groceryId)
                 }
                 if (req.status == PickupRequestStatus.COMPLETED) {
-                    loadMyReview(requestId)
+                    if (_state.value.currentUserType == OrganizationType.NGO) {
+                        loadMyReview(requestId)
+                    } else if (_state.value.currentUserType == OrganizationType.GROCERY) {
+                        loadNgoReview(requestId, req.groceryId)
+                    }
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to load request", isLoading = false) }
@@ -190,6 +195,16 @@ class RequestDetailViewModel @Inject constructor(
             } catch (_: Exception) {
                 _state.update { it.copy(isLoadingReview = false) }
             }
+        }
+    }
+
+    private fun loadNgoReview(requestId: String, groceryId: String) {
+        viewModelScope.launch {
+            try {
+                val response = reviewApi.getReviewsForOrganization(groceryId)
+                val review = response.data.find { it.pickupRequestId == requestId }
+                _state.update { it.copy(ngoReview = review) }
+            } catch (_: Exception) {}
         }
     }
 
@@ -359,7 +374,9 @@ class RequestDetailViewModel @Inject constructor(
                 block()
                 loadRequest(requestId)
             } catch (e: Exception) {
-                _state.update { it.copy(actionError = e.message ?: "Action failed") }
+                val msg = e.message ?: "Action failed"
+                _state.update { it.copy(actionError = msg) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             } finally {
                 _state.update { it.copy(isActionLoading = false) }
             }
@@ -396,10 +413,29 @@ fun RequestDetailScreen(
         req.status != PickupRequestStatus.CANCELLED &&
         req.status != PickupRequestStatus.REJECTED
 
+    var showChecklistSheet   by remember { mutableStateOf(false) }
+    var showPhotoSourceDialog by remember { mutableStateOf(false) }
     var pendingPickupPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    val photoPickerLauncher = rememberLauncherForActivityResult(
+    var showPhotoPreview     by remember { mutableStateOf(false) }
+    var cameraPhotoUri       by remember { mutableStateOf<Uri?>(null) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) pendingPickupPhotoUri = uri }
+    ) { uri ->
+        if (uri != null) {
+            pendingPickupPhotoUri = uri
+            showPhotoPreview = true
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && cameraPhotoUri != null) {
+            pendingPickupPhotoUri = cameraPhotoUri
+            showPhotoPreview = true
+        }
+    }
 
     LaunchedEffect(requestId) { viewModel.loadRequest(requestId) }
     LaunchedEffect(Unit) {
@@ -419,8 +455,8 @@ fun RequestDetailScreen(
         }
     }
 
-    // Auto rating sheet on first view after completion
-    if (state.showAutoRatingSheet && req != null) {
+    // Auto rating sheet on first view after completion (NGO only)
+    if (state.showAutoRatingSheet && req != null && isNgo) {
         RatingSheet(
             myReview     = state.myReview,
             isSubmitting = state.isSubmittingReview,
@@ -429,8 +465,8 @@ fun RequestDetailScreen(
         )
     }
 
-    // Manual rating sheet from "Show" button
-    if (state.showRatingSheet && req != null) {
+    // Manual rating sheet from "Show" button (NGO only)
+    if (state.showRatingSheet && req != null && isNgo) {
         RatingSheet(
             myReview     = state.myReview,
             isSubmitting = state.isSubmittingReview,
@@ -439,19 +475,46 @@ fun RequestDetailScreen(
         )
     }
 
-    // Photo confirm dialog
-    pendingPickupPhotoUri?.let { uri ->
-        AlertDialog(
-            onDismissRequest = { pendingPickupPhotoUri = null },
-            title   = { Text(stringResource(R.string.label_confirm_pickup)) },
-            text    = { Text(stringResource(R.string.msg_submit_photo_proof)) },
-            confirmButton = {
-                Button(onClick = { viewModel.confirmPickup(requestId, uri); pendingPickupPhotoUri = null }) {
-                    Text(stringResource(R.string.action_submit))
-                }
+    // Step 1 — Checklist verification sheet
+    if (showChecklistSheet) {
+        PickupChecklistSheet(
+            onDismiss = { showChecklistSheet = false },
+            onNext    = { showChecklistSheet = false; showPhotoSourceDialog = true }
+        )
+    }
+
+    // Step 2 — Camera or Gallery choice
+    if (showPhotoSourceDialog) {
+        PhotoSourceDialog(
+            onDismiss = { showPhotoSourceDialog = false },
+            onCamera  = {
+                showPhotoSourceDialog = false
+                val file = File(context.cacheDir, "pickup_${System.currentTimeMillis()}.jpg")
+                val uri  = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                cameraPhotoUri = uri
+                cameraLauncher.launch(uri)
             },
-            dismissButton = {
-                TextButton(onClick = { pendingPickupPhotoUri = null }) { Text(stringResource(R.string.cancel)) }
+            onGallery = {
+                showPhotoSourceDialog = false
+                galleryLauncher.launch(
+                    androidx.activity.result.PickVisualMediaRequest(
+                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                    )
+                )
+            }
+        )
+    }
+
+    // Step 3 — Preview before upload
+    if (showPhotoPreview && pendingPickupPhotoUri != null) {
+        PhotoPreviewDialog(
+            uri       = pendingPickupPhotoUri!!,
+            isLoading = state.isActionLoading,
+            onDismiss = { showPhotoPreview = false; pendingPickupPhotoUri = null },
+            onConfirm = {
+                viewModel.confirmPickup(requestId, pendingPickupPhotoUri!!)
+                showPhotoPreview = false
+                pendingPickupPhotoUri = null
             }
         )
     }
@@ -535,14 +598,7 @@ fun RequestDetailScreen(
                     onReject          = { viewModel.showRejectDialog() },
                     onMarkReady       = { viewModel.markReady(requestId) },
                     onCancel          = { viewModel.cancel(requestId) },
-                    onConfirmPickup   = {
-                        photoPickerLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            )
-                        )
-                    },
-                    onToggleChecklist         = { viewModel.toggleChecklistItem(it) },
+                    onConfirmPickup           = { showChecklistSheet = true },
                     onNavigateToPublicProfile = onNavigateToPublicProfile,
                     onNavigateToListing       = onNavigateToListing,
                     onGenerateReceipt         = { viewModel.generateReceipt() },
@@ -568,7 +624,6 @@ private fun RequestDetailContent(
     onMarkReady: () -> Unit,
     onCancel: () -> Unit,
     onConfirmPickup: () -> Unit,
-    onToggleChecklist: (Int) -> Unit,
     onNavigateToPublicProfile: (String) -> Unit,
     onNavigateToListing: (String) -> Unit,
     onGenerateReceipt: () -> Unit,
@@ -656,13 +711,13 @@ private fun RequestDetailContent(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
-                modifier            = Modifier.fillMaxWidth().padding(16.dp),
+                modifier            = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp).padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (showReceiptBtn || showDisputeButton) {
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
                         if (showReceiptBtn) {
@@ -779,7 +834,7 @@ private fun RequestDetailContent(
                             color    = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
-                        TextButton(
+                        Surface(
                             onClick = {
                                 val encoded = Uri.encode(address)
                                 val uri = Uri.parse("geo:0,0?q=$encoded")
@@ -795,11 +850,15 @@ private fun RequestDetailContent(
                                     )
                                 }
                             },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                         ) {
                             Text(
                                 stringResource(R.string.action_get_directions),
-                                style = MaterialTheme.typography.labelSmall
+                                style      = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -833,24 +892,15 @@ private fun RequestDetailContent(
         // ── 7. Action buttons ───────────────────────────────────────────
         if (isMyRequest) {
             if (isNgo && req.status == PickupRequestStatus.READY) {
-                PickupChecklistCard(checkedItems = state.checkedItems, onToggle = onToggleChecklist)
                 Button(
                     onClick  = onConfirmPickup,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled  = state.allChecked,
                     shape    = RoundedCornerShape(10.dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
                     Icon(Icons.Default.PhotoCamera, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.action_confirm_pickup_photo))
-                }
-                if (!state.allChecked) {
-                    Text(
-                        stringResource(R.string.msg_complete_checklist),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
 
@@ -902,8 +952,8 @@ private fun RequestDetailContent(
             LinearProgressIndicator(Modifier.fillMaxWidth())
         }
 
-        // ── 8. Rating card (completed) ──────────────────────────────────
-        if (req.status == PickupRequestStatus.COMPLETED && isMyRequest) {
+        // ── 8. Rating card (NGO: submit rating; Grocery: view received rating) ──
+        if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isNgo) {
             SectionCard(stringResource(R.string.label_rate_experience)) {
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
@@ -917,8 +967,72 @@ private fun RequestDetailContent(
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(12.dp))
-                    OutlinedButton(onClick = onShowRatingSheet, shape = RoundedCornerShape(10.dp)) {
-                        Text(stringResource(R.string.action_show))
+                    Surface(
+                        onClick = onShowRatingSheet,
+                        shape   = RoundedCornerShape(6.dp),
+                        color   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            stringResource(R.string.action_show),
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isGrocery) {
+            SectionCard(stringResource(R.string.label_ngo_rating)) {
+                val review = state.ngoReview
+                if (review != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment     = Alignment.CenterVertically
+                        ) {
+                            repeat(5) { i ->
+                                Icon(
+                                    imageVector        = if (i < review.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                    contentDescription = null,
+                                    modifier           = Modifier.size(28.dp),
+                                    tint               = if (i < review.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                        Text(
+                            stringResource(R.string.label_reviewed_by, review.reviewerName),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (!review.comment.isNullOrBlank()) {
+                            Surface(
+                                color    = MaterialTheme.colorScheme.surfaceVariant,
+                                shape    = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    "\"${review.comment}\"",
+                                    style    = MaterialTheme.typography.bodyMedium,
+                                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.StarBorder, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            stringResource(R.string.hint_not_yet_rated),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -950,26 +1064,27 @@ private fun RequestDetailContent(
     }
 }
 
-// ═══ Image action button ═══
+// ═══ Circular overlay action button ═══
 @Composable
 private fun ImageActionButton(
     icon:    ImageVector,
     label:   String,
+    tint:    Color   = Color.White,
     loading: Boolean = false,
     onClick: () -> Unit
 ) {
     Surface(
         onClick         = onClick,
-        modifier        = Modifier.size(36.dp),
+        modifier        = Modifier.size(24.dp),
         shape           = CircleShape,
         color           = Color(0x99000000),
         shadowElevation = 2.dp
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
             } else {
-                Icon(icon, label, Modifier.size(18.dp), tint = Color.White)
+                Icon(icon, label, Modifier.size(18.dp), tint = tint)
             }
         }
     }
@@ -1606,54 +1721,94 @@ private fun RatingSheet(
     }
 }
 
-// ═══ Pickup Checklist Card ═══
+// ═══ Step 2 — Camera or Gallery choice ═══
 @Composable
-private fun PickupChecklistCard(checkedItems: Set<Int>, onToggle: (Int) -> Unit) {
-    val checklistItems = listOf(
-        stringResource(R.string.checklist_item_1),
-        stringResource(R.string.checklist_item_2),
-        stringResource(R.string.checklist_item_3),
-        stringResource(R.string.checklist_item_4),
-        stringResource(R.string.checklist_item_5)
-    )
-    val allChecked = checkedItems.size == PICKUP_CHECKLIST_SIZE
-    Card(
-        shape  = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (allChecked) MaterialTheme.colorScheme.tertiaryContainer
-                             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(
-                    if (allChecked) Icons.Default.CheckCircle else Icons.Default.Checklist,
-                    null, Modifier.size(20.dp),
-                    tint = if (allChecked) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+private fun PhotoSourceDialog(
+    onDismiss: () -> Unit,
+    onCamera:  () -> Unit,
+    onGallery: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.label_add_photo_proof)) },
+        text  = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    stringResource(R.string.label_pickup_verification_checklist),
-                    style      = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = if (allChecked) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface
+                    stringResource(R.string.msg_choose_photo_source),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.weight(1f))
-                Text("${checkedItems.size}/$PICKUP_CHECKLIST_SIZE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            checklistItems.forEachIndexed { index, item ->
-                val checked = index in checkedItems
-                Row(
-                    modifier          = Modifier.fillMaxWidth().clickable { onToggle(index) }.padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Spacer(Modifier.height(2.dp))
+                Button(
+                    onClick  = onCamera,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape    = RoundedCornerShape(10.dp)
                 ) {
-                    Checkbox(checked = checked, onCheckedChange = { onToggle(index) }, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(item, style = MaterialTheme.typography.bodySmall,
-                        color    = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.PhotoCamera, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_take_photo_camera))
+                }
+                OutlinedButton(
+                    onClick  = onGallery,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape    = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Photo, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.action_choose_gallery))
                 }
             }
+        },
+        confirmButton  = {},
+        dismissButton  = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
-    }
+    )
+}
+
+// ═══ Step 3 — Photo preview before upload ═══
+@Composable
+private fun PhotoPreviewDialog(
+    uri:       Uri,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.label_photo_preview)) },
+        text  = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    stringResource(R.string.msg_submit_photo_proof),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Card(
+                    shape    = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().height(240.dp)
+                ) {
+                    AsyncImage(
+                        model              = uri,
+                        contentDescription = null,
+                        modifier           = Modifier.fillMaxSize(),
+                        contentScale       = ContentScale.Crop
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm, enabled = !isLoading) {
+                if (isLoading) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text(stringResource(R.string.action_confirm_upload))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
 }

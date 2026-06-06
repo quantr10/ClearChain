@@ -329,48 +329,6 @@ private fun ProfileViewContent(
                 }
             }
 
-            // ── Activity Log ───────────────────────────────────────────────
-            if (state.isLoadingActivity) {
-                DashboardSection(title = stringResource(R.string.activity_log)) {
-                    Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    }
-                }
-            } else if (state.activity.isNotEmpty()) {
-                var showAllActivity by remember { mutableStateOf(false) }
-                val displayedActivity = if (showAllActivity) state.activity else state.activity.take(5)
-                DashboardSection(title = stringResource(R.string.activity_log)) {
-                    ActivityLogCard(activity = displayedActivity)
-                    if (state.activity.size > 5) {
-                        TextButton(
-                            onClick = { showAllActivity = !showAllActivity },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                if (showAllActivity) stringResource(R.string.action_show_less)
-                                else stringResource(R.string.action_show_more, state.activity.size - 5),
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
-                    }
-                }
-            } else if (state.activityError == null) {
-                DashboardSection(title = stringResource(R.string.activity_log)) {
-                    Card(shape = RoundedCornerShape(16.dp)) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                stringResource(R.string.label_no_recent_activity),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-
             // ── Team Members ──────────────────────────────────────────────────
             DashboardSection(title = stringResource(R.string.section_team_members)) {
                 TeamMembersCard(user = user)
@@ -741,7 +699,7 @@ private fun EditProfileScaffold(
                 value         = state.editName,
                 onValueChange = { onEvent(ProfileEvent.EditNameChanged(it)) },
                 label         = stringResource(R.string.org_name_label),
-                leadingIcon   = { Icon(Icons.Default.Business, null) },
+                leadingIcon   = Icons.Default.Business,
                 imeAction     = ImeAction.Next,
                 isError       = state.editNameError != null,
                 errorMessage  = state.editNameError,
@@ -752,7 +710,7 @@ private fun EditProfileScaffold(
                 onValueChange = { onEvent(ProfileEvent.EditDescriptionChanged(it)) },
                 label         = stringResource(R.string.label_description),
                 placeholder   = stringResource(R.string.hint_org_description),
-                leadingIcon   = { Icon(Icons.Default.Description, null) },
+                leadingIcon   = Icons.Default.Description,
                 imeAction     = ImeAction.Next,
                 enabled       = !state.isSavingProfile,
                 singleLine    = false,
@@ -767,7 +725,7 @@ private fun EditProfileScaffold(
                 onValueChange = { onEvent(ProfileEvent.EditPhoneChanged(it)) },
                 label         = stringResource(R.string.onboarding_phone_label),
                 placeholder   = stringResource(R.string.hint_phone_profile),
-                leadingIcon   = { Icon(Icons.Default.Phone, null) },
+                leadingIcon   = Icons.Default.Phone,
                 keyboardType  = KeyboardType.Phone,
                 imeAction     = ImeAction.Next,
                 isError       = state.editPhoneError != null,
@@ -791,7 +749,7 @@ private fun EditProfileScaffold(
                 onValueChange = { onEvent(ProfileEvent.EditLocationChanged(it)) },
                 label         = stringResource(R.string.label_city_location),
                 placeholder   = stringResource(R.string.onboarding_city_placeholder),
-                leadingIcon   = { Icon(Icons.Default.Place, null) },
+                leadingIcon   = Icons.Default.Place,
                 imeAction     = ImeAction.Next,
                 enabled       = !state.isSavingProfile
             )
@@ -818,7 +776,7 @@ private fun EditProfileScaffold(
                     onValueChange = { onEvent(ProfileEvent.EditContactPersonChanged(it)) },
                     label         = stringResource(R.string.label_contact_person_star),
                     placeholder   = stringResource(R.string.hint_contact_person),
-                    leadingIcon   = { Icon(Icons.Default.Person, null) },
+                    leadingIcon   = Icons.Default.Person,
                     imeAction     = ImeAction.Next,
                     isError       = state.editContactPersonError != null,
                     errorMessage  = state.editContactPersonError,
@@ -832,7 +790,7 @@ private fun EditProfileScaffold(
                     onValueChange = { onEvent(ProfileEvent.EditPickupInstructionsChanged(it)) },
                     label         = stringResource(R.string.onboarding_pickup_instructions_label),
                     placeholder   = stringResource(R.string.hint_pickup_instructions_long),
-                    leadingIcon   = { Icon(Icons.Default.DirectionsWalk, null) },
+                    leadingIcon   = Icons.Default.DirectionsWalk,
                     imeAction     = ImeAction.Done,
                     enabled       = !state.isSavingProfile,
                     singleLine    = false,
@@ -1124,50 +1082,6 @@ private fun MemberRow(
                 color    = onTint,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Activity log card
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun ActivityLogCard(activity: List<com.clearchain.app.domain.model.ActivityItem>) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            activity.forEachIndexed { idx, item ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val icon = when (item.type) {
-                        "listing_created"   -> Icons.Default.AddCircle
-                        "pickup_request"    -> Icons.Default.ShoppingCart
-                        "pickup_approved"   -> Icons.Default.CheckCircle
-                        "pickup_completed"  -> Icons.Default.Done
-                        "pickup_cancelled"  -> Icons.Default.Cancel
-                        "inventory_received" -> Icons.Default.Inventory
-                        else                -> Icons.Default.Notifications
-                    }
-                    Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                        Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Text(
-                        text = runCatching {
-                            val dt = java.time.OffsetDateTime.parse(item.timestamp)
-                            val hours = java.time.temporal.ChronoUnit.HOURS.between(dt, java.time.OffsetDateTime.now())
-                            when { hours < 1 -> "Just now"; hours < 24 -> "${hours}h"; else -> "${hours / 24}d" }
-                        }.getOrDefault(""),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (idx < activity.size - 1) HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            }
         }
     }
 }
