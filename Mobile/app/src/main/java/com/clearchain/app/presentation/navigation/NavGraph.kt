@@ -27,6 +27,7 @@ import com.clearchain.app.presentation.auth.register.RegisterScreen
 import com.clearchain.app.presentation.auth.verify.EmailVerificationScreen
 import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
 import com.clearchain.app.presentation.grocery.createlisting.CreateListingScreen
+import com.clearchain.app.presentation.grocery.editlisting.EditListingScreen
 import com.clearchain.app.presentation.grocery.managerequests.ManageRequestsScreen
 import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
 import com.clearchain.app.presentation.ngo.NgoDashboardScreen
@@ -101,6 +102,15 @@ fun NavGraph(
         composable(Screen.CreateListing.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             CreateListingScreen(navController = navController)
+        }
+
+        composable(
+            route     = Screen.EditListing.route,
+            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.GROCERY) }
+            val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
+            EditListingScreen(listingId = listingId, navController = navController)
         }
 
         composable(Screen.MyListings.route) {
@@ -199,6 +209,9 @@ fun NavGraph(
                 },
                 onNavigateToStoreProfile = { orgId ->
                     navController.navigate(Screen.PublicProfile.createRoute(orgId))
+                },
+                onNavigateToEdit = { id ->
+                    navController.navigate(Screen.EditListing.createRoute(id))
                 }
             )
         }

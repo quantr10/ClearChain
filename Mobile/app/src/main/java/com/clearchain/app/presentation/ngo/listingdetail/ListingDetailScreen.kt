@@ -52,6 +52,7 @@ fun ListingDetailScreen(
     onRequestPickup: (String) -> Unit,
     onNavigateToListingDetail: (String) -> Unit = {},
     onNavigateToStoreProfile: (String) -> Unit = {},
+    onNavigateToEdit: (String) -> Unit = {},
     viewModel: ListingDetailViewModel = hiltViewModel()
 ) {
     val state   by viewModel.state.collectAsState()
@@ -311,7 +312,7 @@ fun ListingDetailScreen(
                                     ImageActionButton(
                                         icon  = Icons.Default.Edit,
                                         label = stringResource(R.string.action_edit_qty)
-                                    ) { showEditQty = true }
+                                    ) { onNavigateToEdit(listing.id) }
                                     if (listing.isArchived) {
                                         ImageActionButton(
                                             icon    = Icons.Default.Unarchive,
@@ -499,7 +500,7 @@ fun ListingDetailScreen(
                                                 color    = MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            TextButton(
+                                            Surface(
                                                 onClick = {
                                                     val encoded = Uri.encode(address)
                                                     val uri = Uri.parse("geo:0,0?q=$encoded")
@@ -516,11 +517,15 @@ fun ListingDetailScreen(
                                                         )
                                                     }
                                                 },
-                                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                                             ) {
                                                 Text(
                                                     stringResource(R.string.action_get_directions),
-                                                    style = MaterialTheme.typography.labelSmall
+                                                    style      = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color      = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                                 )
                                             }
                                         }
@@ -549,14 +554,12 @@ fun ListingDetailScreen(
                             // ── Similar listings card (NGO only) ───────────────
                             if (!isGrocery && state.similarListings.isNotEmpty()) {
                                 SectionCard(stringResource(R.string.section_similar_listings)) {
-                                    LazyRow(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        contentPadding        = PaddingValues(vertical = 2.dp)
-                                    ) {
+                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         items(state.similarListings, key = { it.id }) { similar ->
-                                            SimilarListingCard(
+                                            ListingCard(
                                                 listing = similar,
-                                                onClick = { onNavigateToListingDetail(similar.id) }
+                                                onClick = { onNavigateToListingDetail(similar.id) },
+                                                modifier = Modifier.width(220.dp)
                                             )
                                         }
                                     }
@@ -637,14 +640,14 @@ private fun ImageActionButton(
 ) {
     Surface(
         onClick         = onClick,
-        modifier        = Modifier.size(36.dp),
+        modifier        = Modifier.size(24.dp),
         shape           = CircleShape,
         color           = Color(0x99000000),
         shadowElevation = 2.dp
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
             } else {
                 Icon(icon, label, Modifier.size(18.dp), tint = tint)
             }
@@ -720,45 +723,3 @@ private fun CompactDetailRow(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Similar listing card
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun SimilarListingCard(listing: Listing, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.width(160.dp).clickable { onClick() },
-        shape    = RoundedCornerShape(10.dp)
-    ) {
-        Column {
-            if (!listing.imageUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model              = listing.imageUrl,
-                    contentDescription = listing.title,
-                    modifier           = Modifier.fillMaxWidth().height(80.dp),
-                    contentScale       = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(80.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.RestaurantMenu, null, Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                }
-            }
-            Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(listing.title, style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text("${listing.quantity} ${listing.unit}", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary)
-                Text(
-                    stringResource(R.string.label_exp_short, listing.expiryDate.take(10)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}

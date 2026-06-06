@@ -2,6 +2,9 @@
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,6 +41,7 @@ fun MyRequestsScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var showChecklistForId   by remember { mutableStateOf<String?>(null) }
     var showPhotoPickerForId by remember { mutableStateOf<String?>(null) }
     var showFullPhotoUrl by remember { mutableStateOf<String?>(null) }
 
@@ -59,22 +63,6 @@ fun MyRequestsScreen(
         }
     }
 
-    if (state.isUploading) {
-        LoadingOverlay(
-            message = if (state.uploadAttempts > 1)
-                stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
-            else stringResource(R.string.uploading_photo)
-        )
-    }
-
-    state.uploadError?.let {
-        UploadErrorDialog(
-            errorMessage = it,
-            canRetry = state.uploadAttempts < 3,
-            onRetry = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) },
-            onDismiss = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }
-        )
-    }
 
     showFullPhotoUrl?.let { url ->
         FullPhotoDialog(
@@ -129,9 +117,55 @@ fun MyRequestsScreen(
                 else -> {
                     Column(modifier = Modifier.fillMaxSize()) {
 
+                        // ── Upload loading banner ──────────────────────────
+                        AnimatedVisibility(
+                            visible = state.isUploading,
+                            enter   = fadeIn(),
+                            exit    = fadeOut()
+                        ) {
+                            AlertBanner(
+                                message  = if (state.uploadAttempts > 1)
+                                    stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
+                                else stringResource(R.string.uploading_photo),
+                                type     = AlertType.INFO,
+                                icon     = Icons.Default.CloudUpload
+                            )
+                        }
+
+                        // ── Upload error banner + retry ────────────────────
+                        AnimatedVisibility(
+                            visible = state.uploadError != null,
+                            enter   = fadeIn(),
+                            exit    = fadeOut()
+                        ) {
+                            Column {
+                                AlertBanner(
+                                    message = state.uploadError.orEmpty(),
+                                    type    = AlertType.ERROR,
+                                    icon    = Icons.Default.CloudOff
+                                )
+                                Row(
+                                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                                ) {
+                                    TextButton(onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }) {
+                                        Text(stringResource(R.string.close))
+                                    }
+                                    if (state.uploadAttempts < 3) {
+                                        Button(onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) }) {
+                                            Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(stringResource(R.string.retry))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         Row(
                             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SearchBar(
                                 query         = state.searchQuery,
@@ -144,9 +178,11 @@ fun MyRequestsScreen(
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
                                 }
                             ) {
-                                IconButton(onClick = { viewModel.onEvent(MyRequestsEvent.ShowFilterSheet) }) {
-                                    Icon(Icons.Default.Tune, stringResource(R.string.advanced_filters))
-                                }
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.Tune,
+                                    contentDescription = stringResource(R.string.advanced_filters),
+                                    onClick            = { viewModel.onEvent(MyRequestsEvent.ShowFilterSheet) }
+                                )
                             }
                         }
 
@@ -200,7 +236,7 @@ fun MyRequestsScreen(
                                                 request  = request,
                                                 onCardClick     = { onNavigateToRequestDetail(request.id) },
                                                 onCancel        = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
-                                                onConfirmPickup = { showPhotoPickerForId = it },
+                                                onConfirmPickup = { showChecklistForId = it },
                                                 onViewPhoto     = { showFullPhotoUrl = it },
                                                 onReview        = { viewModel.onEvent(MyRequestsEvent.ShowReviewDialog(it)) },
                                                 onDispute       = { viewModel.onEvent(MyRequestsEvent.DisputeRequest(it)) },
@@ -219,6 +255,15 @@ fun MyRequestsScreen(
         }
     }
 
+    // Step 1 — Checklist verification
+    showChecklistForId?.let { requestId ->
+        PickupChecklistSheet(
+            onDismiss = { showChecklistForId = null },
+            onNext    = { showChecklistForId = null; showPhotoPickerForId = requestId }
+        )
+    }
+
+    // Steps 2 & 3 — Photo source + preview
     showPhotoPickerForId?.let { requestId ->
         PhotoPickerDialog(
             onPhotoSelected = { uri ->

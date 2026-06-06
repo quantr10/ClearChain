@@ -158,26 +158,31 @@ class CreateListingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         selectedImageUri = null,
-                        analysisResult = null,
-                        analysisError = null,
-                        imageUrl = ""
+                        selectedImages   = emptyList(),
+                        analysisResult   = null,
+                        analysisError    = null,
+                        imageUrl         = ""
                     )
                 }
             }
 
-            is CreateListingEvent.AddImage -> {
-                val current = _state.value.selectedImages
-                if (current.size < 5) {
-                    val updated = current + event.uri
-                    _state.update {
-                        it.copy(
-                            selectedImages = updated,
-                            selectedImageUri = updated.first(),
-                            showImagePicker = false
-                        )
-                    }
-                    if (current.isEmpty()) analyzeImage()
+            CreateListingEvent.DismissAnalysis -> {
+                _state.update {
+                    it.copy(analysisResult = null, analysisError = null)
                 }
+            }
+
+            is CreateListingEvent.AddImage -> {
+                _state.update {
+                    it.copy(
+                        selectedImages   = listOf(event.uri),
+                        selectedImageUri = event.uri,
+                        showImagePicker  = false,
+                        analysisResult   = null,
+                        analysisError    = null
+                    )
+                }
+                analyzeImage()
             }
 
             is CreateListingEvent.RemoveImage -> {

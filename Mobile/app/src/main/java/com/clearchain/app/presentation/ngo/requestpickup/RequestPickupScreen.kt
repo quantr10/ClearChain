@@ -3,6 +3,7 @@
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,7 +27,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -81,7 +84,7 @@ fun RequestPickupScreen(
     }
 }
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun RequestPickupContent(
     listing: Listing,
@@ -89,14 +92,33 @@ private fun RequestPickupContent(
     onEvent: (RequestPickupEvent) -> Unit
 ) {
     val isLoading = state.isLoading
+    val qtyValue     = state.quantity.toIntOrNull() ?: 0
+    val qtyInvalid   = state.quantity.isBlank() || qtyValue <= 0 || qtyValue > listing.quantity
+    val dateInvalid  = state.pickupDate.isBlank()
+    val timeInvalid  = state.selectedTimeSlot == null && state.pickupTime.isBlank()
+    val canSubmit    = !qtyInvalid && !dateInvalid && !timeInvalid && state.vehicleType != null
+
+    val expiryMaxDate = remember(listing.expiryDate) {
+        runCatching { LocalDate.parse(listing.expiryDate.take(10)) }.getOrNull()
+    }
+    val pickupSelectableDates = remember(expiryMaxDate) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date  = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneId.of("UTC")).toLocalDate()
+                val today = LocalDate.now()
+                return !date.isBefore(today) && (expiryMaxDate == null || !date.isAfter(expiryMaxDate))
+            }
+        }
+    }
+
     Column(
         modifier            = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // ── Listing summary card ───────────────────────────────────────
+        // ── Listing summary (NOT wrapped — this is the info section) ───
         InfoCard(containerColor = MaterialTheme.colorScheme.surfaceVariant) {
             Text(
                 text       = listing.title,
@@ -149,43 +171,32 @@ private fun RequestPickupContent(
             )
         }
 
-        // ── Pickup details form ────────────────────────────────────────
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(
-                stringResource(R.string.label_pickup_details_section),
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
+        // ── Quantity ───────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.listing_quantity)) {
             ClearChainTextField(
                 value         = state.quantity,
                 onValueChange = { onEvent(RequestPickupEvent.QuantityChanged(it)) },
-                label         = stringResource(R.string.listing_quantity),
                 placeholder   = stringResource(R.string.hint_max_quantity, listing.quantity.toString(), listing.unit),
-                leadingIcon   = { Icon(Icons.Default.ShoppingCart, null) },
+                leadingIcon   = Icons.Default.ShoppingCart,
                 keyboardType  = KeyboardType.Number,
                 imeAction     = ImeAction.Next,
                 enabled       = !isLoading
             )
+        }
 
-            Text(
-                stringResource(R.string.label_pickup_date_section),
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            val expiryMaxDate = remember(listing.expiryDate) {
-                runCatching { LocalDate.parse(listing.expiryDate.take(10)) }.getOrNull()
-            }
-            PickupCalendarPicker(
-                selectedDate    = state.pickupDate,
+        // ── Pickup Date ────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_pickup_date_section)) {
+            DatePickerField(
+                value           = state.pickupDate,
                 onDateSelected  = { onEvent(RequestPickupEvent.PickupDateChanged(it)) },
-                maxDate         = expiryMaxDate,
-                enabled         = !isLoading
+                enabled         = !isLoading,
+                selectableDates = pickupSelectableDates,
+                onClearDate     = { onEvent(RequestPickupEvent.PickupDateChanged("")) }
             )
+        }
 
-            // ── Time slot picker (predefined slots from listing window) ──
+        // ── Pickup Time ────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_pickup_time_field)) {
             if (state.availableTimeSlots.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -206,53 +217,40 @@ private fun RequestPickupContent(
                             )
                         }
                     }
-                    if (state.selectedTimeSlot == null) {
-                        Text(
-                            stringResource(R.string.hint_select_time_slot),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             } else {
                 TimePickerField(
                     value          = state.pickupTime,
                     onTimeSelected = { onEvent(RequestPickupEvent.PickupTimeChanged(it)) },
-                    label          = stringResource(R.string.label_pickup_time_field),
+                    label          = "",
                     enabled        = !isLoading
                 )
             }
         }
 
-        // ── Estimated trip info ────────────────────────────────────────
+        // ── Estimated trip info (already rounded, shown conditionally) ─
         state.estimatedTripMinutes?.let { eta ->
             Surface(
-                shape  = RoundedCornerShape(12.dp),
-                color  = MaterialTheme.colorScheme.secondaryContainer
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                    modifier              = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.DirectionsCar, null,
-                        Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                    Icon(Icons.Default.DirectionsCar, null, Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer)
                     Column {
                         Text(
                             stringResource(R.string.label_estimated_trip, eta),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style      = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            color      = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         listing.distanceKm?.let { dist ->
-                            val vehicleLabel = stringResource(state.vehicleType.labelResId)
                             Text(
-                                stringResource(R.string.label_distance_via, dist.toString(), vehicleLabel),
+                                stringResource(R.string.label_distance_via, dist.toString(), state.vehicleType?.let { stringResource(it.labelResId) } ?: ""),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
@@ -262,84 +260,101 @@ private fun RequestPickupContent(
             }
         }
 
-        // ── Vehicle type selector ──────────────────────────────────────
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                stringResource(R.string.label_transport_method),
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            androidx.compose.foundation.layout.FlowRow(
+        // ── Transport Method ───────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_transport_method)) {
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement   = Arrangement.spacedBy(8.dp)
+                verticalArrangement   = Arrangement.spacedBy(4.dp)
             ) {
                 VehicleType.entries.forEach { vehicle ->
                     FilterChip(
                         selected = state.vehicleType == vehicle,
                         onClick  = { onEvent(RequestPickupEvent.VehicleTypeChanged(vehicle)) },
-                        label    = { Text("${vehicle.icon} ${stringResource(vehicle.labelResId)}") },
+                        label    = { Text("${vehicle.icon} ${stringResource(vehicle.labelResId)}", style = MaterialTheme.typography.bodySmall) },
                         enabled  = !isLoading
                     )
                 }
             }
         }
 
-        // ── Special handling checkboxes ────────────────────────────────
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                stringResource(R.string.label_special_handling),
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            SpecialHandlingRow(
-                icon     = Icons.Default.AcUnit,
-                label    = stringResource(R.string.label_needs_refrigeration),
-                checked  = state.needsRefrigeration,
-                enabled  = !isLoading,
-                onToggle = { onEvent(RequestPickupEvent.ToggleRefrigeration) }
-            )
-            SpecialHandlingRow(
-                icon     = Icons.Default.Warning,
-                label    = stringResource(R.string.fragile_items),
-                checked  = state.fragileItems,
-                enabled  = !isLoading,
-                onToggle = { onEvent(RequestPickupEvent.ToggleFragile) }
-            )
-            SpecialHandlingRow(
-                icon     = Icons.Default.FitnessCenter,
-                label    = stringResource(R.string.label_heavy_load),
-                checked  = state.heavyLoad,
-                enabled  = !isLoading,
-                onToggle = { onEvent(RequestPickupEvent.ToggleHeavyLoad) }
-            )
+        // ── Special Handling ───────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_special_handling)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SpecialHandlingRow(
+                    icon     = Icons.Default.AcUnit,
+                    label    = stringResource(R.string.label_needs_refrigeration),
+                    checked  = state.needsRefrigeration,
+                    enabled  = !isLoading,
+                    onToggle = { onEvent(RequestPickupEvent.ToggleRefrigeration) }
+                )
+                SpecialHandlingRow(
+                    icon     = Icons.Default.Warning,
+                    label    = stringResource(R.string.fragile_items),
+                    checked  = state.fragileItems,
+                    enabled  = !isLoading,
+                    onToggle = { onEvent(RequestPickupEvent.ToggleFragile) }
+                )
+                SpecialHandlingRow(
+                    icon     = Icons.Default.FitnessCenter,
+                    label    = stringResource(R.string.label_heavy_load),
+                    checked  = state.heavyLoad,
+                    enabled  = !isLoading,
+                    onToggle = { onEvent(RequestPickupEvent.ToggleHeavyLoad) }
+                )
+            }
         }
 
         // ── Notes ──────────────────────────────────────────────────────
-        ClearChainTextField(
-            value         = state.notes,
-            onValueChange = { onEvent(RequestPickupEvent.NotesChanged(it)) },
-            label         = stringResource(R.string.label_notes_optional),
-            placeholder   = stringResource(R.string.hint_additional_instructions),
-            leadingIcon   = { Icon(Icons.Default.Edit, null) },
-            imeAction     = ImeAction.Done,
-            enabled       = !isLoading,
-            singleLine    = false,
-            minLines      = 3,
-            maxLines      = 5
-        )
+        FieldCard(label = stringResource(R.string.label_notes_optional)) {
+            ClearChainTextField(
+                value         = state.notes,
+                onValueChange = { onEvent(RequestPickupEvent.NotesChanged(it)) },
+                placeholder   = stringResource(R.string.hint_additional_instructions),
+                leadingIcon   = Icons.Default.Edit,
+                imeAction     = ImeAction.Done,
+                enabled       = !isLoading,
+                singleLine    = false,
+                minLines      = 3,
+                maxLines      = 5
+            )
+        }
 
         ClearChainButton(
             text     = stringResource(R.string.action_submit_request),
             onClick  = { onEvent(RequestPickupEvent.SubmitRequest) },
             loading  = isLoading,
-            enabled  = !isLoading,
+            enabled  = canSubmit && !isLoading,
             icon     = Icons.Default.Send,
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun FieldCard(
+    label: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier  = modifier.fillMaxWidth(),
+        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier            = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                label,
+                style      = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color      = MaterialTheme.colorScheme.onSurface
+            )
+            content()
+        }
     }
 }
 
@@ -355,12 +370,12 @@ private fun SpecialHandlingRow(
         modifier          = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onToggle)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 1.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
+        Icon(icon, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+        Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled, modifier = Modifier.size(24.dp))
     }
 }

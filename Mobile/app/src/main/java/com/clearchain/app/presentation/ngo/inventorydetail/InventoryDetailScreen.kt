@@ -43,9 +43,10 @@ fun InventoryDetailScreen(
     onNavigateToPublicProfile: (String) -> Unit = {},
     viewModel: InventoryDetailViewModel = hiltViewModel()
 ) {
-    val state   by viewModel.state.collectAsState()
-    val context = LocalContext.current
-    var fullscreenPhoto by remember { mutableStateOf<String?>(null) }
+    val state            by viewModel.state.collectAsState()
+    val context          = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    var fullscreenPhoto  by remember { mutableStateOf<String?>(null) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -54,6 +55,13 @@ fun InventoryDetailScreen(
     }
 
     LaunchedEffect(itemId) { viewModel.loadItem(itemId) }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is com.clearchain.app.util.UiEvent.ShowSnackbar) {
+                snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
 
     // Fullscreen photo dialog
     fullscreenPhoto?.let { url ->
@@ -103,6 +111,7 @@ fun InventoryDetailScreen(
     BackHandler(state.isEditing) { viewModel.cancelEdit() }
 
     Scaffold(
+        snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {

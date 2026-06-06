@@ -9,8 +9,10 @@ import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.UpdateInventoryItemRequest
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.toDomain
+import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +32,9 @@ class InventoryDetailViewModel @Inject constructor(
     private val _state = MutableStateFlow(InventoryDetailState())
     val state: StateFlow<InventoryDetailState> = _state.asStateFlow()
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     fun loadItem(itemId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
@@ -41,7 +46,9 @@ class InventoryDetailViewModel @Inject constructor(
                     loadRelatedRequest(requestId)
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: getApplication<Application>().getString(R.string.error_load_item_failed), isLoading = false) }
+                val msg = e.message ?: getApplication<Application>().getString(R.string.error_load_item_failed)
+                _state.update { it.copy(error = msg, isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
     }
@@ -91,7 +98,9 @@ class InventoryDetailViewModel @Inject constructor(
                 )
                 _state.update { it.copy(item = response.data.toDomain(), isEditing = false, isSaving = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(isSaving = false, saveError = e.message ?: getApplication<Application>().getString(R.string.error_item_save_failed)) }
+                val msg = e.message ?: getApplication<Application>().getString(R.string.error_item_save_failed)
+                _state.update { it.copy(isSaving = false, saveError = msg) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
     }
@@ -114,7 +123,9 @@ class InventoryDetailViewModel @Inject constructor(
                 val response = inventoryApi.uploadInventoryPhoto(itemId, part)
                 _state.update { it.copy(item = response.data.toDomain(), isUploadingPhoto = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(isUploadingPhoto = false, photoUploadError = e.message ?: getApplication<Application>().getString(R.string.error_upload_failed)) }
+                val msg = e.message ?: getApplication<Application>().getString(R.string.error_upload_failed)
+                _state.update { it.copy(isUploadingPhoto = false, photoUploadError = msg) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
     }

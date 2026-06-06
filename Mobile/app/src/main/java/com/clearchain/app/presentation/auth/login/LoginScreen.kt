@@ -85,7 +85,7 @@ fun LoginScreen(
                         onValueChange = { viewModel.onEvent(LoginEvent.EmailChanged(it)) },
                         label         = stringResource(R.string.email_address),
                         placeholder   = stringResource(R.string.hint_email_you),
-                        leadingIcon   = { Icon(Icons.Default.Email, null) },
+                        leadingIcon   = Icons.Default.Email,
                         keyboardType  = KeyboardType.Email,
                         imeAction     = ImeAction.Next,
                         isError       = state.emailError != null,
@@ -98,7 +98,7 @@ fun LoginScreen(
                         onValueChange = { viewModel.onEvent(LoginEvent.PasswordChanged(it)) },
                         label         = stringResource(R.string.password),
                         placeholder   = stringResource(R.string.enter_password),
-                        leadingIcon   = { Icon(Icons.Default.Lock, null) },
+                        leadingIcon   = Icons.Default.Lock,
                         keyboardType  = KeyboardType.Password,
                         imeAction     = ImeAction.Done,
                         onImeAction   = { if (!state.isLockedOut) viewModel.onEvent(LoginEvent.Login) },
@@ -137,21 +137,25 @@ fun LoginScreen(
                         }
                     }
 
-                    // ── Error / lockout banner ─────────────────────────────
+                    // ── Lockout / system error banner ──────────────────────
                     AnimatedVisibility(
-                        visible = state.error != null,
+                        visible = state.error != null || state.systemError != null,
                         enter   = fadeIn(),
                         exit    = fadeOut()
                     ) {
-                        if (state.isLockedOut) {
-                            AlertBanner(
+                        when {
+                            state.isLockedOut -> AlertBanner(
                                 message = stringResource(R.string.msg_account_locked, state.lockoutMinutes),
                                 type    = AlertType.WARNING,
                                 icon    = Icons.Default.Lock
                             )
-                        } else {
-                            AlertBanner(
-                                message = state.error ?: "",
+                            state.systemError != null -> AlertBanner(
+                                message = state.systemError.orEmpty(),
+                                type    = AlertType.ERROR,
+                                icon    = Icons.Default.ErrorOutline
+                            )
+                            else -> AlertBanner(
+                                message = state.error.orEmpty(),
                                 type    = AlertType.ERROR,
                                 icon    = Icons.Default.ErrorOutline
                             )
@@ -163,6 +167,7 @@ fun LoginScreen(
                         onClick = { viewModel.onEvent(LoginEvent.Login) },
                         loading = state.isLoading,
                         enabled = !state.isLoading && !state.isLockedOut
+                                && state.email.isNotBlank() && state.password.isNotBlank()
                     )
 
                     AuthDivider()

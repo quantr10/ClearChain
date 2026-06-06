@@ -324,19 +324,20 @@ class MyRequestsViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     val errorMessage = error.message ?: context.getString(R.string.error_upload_photo_failed)
-
+                    val uploadError = if (currentAttempts < MAX_UPLOAD_ATTEMPTS) {
+                        "$errorMessage\n${context.getString(R.string.msg_attempt_n_of_n, currentAttempts, MAX_UPLOAD_ATTEMPTS)}"
+                    } else {
+                        "$errorMessage\n${context.getString(R.string.msg_max_retry_reached)}"
+                    }
                     _state.update {
                         it.copy(
-                            isUploading = false,
-                            uploadError = if (currentAttempts < MAX_UPLOAD_ATTEMPTS) {
-                                "$errorMessage\n${context.getString(R.string.msg_attempt_n_of_n, currentAttempts, MAX_UPLOAD_ATTEMPTS)}"
-                            } else {
-                                "$errorMessage\n${context.getString(R.string.msg_max_retry_reached)}"
-                            },
+                            isUploading           = false,
+                            uploadError           = uploadError,
                             failedUploadRequestId = requestId,
-                            failedUploadPhotoUri = photoUri
+                            failedUploadPhotoUri  = photoUri
                         )
                     }
+                    _uiEvent.send(UiEvent.ShowSnackbar(errorMessage))
                 }
             )
         }

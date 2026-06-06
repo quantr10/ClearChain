@@ -177,7 +177,9 @@ class AdminDashboardViewModel @Inject constructor(
                 }
                 _state.update { it.copy(stats = stats, isLoading = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_load_statistics), isLoading = false) }
+                val msg = e.message ?: context.getString(R.string.error_load_statistics)
+                _state.update { it.copy(error = msg, isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
         // Load auxiliary data concurrently (silently ignore failures)
@@ -233,7 +235,9 @@ class AdminDashboardViewModel @Inject constructor(
                 try { val a = adminApi.getAlertFeed(); _state.update { it.copy(alertFeedItems = a.data) } } catch (_: Exception) {}
                 try { val g = adminApi.getUserGrowth(30); _state.update { it.copy(userGrowthData = g.data) } } catch (_: Exception) {}
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_refresh_failed), isRefreshing = false) }
+                val msg = e.message ?: context.getString(R.string.error_refresh_failed)
+                _state.update { it.copy(error = msg, isRefreshing = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
     }

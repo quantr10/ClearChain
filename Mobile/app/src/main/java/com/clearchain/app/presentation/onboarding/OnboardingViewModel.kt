@@ -221,9 +221,9 @@ class OnboardingViewModel @Inject constructor(
                     saveDraft(showConfirmation = false)
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(isSaving = false, error = error.message ?: context.getString(R.string.error_onboarding_save_failed))
-                    }
+                    val msg = error.message ?: context.getString(R.string.error_onboarding_save_failed)
+                    _state.update { it.copy(isSaving = false, error = msg) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }

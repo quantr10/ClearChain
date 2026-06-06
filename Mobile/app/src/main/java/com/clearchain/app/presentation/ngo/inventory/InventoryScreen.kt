@@ -148,7 +148,7 @@ fun InventoryScreen(
                                 .fillMaxWidth()
                                 .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SearchBar(
                                 query = state.searchQuery,
@@ -156,17 +156,21 @@ fun InventoryScreen(
                                 placeholder = stringResource(R.string.search_inventory_placeholder),
                                 modifier = Modifier.weight(1f),
                             )
-                            IconButton(onClick = { viewModel.onEvent(InventoryEvent.ExportCsv) }) {
-                                Icon(Icons.Default.FileDownload, stringResource(R.string.export_csv))
-                            }
+                            ClearChainActionIconButton(
+                                icon               = Icons.Default.FileDownload,
+                                contentDescription = stringResource(R.string.export_csv),
+                                onClick            = { viewModel.onEvent(InventoryEvent.ExportCsv) }
+                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
                                 }
                             ) {
-                                IconButton(onClick = { viewModel.onEvent(InventoryEvent.ShowFilterSheet) }) {
-                                    Icon(Icons.Default.Tune, stringResource(R.string.advanced_filters))
-                                }
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.Tune,
+                                    contentDescription = stringResource(R.string.advanced_filters),
+                                    onClick            = { viewModel.onEvent(InventoryEvent.ShowFilterSheet) }
+                                )
                             }
                         }
 

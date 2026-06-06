@@ -95,7 +95,8 @@ fun BrowseListingsScreen(
                         // Row 1: Search + location pin + favorites + filter
                         Row(
                             modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             SearchBar(
                                 query         = state.searchQuery,
@@ -104,55 +105,51 @@ fun BrowseListingsScreen(
                                 modifier      = Modifier.weight(1f).padding(start = 8.dp)
                             )
                             if (state.isLocationSet) {
-                                IconButton(onClick = { navController.navigate(Screen.LocationPickerEdit.route) }) {
-                                    Icon(
-                                        Icons.Default.Place,
-                                        contentDescription = stringResource(R.string.cd_change_location),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            IconButton(onClick = { viewModel.onEvent(BrowseListingsEvent.ToggleFavoritesOnly) }) {
-                                Icon(
-                                    imageVector = if (state.showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = stringResource(R.string.cd_saved_only),
-                                    tint = if (state.showFavoritesOnly) MaterialTheme.colorScheme.error
-                                           else MaterialTheme.colorScheme.onSurfaceVariant
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.Place,
+                                    contentDescription = stringResource(R.string.cd_change_location),
+                                    onClick            = { navController.navigate(Screen.LocationPickerEdit.route) },
+                                    tint               = MaterialTheme.colorScheme.primary
                                 )
                             }
+                            ClearChainActionIconButton(
+                                icon               = if (state.showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = stringResource(R.string.cd_saved_only),
+                                onClick            = { viewModel.onEvent(BrowseListingsEvent.ToggleFavoritesOnly) },
+                                tint               = if (state.showFavoritesOnly) MaterialTheme.colorScheme.error
+                                                     else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
                                 }
                             ) {
-                                IconButton(onClick = { viewModel.onEvent(BrowseListingsEvent.ShowFilterSheet) }) {
-                                    Icon(Icons.Default.Tune, stringResource(R.string.advanced_filters))
-                                }
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.Tune,
+                                    contentDescription = stringResource(R.string.advanced_filters),
+                                    onClick            = { viewModel.onEvent(BrowseListingsEvent.ShowFilterSheet) }
+                                )
                             }
                         }
 
                         // Row 2: List | Map tab switcher
                         Row(
                             modifier = Modifier
-                                .padding(horizontal = 16.dp)
+                                .padding(horizontal = 12.dp)
                                 .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             FilterChip(
                                 selected = !state.showMapView,
                                 onClick  = { if (state.showMapView) viewModel.onEvent(BrowseListingsEvent.ToggleMapView) },
-                                label    = { Text(stringResource(R.string.tab_list_view)) },
-                                leadingIcon = if (!state.showMapView) {
-                                    { Icon(Icons.Default.ViewList, null, Modifier.size(16.dp)) }
-                                } else null
+                                label    = { Text(stringResource(R.string.tab_list_view), style = MaterialTheme.typography.labelMedium) },
+                                shape    = RoundedCornerShape(50)
                             )
                             FilterChip(
                                 selected = state.showMapView,
                                 onClick  = { if (!state.showMapView) viewModel.onEvent(BrowseListingsEvent.ToggleMapView) },
-                                label    = { Text(stringResource(R.string.tab_map_view)) },
-                                leadingIcon = if (state.showMapView) {
-                                    { Icon(Icons.Default.Map, null, Modifier.size(16.dp)) }
-                                } else null
+                                label    = { Text(stringResource(R.string.tab_map_view), style = MaterialTheme.typography.labelMedium) },
+                                shape    = RoundedCornerShape(50)
                             )
                         }
 

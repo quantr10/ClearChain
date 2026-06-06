@@ -35,6 +35,9 @@ sealed class Screen(val route: String) {
     object ListingDetail : Screen("listing_detail/{listingId}") {
         fun createRoute(listingId: String) = "listing_detail/$listingId"
     }
+    object EditListing : Screen("edit_listing/{listingId}") {
+        fun createRoute(listingId: String) = "edit_listing/$listingId"
+    }
     object RequestPickup : Screen("request_pickup/{listingId}") {
         fun createRoute(listingId: String) = "request_pickup/$listingId"
     }

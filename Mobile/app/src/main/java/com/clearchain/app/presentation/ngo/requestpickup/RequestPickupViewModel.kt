@@ -99,7 +99,7 @@ class RequestPickupViewModel @Inject constructor(
                                 isLoading = false,
                                 availableTimeSlots = listing?.let { l -> generateTimeSlots(l) } ?: emptyList(),
                                 estimatedTripMinutes = listing?.distanceKm?.let { km ->
-                                    computeEtaMinutes(km, it.vehicleType)
+                                    it.vehicleType?.let { vt -> computeEtaMinutes(km, vt) }
                                 }
                             )
                         }
@@ -202,7 +202,7 @@ class RequestPickupViewModel @Inject constructor(
             pickupDate = s.pickupDate,
             pickupTime = s.pickupTime,
             notes = s.notes.ifBlank { null },
-            vehicleType = s.vehicleType.name.lowercase(),
+            vehicleType = s.vehicleType?.name?.lowercase() ?: "",
             requiresRefrigeration = s.needsRefrigeration,
             isFragile = s.fragileItems,
             isHeavy = s.heavyLoad
@@ -220,12 +220,9 @@ class RequestPickupViewModel @Inject constructor(
                 _uiEvent.send(UiEvent.NavigateUp)
             },
             onFailure = { error ->
-                _state.update {
-                    it.copy(
-                        error = error.message ?: context.getString(R.string.error_submit_request_failed),
-                        isLoading = false
-                    )
-                }
+                val msg = error.message ?: context.getString(R.string.error_submit_request_failed)
+                _state.update { it.copy(error = msg, isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         )
     }

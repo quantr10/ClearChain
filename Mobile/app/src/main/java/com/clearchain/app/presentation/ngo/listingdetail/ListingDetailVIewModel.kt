@@ -10,6 +10,7 @@ import com.clearchain.app.data.remote.api.ReportApi
 import com.clearchain.app.data.remote.api.SavedListingApi
 import com.clearchain.app.data.remote.dto.SubmitReportRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
@@ -95,7 +96,7 @@ class ListingDetailViewModel @Inject constructor(
                 .onSuccess { listings ->
                     _state.update {
                         it.copy(
-                            similarListings = listings.filter { l -> l.id != excludeId }.take(5),
+                            similarListings = listings.filter { l -> l.id != excludeId && l.status == ListingStatus.AVAILABLE }.take(5),
                             isLoadingSimilar = false
                         )
                     }
