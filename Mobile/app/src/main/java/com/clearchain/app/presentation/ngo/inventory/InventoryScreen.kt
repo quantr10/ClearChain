@@ -353,13 +353,13 @@ private fun InventoryFilterSheet(
                     FilterChip(
                         selected = state.selectedCategory == null,
                         onClick  = { onEvent(InventoryEvent.CategoryFilterChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all)) }
+                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { cat ->
                         FilterChip(
                             selected = state.selectedCategory == cat.name,
                             onClick  = { onEvent(InventoryEvent.CategoryFilterChanged(if (state.selectedCategory == cat.name) null else cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId)) }
+                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -374,7 +374,7 @@ private fun InventoryFilterSheet(
                             FilterChip(
                                 selected = state.filterExpiryWithinDays == days,
                                 onClick  = { onEvent(InventoryEvent.FilterExpiryWithinDaysChanged(days)) },
-                                label    = { Text(label) }
+                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -607,7 +607,7 @@ private fun ManualAddSheet(
                         FilterChip(
                             selected = state.manualCategory == cat.name,
                             onClick  = { onEvent(InventoryEvent.ManualCategoryChanged(cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId)) }
+                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
