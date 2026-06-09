@@ -47,10 +47,10 @@ fun SearchBar(
         onValueChange = onQueryChange,
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(36.dp)
             .border(1.dp, borderColor, ShapeMedium)
-            .padding(horizontal = 12.dp),
-        textStyle = MaterialTheme.typography.labelLarge.copy(
+            .padding(horizontal = 8.dp),
+        textStyle = MaterialTheme.typography.labelMedium.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
         singleLine = true,
@@ -63,7 +63,7 @@ fun SearchBar(
             ) {
                 Icon(
                     Icons.Default.Search, null,
-                    Modifier.size(18.dp),
+                    Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(Modifier.weight(1f)) {
@@ -81,12 +81,12 @@ fun SearchBar(
                 } else if (query.isNotEmpty()) {
                     IconButton(
                         onClick = { onQueryChange("") },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     ) {
                         Icon(
                             Icons.Default.Clear,
                             stringResource(R.string.cd_clear_search),
-                            Modifier.size(18.dp),
+                            Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -118,7 +118,7 @@ fun SortDropdown(
     ) {
         Text(
             text  = stringResource(R.string.sort_by) + ": ",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(
@@ -130,14 +130,14 @@ fun SortDropdown(
         ) {
             Text(
                 text       = stringResource(selectedSort.labelResId),
-                style      = MaterialTheme.typography.bodyMedium,
+                style      = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
             Icon(
                 Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(16.dp),
                 tint     = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -209,8 +209,8 @@ fun FilterChipsRow(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        contentPadding = PaddingValues(horizontal = 12.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
         items(filters) { filter ->
             val context = LocalContext.current
@@ -220,7 +220,7 @@ fun FilterChipsRow(
                     HapticUtils.tick(context)
                     onFilterSelected(if (selectedFilter == filter.value) null else filter.value)
                 },
-                label = { Text(filter.labelResId?.let { stringResource(it) } ?: filter.label, style = MaterialTheme.typography.labelMedium) },
+                label = { Text(filter.labelResId?.let { stringResource(it) } ?: filter.label, style = MaterialTheme.typography.labelSmall) },
                 shape = RoundedCornerShape(50)
             )
         }
@@ -243,7 +243,7 @@ fun <T> StatusTabRow(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.primary,
-        edgePadding = 16.dp,
+        edgePadding = 12.dp,
         divider = {}
     ) {
         val context = LocalContext.current
@@ -254,7 +254,7 @@ fun <T> StatusTabRow(
                 text = {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (selectedTab == status) FontWeight.SemiBold else FontWeight.Normal
                     )
                 }
@@ -273,7 +273,7 @@ fun FilterSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
@@ -301,13 +301,13 @@ fun ResultsCountAndSort(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "$count ${itemName}${if (count != 1) "s" else ""}",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )

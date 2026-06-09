@@ -322,7 +322,7 @@ private fun MyRequestsFilterSheet(
                     FilterChip(
                         selected = state.filterCategory == null,
                         onClick  = { onEvent(MyRequestsEvent.FilterCategoryChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all)) }
+                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { category ->
                         FilterChip(
@@ -332,7 +332,7 @@ private fun MyRequestsFilterSheet(
                                     if (state.filterCategory == category.name) null else category.name
                                 ))
                             },
-                            label    = { Text(stringResource(category.labelResId)) }
+                            label    = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -358,7 +358,7 @@ private fun MyRequestsFilterSheet(
                                     if (state.filterPickupDatePreset == preset) null else preset
                                 ))
                             },
-                            label    = { Text(label) }
+                            label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }

@@ -627,7 +627,7 @@ private fun AdvancedFilterSheet(
                     FilterChip(
                         selected = state.selectedCategory == null,
                         onClick  = { onEvent(BrowseListingsEvent.CategoryFilterChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all)) }
+                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { category ->
                         FilterChip(
@@ -637,7 +637,7 @@ private fun AdvancedFilterSheet(
                                     if (state.selectedCategory == category.name) null else category.name
                                 ))
                             },
-                            label    = { Text(stringResource(category.labelResId)) }
+                            label    = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -676,7 +676,7 @@ private fun AdvancedFilterSheet(
                             FilterChip(
                                 selected = state.filterMaxExpiryDays == days,
                                 onClick  = { onEvent(BrowseListingsEvent.FilterMaxExpiryDaysChanged(days)) },
-                                label    = { Text(label) }
+                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -693,7 +693,7 @@ private fun AdvancedFilterSheet(
                             FilterChip(
                                 selected = state.filterMinExpiryDays == days,
                                 onClick  = { onEvent(BrowseListingsEvent.FilterMinExpiryDaysChanged(days)) },
-                                label    = { Text(label) }
+                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -710,7 +710,7 @@ private fun AdvancedFilterSheet(
                             FilterChip(
                                 selected = state.filterMaxDistanceKm == km,
                                 onClick  = { onEvent(BrowseListingsEvent.FilterMaxDistanceChanged(km)) },
-                                label    = { Text(label) }
+                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }

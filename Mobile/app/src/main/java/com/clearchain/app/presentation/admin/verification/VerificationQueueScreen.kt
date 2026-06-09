@@ -337,7 +337,7 @@ private fun VerificationFilterSheet(
                             FilterChip(
                                 selected = state.filterOrgType == type,
                                 onClick  = { onEvent(VerificationQueueEvent.FilterOrgTypeChanged(type)) },
-                                label    = { Text(label) }
+                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
