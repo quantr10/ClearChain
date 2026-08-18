@@ -154,6 +154,7 @@ class ManageRequestsViewModel @Inject constructor(
                     _state.update { it.copy(allRequests = requests, isRefreshing = false) }
                     applyFilters()
                     fetchNgoReputations(requests.map { it.ngoId }.toSet())
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_requests_refreshed)))
                 },
                 onFailure = { _state.update { it.copy(isRefreshing = false) } }
             )

@@ -1,6 +1,7 @@
 package com.clearchain.app.presentation.ngo.browselistings
 
 import com.clearchain.app.R
+import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.CommonSortOptions
@@ -60,7 +61,11 @@ data class BrowseListingsState(
     val allMapListings: List<Listing> = emptyList(),
     val mapFilteredListings: List<Listing> = emptyList(),
     val isLoadingMapListings: Boolean = false,
-    val selectedGroceryKey: String? = null
+    val selectedGroceryKey: String? = null,
+
+    // Backend cart
+    val cartItemsByListingId: Map<String, CartItemData> = emptyMap(),
+    val isUpdatingCart: Boolean = false
 ) {
     val listings: List<Listing> get() = filteredListings
     val selectedCategoryEnum: FoodCategory? get() =
@@ -73,4 +78,5 @@ data class BrowseListingsState(
         (if (filterMaxExpiryDays != null) 1 else 0) +
         (if (filterMaxDistanceKm != null) 1 else 0) +
         (if (showFavoritesOnly) 1 else 0)
+    val cartItemCount: Int get() = cartItemsByListingId.values.sumOf { it.requestedQuantity }
 }

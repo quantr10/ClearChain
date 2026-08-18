@@ -4,6 +4,7 @@ sealed class RegisterEvent {
     data class NameChanged(val name: String) : RegisterEvent()
     data class TypeChanged(val type: String) : RegisterEvent()
     data class EmailChanged(val email: String) : RegisterEvent()
+    object ClearEmail : RegisterEvent()
     data class PasswordChanged(val password: String) : RegisterEvent()
     data class ConfirmPasswordChanged(val confirmPassword: String) : RegisterEvent()
     object ToggleTos : RegisterEvent()

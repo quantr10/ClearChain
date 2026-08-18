@@ -1,9 +1,5 @@
 package com.clearchain.app.presentation.navigation
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -39,11 +35,6 @@ fun BottomNavBar(
     ) {
         items.forEach { item ->
             val isSelected = currentRoute == item.route
-            val iconSize by animateDpAsState(
-                targetValue = if (isSelected) 26.dp else 24.dp,
-                animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                label = "icon_size"
-            )
 
             NavigationBarItem(
                 selected = isSelected,
@@ -60,10 +51,15 @@ fun BottomNavBar(
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
                         contentDescription = stringResource(item.labelResId),
-                        modifier = Modifier.size(iconSize)
+                        modifier = Modifier.size(18.dp)
                     )
                 },
-                label = { Text(stringResource(item.labelResId), style = MaterialTheme.typography.labelSmall) },
+                label = {
+                    Text(
+                        stringResource(item.labelResId),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -80,6 +76,7 @@ private fun getNgoNavigationItems(): List<NavigationItem> = listOf(
     NavigationItem(Screen.NgoDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
     NavigationItem(Screen.Inventory.route, Icons.Filled.Inventory, Icons.Outlined.Inventory2, R.string.nav_inventory),
     NavigationItem(Screen.BrowseListings.route, Icons.Filled.RestaurantMenu, Icons.Outlined.RestaurantMenu, R.string.nav_browse),
+    NavigationItem(Screen.Cart.route, Icons.Filled.ShoppingCart, Icons.Outlined.ShoppingCart, R.string.nav_cart),
     NavigationItem(Screen.MyRequests.route, Icons.Filled.LocalShipping, Icons.Outlined.LocalShipping, R.string.nav_requests),
     NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
 )

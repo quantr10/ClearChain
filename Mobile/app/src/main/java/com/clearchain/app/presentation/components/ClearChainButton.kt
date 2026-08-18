@@ -1,6 +1,7 @@
 package com.clearchain.app.presentation.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -11,9 +12,21 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.util.HapticUtils
+
+object ClearChainButtonDefaults {
+    val Height = 32.dp
+    val IconSize = 18.dp
+    val Spacing = 6.dp
+    val HorizontalPadding = 8.dp
+}
+
+@Composable
+private fun clearChainButtonTextStyle(): TextStyle = MaterialTheme.typography.labelSmall
 
 @Composable
 fun ClearChainButton(
@@ -24,37 +37,48 @@ fun ClearChainButton(
     loading: Boolean = false,
     icon: ImageVector? = null,
     containerColor: Color = MaterialTheme.colorScheme.primary,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimary
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary,
+    fillMaxWidth: Boolean = true,
+    border: BorderStroke? = null,
+    iconSize: Dp = ClearChainButtonDefaults.IconSize
 ) {
     val context = LocalContext.current
     Button(
-        onClick = { HapticUtils.confirm(context); onClick() },
-        modifier = modifier.fillMaxWidth(),
-        enabled = enabled && !loading,
+        onClick = {
+            if (!loading) {
+                HapticUtils.confirm(context)
+                onClick()
+            }
+        },
+        modifier = (if (fillMaxWidth) modifier.fillMaxWidth() else modifier)
+            .requiredHeight(ClearChainButtonDefaults.Height),
+        enabled = enabled || loading,
         shape = ButtonShape,
+        contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor
-        )
+        ),
+        border = border
     ) {
         if (loading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(iconSize),
                 color = contentColor,
-                strokeWidth = 2.5.dp
+                strokeWidth = 2.dp
             )
         } else {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(iconSize)
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(ClearChainButtonDefaults.Spacing))
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelLarge
+                style = clearChainButtonTextStyle()
             )
         }
     }
@@ -66,40 +90,42 @@ fun ClearChainOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    loading: Boolean = false,
     icon: ImageVector? = null,
-    contentColor: Color = MaterialTheme.colorScheme.primary
+    contentColor: Color = MaterialTheme.colorScheme.primary,
+    fillMaxWidth: Boolean = false,
+    border: BorderStroke? = null,
+    iconSize: Dp = ClearChainButtonDefaults.IconSize
 ) {
     val context = LocalContext.current
     OutlinedButton(
-        onClick = { HapticUtils.tick(context); onClick() },
-        modifier = modifier.fillMaxWidth(),
-        enabled = enabled,
+        onClick = {
+            if (!loading) {
+                HapticUtils.tick(context)
+                onClick()
+            }
+        },
+        modifier = (if (fillMaxWidth) modifier.fillMaxWidth() else modifier)
+            .requiredHeight(ClearChainButtonDefaults.Height),
+        enabled = enabled || loading,
         shape = ButtonShape,
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
+        contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor),
+        border = border ?: ButtonDefaults.outlinedButtonBorder(enabled)
     ) {
-        if (icon != null) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(iconSize),
+                color = contentColor,
+                strokeWidth = 2.dp
+            )
+        } else {
+            if (icon != null) {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(iconSize))
+                Spacer(Modifier.width(ClearChainButtonDefaults.Spacing))
+            }
+            Text(text = text, style = clearChainButtonTextStyle())
         }
-        Text(text = text, style = MaterialTheme.typography.labelLarge)
-    }
-}
-
-@Composable
-fun ClearChainTextButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    contentColor: Color = MaterialTheme.colorScheme.primary
-) {
-    TextButton(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled,
-        colors = ButtonDefaults.textButtonColors(contentColor = contentColor)
-    ) {
-        Text(text = text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -110,17 +136,28 @@ fun ClearChainActionIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    enabled: Boolean = true
 ) {
     val context = LocalContext.current
     Surface(
-        onClick         = { HapticUtils.tick(context); onClick() },
+        onClick         = {
+            if (enabled) {
+                HapticUtils.tick(context)
+                onClick()
+            }
+        },
         modifier        = modifier.size(24.dp),
         shape           = CircleShape,
-        color           = containerColor
+        color           = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription, Modifier.size(18.dp), tint = tint)
+            Icon(
+                icon,
+                contentDescription,
+                Modifier.size(18.dp),
+                tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
     }
 }

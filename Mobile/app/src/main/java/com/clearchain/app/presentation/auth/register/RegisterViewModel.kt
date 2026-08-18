@@ -13,9 +13,7 @@ import com.clearchain.app.util.ValidationUtils
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -34,8 +32,6 @@ class RegisterViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    private var emailCheckJob: Job? = null
-
     fun onEvent(event: RegisterEvent) {
         when (event) {
             is RegisterEvent.NameChanged ->
@@ -43,8 +39,16 @@ class RegisterViewModel @Inject constructor(
             is RegisterEvent.TypeChanged ->
                 _state.update { it.copy(type = event.type) }
             is RegisterEvent.EmailChanged -> {
-                _state.update { it.copy(email = event.email, emailError = null, emailAvailable = null) }
-                scheduleEmailCheck(event.email)
+                _state.update { it.copy(email = event.email, emailError = null, emailAlreadyExists = false) }
+            }
+            RegisterEvent.ClearEmail -> {
+                _state.update {
+                    it.copy(
+                        email = "",
+                        emailError = null,
+                        emailAlreadyExists = false
+                    )
+                }
             }
             is RegisterEvent.PasswordChanged -> {
                 _state.update {
@@ -64,22 +68,6 @@ class RegisterViewModel @Inject constructor(
                 viewModelScope.launch { _uiEvent.send(UiEvent.NavigateUp) }
             RegisterEvent.ClearError ->
                 _state.update { it.copy(error = null) }
-        }
-    }
-
-    private fun scheduleEmailCheck(email: String) {
-        emailCheckJob?.cancel()
-        if (email.isBlank() || !ValidationUtils.isValidEmail(email)) return
-
-        emailCheckJob = viewModelScope.launch {
-            delay(600)  // 600ms debounce
-            _state.update { it.copy(isCheckingEmail = true) }
-            try {
-                val response = authApi.checkEmail(email)
-                _state.update { it.copy(isCheckingEmail = false, emailAvailable = response.available) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isCheckingEmail = false, emailAvailable = null) }
-            }
         }
     }
 
@@ -104,6 +92,25 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
+            try {
+                val emailAvailable = authApi.checkEmail(s.email).available
+                if (!emailAvailable) {
+                    val message = context.getString(R.string.error_email_already_registered)
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            emailAlreadyExists = true,
+                            emailError = null
+                        )
+                    }
+                    _uiEvent.send(UiEvent.ShowSnackbar(message))
+                    return@launch
+                }
+            } catch (e: Exception) {
+                // If the availability endpoint is unavailable, let registration return
+                // the authoritative server error below.
+            }
+
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {
@@ -122,10 +129,10 @@ class RegisterViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     val raw = error.message ?: ""
+                    val emailTaken = raw.contains("409") || raw.contains("Conflict", ignoreCase = true)
+                        || raw.contains("already", ignoreCase = true)
                     val (emailErr, passwordErr) = when {
-                        raw.contains("409") || raw.contains("Conflict", ignoreCase = true)
-                            || raw.contains("already", ignoreCase = true)
-                            -> context.getString(R.string.error_email_taken) to null
+                        emailTaken -> null to null
                         raw.contains("500") || raw.contains("502") || raw.contains("503") ->
                             null to context.getString(R.string.error_server)
                         raw.contains("Unable to resolve host", ignoreCase = true)
@@ -142,6 +149,11 @@ class RegisterViewModel @Inject constructor(
                             emailError    = emailErr,
                             passwordError = passwordErr
                         )
+                    }
+                    if (emailTaken) {
+                        val message = context.getString(R.string.error_email_taken)
+                        _state.update { it.copy(emailAlreadyExists = true) }
+                        _uiEvent.send(UiEvent.ShowSnackbar(message))
                     }
                 }
             )
@@ -160,8 +172,6 @@ class RegisterViewModel @Inject constructor(
             _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }; valid = false
         } else if (!ValidationUtils.isValidEmail(s.email)) {
             _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
-        } else if (s.emailAvailable == false) {
-            _state.update { it.copy(emailError = context.getString(R.string.error_email_already_registered)) }; valid = false
         }
         if (s.password.isBlank()) {
             _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }; valid = false

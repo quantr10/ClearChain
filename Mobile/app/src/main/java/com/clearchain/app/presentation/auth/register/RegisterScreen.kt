@@ -71,17 +71,7 @@ fun RegisterScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            AuthHeader(
-                subtitle    = stringResource(R.string.create_your_account),
-                navigationIcon = {
-                    IconButton(
-                        onClick  = { navController.navigateUp() },
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back), tint = Color.White)
-                    }
-                }
-            )
+            AuthHeader(subtitle = stringResource(R.string.create_your_account))
 
             AnimatedVisibility(
                 visible = true,
@@ -149,32 +139,26 @@ fun RegisterScreen(
                             placeholder   = stringResource(R.string.hint_email_org),
                             leadingIcon   = Icons.Default.Email,
                             trailingIcon  = {
-                                when {
-                                    state.isCheckingEmail -> CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                    state.emailAvailable == true ->
-                                        Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
-                                    state.emailAvailable == false ->
-                                        Icon(Icons.Default.Cancel, null, tint = MaterialTheme.colorScheme.error)
-                                    else -> {}
+                                if (state.email.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { viewModel.onEvent(RegisterEvent.ClearEmail) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Clear,
+                                            contentDescription = stringResource(R.string.cd_clear_search),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             },
                             keyboardType  = KeyboardType.Email,
                             imeAction     = ImeAction.Next,
-                            isError       = state.emailError != null || state.emailAvailable == false,
+                            isError       = state.emailError != null || state.emailAlreadyExists,
                             errorMessage  = state.emailError,
                             enabled       = !state.isLoading
                         )
-                        AnimatedVisibility(visible = state.emailAvailable == true) {
-                            Text(
-                                text  = stringResource(R.string.email_available),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
                     }
 
                     // ── Password with strength meter ───────────────────────
@@ -220,6 +204,7 @@ fun RegisterScreen(
                     Column {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.clickable(enabled = !state.isLoading) {
                                 viewModel.onEvent(RegisterEvent.ToggleTos)
                             }
@@ -228,6 +213,7 @@ fun RegisterScreen(
                                 checked = state.tosAccepted,
                                 onCheckedChange = { viewModel.onEvent(RegisterEvent.ToggleTos) },
                                 enabled = !state.isLoading,
+                                modifier = Modifier.size(24.dp),
                                 colors = CheckboxDefaults.colors(
                                     uncheckedColor = if (state.tosError) MaterialTheme.colorScheme.error
                                                      else MaterialTheme.colorScheme.outline
@@ -235,16 +221,19 @@ fun RegisterScreen(
                             )
                             Text(
                                 text = buildAnnotatedString {
-                                    append(tosAgreePrefix)
+                                    append(tosAgreePrefix.trimEnd())
+                                    append(" ")
                                     withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
                                         append(tosTerms)
                                     }
-                                    append(tosAnd)
+                                    append(" ")
+                                    append(tosAnd.trim())
+                                    append(" ")
                                     withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
                                         append(tosPrivacy)
                                     }
                                 },
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.labelSmall
                             )
                         }
                         if (state.tosError) {
@@ -252,7 +241,7 @@ fun RegisterScreen(
                                 text  = stringResource(R.string.must_accept_tos),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(start = 48.dp)
+                                modifier = Modifier.padding(start = 32.dp)
                             )
                         }
                     }
@@ -274,7 +263,8 @@ fun RegisterScreen(
                     ClearChainOutlinedButton(
                         text    = stringResource(R.string.sign_in),
                         onClick = { navController.navigateUp() },
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading,
+                        fillMaxWidth = true
                     )
                 }
             }
@@ -338,6 +328,7 @@ private fun RoleCard(
 
     Box(
         modifier = modifier
+            .heightIn(min = 118.dp)
             .clip(CardShape)
             .background(bgColor)
             .border(
@@ -346,11 +337,13 @@ private fun RoleCard(
                 shape = CardShape
             )
             .clickable(enabled = enabled) { onClick() }
-            .padding(16.dp)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
@@ -364,6 +357,7 @@ private fun RoleCard(
                 style      = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign  = TextAlign.Center,
+                modifier   = Modifier.fillMaxWidth(),
                 color      = if (selected) MaterialTheme.colorScheme.primary
                              else MaterialTheme.colorScheme.onSurface
             )
@@ -371,6 +365,7 @@ private fun RoleCard(
                 text  = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

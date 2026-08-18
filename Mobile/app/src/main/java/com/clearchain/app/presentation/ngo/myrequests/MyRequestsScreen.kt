@@ -44,6 +44,14 @@ fun MyRequestsScreen(
     var showChecklistForId   by remember { mutableStateOf<String?>(null) }
     var showPhotoPickerForId by remember { mutableStateOf<String?>(null) }
     var showFullPhotoUrl by remember { mutableStateOf<String?>(null) }
+    val uploadMessage = if (state.isUploading) {
+        if (state.uploadAttempts > 1) {
+            stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
+        } else {
+            stringResource(R.string.uploading_photo)
+        }
+    } else null
+    SnackbarMessageEffect(snackbarHostState, uploadMessage)
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -99,71 +107,38 @@ fun MyRequestsScreen(
         Box(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            when {
-                state.isLoading && state.allRequests.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+            Column(modifier = Modifier.fillMaxSize()) {
 
-                state.error != null && state.allRequests.isEmpty() -> {
-                    EmptyState(
-                        icon = Icons.Default.ErrorOutline,
-                        title = stringResource(R.string.msg_failed_load_requests),
-                        subtitle = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
-                    )
-                }
-
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-
-                        // ── Upload loading banner ──────────────────────────
-                        AnimatedVisibility(
-                            visible = state.isUploading,
-                            enter   = fadeIn(),
-                            exit    = fadeOut()
-                        ) {
-                            AlertBanner(
-                                message  = if (state.uploadAttempts > 1)
-                                    stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
-                                else stringResource(R.string.uploading_photo),
-                                type     = AlertType.INFO,
-                                icon     = Icons.Default.CloudUpload
-                            )
-                        }
-
-                        // ── Upload error banner + retry ────────────────────
+                        // -- Upload loading banner --------------------------
+                        // -- Upload error banner + retry --------------------
                         AnimatedVisibility(
                             visible = state.uploadError != null,
                             enter   = fadeIn(),
                             exit    = fadeOut()
                         ) {
                             Column {
-                                AlertBanner(
-                                    message = state.uploadError.orEmpty(),
-                                    type    = AlertType.ERROR,
-                                    icon    = Icons.Default.CloudOff
-                                )
                                 Row(
                                     modifier              = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                                 ) {
-                                    TextButton(onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }) {
-                                        Text(stringResource(R.string.close))
-                                    }
+                                    ClearChainOutlinedButton(
+                                        text = stringResource(R.string.close),
+                                        onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }
+                                    )
                                     if (state.uploadAttempts < 3) {
-                                        Button(onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) }) {
-                                            Icon(Icons.Default.Refresh, null, Modifier.size(16.dp))
-                                            Spacer(Modifier.width(4.dp))
-                                            Text(stringResource(R.string.retry))
-                                        }
+                                        ClearChainButton(
+                                            text = stringResource(R.string.retry),
+                                            onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) },
+                                            fillMaxWidth = false,
+                                            icon = Icons.Default.Refresh
+                                        )
                                     }
                                 }
                             }
                         }
 
                         Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -189,8 +164,7 @@ fun MyRequestsScreen(
                         FilterChipsRow(
                             filters = state.availableStatusFilters,
                             selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) },
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) }
                         )
 
                         ResultsCountAndSort(
@@ -198,19 +172,25 @@ fun MyRequestsScreen(
                             itemName = "request",
                             selectedSort = state.selectedSort,
                             onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
-                            sortOptions = state.availableSortOptions,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            sortOptions = state.availableSortOptions
                         )
 
-                        state.error?.let {
-                            ErrorBanner(
-                                message = it,
-                                onDismiss = { viewModel.onEvent(MyRequestsEvent.ClearError) },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
-
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
+                            state.isLoading && state.allRequests.isEmpty() -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+
+                            state.error != null && state.allRequests.isEmpty() -> {
+                                EmptyState(
+                                    icon = Icons.Default.ErrorOutline,
+                                    title = stringResource(R.string.error_generic),
+                                    subtitle = state.error,
+                                    actionLabel = stringResource(R.string.retry),
+                                    onAction = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
+                                )
+                            }
+
                             state.filteredRequests.isEmpty() -> {
                                 EmptyState(
                                     icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
@@ -253,9 +233,8 @@ fun MyRequestsScreen(
                 }
             }
         }
-    }
 
-    // Step 1 — Checklist verification
+    // Step 1 - Checklist verification
     showChecklistForId?.let { requestId ->
         PickupChecklistSheet(
             onDismiss = { showChecklistForId = null },
@@ -263,7 +242,7 @@ fun MyRequestsScreen(
         )
     }
 
-    // Steps 2 & 3 — Photo source + preview
+    // Steps 2 & 3 - Photo source + preview
     showPhotoPickerForId?.let { requestId ->
         PhotoPickerDialog(
             onPhotoSelected = { uri ->
@@ -275,9 +254,9 @@ fun MyRequestsScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Advanced filter bottom sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -307,9 +286,10 @@ private fun MyRequestsFilterSheet(
                     fontWeight = FontWeight.Bold
                 )
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(MyRequestsEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(MyRequestsEvent.ClearAdvancedFilters) }
+                    )
                 }
             }
 
@@ -364,16 +344,18 @@ private fun MyRequestsFilterSheet(
                 }
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Request card with status timeline + review/dispute actions
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun RequestCardWithExtras(
@@ -401,9 +383,9 @@ private fun RequestCardWithExtras(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Rate & Review dialog
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun ReviewDialog(
@@ -454,7 +436,12 @@ private fun ReviewDialog(
                 OutlinedTextField(
                     value         = comment,
                     onValueChange = onCommentChange,
-                    label         = { Text(stringResource(R.string.label_comments_optional)) },
+                    label         = {
+                        OptionalFieldLabel(
+                            text = stringResource(R.string.label_comments_optional),
+                            isOptional = true
+                        )
+                    },
                     placeholder   = { Text(stringResource(R.string.hint_pickup_experience)) },
                     singleLine    = false,
                     maxLines      = 4,
@@ -464,19 +451,19 @@ private fun ReviewDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick  = onSubmit,
-                enabled  = !isSubmitting
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.action_submit_review))
-                }
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_submit_review),
+                onClick = onSubmit,
+                loading = isSubmitting,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isSubmitting) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.cancel),
+                onClick = onDismiss,
+                enabled = !isSubmitting
+            )
         }
     )
 }

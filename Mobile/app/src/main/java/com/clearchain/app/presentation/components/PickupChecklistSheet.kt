@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,13 +55,20 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
                 val checked = index in checkedItems
                 Row(
                     modifier = Modifier
-                        .wrapContentWidth()
+                        .fillMaxWidth()
                         .clickable {
                             checkedItems = if (checked) checkedItems - index else checkedItems + index
                         },
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Text(
+                        item,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
                     Checkbox(
                         checked         = checked,
                         onCheckedChange = {
@@ -70,23 +76,16 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
                         },
                         modifier = Modifier.size(24.dp)
                     )
-                    Text(
-                        item,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurface
-                    )
                 }
             }
-            Button(
+            ClearChainButton(
+                text = stringResource(R.string.next),
                 onClick  = onNext,
                 enabled  = allChecked,
                 modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(10.dp),
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-            ) {
-                Text(stringResource(R.string.next))
-            }
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onTertiary
+            )
         }
     }
 }

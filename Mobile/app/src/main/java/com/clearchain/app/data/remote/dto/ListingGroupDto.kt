@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ListingGroupData(
     val id: String,
-    val originalListingId: String,
+    val originalListingId: String? = null,
     val groceryId: String,
     val productName: String,
     val category: String,
@@ -17,6 +17,7 @@ data class ListingGroupData(
     val totalReserved: Int,
     val totalAvailable: Int,
     val totalCompleted: Int,
+    val totalRemoved: Int = 0,
     val isFullyConsumed: Boolean,
     val createdAt: String
 )
@@ -33,6 +34,7 @@ fun ListingGroupData.toDomain(): ListingGroup {
         totalReserved = totalReserved,
         totalAvailable = totalAvailable,
         totalCompleted = totalCompleted,
+        totalRemoved = totalRemoved,
         isFullyConsumed = isFullyConsumed,
         createdAt = createdAt
     )

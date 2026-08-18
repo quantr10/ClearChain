@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -29,7 +30,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -107,14 +107,13 @@ fun InventoryScreen(
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
+                        ClearChainButton(
+                            text = stringResource(R.string.action_distribute_count, state.activeSelectedCount),
                             onClick  = { viewModel.onEvent(InventoryEvent.BulkDistribute) },
                             modifier = Modifier.weight(1f),
-                            enabled  = !state.isBulkOperating && state.activeSelectedCount > 0
-                        ) {
-                            if (state.isBulkOperating) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            else Text(stringResource(R.string.action_distribute_count, state.activeSelectedCount))
-                        }
+                            enabled  = state.activeSelectedCount > 0,
+                            loading = state.isBulkOperating
+                        )
                     }
                 }
             }
@@ -125,28 +124,12 @@ fun InventoryScreen(
         Box(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            when {
-                state.isLoading && state.allItems.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.error != null && state.allItems.isEmpty() -> {
-                    EmptyState(
-                        icon = Icons.Default.ErrorOutline,
-                        title = stringResource(R.string.msg_failed_load_inventory),
-                        subtitle = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction = { viewModel.onEvent(InventoryEvent.LoadInventory) }
-                    )
-                }
-
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -180,23 +163,8 @@ fun InventoryScreen(
                             onFilterSelected = { value ->
                                 val status = value?.let { InventoryStatus.valueOf(it) }
                                 viewModel.onEvent(InventoryEvent.StatusTabChanged(status))
-                            },
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-
-                        if (state.isSelectionMode) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = {
-                                    if (state.allSelected) viewModel.onEvent(InventoryEvent.DeselectAll)
-                                    else viewModel.onEvent(InventoryEvent.SelectAll)
-                                }) {
-                                    Text(if (state.allSelected) stringResource(R.string.deselect_all) else stringResource(R.string.select_all))
-                                }
                             }
-                        }
+                        )
 
                         ResultsCountAndSort(
                             count = state.filteredItems.size,
@@ -204,18 +172,38 @@ fun InventoryScreen(
                             selectedSort = state.selectedSort,
                             onSortSelected = { viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) },
                             sortOptions = state.availableSortOptions,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            countText = if (state.isSelectionMode) {
+                                "${state.selectedCount} ${if (state.selectedCount == 1) "item" else "items"} selected"
+                            } else null,
+                            leadingContent = if (state.isSelectionMode) {
+                                {
+                                    SelectionCircleButton(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) viewModel.onEvent(InventoryEvent.DeselectAll)
+                                            else viewModel.onEvent(InventoryEvent.SelectAll)
+                                        }
+                                    )
+                                }
+                            } else null
                         )
 
-                        state.error?.let {
-                            ErrorBanner(
-                                message = it,
-                                onDismiss = { viewModel.onEvent(InventoryEvent.ClearError) },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
-
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
+                            state.isLoading && state.allItems.isEmpty() -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+
+                            state.error != null && state.allItems.isEmpty() -> {
+                                EmptyState(
+                                    icon = Icons.Default.ErrorOutline,
+                                    title = stringResource(R.string.error_generic),
+                                    subtitle = state.error,
+                                    actionLabel = stringResource(R.string.retry),
+                                    onAction = { viewModel.onEvent(InventoryEvent.LoadInventory) }
+                                )
+                            }
+
                             state.filteredItems.isEmpty() -> {
                                 EmptyState(
                                     icon = if (state.allItems.isEmpty()) Icons.Default.Inventory2 else Icons.Default.FilterAlt,
@@ -236,27 +224,6 @@ fun InventoryScreen(
                                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        // Expiry alerts banner
-                                        if (state.expiringItems.isNotEmpty() && state.selectedStatusTab == InventoryStatus.ACTIVE) {
-                                            item {
-                                                ExpiryAlertBanner(
-                                                    totalCount    = state.expiringItems.size,
-                                                    criticalCount = state.criticalExpiryItems.size,
-                                                    modifier = Modifier.padding(bottom = 4.dp)
-                                                )
-                                            }
-                                        }
-
-                                        // Category breakdown (when showing all active)
-                                        if (state.selectedStatusTab == InventoryStatus.ACTIVE && state.categoryBreakdown.isNotEmpty() && state.allItems.size >= 3) {
-                                            item {
-                                                CategoryBreakdownCard(
-                                                    breakdown = state.categoryBreakdown,
-                                                    total     = state.allItems.count { it.status == InventoryStatus.ACTIVE }
-                                                )
-                                            }
-                                        }
-
                                         items(state.filteredItems, key = { it.id }) { item ->
                                             val isSelected = item.id in state.selectedIds
                                             Box {
@@ -287,7 +254,7 @@ fun InventoryScreen(
                                                     } else null
                                                 )
                                                 if (state.isSelectionMode) {
-                                                    Checkbox(
+                                                    SelectionCircleButton(
                                                         checked = isSelected,
                                                         onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
                                                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
@@ -301,8 +268,34 @@ fun InventoryScreen(
                                 }
                             }
                         }
-                    }
-                }
+                        }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectionCircleButton(
+    checked: Boolean,
+    onCheckedChange: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onCheckedChange,
+        modifier = modifier.size(24.dp),
+        shape = RoundedCornerShape(50),
+        color = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        border = if (checked) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 1.dp
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (checked) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
@@ -337,9 +330,10 @@ private fun InventoryFilterSheet(
                 Text(stringResource(R.string.advanced_filters),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(InventoryEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(InventoryEvent.ClearAdvancedFilters) }
+                    )
                 }
             }
 
@@ -400,129 +394,21 @@ private fun InventoryFilterSheet(
                 )
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Expiry alert banner
 // ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun ExpiryAlertBanner(
-    totalCount: Int,
-    criticalCount: Int,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Critical tier: expiring within 48 hours
-        if (criticalCount > 0) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.errorContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.Error, null,
-                        tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Expiring within 48 hours!",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            "$criticalCount item${if (criticalCount != 1) "s" else ""} need immediate attention",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
-        }
-        // Warning tier: expiring within 3 days (excludes critical)
-        val warningCount = totalCount - criticalCount
-        if (warningCount > 0) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.Warning, null,
-                        tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(20.dp))
-                    Text(
-                        "$warningCount item${if (warningCount != 1) "s" else ""} expiring in 3 days",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Category breakdown horizontal bar chart
 // ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun CategoryBreakdownCard(breakdown: List<Pair<String, Int>>, total: Int) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                "Active Items by Category",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            val colors = listOf(
-                MaterialTheme.colorScheme.primary,
-                MaterialTheme.colorScheme.secondary,
-                MaterialTheme.colorScheme.tertiary,
-                BrandGreen,
-                MaterialTheme.colorScheme.error
-            )
-            breakdown.forEachIndexed { idx, (category, count) ->
-                val fraction = if (total > 0) count.toFloat() / total else 0f
-                val color = colors.getOrElse(idx) { MaterialTheme.colorScheme.primary }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(category.lowercase().replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.labelMedium)
-                        Text("$count",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = color, fontWeight = FontWeight.Bold)
-                    }
-                    LinearProgressIndicator(
-                        progress = { fraction },
-                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                        color    = color,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Beneficiary count dialog
@@ -545,7 +431,12 @@ private fun BeneficiaryCountDialog(
                 OutlinedTextField(
                     value         = count,
                     onValueChange = onChange,
-                    label         = { Text(stringResource(R.string.label_number_people_optional)) },
+                    label         = {
+                        OptionalFieldLabel(
+                            text = stringResource(R.string.label_number_people_optional),
+                            isOptional = true
+                        )
+                    },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Number
                     ),
@@ -555,10 +446,14 @@ private fun BeneficiaryCountDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) { Text(stringResource(R.string.action_distribute_confirm)) }
+            ClearChainButton(
+                text = stringResource(R.string.action_distribute_confirm),
+                onClick = onConfirm,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }
@@ -638,17 +533,13 @@ private fun ManualAddSheet(
                 label          = stringResource(R.string.label_expiry_date_field)
             )
 
-            Button(
+            ClearChainButton(
+                text = stringResource(R.string.action_add_to_inventory),
                 onClick  = { onEvent(InventoryEvent.SubmitManualAdd) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled  = state.manualProductName.isNotBlank() && !state.isSubmittingManual
-            ) {
-                if (state.isSubmittingManual) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.action_add_to_inventory))
-                }
-            }
+                enabled  = state.manualProductName.isNotBlank(),
+                loading = state.isSubmittingManual
+            )
         }
     }
 }

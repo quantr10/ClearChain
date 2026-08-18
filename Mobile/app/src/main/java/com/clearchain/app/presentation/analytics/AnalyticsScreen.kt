@@ -27,6 +27,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.components.DetailTopBar
 import com.clearchain.app.presentation.components.HapticPullToRefreshBox
+import com.clearchain.app.presentation.components.StatItem
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -113,6 +114,8 @@ fun AnalyticsScreen(
                         ) {
                             val s = state.stats
                             if (s != null) {
+                                AccountStatsCard(stats = s, orgType = state.orgType)
+                                Spacer(Modifier.height(12.dp))
                                 if (state.orgType == OrganizationType.GROCERY) {
                                     GroceryAnalytics(s)
                                 } else {
@@ -289,6 +292,27 @@ private fun BigStatCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+private fun AccountStatsCard(stats: com.clearchain.app.data.remote.dto.DashboardStatsData, orgType: OrganizationType) {
+    Card(shape = RoundedCornerShape(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            if (orgType == OrganizationType.GROCERY) {
+                StatItem(stringResource(R.string.status_active), stats.activeListings.toString(), Icons.Default.Inventory)
+                StatItem(stringResource(R.string.status_pending), stats.pendingRequests.toString(), Icons.Default.Pending)
+                StatItem(stringResource(R.string.status_completed), stats.completed.toString(), Icons.Default.CheckCircle)
+                StatItem(stringResource(R.string.impact_food_saved), "${stats.foodSaved} kg", Icons.Default.Eco)
+            } else {
+                StatItem(stringResource(R.string.label_stat_requests), stats.totalCompleted.toString(), Icons.Default.LocalShipping)
+                StatItem(stringResource(R.string.stat_in_stock), stats.inStock.toString(), Icons.Default.Inventory)
+                StatItem(stringResource(R.string.stat_distributed), stats.distributed.toString(), Icons.Default.VolunteerActivism)
+            }
         }
     }
 }

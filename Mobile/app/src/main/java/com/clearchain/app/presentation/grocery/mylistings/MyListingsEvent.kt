@@ -22,10 +22,6 @@ sealed class MyListingsEvent {
     data class FilterHasRequestsChanged(val enabled: Boolean) : MyListingsEvent()
     object ClearAdvancedFilters : MyListingsEvent()
 
-    // Archive
-    data class ArchiveListing(val listingId: String) : MyListingsEvent()
-    data class UnarchiveListing(val listingId: String) : MyListingsEvent()
-
     // Bulk selection
     object ToggleSelectionMode : MyListingsEvent()
     data class ToggleItemSelection(val listingId: String) : MyListingsEvent()

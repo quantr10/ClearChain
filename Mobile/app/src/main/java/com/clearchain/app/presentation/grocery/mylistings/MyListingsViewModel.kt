@@ -71,8 +71,6 @@ class MyListingsViewModel @Inject constructor(
             MyListingsEvent.LoadListings -> loadListings()
             MyListingsEvent.RefreshListings -> refreshListings()
             is MyListingsEvent.DeleteListing -> deleteListing(event.listingId)
-            is MyListingsEvent.ArchiveListing -> archiveListing(event.listingId)
-            is MyListingsEvent.UnarchiveListing -> unarchiveListing(event.listingId)
 
             is MyListingsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
@@ -119,9 +117,12 @@ class MyListingsViewModel @Inject constructor(
                     it.copy(selectedIds = updated, isSelectionMode = updated.isNotEmpty())
                 }
             MyListingsEvent.SelectAll ->
-                _state.update { it.copy(selectedIds = it.filteredListings.map { l -> l.id }.toSet()) }
+                _state.update {
+                    val selected = it.filteredListings.map { l -> l.id }.toSet()
+                    it.copy(selectedIds = selected, isSelectionMode = selected.isNotEmpty())
+                }
             MyListingsEvent.DeselectAll ->
-                _state.update { it.copy(selectedIds = emptySet()) }
+                _state.update { it.copy(selectedIds = emptySet(), isSelectionMode = false) }
             MyListingsEvent.BulkDelete -> bulkDelete()
             MyListingsEvent.BulkArchive -> bulkArchive()
             MyListingsEvent.BulkRestore -> bulkRestore()
@@ -155,6 +156,7 @@ class MyListingsViewModel @Inject constructor(
                 onSuccess = { listings ->
                     _state.update { it.copy(allListings = listings, isRefreshing = false) }
                     applyFilters()
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listings_refreshed)))
                 },
                 onFailure = { _state.update { it.copy(isRefreshing = false) } }
             )
@@ -175,40 +177,16 @@ class MyListingsViewModel @Inject constructor(
         }
     }
 
-    private fun archiveListing(listingId: String) {
-        viewModelScope.launch {
-            try {
-                listingApi.archiveListing(listingId)
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_archived)))
-                loadListings()
-            } catch (e: Exception) {
-                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_archive_listing_failed)))
-            }
-        }
-    }
-
-    private fun unarchiveListing(listingId: String) {
-        viewModelScope.launch {
-            try {
-                listingApi.unarchiveListing(listingId)
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_restored)))
-                loadListings()
-            } catch (e: Exception) {
-                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_restore_listing_failed)))
-            }
-        }
-    }
-
     private fun bulkDelete() {
         val ids = _state.value.selectedIds.toList()
-        if (ids.isEmpty()) return
+        if (ids.isEmpty() || _state.value.activeTab !in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED)) return
         viewModelScope.launch {
-            _state.update { it.copy(isBulkOperating = true) }
+            _state.update { it.copy(bulkOperation = MyListingsBulkOperation.DELETE) }
             var success = 0
             ids.forEach { id ->
                 deleteListingUseCase(id).onSuccess { success++ }
             }
-            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_deleted, success)))
             loadListings()
         }
@@ -216,14 +194,16 @@ class MyListingsViewModel @Inject constructor(
 
     private fun bulkArchive() {
         val ids = _state.value.selectedIds.toList()
-        if (ids.isEmpty()) return
+        if (ids.isEmpty() || _state.value.activeTab != MyListingsTab.AVAILABLE) return
+
         viewModelScope.launch {
-            _state.update { it.copy(isBulkOperating = true) }
+            _state.update { it.copy(bulkOperation = MyListingsBulkOperation.ARCHIVE) }
             var success = 0
             ids.forEach { id ->
-                try { listingApi.archiveListing(id); success++ } catch (_: Exception) {}
+                runCatching { listingApi.archiveListing(id) }
+                    .onSuccess { success++ }
             }
-            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_archived, success)))
             loadListings()
         }
@@ -231,14 +211,16 @@ class MyListingsViewModel @Inject constructor(
 
     private fun bulkRestore() {
         val ids = _state.value.selectedIds.toList()
-        if (ids.isEmpty()) return
+        if (ids.isEmpty() || _state.value.activeTab != MyListingsTab.ARCHIVED) return
+
         viewModelScope.launch {
-            _state.update { it.copy(isBulkOperating = true) }
+            _state.update { it.copy(bulkOperation = MyListingsBulkOperation.RESTORE) }
             var success = 0
             ids.forEach { id ->
-                try { listingApi.unarchiveListing(id); success++ } catch (_: Exception) {}
+                runCatching { listingApi.restoreListing(id) }
+                    .onSuccess { success++ }
             }
-            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
+            _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_restored, success)))
             loadListings()
         }
@@ -249,10 +231,10 @@ class MyListingsViewModel @Inject constructor(
         var filtered = current.allListings
 
         filtered = when (current.activeTab) {
-            MyListingsTab.AVAILABLE -> filtered.filter { !it.isArchived && it.status == ListingStatus.AVAILABLE }
-            MyListingsTab.ARCHIVED  -> filtered.filter { it.isArchived }
-            MyListingsTab.RESERVED  -> filtered.filter { !it.isArchived && it.status == ListingStatus.RESERVED }
-            MyListingsTab.EXPIRED   -> filtered.filter { !it.isArchived && it.status == ListingStatus.EXPIRED }
+            MyListingsTab.AVAILABLE -> filtered.filter { it.status == ListingStatus.AVAILABLE }
+            MyListingsTab.ARCHIVED  -> filtered.filter { it.status == ListingStatus.ARCHIVED }
+            MyListingsTab.RESERVED  -> filtered.filter { it.status == ListingStatus.RESERVED }
+            MyListingsTab.EXPIRED   -> filtered.filter { it.status == ListingStatus.EXPIRED }
         }
 
         if (current.searchQuery.isNotBlank()) {

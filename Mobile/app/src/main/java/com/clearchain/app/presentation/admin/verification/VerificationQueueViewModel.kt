@@ -98,13 +98,16 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update {
                     val updated = if (event.orgId in it.selectedOrgIds)
                         it.selectedOrgIds - event.orgId else it.selectedOrgIds + event.orgId
-                    it.copy(selectedOrgIds = updated)
+                    it.copy(selectedOrgIds = updated, isBatchMode = updated.isNotEmpty())
                 }
             }
             VerificationQueueEvent.SelectAllVisible ->
-                _state.update { it.copy(selectedOrgIds = it.filteredOrgs.map { o -> o.id }.toSet()) }
+                _state.update {
+                    val selected = it.filteredOrgs.map { o -> o.id }.toSet()
+                    it.copy(selectedOrgIds = selected, isBatchMode = selected.isNotEmpty())
+                }
             VerificationQueueEvent.ClearSelection ->
-                _state.update { it.copy(selectedOrgIds = emptySet()) }
+                _state.update { it.copy(selectedOrgIds = emptySet(), isBatchMode = false) }
             VerificationQueueEvent.BatchApprove -> batchApprove()
             VerificationQueueEvent.BatchReject  -> batchReject()
         }

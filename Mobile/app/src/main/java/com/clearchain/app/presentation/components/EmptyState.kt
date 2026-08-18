@@ -92,12 +92,12 @@ fun EmptyState(
             }
 
             if (actionLabel != null && onAction != null) {
-                Button(
+                ClearChainButton(
+                    text = actionLabel,
                     onClick = onAction,
-                    modifier = Modifier.widthIn(min = 160.dp)
-                ) {
-                    Text(actionLabel)
-                }
+                    modifier = Modifier.widthIn(min = 160.dp),
+                    fillMaxWidth = false
+                )
             }
         }
     }

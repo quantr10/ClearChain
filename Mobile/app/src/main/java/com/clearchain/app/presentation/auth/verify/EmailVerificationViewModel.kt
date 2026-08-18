@@ -45,7 +45,6 @@ class EmailVerificationViewModel @Inject constructor(
             is EmailVerificationEvent.CodeChanged -> {
                 val digits = event.code.filter { it.isDigit() }.take(6)
                 _state.update { it.copy(code = digits, codeError = null) }
-                if (digits.length == 6) verify()
             }
             EmailVerificationEvent.Verify -> verify()
             EmailVerificationEvent.ResendCode -> resend()

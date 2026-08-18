@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.InventoryApi
+import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.UpdateInventoryItemRequest
 import com.clearchain.app.R
@@ -26,7 +27,8 @@ import javax.inject.Inject
 class InventoryDetailViewModel @Inject constructor(
     application: Application,
     private val inventoryApi: InventoryApi,
-    private val pickupRequestApi: PickupRequestApi
+    private val pickupRequestApi: PickupRequestApi,
+    private val listingApi: ListingApi
 ) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(InventoryDetailState())
@@ -135,9 +137,24 @@ class InventoryDetailViewModel @Inject constructor(
             _state.update { it.copy(isLoadingRequest = true) }
             try {
                 val response = pickupRequestApi.getPickupRequestById(requestId)
-                _state.update { it.copy(relatedRequest = response.data.toDomain(), isLoadingRequest = false) }
+                val request = response.data.toDomain()
+                _state.update { it.copy(relatedRequest = request, isLoadingRequest = false) }
+                loadMoreFromStore(request.groceryId, request.listingId)
             } catch (e: Exception) {
                 _state.update { it.copy(isLoadingRequest = false) }
+            }
+        }
+    }
+
+    private fun loadMoreFromStore(groceryId: String, excludeListingId: String) {
+        viewModelScope.launch {
+            runCatching {
+                listingApi.getAllListings(status = "open", groceryId = groceryId, pageSize = 6)
+                    .data
+                    .map { it.toDomain() }
+                    .filterNot { it.id == excludeListingId }
+            }.onSuccess { listings ->
+                _state.update { it.copy(moreFromStore = listings) }
             }
         }
     }

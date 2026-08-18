@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ListingGroup(
     val id: String,
-    val originalListingId: String,
+    val originalListingId: String? = null,
     val groceryId: String,
     val productName: String,
     val category: String,
@@ -16,6 +16,7 @@ data class ListingGroup(
     val totalReserved: Int,
     val totalAvailable: Int,
     val totalCompleted: Int,
+    val totalRemoved: Int = 0,
     val isFullyConsumed: Boolean,
     val createdAt: String
 )

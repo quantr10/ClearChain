@@ -1,6 +1,7 @@
 package com.clearchain.app.presentation.ngo.listingdetail
 
 import com.clearchain.app.data.remote.api.PublicProfileData
+import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.OrganizationType
 
@@ -30,8 +31,11 @@ data class ListingDetailState(
     // NGO: grocery "About Us" data
     val groceryProfile: PublicProfileData? = null,
 
+    // NGO: cart state
+    val cartItemsByListingId: Map<String, CartItemData> = emptyMap(),
+    val isUpdatingCart: Boolean = false,
+
     // Grocery: action states
-    val isArchiving: Boolean = false,
     val isDeleting: Boolean = false,
     val showDeleteConfirm: Boolean = false,
 )

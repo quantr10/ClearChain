@@ -53,7 +53,7 @@ fun DatePickerField(
         if (label.isNotEmpty()) {
             Text(
                 text       = label,
-                style      = MaterialTheme.typography.labelLarge,
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color      = contentColor
             )
@@ -61,31 +61,31 @@ fun DatePickerField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
+                .height(32.dp)
                 .border(borderWidth, borderColor, ShapeMedium)
                 .clickable(enabled = enabled) { showPicker = true }
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 8.dp)
         ) {
             Row(
                 modifier              = Modifier.fillMaxSize(),
                 verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(Icons.Default.CalendarToday, null, Modifier.size(18.dp), tint = iconTint)
+                Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = iconTint)
                 Text(
                     text     = value,
                     modifier = Modifier.weight(1f),
-                    style    = MaterialTheme.typography.labelLarge,
+                    style    = MaterialTheme.typography.labelSmall,
                     color    = if (value.isNotBlank()) contentColor
                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
                 if (value.isNotBlank() && onClearDate != null) {
                     IconButton(
                         onClick  = { onClearDate() },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(18.dp)
                     ) {
                         Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search),
-                            Modifier.size(18.dp), tint = iconTint)
+                            Modifier.size(14.dp), tint = iconTint)
                     }
                 }
             }
@@ -104,18 +104,24 @@ fun DatePickerField(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton    = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.of("UTC"))
-                            .toLocalDate()
-                        onDateSelected(date.toString())
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.ok),
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                            onDateSelected(date.toString())
+                        }
+                        showPicker = false
                     }
-                    showPicker = false
-                }) { Text(stringResource(R.string.ok)) }
+                )
             },
             dismissButton    = {
-                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) }
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { showPicker = false }
+                )
             }
         ) {
             DatePicker(state = datePickerState)

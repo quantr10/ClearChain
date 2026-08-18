@@ -8,6 +8,7 @@ import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
 
 enum class MyListingsTab { AVAILABLE, ARCHIVED, RESERVED, EXPIRED }
+enum class MyListingsBulkOperation { DELETE, ARCHIVE, RESTORE }
 
 data class MyListingsState(
     val allListings: List<Listing> = emptyList(),
@@ -43,11 +44,12 @@ data class MyListingsState(
     val selectedIds: Set<String> = emptySet(),
 
     val isLoading: Boolean = false,
-    val isBulkOperating: Boolean = false,
+    val bulkOperation: MyListingsBulkOperation? = null,
     val error: String? = null,
     val isRefreshing: Boolean = false
 ) {
     val listings: List<Listing> get() = filteredListings
+    val isBulkOperating: Boolean get() = bulkOperation != null
     val selectedCount: Int get() = selectedIds.size
     val allSelected: Boolean get() = filteredListings.isNotEmpty() && selectedIds.containsAll(filteredListings.map { it.id })
     val activeFilterCount: Int get() =

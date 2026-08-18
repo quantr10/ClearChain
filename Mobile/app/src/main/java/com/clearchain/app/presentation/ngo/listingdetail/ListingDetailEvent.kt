@@ -11,10 +11,11 @@ sealed class ListingDetailEvent {
 
     // NGO: save/favourite
     object ToggleSave : ListingDetailEvent()
+    data class AddToCart(val listingId: String) : ListingDetailEvent()
+    data class IncrementCartItem(val listingId: String) : ListingDetailEvent()
+    data class DecrementCartItem(val listingId: String) : ListingDetailEvent()
 
     // Grocery: actions
-    object ArchiveListing : ListingDetailEvent()
-    object UnarchiveListing : ListingDetailEvent()
     object ShowDeleteConfirm : ListingDetailEvent()
     object DismissDeleteConfirm : ListingDetailEvent()
     object DeleteListing : ListingDetailEvent()

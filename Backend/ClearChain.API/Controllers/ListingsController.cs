@@ -55,8 +55,6 @@ public class ListingsController : ControllerBase
             RelatedRequestId = listing.RelatedRequestId?.ToString(),
             SplitIndex = listing.SplitIndex,
             ViewCount = listing.ViewCount,
-            IsArchived = listing.IsArchived,
-            ArchivedAt = listing.ArchivedAt?.ToString("o"),
             ImageUrls = string.IsNullOrEmpty(listing.PhotoUrl)
                 ? new List<string>()
                 : listing.PhotoUrl.StartsWith("[")
@@ -75,6 +73,7 @@ public class ListingsController : ControllerBase
                 OriginalQuantity = (int)group.OriginalQuantity,
                 TotalReserved = (int)group.TotalReserved,
                 TotalAvailable = (int)group.TotalAvailable,
+                TotalRemoved = (int)group.TotalRemoved,
                 ChildListingsCount = group.ChildListings?.Count ?? 0
             };
         }
@@ -102,6 +101,7 @@ public class ListingsController : ControllerBase
             var query = _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Include(l => l.Group)
+                .Where(l => l.Status != ListingStatus.Archived)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<ListingStatus>(status, ignoreCase: true, out var statusEnum))
@@ -305,8 +305,9 @@ public class ListingsController : ControllerBase
             var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
             var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
 
-            TimeSpan? pickupTimeStart = null;
-            TimeSpan? pickupTimeEnd = null;
+            var profilePickupWindow = ParseHoursWindow(grocery.Hours);
+            TimeSpan? pickupTimeStart = profilePickupWindow?.Start;
+            TimeSpan? pickupTimeEnd = profilePickupWindow?.End;
 
             if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
                 TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
@@ -341,6 +342,7 @@ public class ListingsController : ControllerBase
                 TotalAvailable = request.Quantity,
                 TotalReserved = 0,
                 TotalCompleted = 0,
+                TotalRemoved = 0,
                 IsFullyConsumed = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -417,6 +419,12 @@ public class ListingsController : ControllerBase
                 return NotFound(new { message = "Listing not found" });
             }
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (listing.Status == ListingStatus.Archived && listing.GroceryId.ToString() != userId)
+            {
+                return NotFound(new { message = "Listing not found" });
+            }
+
             var listingDto = MapListingToDto(listing, listing.Group);
 
             return Ok(new ListingResponse
@@ -454,29 +462,53 @@ public class ListingsController : ControllerBase
                 return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
             }
 
-            if (listing.Status != ListingStatus.Open)
+            if (listing.Status != ListingStatus.Open && listing.Status != ListingStatus.Archived)
             {
-                var statusMessage = listing.Status switch
-                {
-                    ListingStatus.Reserved => "Cannot delete reserved listing. Wait for pickup completion or cancellation.",
-                    ListingStatus.Expired => "Cannot delete expired listing.",
-                    _ => $"Cannot delete listing with status: {listing.Status.ToString().ToLower()}"
-                };
-                return BadRequest(new { message = statusMessage });
+                return BadRequest(new { message = "Can only delete available or archived listings" });
             }
 
             var deletedListingId = listing.Id.ToString();
+            var wasAvailable = listing.Status == ListingStatus.Open;
+
+            var sourceReferences = await _context.PickupRequestItems
+                .Where(i => i.OriginalListingId == listing.Id)
+                .ToListAsync();
+            foreach (var item in sourceReferences)
+            {
+                item.OriginalListingId = null;
+            }
+
+            var splitChildren = await _context.ClearanceListings
+                .Where(l => l.SplitFromListingId == listing.Id)
+                .ToListAsync();
+            foreach (var child in splitChildren)
+            {
+                child.SplitFromListingId = null;
+            }
 
             if (listing.GroupId.HasValue && listing.Group != null)
             {
-                listing.Group.TotalAvailable -= listing.Quantity;
+                if (wasAvailable)
+                {
+                    listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
+                }
+                listing.Group.TotalRemoved += listing.Quantity;
+                listing.Group.IsFullyConsumed =
+                    listing.Group.TotalCompleted + listing.Group.TotalRemoved >= listing.Group.OriginalQuantity;
+                if (listing.Group.OriginalListingId == listing.Id)
+                {
+                    listing.Group.OriginalListingId = null;
+                }
                 listing.Group.UpdatedAt = DateTime.UtcNow;
 
                 var remainingChildren = await _context.ClearanceListings
                     .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
                     .CountAsync();
 
-                if (remainingChildren == 0)
+                var hasPickupHistory = await _context.PickupRequestItems
+                    .AnyAsync(i => i.ListingGroupId == listing.Group.Id);
+
+                if (remainingChildren == 0 && !hasPickupHistory)
                 {
                     _context.ListingGroups.Remove(listing.Group);
                 }
@@ -502,6 +534,114 @@ public class ListingsController : ControllerBase
         }
     }
 
+    [HttpPut("{id}/archive")]
+    [Authorize]
+    public async Task<ActionResult<ListingResponse>> ArchiveListing(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            var listing = await _context.ClearanceListings
+                .Include(l => l.Grocery)
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+            if (listing == null)
+            {
+                return NotFound(new { message = "Listing not found or you don't have permission to archive it" });
+            }
+
+            if (listing.Status != ListingStatus.Open)
+            {
+                return BadRequest(new { message = "Can only archive available listings" });
+            }
+
+            listing.Status = ListingStatus.Archived;
+            listing.UpdatedAt = DateTime.UtcNow;
+
+            if (listing.Group != null)
+            {
+                listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
+                listing.Group.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var listingDto = MapListingToDto(listing, listing.Group);
+            await _listingNotificationService.NotifyListingUpdated(listingDto);
+
+            return Ok(new ListingResponse
+            {
+                Message = "Listing archived successfully",
+                Data = listingDto
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error archiving listing {ListingId}", id);
+            return StatusCode(500, new { message = "An error occurred while archiving the listing" });
+        }
+    }
+
+    [HttpPut("{id}/restore")]
+    [Authorize]
+    public async Task<ActionResult<ListingResponse>> RestoreListing(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
+            var listing = await _context.ClearanceListings
+                .Include(l => l.Grocery)
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+            if (listing == null)
+            {
+                return NotFound(new { message = "Listing not found or you don't have permission to restore it" });
+            }
+
+            if (listing.Status != ListingStatus.Archived)
+            {
+                return BadRequest(new { message = "Can only restore archived listings" });
+            }
+
+            listing.Status = ListingStatus.Open;
+            listing.UpdatedAt = DateTime.UtcNow;
+
+            if (listing.Group != null)
+            {
+                listing.Group.TotalAvailable += listing.Quantity;
+                listing.Group.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var listingDto = MapListingToDto(listing, listing.Group);
+            await _listingNotificationService.NotifyListingUpdated(listingDto);
+
+            return Ok(new ListingResponse
+            {
+                Message = "Listing restored successfully",
+                Data = listingDto
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring listing {ListingId}", id);
+            return StatusCode(500, new { message = "An error occurred while restoring the listing" });
+        }
+    }
+
     // GET api/listings/{id}/view — Increment view count (call on open detail screen)
     [HttpPost("{id}/view")]
     public async Task<IActionResult> TrackView(Guid id)
@@ -509,7 +649,7 @@ public class ListingsController : ControllerBase
         try
         {
             var listing = await _context.ClearanceListings.FindAsync(id);
-            if (listing == null) return NotFound();
+            if (listing == null || listing.Status == ListingStatus.Archived) return NotFound();
             listing.ViewCount++;
             listing.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -522,79 +662,20 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // PUT api/listings/{id}/archive — Soft-delete (archive) a listing
-    [HttpPut("{id}/archive")]
-    [Authorize]
-    public async Task<ActionResult<ListingResponse>> ArchiveListing(Guid id)
+    private static (TimeSpan Start, TimeSpan End)? ParseHoursWindow(string? hours)
     {
-        try
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated" });
+        if (string.IsNullOrWhiteSpace(hours)) return null;
 
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery).Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+        var parts = hours
+            .Replace("–", "-")
+            .Replace("—", "-")
+            .Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
-            if (listing == null)
-                return NotFound(new { message = "Listing not found" });
+        if (parts.Length < 2) return null;
+        if (!TimeSpan.TryParse(parts[0], out var start)) return null;
+        if (!TimeSpan.TryParse(parts[1], out var end)) return null;
 
-            if (listing.IsArchived)
-                return BadRequest(new { message = "Listing is already archived" });
-
-            listing.IsArchived = true;
-            listing.ArchivedAt = DateTime.UtcNow;
-            listing.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing archived successfully",
-                Data = MapListingToDto(listing, listing.Group)
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error archiving listing");
-            return StatusCode(500, new { message = "An error occurred" });
-        }
-    }
-
-    // PUT api/listings/{id}/unarchive — Restore an archived listing
-    [HttpPut("{id}/unarchive")]
-    [Authorize]
-    public async Task<ActionResult<ListingResponse>> UnarchiveListing(Guid id)
-    {
-        try
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "User not authenticated" });
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery).Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-                return NotFound(new { message = "Listing not found" });
-
-            listing.IsArchived = false;
-            listing.ArchivedAt = null;
-            listing.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing restored successfully",
-                Data = MapListingToDto(listing, listing.Group)
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error unarchiving listing");
-            return StatusCode(500, new { message = "An error occurred" });
-        }
+        return start <= end ? (start, end) : null;
     }
 
     // GET api/listings/{id}/similar — Get similar listings (same category, same grocery or nearby)
@@ -605,14 +686,13 @@ public class ListingsController : ControllerBase
         {
             var listing = await _context.ClearanceListings
                 .Include(l => l.Grocery)
-                .FirstOrDefaultAsync(l => l.Id == id);
+                .FirstOrDefaultAsync(l => l.Id == id && l.Status != ListingStatus.Archived);
 
             if (listing == null) return NotFound();
 
             var similar = await _context.ClearanceListings
                 .Include(l => l.Grocery)
                 .Where(l => l.Id != id
-                    && !l.IsArchived
                     && l.Status == ListingStatus.Open
                     && (l.Category == listing.Category || l.GroceryId == listing.GroceryId))
                 .OrderByDescending(l => l.CreatedAt)

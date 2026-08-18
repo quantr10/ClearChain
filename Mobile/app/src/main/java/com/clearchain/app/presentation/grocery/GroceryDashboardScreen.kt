@@ -24,7 +24,7 @@ import com.clearchain.app.data.remote.dto.UpcomingPickupData
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.components.buildDailyActivityCounts
 import com.clearchain.app.presentation.navigation.Screen
-import com.clearchain.app.presentation.ngo.ActivityFeedItem
+import com.clearchain.app.presentation.ngo.ActivityFeedList
 import com.clearchain.app.presentation.ngo.ActivityHistorySheet
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
@@ -39,7 +39,6 @@ fun GroceryDashboardScreen(
     val stats             by viewModel.stats.collectAsState()
     val todaySummary      by viewModel.todaySummary.collectAsState()
     val activities        by viewModel.activities.collectAsState()
-    val profileComplete   by viewModel.profileCompleteness.collectAsState()
     val isRefreshing      by viewModel.isRefreshing.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
 
@@ -66,17 +65,12 @@ fun GroceryDashboardScreen(
 
                 Column(
                     modifier            = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // ── Profile completeness card ──────────────────────────
-                    ProfileCompletenessCard(
-                        percent         = profileComplete,
-                        onCompleteClick = { navController.navigate(Screen.Profile.route) }
-                    )
-
                     // ── Today's summary ────────────────────────────────────
                     todaySummary?.let { summary ->
-                        DashboardSection(title = stringResource(R.string.section_todays_summary)) {
+                        DashboardSection(title = "") {
                             Row(
                                 modifier              = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -106,7 +100,7 @@ fun GroceryDashboardScreen(
                     // ── Today's Pickups ────────────────────────────────────
                     val upcomingPickups = todaySummary?.upcomingPickups.orEmpty()
                     if (upcomingPickups.isNotEmpty()) {
-                        DashboardSection(title = stringResource(R.string.section_todays_pickups)) {
+                        DashboardSection(title = "") {
                             GroceryUpcomingPickupsTimeline(
                                 pickups   = upcomingPickups,
                                 onViewAll = { navController.navigate(Screen.PickupRequests.route) }
@@ -115,52 +109,46 @@ fun GroceryDashboardScreen(
                     }
 
                     // ── Activity Trend + Recent Activity ──────────────────
-                    if (activities.isNotEmpty()) {
-                        val sparklineData = buildDailyActivityCounts(activities)
-                        DashboardSection(title = stringResource(R.string.section_activity_trend)) {
-                            ActivitySparklineCard(
-                                title = stringResource(R.string.label_actions_this_week),
-                                data  = sparklineData
-                            )
+                    val sparklineData = buildDailyActivityCounts(activities)
+                    DashboardSection(title = "") {
+                        ActivitySparklineCard(
+                            title = stringResource(R.string.label_actions_this_week),
+                            data  = sparklineData
+                        )
+                        if (activities.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                activities.take(5).forEach { item ->
-                                    ActivityFeedItem(item = item)
-                                }
-                            }
+                            ActivityFeedList(activities = activities.take(5))
                             if (activities.size > 5) {
-                                TextButton(
+                                Spacer(Modifier.height(8.dp))
+                                ClearChainButton(
+                                    text = stringResource(R.string.action_view_more),
                                     onClick  = { showActivitySheet = true },
                                     modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.action_view_more))
-                                }
+                                )
                             }
                         }
                     }
 
                     // ── Quick actions ──────────────────────────────────────
-                    DashboardSection(title = stringResource(R.string.section_quick_actions)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            DashboardActionCard(
-                                icon     = Icons.Default.AddCircle,
-                                title    = stringResource(R.string.action_create_listing),
-                                subtitle = stringResource(R.string.action_create_listing_subtitle),
-                                onClick  = { navController.navigate(Screen.CreateListing.route) }
-                            )
-                            DashboardActionCard(
-                                icon     = Icons.Default.List,
-                                title    = stringResource(R.string.action_my_listings),
-                                subtitle = stringResource(R.string.action_my_listings_subtitle),
-                                onClick  = { navController.navigate(Screen.MyListings.route) }
-                            )
-                            DashboardActionCard(
-                                icon     = Icons.Default.LocalShipping,
-                                title    = stringResource(R.string.action_pickup_requests),
-                                subtitle = stringResource(R.string.action_pickup_requests_subtitle),
-                                onClick  = { navController.navigate(Screen.PickupRequests.route) }
-                            )
-                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DashboardActionCard(
+                            icon     = Icons.Default.AddCircle,
+                            title    = stringResource(R.string.action_create_listing),
+                            subtitle = stringResource(R.string.action_create_listing_subtitle),
+                            onClick  = { navController.navigate(Screen.CreateListing.route) }
+                        )
+                        DashboardActionCard(
+                            icon     = Icons.Default.List,
+                            title    = stringResource(R.string.action_my_listings),
+                            subtitle = stringResource(R.string.action_my_listings_subtitle),
+                            onClick  = { navController.navigate(Screen.MyListings.route) }
+                        )
+                        DashboardActionCard(
+                            icon     = Icons.Default.LocalShipping,
+                            title    = stringResource(R.string.action_pickup_requests),
+                            subtitle = stringResource(R.string.action_pickup_requests_subtitle),
+                            onClick  = { navController.navigate(Screen.PickupRequests.route) }
+                        )
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -194,14 +182,13 @@ private fun GroceryUpcomingPickupsTimeline(
                 )
             }
             if (pickups.size > 3) {
-                TextButton(
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.view_all_pickups, pickups.size),
                     onClick  = onViewAll,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(stringResource(R.string.view_all_pickups, pickups.size))
-                }
+                )
             }
         }
     }
@@ -284,68 +271,6 @@ private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolea
 }
 
 // ── Profile completeness card ──────────────────────────────────────────────────
-
-@Composable
-private fun ProfileCompletenessCard(
-    percent: Int,
-    onCompleteClick: () -> Unit
-) {
-    val isComplete = percent >= 100
-    val containerColor = if (isComplete)
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-    else
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-    val iconTint = if (isComplete)
-        MaterialTheme.colorScheme.secondary
-    else
-        MaterialTheme.colorScheme.primary
-
-    Surface(
-        color    = containerColor,
-        shape    = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier              = Modifier.padding(16.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier              = Modifier.weight(1f)
-            ) {
-                Icon(
-                    if (isComplete) Icons.Default.VerifiedUser else Icons.Default.AccountCircle,
-                    null,
-                    tint     = iconTint,
-                    modifier = Modifier.size(36.dp)
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text       = stringResource(R.string.profile_completeness, percent),
-                        style      = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    LinearProgressIndicator(
-                        progress  = { percent / 100f },
-                        modifier  = Modifier
-                            .fillMaxWidth(0.7f)
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color      = iconTint,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
-            }
-            if (!isComplete) {
-                TextButton(onClick = onCompleteClick) {
-                    Text(stringResource(R.string.continue_label), style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
-    }
-}
 
 // ── Today summary chip ─────────────────────────────────────────────────────────
 

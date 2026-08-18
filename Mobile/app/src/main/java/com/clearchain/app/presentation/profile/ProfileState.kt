@@ -27,6 +27,8 @@ data class ProfileState(
     val editPhone: String = "",
     val editAddress: String = "",
     val editLocation: String = "",
+    val editState: String = "",
+    val editZipCode: String = "",
     val editOpenTime: String = "",
     val editCloseTime: String = "",
     val editContactPerson: String = "",

@@ -22,6 +22,76 @@ namespace ClearChain.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<Guid>("NgoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ngoid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updatedat");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NgoId")
+                        .IsUnique();
+
+                    b.ToTable("carts", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cartid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<Guid>("GroceryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("groceryid");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listingid");
+
+                    b.Property<int>("RequestedQuantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("requestedquantity");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updatedat");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroceryId");
+
+                    b.HasIndex("ListingId");
+
+                    b.HasIndex("CartId", "ListingId")
+                        .IsUnique();
+
+                    b.ToTable("cartitems", (string)null);
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.ClearanceListing", b =>
                 {
                     b.Property<Guid>("Id")
@@ -681,9 +751,17 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("pickupinstructions");
 
+                    b.Property<string>("State")
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("text")
                         .HasColumnName("profilepictureurl");
+
+                    b.Property<string>("ZipCode")
+                        .HasColumnType("text")
+                        .HasColumnName("zipcode");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -760,6 +838,10 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("listingtitle");
 
+                    b.Property<string>("ListingPhotoUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("listingphotourl");
+
                     b.Property<string>("ListingUnit")
                         .IsRequired()
                         .HasColumnType("text")
@@ -810,10 +892,6 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
-                    b.Property<string>("VehicleType")
-                        .HasColumnType("text")
-                        .HasColumnName("vehicletype");
-
                     b.HasKey("Id");
 
                     b.HasIndex("GroceryId");
@@ -821,6 +899,63 @@ namespace ClearChain.Infrastructure.Migrations
                     b.HasIndex("NgoId");
 
                     b.ToTable("pickuprequests", (string)null);
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.PickupRequestItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat");
+
+                    b.Property<string>("ListingCategory")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("listingcategory");
+
+                    b.Property<string>("ListingExpiryDate")
+                        .HasColumnType("text")
+                        .HasColumnName("listingexpirydate");
+
+                    b.Property<string>("ListingTitle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("listingtitle");
+
+                    b.Property<string>("ListingUnit")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("listingunit");
+
+                    b.Property<Guid>("OriginalListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("originallistingid");
+
+                    b.Property<Guid>("PickupRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pickuprequestid");
+
+                    b.Property<int>("RequestedQuantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("requestedquantity");
+
+                    b.Property<Guid?>("ReservedListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservedlistingid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OriginalListingId");
+
+                    b.HasIndex("PickupRequestId");
+
+                    b.HasIndex("ReservedListingId");
+
+                    b.ToTable("pickuprequestitems", (string)null);
                 });
 
             modelBuilder.Entity("ClearChain.Domain.Entities.RefreshToken", b =>
@@ -988,6 +1123,44 @@ namespace ClearChain.Infrastructure.Migrations
                     b.ToTable("savedlistings", (string)null);
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Cart", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Ngo")
+                        .WithMany()
+                        .HasForeignKey("NgoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ngo");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.CartItem", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.Cart", "Cart")
+                        .WithMany("Items")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
+                        .WithMany()
+                        .HasForeignKey("GroceryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("Grocery");
+
+                    b.Navigation("Listing");
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.ClearanceListing", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Grocery")
@@ -1115,6 +1288,32 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Navigation("Ngo");
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.PickupRequestItem", b =>
+                {
+                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", "OriginalListing")
+                        .WithMany()
+                        .HasForeignKey("OriginalListingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.PickupRequest", "PickupRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("PickupRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ClearChain.Domain.Entities.ClearanceListing", "ReservedListing")
+                        .WithMany()
+                        .HasForeignKey("ReservedListingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("OriginalListing");
+
+                    b.Navigation("PickupRequest");
+
+                    b.Navigation("ReservedListing");
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("ClearChain.Domain.Entities.Organization", "Organization")
@@ -1190,9 +1389,19 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Navigation("Ngo");
                 });
 
+            modelBuilder.Entity("ClearChain.Domain.Entities.Cart", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("ClearChain.Domain.Entities.ListingGroup", b =>
                 {
                     b.Navigation("ChildListings");
+                });
+
+            modelBuilder.Entity("ClearChain.Domain.Entities.PickupRequest", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

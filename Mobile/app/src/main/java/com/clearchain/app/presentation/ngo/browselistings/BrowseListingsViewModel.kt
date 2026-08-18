@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.local.LocationPreferenceStore
+import com.clearchain.app.data.remote.api.CartApi
 import com.clearchain.app.data.remote.api.SavedListingApi
+import com.clearchain.app.data.remote.dto.AddCartItemRequest
+import com.clearchain.app.data.remote.dto.CartGroupData
+import com.clearchain.app.data.remote.dto.UpdateCartItemRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.displayName
@@ -26,7 +30,8 @@ class BrowseListingsViewModel @Inject constructor(
     private val getAllListingsUseCase: GetAllListingsUseCase,
     private val signalRService: SignalRService,
     private val locationPreferenceStore: LocationPreferenceStore,
-    private val savedListingApi: SavedListingApi
+    private val savedListingApi: SavedListingApi,
+    private val cartApi: CartApi
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BrowseListingsState(isCheckingLocation = true))
@@ -84,6 +89,7 @@ class BrowseListingsViewModel @Inject constructor(
         }
 
         loadSavedIds()
+        loadCart()
         setupSignalR()
     }
 
@@ -132,10 +138,11 @@ class BrowseListingsViewModel @Inject constructor(
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
             }
-            is BrowseListingsEvent.NavigateToRequestPickup -> {
-                viewModelScope.launch {
-                    _uiEvent.send(UiEvent.Navigate(Screen.RequestPickup.createRoute(event.listingId)))
-                }
+            is BrowseListingsEvent.AddToCart -> addToCart(event.listingId)
+            is BrowseListingsEvent.IncrementCartItem -> addToCart(event.listingId)
+            is BrowseListingsEvent.DecrementCartItem -> decrementCartItem(event.listingId)
+            BrowseListingsEvent.OpenCart -> viewModelScope.launch {
+                _uiEvent.send(UiEvent.Navigate(Screen.Cart.route))
             }
             BrowseListingsEvent.ClearError -> _state.update { it.copy(error = null) }
 
@@ -196,7 +203,49 @@ class BrowseListingsViewModel @Inject constructor(
 
     private fun refreshBoth() {
         loadListings()
+        loadCart()
         if (_state.value.showMapView) loadAllMapListings()
+    }
+
+    private fun loadCart() {
+        viewModelScope.launch {
+            runCatching { cartApi.getCart() }
+                .onSuccess { response -> updateCartState(response.data) }
+        }
+    }
+
+    private fun addToCart(listingId: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingCart = true) }
+            runCatching { cartApi.addItem(AddCartItemRequest(listingId = listingId, quantity = 1)) }
+                .onSuccess { response ->
+                    updateCartState(response.data)
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                }
+            _state.update { it.copy(isUpdatingCart = false) }
+        }
+    }
+
+    private fun decrementCartItem(listingId: String) {
+        val item = _state.value.cartItemsByListingId[listingId] ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingCart = true) }
+            runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = item.requestedQuantity - 1)) }
+                .onSuccess { response -> updateCartState(response.data) }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                }
+            _state.update { it.copy(isUpdatingCart = false) }
+        }
+    }
+
+    private fun updateCartState(groups: List<CartGroupData>) {
+        _state.update {
+            it.copy(cartItemsByListingId = groups.flatMap { group -> group.items }.associateBy { item -> item.listingId })
+        }
     }
 
     private fun loadAllMapListings() {

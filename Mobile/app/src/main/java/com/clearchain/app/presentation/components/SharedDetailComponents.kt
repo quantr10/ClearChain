@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,7 +27,7 @@ fun InfoRow(
     Row(
         modifier = modifier.fillMaxWidth().padding(vertical = 2.dp),
         verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Icon(
             imageVector = icon,
@@ -67,23 +68,41 @@ fun SectionHeader(
 fun DashboardSection(
     title: String,
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    val resolvedContentColor = contentColorFor(containerColor)
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = containerColor,
+        contentColor = resolvedContentColor,
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            action?.invoke()
+            if (title.isNotBlank() || action != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (title.isNotBlank()) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = resolvedContentColor
+                        )
+                    }
+                    action?.invoke()
+                }
+            }
+            content()
         }
-        content()
     }
 }
 
@@ -102,35 +121,16 @@ fun InfoCard(
     }
 }
 
+/** Shows state-backed feedback through the app's single Material snackbar pattern. */
 @Composable
-fun AlertBanner(
-    message: String,
-    type: AlertType = AlertType.INFO,
-    icon: ImageVector? = null,
-    modifier: Modifier = Modifier
+fun SnackbarMessageEffect(
+    snackbarHostState: SnackbarHostState,
+    message: String?,
+    duration: SnackbarDuration = SnackbarDuration.Short
 ) {
-    val (bg, fg) = when (type) {
-        AlertType.INFO    -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        AlertType.WARNING -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-        AlertType.ERROR   -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        AlertType.SUCCESS -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-    }
-    Surface(
-        color = bg,
-        shape = RoundedCornerShape(10.dp),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            icon?.let {
-                Icon(it, null, modifier = Modifier.size(18.dp), tint = fg)
-            }
-            Text(message, style = MaterialTheme.typography.bodySmall, color = fg)
+    LaunchedEffect(message) {
+        if (!message.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(message = message, duration = duration)
         }
     }
 }
-
-enum class AlertType { INFO, WARNING, ERROR, SUCCESS }

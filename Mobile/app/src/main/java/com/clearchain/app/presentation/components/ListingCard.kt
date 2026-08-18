@@ -126,22 +126,7 @@ fun ListingCard(
 
                 // Status badge overlay (top-right)
                 Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                    if (listing.isArchived) {
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = Color(0xCC455A64)
-                        ) {
-                            Text(
-                                text       = stringResource(R.string.tab_archived),
-                                style      = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color      = Color.White,
-                                modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
-                        }
-                    } else {
-                        ListingStatusBadge(listing.status)
-                    }
+                    ListingStatusBadge(listing.status)
                 }
 
                 // Grocery avatar (bottom-left, Browse mode only)
@@ -210,10 +195,12 @@ fun ListingCard(
                     )
                 }
 
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
                 // Quantity
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         Icons.Default.ShoppingCart, null,
@@ -222,7 +209,8 @@ fun ListingCard(
                     )
                     Text(
                         "${listing.quantity} ${listing.unit}",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -230,21 +218,21 @@ fun ListingCard(
                 // Expiry date
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = expiryColor)
                     Text(
                         expiryText,
-                        style      = MaterialTheme.typography.labelMedium,
+                        style      = MaterialTheme.typography.labelSmall,
                         color      = expiryColor,
-                        fontWeight = if (daysUntilExpiry <= 3) FontWeight.SemiBold else FontWeight.Normal
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
                 // Pickup time
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         Icons.Default.Schedule, null,
@@ -258,7 +246,8 @@ fun ListingCard(
                                 listing.pickupTimeStart,
                                 listing.pickupTimeEnd
                             ),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -267,26 +256,28 @@ fun ListingCard(
                 if (showGroceryInfo && listing.location.isNotBlank()) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(Icons.Default.Place, null, Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             listing.location,
-                            style    = MaterialTheme.typography.labelMedium,
+                            style    = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color    = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         listing.distanceKm?.let { km ->
-                            Text("·", style = MaterialTheme.typography.labelMedium,
+                            Text("·", style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Icon(Icons.Default.NearMe, null, Modifier.size(12.dp),
                                 tint = MaterialTheme.colorScheme.primary)
                             Text(
                                 "${km}km",
-                                style      = MaterialTheme.typography.labelMedium,
+                                style      = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color      = MaterialTheme.colorScheme.primary
                             )

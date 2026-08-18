@@ -1,11 +1,6 @@
 package com.clearchain.app.presentation.grocery.managerequests
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,8 +32,6 @@ fun ManageRequestsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showBulkRejectDialog by remember { mutableStateOf(false) }
-    var rejectReason by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -49,38 +42,6 @@ fun ManageRequestsScreen(
         }
     }
 
-    if (showBulkRejectDialog) {
-        AlertDialog(
-            onDismissRequest = { showBulkRejectDialog = false },
-            title = { Text(stringResource(R.string.manage_reject_title, state.selectedCount)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.manage_reject_optional_reason))
-                    OutlinedTextField(
-                        value = rejectReason,
-                        onValueChange = { rejectReason = it },
-                        label = { Text(stringResource(R.string.manage_reject_reason_label)) },
-                        singleLine = false,
-                        maxLines = 3,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showBulkRejectDialog = false
-                    viewModel.onEvent(ManageRequestsEvent.BulkReject(rejectReason.ifBlank { null }))
-                    rejectReason = ""
-                }) { Text(stringResource(R.string.action_reject_all), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBulkRejectDialog = false }) { Text(stringResource(R.string.cancel)) }
-            }
-        )
-    }
-
-    BackHandler(state.isSelectionMode) { viewModel.onEvent(ManageRequestsEvent.ToggleSelectionMode) }
-
     if (state.showFilterSheet) {
         ManageRequestsFilterSheet(
             state     = state,
@@ -90,68 +51,13 @@ fun ManageRequestsScreen(
     }
 
     Scaffold(
-        bottomBar = {
-            AnimatedVisibility(
-                visible = state.isSelectionMode && state.selectedCount > 0,
-                enter   = slideInVertically { it },
-                exit    = slideOutVertically { it }
-            ) {
-                Surface(tonalElevation = 8.dp, shadowElevation = 8.dp) {
-                    Row(
-                        modifier              = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick  = { viewModel.onEvent(ManageRequestsEvent.BulkApprove) },
-                            modifier = Modifier.weight(1f),
-                            enabled  = !state.isBulkOperating && state.pendingSelectedCount > 0
-                        ) {
-                            if (state.isBulkOperating) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            else {
-                                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.action_approve_bulk, state.pendingSelectedCount))
-                            }
-                        }
-                        OutlinedButton(
-                            onClick  = { showBulkRejectDialog = true },
-                            modifier = Modifier.weight(1f),
-                            enabled  = !state.isBulkOperating
-                        ) {
-                            Icon(Icons.Default.Cancel, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.action_reject_bulk, state.selectedCount))
-                        }
-                    }
-                }
-            }
-        },
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.allRequests.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.error != null && state.allRequests.isEmpty() -> {
-                    EmptyState(
-                        icon        = Icons.Default.ErrorOutline,
-                        title       = stringResource(R.string.msg_failed_load_requests),
-                        subtitle    = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction    = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
-                    )
-                }
-
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                         Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -177,35 +83,19 @@ fun ManageRequestsScreen(
                         FilterChipsRow(
                             filters        = state.availableStatusFilters,
                             selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) },
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) }
                         )
-
-                        if (state.isSelectionMode) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = {
-                                    if (state.allSelected) viewModel.onEvent(ManageRequestsEvent.DeselectAll)
-                                    else viewModel.onEvent(ManageRequestsEvent.SelectAll)
-                                }) {
-                                    Text(if (state.allSelected) stringResource(R.string.deselect_all) else stringResource(R.string.select_all))
-                                }
-                            }
-                        }
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(bottom = 8.dp),
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text  = "${state.filteredRequests.size} request${if (state.filteredRequests.size != 1) "s" else ""}",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
@@ -216,15 +106,22 @@ fun ManageRequestsScreen(
                             )
                         }
 
-                        state.error?.let {
-                            ErrorBanner(
-                                message   = it,
-                                onDismiss = { viewModel.onEvent(ManageRequestsEvent.ClearError) },
-                                modifier  = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
-
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
+                            state.isLoading && state.allRequests.isEmpty() -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+
+                            state.error != null && state.allRequests.isEmpty() -> {
+                                EmptyState(
+                                    icon        = Icons.Default.ErrorOutline,
+                                    title       = stringResource(R.string.error_generic),
+                                    subtitle    = state.error,
+                                    actionLabel = stringResource(R.string.retry),
+                                    onAction    = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
+                                )
+                            }
+
                             state.filteredRequests.isEmpty() -> {
                                 EmptyState(
                                     icon     = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
@@ -245,42 +142,15 @@ fun ManageRequestsScreen(
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         items(state.filteredRequests, key = { it.id }) { request ->
-                                            val isSelected = request.id in state.selectedIds
-
                                             Box {
                                                 RequestCard(
                                                     request  = request,
-                                                    modifier = Modifier.combinedClickable(
-                                                        onClick = {
-                                                            if (state.isSelectionMode) {
-                                                                viewModel.onEvent(ManageRequestsEvent.ToggleItemSelection(request.id))
-                                                            } else {
-                                                                onNavigateToRequestDetail(request.id)
-                                                            }
-                                                        },
-                                                        onLongClick = {
-                                                            viewModel.onEvent(ManageRequestsEvent.ToggleSelectionMode)
-                                                            viewModel.onEvent(ManageRequestsEvent.ToggleItemSelection(request.id))
-                                                        }
-                                                    ),
+                                                    modifier = Modifier.clickable { onNavigateToRequestDetail(request.id) },
                                                     viewMode = RequestViewMode.GROCERY,
-                                                    onApprove = if (!state.isSelectionMode) {
-                                                        { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) }
-                                                    } else null,
-                                                    onReject = if (!state.isSelectionMode) {
-                                                        { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) }
-                                                    } else null,
-                                                    onMarkReady = if (!state.isSelectionMode) {
-                                                        { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
-                                                    } else null
+                                                    onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
+                                                    onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
+                                                    onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
                                                 )
-                                                if (state.isSelectionMode) {
-                                                    Checkbox(
-                                                        checked = isSelected,
-                                                        onCheckedChange = { viewModel.onEvent(ManageRequestsEvent.ToggleItemSelection(request.id)) },
-                                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                                                    )
-                                                }
                                             }
                                         }
 
@@ -289,8 +159,7 @@ fun ManageRequestsScreen(
                                 }
                             }
                         }
-                    }
-                }
+                        }
             }
         }
     }
@@ -325,9 +194,10 @@ private fun ManageRequestsFilterSheet(
                 Text(stringResource(R.string.advanced_filters),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(ManageRequestsEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(ManageRequestsEvent.ClearAdvancedFilters) }
+                    )
                 }
             }
 
@@ -365,9 +235,11 @@ private fun ManageRequestsFilterSheet(
                 }
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

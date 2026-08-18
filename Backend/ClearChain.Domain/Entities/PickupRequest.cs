@@ -25,7 +25,6 @@ public class PickupRequest
     public string ListingUnit { get; set; } = string.Empty;
 
     public string? CancellationReason { get; set; }  // set when Status == Cancelled
-    public string? VehicleType { get; set; }          // van, car, bike, other
     public string? LicensePlate { get; set; }
     public bool RequiresRefrigeration { get; set; } = false;
     public bool IsFragile { get; set; } = false;
@@ -33,4 +32,5 @@ public class PickupRequest
 
     public Organization? Ngo { get; set; }
     public Organization? Grocery { get; set; }
+    public ICollection<PickupRequestItem> Items { get; set; } = new List<PickupRequestItem>();
 }

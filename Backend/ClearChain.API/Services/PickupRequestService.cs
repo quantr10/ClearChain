@@ -4,6 +4,7 @@ using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.API.DTOs.Inventory;
+using System.Text.Json;
 
 namespace ClearChain.API.Services;
 
@@ -97,7 +98,7 @@ public class PickupRequestService : IPickupRequestService
         var (reservedListing, pickupRequest) = SplitListing(
             listing, listing.Group, request.RequestedQuantity,
             pickupDateUtc, request.PickupTime, request.Notes, ngoId,
-            request.VehicleType, request.RequiresRefrigeration, request.IsFragile, request.IsHeavy);
+            request.RequiresRefrigeration, request.IsFragile, request.IsHeavy);
 
         _context.PickupRequests.Add(pickupRequest);
         await _context.SaveChangesAsync();
@@ -114,6 +115,7 @@ public class PickupRequestService : IPickupRequestService
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
+            .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.Id == requestId &&
                 (p.NgoId == callerId || p.GroceryId == callerId));
 
@@ -138,8 +140,38 @@ public class PickupRequestService : IPickupRequestService
             pr.CancellationReason = reason;
             pr.ListingId = null;
 
-            if (listing?.Group != null)
+            if (pr.Items.Any())
+            {
+                var reservedIds = pr.Items
+                    .Where(i => i.ReservedListingId.HasValue)
+                    .Select(i => i.ReservedListingId!.Value)
+                    .ToList();
+                var reservedListings = await _context.ClearanceListings
+                    .Include(l => l.Group)
+                    .Where(l => reservedIds.Contains(l.Id))
+                    .ToListAsync();
+                foreach (var reserved in reservedListings)
+                {
+                    if (reserved.Group != null)
+                        await SmartMergeOnCancel(reserved, reserved.Group);
+                }
+
+                var deletedReservedIds = reservedListings
+                    .Where(l => _context.Entry(l).State == EntityState.Deleted)
+                    .Select(l => l.Id)
+                    .ToHashSet();
+
+                foreach (var item in pr.Items)
+                {
+                    if (item.OriginalListingId.HasValue && deletedReservedIds.Contains(item.OriginalListingId.Value))
+                        item.OriginalListingId = null;
+                    item.ReservedListingId = null;
+                }
+            }
+            else if (listing?.Group != null)
+            {
                 await SmartMergeOnCancel(listing, listing.Group);
+            }
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
@@ -173,6 +205,7 @@ public class PickupRequestService : IPickupRequestService
         var pickupRequest = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
+            .Include(p => p.Items)
             .FirstOrDefaultAsync(pr => pr.Id == requestId &&
                 (pr.GroceryId == callerId || pr.NgoId == callerId));
 
@@ -210,7 +243,77 @@ public class PickupRequestService : IPickupRequestService
             pickupRequest.ProofPhotoUrl = proofPhotoUrl;
             pickupRequest.ListingId = null;
 
-            if (listing != null)
+            if (pickupRequest.Items.Any())
+            {
+                var reservedIds = pickupRequest.Items
+                    .Where(i => i.ReservedListingId.HasValue)
+                    .Select(i => i.ReservedListingId!.Value)
+                    .ToList();
+                var reservedListings = await _context.ClearanceListings
+                    .Include(l => l.Group)
+                    .Where(l => reservedIds.Contains(l.Id))
+                    .ToListAsync();
+
+                foreach (var item in pickupRequest.Items)
+                {
+                    var reserved = item.ReservedListingId.HasValue
+                        ? reservedListings.FirstOrDefault(l => l.Id == item.ReservedListingId.Value)
+                        : null;
+                    var expiryDate = reserved?.ExpirationDate.HasValue == true
+                        ? DateTime.SpecifyKind(reserved.ExpirationDate.Value, DateTimeKind.Utc)
+                        : DateTime.UtcNow.AddDays(7);
+
+                    var inventoryItem = new Inventory
+                    {
+                        Id = Guid.NewGuid(),
+                        NgoId = pickupRequest.NgoId,
+                        PickupRequestId = pickupRequest.Id,
+                        ProductName = item.ListingTitle,
+                        Category = item.ListingCategory,
+                        Quantity = item.RequestedQuantity,
+                        Unit = item.ListingUnit,
+                        ExpiryDate = expiryDate,
+                        PhotoUrl = item.ListingPhotoUrl ?? FirstImageUrl(reserved?.PhotoUrl),
+                        Status = InventoryStatus.Active,
+                        ReceivedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Inventories.Add(inventoryItem);
+
+                    if (reserved != null)
+                    {
+                        if (reserved.Group != null)
+                        {
+                            reserved.Group.TotalReserved -= reserved.Quantity;
+                            reserved.Group.TotalCompleted += reserved.Quantity;
+                            reserved.Group.UpdatedAt = DateTime.UtcNow;
+                            if (reserved.Group.TotalCompleted + reserved.Group.TotalRemoved >= reserved.Group.OriginalQuantity)
+                                reserved.Group.IsFullyConsumed = true;
+                        }
+                        item.ReservedListingId = null;
+                        if (item.OriginalListingId == reserved.Id)
+                            item.OriginalListingId = null;
+                        _context.ClearanceListings.Remove(reserved);
+                    }
+
+                    inventoryDto ??= new InventoryItemData
+                    {
+                        Id = inventoryItem.Id.ToString(),
+                        NgoId = inventoryItem.NgoId.ToString(),
+                        ProductName = inventoryItem.ProductName,
+                        Category = inventoryItem.Category,
+                        Quantity = inventoryItem.Quantity,
+                        Unit = inventoryItem.Unit,
+                        ExpiryDate = inventoryItem.ExpiryDate.ToString("yyyy-MM-dd"),
+                        Status = inventoryItem.Status.ToString().ToLower(),
+                        ReceivedAt = inventoryItem.ReceivedAt.ToString("o"),
+                        PickupRequestId = inventoryItem.PickupRequestId.ToString(),
+                        PhotoUrl = inventoryItem.PhotoUrl
+                    };
+                }
+            }
+            else if (listing != null)
             {
                 var expiryDate = listing.ExpirationDate.HasValue
                     ? DateTime.SpecifyKind(listing.ExpirationDate.Value, DateTimeKind.Utc)
@@ -226,6 +329,7 @@ public class PickupRequestService : IPickupRequestService
                     Quantity = pickupRequest.RequestedQuantity ?? 0,
                     Unit = listing.Unit,
                     ExpiryDate = expiryDate,
+                    PhotoUrl = FirstImageUrl(listing.PhotoUrl),
                     Status = InventoryStatus.Active,
                     ReceivedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
@@ -239,7 +343,7 @@ public class PickupRequestService : IPickupRequestService
                     listing.Group.TotalCompleted += listing.Quantity;
                     listing.Group.UpdatedAt = DateTime.UtcNow;
 
-                    if (listing.Group.TotalCompleted >= listing.Group.OriginalQuantity)
+                    if (listing.Group.TotalCompleted + listing.Group.TotalRemoved >= listing.Group.OriginalQuantity)
                         listing.Group.IsFullyConsumed = true;
 
                     var remainingChildren = await _context.ClearanceListings
@@ -247,7 +351,12 @@ public class PickupRequestService : IPickupRequestService
                         .CountAsync();
 
                     if (remainingChildren == 0 && listing.Group.IsFullyConsumed)
-                        _context.ListingGroups.Remove(listing.Group);
+                    {
+                        var hasPickupHistory = await _context.PickupRequestItems
+                            .AnyAsync(i => i.ListingGroupId == listing.Group.Id);
+                        if (!hasPickupHistory)
+                            _context.ListingGroups.Remove(listing.Group);
+                    }
                 }
 
                 _context.ClearanceListings.Remove(listing);
@@ -263,7 +372,8 @@ public class PickupRequestService : IPickupRequestService
                     ExpiryDate = inventoryItem.ExpiryDate.ToString("yyyy-MM-dd"),
                     Status = inventoryItem.Status.ToString().ToLower(),
                     ReceivedAt = inventoryItem.ReceivedAt.ToString("o"),
-                    PickupRequestId = inventoryItem.PickupRequestId.ToString()
+                    PickupRequestId = inventoryItem.PickupRequestId.ToString(),
+                    PhotoUrl = inventoryItem.PhotoUrl
                 };
             }
 
@@ -332,6 +442,7 @@ public class PickupRequestService : IPickupRequestService
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
+            .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.Id == requestId);
 
         if (pr == null)
@@ -361,6 +472,7 @@ public class PickupRequestService : IPickupRequestService
         var items = await baseQuery
             .Include(pr => pr.Ngo)
             .Include(pr => pr.Grocery)
+            .Include(pr => pr.Items)
             .OrderByDescending(pr => pr.RequestedAt)
             .Skip((clampedPage - 1) * clampedSize)
             .Take(clampedSize)
@@ -378,6 +490,7 @@ public class PickupRequestService : IPickupRequestService
         var items = await baseQuery
             .Include(pr => pr.Ngo)
             .Include(pr => pr.Grocery)
+            .Include(pr => pr.Items)
             .OrderByDescending(pr => pr.RequestedAt)
             .Skip((clampedPage - 1) * clampedSize)
             .Take(clampedSize)
@@ -424,6 +537,7 @@ public class PickupRequestService : IPickupRequestService
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
+            .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.Id == requestId && p.GroceryId == groceryId);
 
         if (pr == null)
@@ -457,6 +571,7 @@ public class PickupRequestService : IPickupRequestService
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
+            .Include(p => p.Items)
             .FirstOrDefaultAsync(p => p.Id == requestId && p.GroceryId == groceryId);
 
         if (pr == null)
@@ -527,11 +642,43 @@ public class PickupRequestService : IPickupRequestService
             MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
             MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
             ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
-            VehicleType = pr.VehicleType,
             RequiresRefrigeration = pr.RequiresRefrigeration,
             IsFragile = pr.IsFragile,
-            IsHeavy = pr.IsHeavy
+            IsHeavy = pr.IsHeavy,
+            Items = pr.Items.Select(i => new PickupRequestItemData
+            {
+                Id = i.Id.ToString(),
+                ListingGroupId = i.ListingGroupId?.ToString(),
+                OriginalListingId = i.OriginalListingId?.ToString(),
+                ReservedListingId = i.ReservedListingId?.ToString(),
+                RequestedQuantity = i.RequestedQuantity,
+                ListingTitle = i.ListingTitle,
+                ListingCategory = i.ListingCategory,
+                ListingExpiryDate = i.ListingExpiryDate,
+                ListingUnit = i.ListingUnit,
+                ListingPhotoUrl = i.ListingPhotoUrl
+            }).ToList()
         };
+    }
+
+    private static string? FirstImageUrl(string? photoUrl)
+    {
+        if (string.IsNullOrWhiteSpace(photoUrl))
+            return null;
+
+        var trimmed = photoUrl.Trim();
+        if (!trimmed.StartsWith("["))
+            return trimmed;
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(trimmed)
+                ?.FirstOrDefault(url => !string.IsNullOrWhiteSpace(url));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static PickupRequestsResponse ToPagedResponse(
@@ -552,7 +699,7 @@ public class PickupRequestService : IPickupRequestService
         ClearanceListing sourceListing, ListingGroup group,
         int requestedQuantity, DateTime pickupDate,
         string pickupTime, string? notes, Guid ngoId,
-        string? vehicleType = null, bool requiresRefrigeration = false,
+        bool requiresRefrigeration = false,
         bool isFragile = false, bool isHeavy = false)
     {
         var requestId = Guid.NewGuid();
@@ -575,7 +722,7 @@ public class PickupRequestService : IPickupRequestService
                 ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
                 ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
                 ListingUnit = sourceListing.Unit,
-                VehicleType = vehicleType, RequiresRefrigeration = requiresRefrigeration,
+                RequiresRefrigeration = requiresRefrigeration,
                 IsFragile = isFragile, IsHeavy = isHeavy
             });
         }
@@ -614,7 +761,7 @@ public class PickupRequestService : IPickupRequestService
             ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
             ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
             ListingUnit = sourceListing.Unit,
-            VehicleType = vehicleType, RequiresRefrigeration = requiresRefrigeration,
+            RequiresRefrigeration = requiresRefrigeration,
             IsFragile = isFragile, IsHeavy = isHeavy
         });
     }

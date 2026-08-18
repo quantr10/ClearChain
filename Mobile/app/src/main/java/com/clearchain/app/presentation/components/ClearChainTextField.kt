@@ -40,6 +40,7 @@ fun ClearChainTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String = "",
+    isOptional: Boolean = false,
     modifier: Modifier = Modifier,
     placeholder: String = "",
     isError: Boolean = false,
@@ -74,10 +75,11 @@ fun ClearChainTextField(
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (label.isNotEmpty()) {
-            Text(
+            OptionalFieldLabel(
                 text       = label,
-                style      = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                isOptional = isOptional,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
                 color      = contentColor
             )
         }
@@ -86,11 +88,11 @@ fun ClearChainTextField(
             onValueChange     = onValueChange,
             modifier          = Modifier
                 .fillMaxWidth()
-                .then(if (singleLine) Modifier.height(40.dp) else Modifier)
+                .then(if (singleLine) Modifier.height(32.dp) else Modifier)
                 .border(borderWidth, borderColor, ShapeMedium)
-                .padding(horizontal = 12.dp)
-                .then(if (!singleLine) Modifier.padding(vertical = 12.dp) else Modifier),
-            textStyle         = MaterialTheme.typography.labelLarge.copy(color = contentColor),
+                .padding(horizontal = 8.dp)
+                .then(if (!singleLine) Modifier.padding(vertical = 8.dp) else Modifier),
+            textStyle         = MaterialTheme.typography.labelSmall.copy(color = contentColor),
             singleLine        = singleLine,
             minLines          = minLines,
             maxLines          = maxLines,
@@ -105,7 +107,7 @@ fun ClearChainTextField(
                 Row(
                     modifier              = if (singleLine) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
                     verticalAlignment     = if (singleLine) Alignment.CenterVertically else Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (leadingIcon != null) {
                         Icon(leadingIcon, null, Modifier.size(18.dp), tint = iconTint)
@@ -117,7 +119,7 @@ fun ClearChainTextField(
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
                             Text(
                                 text  = placeholder,
-                                style = MaterialTheme.typography.labelLarge,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
                         }

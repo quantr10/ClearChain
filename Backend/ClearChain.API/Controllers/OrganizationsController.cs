@@ -435,7 +435,6 @@ public class OrganizationsController : ControllerBase
         {
             var expiringToday = await _context.ClearanceListings
                 .CountAsync(l => l.GroceryId == userGuid
-                    && !l.IsArchived
                     && l.ExpirationDate.HasValue
                     && l.ExpirationDate.Value.Date == today
                     && l.Status == Domain.Enums.ListingStatus.Open);

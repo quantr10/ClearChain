@@ -11,7 +11,6 @@ interface PickupRequestRepository {
         pickupDate: String,
         pickupTime: String,
         notes: String? = null,
-        vehicleType: String? = null,
         requiresRefrigeration: Boolean = false,
         isFragile: Boolean = false,
         isHeavy: Boolean = false

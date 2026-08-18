@@ -20,6 +20,10 @@ sealed class Screen(val route: String) {
     // ── NGO ───────────────────────────────────────────────
     object NgoDashboard : Screen("ngo_dashboard")
     object BrowseListings : Screen("browse_listings")
+    object Cart : Screen("cart")
+    object CartPickup : Screen("cart/request_pickup/{groceryId}") {
+        fun createRoute(groceryId: String) = "cart/request_pickup/$groceryId"
+    }
     object MyRequests : Screen("my_requests")
     object Inventory : Screen("inventory")
     object LocationPicker : Screen("location_picker")
@@ -38,9 +42,6 @@ sealed class Screen(val route: String) {
     object EditListing : Screen("edit_listing/{listingId}") {
         fun createRoute(listingId: String) = "edit_listing/$listingId"
     }
-    object RequestPickup : Screen("request_pickup/{listingId}") {
-        fun createRoute(listingId: String) = "request_pickup/$listingId"
-    }
     object RequestDetail : Screen("request_detail/{requestId}") {
         fun createRoute(requestId: String) = "request_detail/$requestId"
     }
@@ -52,6 +53,7 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object Settings : Screen("settings")
     object NotificationInbox : Screen("notifications")
+    object AccountDetail : Screen("account_detail")
     object Analytics : Screen("analytics")
     object Help : Screen("help")
 

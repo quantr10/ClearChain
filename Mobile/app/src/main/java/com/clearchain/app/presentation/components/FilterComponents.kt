@@ -47,10 +47,10 @@ fun SearchBar(
         onValueChange = onQueryChange,
         modifier = modifier
             .fillMaxWidth()
-            .height(36.dp)
+            .height(32.dp)
             .border(1.dp, borderColor, ShapeMedium)
             .padding(horizontal = 8.dp),
-        textStyle = MaterialTheme.typography.labelMedium.copy(
+        textStyle = MaterialTheme.typography.labelSmall.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
         singleLine = true,
@@ -59,18 +59,18 @@ fun SearchBar(
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
                     Icons.Default.Search, null,
-                    Modifier.size(16.dp),
+                    Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) {
                         Text(
                             placeholder,
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                     }
@@ -81,12 +81,12 @@ fun SearchBar(
                 } else if (query.isNotEmpty()) {
                     IconButton(
                         onClick = { onQueryChange("") },
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
                             Icons.Default.Clear,
                             stringResource(R.string.cd_clear_search),
-                            Modifier.size(16.dp),
+                            Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -112,32 +112,32 @@ fun SortDropdown(
     val context = LocalContext.current
 
     Row(
-        modifier = modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+        modifier = modifier.padding(horizontal = 2.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
             text  = stringResource(R.string.sort_by) + ": ",
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(
             modifier = Modifier
                 .clickable { HapticUtils.tick(context); showSheet = true }
-                .padding(horizontal = 2.dp, vertical = 2.dp),
+                .padding(horizontal = 2.dp, vertical = 1.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text       = stringResource(selectedSort.labelResId),
-                style      = MaterialTheme.typography.bodySmall,
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
             Icon(
                 Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(14.dp),
                 tint     = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -208,9 +208,11 @@ fun FilterChipsRow(
     modifier: Modifier = Modifier
 ) {
     LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         items(filters) { filter ->
             val context = LocalContext.current
@@ -273,10 +275,10 @@ fun FilterSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -296,21 +298,30 @@ fun ResultsCountAndSort(
     selectedSort: SortOption,
     onSortSelected: (SortOption) -> Unit,
     sortOptions: List<SortOption>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    countText: String? = null,
+    leadingContent: (@Composable RowScope.() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "$count ${itemName}${if (count != 1) "s" else ""}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            leadingContent?.invoke(this)
+            Text(
+                text = countText ?: "$count ${itemName}${if (count != 1) "s" else ""}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+        }
         SortDropdown(
             selectedSort   = selectedSort,
             onSortSelected = onSortSelected,

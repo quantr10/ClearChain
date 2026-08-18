@@ -197,6 +197,8 @@ public class AuthController : ControllerBase
             Phone = user.Phone ?? "",
             Address = user.Address ?? "",
             Location = user.Location ?? "",
+            State = user.State ?? "",
+            ZipCode = user.ZipCode ?? "",
             Verified = user.Verified,
             VerificationStatus = user.VerificationStatus ?? "pending",
             Hours = user.Hours,

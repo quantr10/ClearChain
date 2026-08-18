@@ -11,9 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +32,8 @@ import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
+
+private val CreateListingIconSize = 18.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,15 +57,6 @@ fun CreateListingScreen(
     BackHandler(state.isPreviewMode) { viewModel.onEvent(CreateListingEvent.TogglePreview) }
 
     Scaffold(
-        topBar = {
-            DetailTopBar(
-                title = stringResource(R.string.create_listing),
-                onNavigateBack = {
-                    if (state.isPreviewMode) viewModel.onEvent(CreateListingEvent.TogglePreview)
-                    else navController.navigateUp()
-                }
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
@@ -95,35 +85,6 @@ fun CreateListingScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // ── Draft saved chip ───────────────────────────────────────────────
-            state.draftSavedAt?.let { savedAt ->
-                Surface(
-                    color  = MaterialTheme.colorScheme.surface,
-                    shape  = RoundedCornerShape(50),
-                    tonalElevation = 1.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Save, null,
-                            modifier = Modifier.size(12.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            stringResource(
-                                R.string.create_listing_draft_saved,
-                                SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(savedAt))
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
             if (state.isPreviewMode) {
                 // ── Preview Mode ───────────────────────────────────────────────
                 val previewListing = remember(
@@ -217,24 +178,24 @@ fun CreateListingScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(40.dp)
+                                .height(32.dp)
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
                                 .menuAnchor()
-                                .padding(horizontal = 12.dp),
+                                .padding(horizontal = 8.dp),
                             verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Default.Category, null, Modifier.size(18.dp), tint = iconTint)
+                            Icon(Icons.Default.Category, null, Modifier.size(CreateListingIconSize), tint = iconTint)
                             Text(
                                 stringResource(FoodCategory.valueOf(state.category).labelResId),
-                                style    = MaterialTheme.typography.labelLarge,
+                                style    = MaterialTheme.typography.labelSmall,
                                 color    = textColor,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(
                                 if (state.showCategoryDropdown) Icons.Default.ArrowDropUp
                                 else Icons.Default.ArrowDropDown,
-                                null, Modifier.size(18.dp), tint = iconTint
+                                null, Modifier.size(CreateListingIconSize), tint = iconTint
                             )
                         }
                         ExposedDropdownMenu(
@@ -243,7 +204,7 @@ fun CreateListingScreen(
                         ) {
                             FoodCategory.entries.forEach { category ->
                                 DropdownMenuItem(
-                                    text    = { Text(stringResource(category.labelResId)) },
+                                    text    = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) },
                                     onClick = { viewModel.onEvent(CreateListingEvent.CategoryChanged(category.name)) }
                                 )
                             }
@@ -282,7 +243,7 @@ fun CreateListingScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(40.dp)
+                                    .height(32.dp)
                                     .border(
                                         1.dp,
                                         if (state.unitError != null) MaterialTheme.colorScheme.error
@@ -290,20 +251,20 @@ fun CreateListingScreen(
                                         ShapeMedium
                                     )
                                     .menuAnchor()
-                                    .padding(horizontal = 12.dp),
+                                    .padding(horizontal = 8.dp),
                                 verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
                                     state.unit,
-                                    style    = MaterialTheme.typography.labelLarge,
+                                    style    = MaterialTheme.typography.labelSmall,
                                     color    = textColor,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
                                     if (state.showUnitDropdown) Icons.Default.ArrowDropUp
                                     else Icons.Default.ArrowDropDown,
-                                    null, Modifier.size(18.dp), tint = iconTint
+                                    null, Modifier.size(CreateListingIconSize), tint = iconTint
                                 )
                             }
                             ExposedDropdownMenu(
@@ -312,7 +273,7 @@ fun CreateListingScreen(
                             ) {
                                 listOf("kg", "g", "L", "mL", "pieces", "boxes", "bags").forEach { unit ->
                                     DropdownMenuItem(
-                                        text    = { Text(unit) },
+                                        text    = { Text(unit, style = MaterialTheme.typography.labelSmall) },
                                         onClick = { viewModel.onEvent(CreateListingEvent.UnitChanged(unit)) }
                                     )
                                 }
@@ -356,20 +317,23 @@ fun CreateListingScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier              = Modifier.padding(14.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp)
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
                             Icon(
                                 Icons.Default.Schedule,
                                 contentDescription = null,
                                 tint     = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(CreateListingIconSize)
                             )
                             Text(
                                 text  = state.groceryHours
                                     ?: stringResource(R.string.label_pickup_hours_not_set),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontWeight = FontWeight.Medium
                             )
@@ -378,14 +342,14 @@ fun CreateListingScreen(
                 }
 
                 // ── Error banner ───────────────────────────────────────────────
-                AnimatedVisibility(visible = state.error != null, enter = fadeIn(), exit = fadeOut()) {
-                    AlertBanner(
-                        message = state.error ?: "",
-                        type    = AlertType.ERROR,
-                        icon    = Icons.Default.ErrorOutline
-                    )
+                val uploadingImageMessage = stringResource(R.string.uploading_image)
+                AnimatedVisibility(
+                    visible = state.isLoading && state.error == uploadingImageMessage,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    UploadingImageIndicator(message = uploadingImageMessage)
                 }
-
                 // ── Submit ─────────────────────────────────────────────────────
                 ClearChainButton(
                     text     = stringResource(R.string.btn_create_listing),
@@ -410,9 +374,38 @@ fun CreateListingScreen(
 
 // ── Individual field card ──────────────────────────────────────────────────────
 @Composable
+private fun UploadingImageIndicator(message: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = ShapeMedium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ClearChainButtonDefaults.Height)
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(ClearChainButtonDefaults.IconSize),
+                strokeWidth = 2.dp
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun FieldCard(
     label: String,
     modifier: Modifier = Modifier,
+    isOptional: Boolean = false,
     content: @Composable () -> Unit
 ) {
     Card(
@@ -421,12 +414,13 @@ private fun FieldCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
+            modifier            = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                label,
-                style      = MaterialTheme.typography.labelLarge,
+            OptionalFieldLabel(
+                text       = label.replace("*", "").trim(),
+                isOptional = isOptional,
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
@@ -444,7 +438,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
+            modifier            = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
@@ -455,14 +449,14 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
             ) {
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(Icons.Default.AutoAwesome, null,
-                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(CreateListingIconSize))
                     Text(
                         stringResource(R.string.label_ai_food_analysis),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
                     )
                 }
                 if (state.selectedImageUri != null) {
@@ -500,13 +494,13 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment     = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.AutoAwesome, null, Modifier.size(14.dp),
+                                Icon(Icons.Default.AutoAwesome, null, Modifier.size(CreateListingIconSize),
                                     tint = MaterialTheme.colorScheme.primary)
-                                Text(
-                                    stringResource(R.string.label_analyzing_food),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    Text(
+                        stringResource(R.string.label_analyzing_food),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                             }
                         }
                     }
@@ -523,7 +517,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                                 tint = MaterialTheme.colorScheme.primary)
                             Text(
                                 result.title,
-                                style      = MaterialTheme.typography.titleMedium,
+                                style      = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -572,46 +566,32 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                             modifier              = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            OutlinedButton(
+                            ClearChainOutlinedButton(
+                                text = stringResource(R.string.action_enter_manually),
                                 onClick  = { viewModel.onEvent(CreateListingEvent.DismissAnalysis) },
-                                modifier = Modifier.weight(1f),
-                                shape    = RoundedCornerShape(10.dp)
-                            ) {
-                                Text(stringResource(R.string.action_enter_manually))
-                            }
-                            Button(
+                                modifier = Modifier.weight(1f)
+                            )
+                            ClearChainButton(
+                                text = stringResource(R.string.action_apply_ai),
                                 onClick  = { viewModel.onEvent(CreateListingEvent.ApplyAISuggestions) },
                                 modifier = Modifier.weight(1f),
-                                shape    = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.action_apply_ai))
-                            }
+                                icon = Icons.Default.AutoAwesome
+                            )
                         }
                     }
 
-                    state.analysisError != null -> {
-                        AlertBanner(
-                            message = state.analysisError!!,
-                            type    = AlertType.ERROR,
-                            icon    = Icons.Default.ErrorOutline
-                        )
-                    }
+                    state.analysisError != null -> Unit
                 }
             } else {
-                OutlinedButton(
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.action_take_photo),
                     onClick  = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = MaterialTheme.shapes.medium
-                ) {
-                    Icon(Icons.Default.CameraAlt, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_take_photo))
-                }
+                    icon = Icons.Default.CameraAlt
+                )
                 Text(
                     stringResource(R.string.label_ai_analyze_hint),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -631,8 +611,8 @@ private fun AiStatChip(value: String, label: String, modifier: Modifier = Modifi
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelMedium,
+            Text(value, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text(label, style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -649,14 +629,13 @@ private fun AiDetailRow(
         verticalAlignment     = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(icon, null, Modifier.size(16.dp).padding(top = 2.dp),
+        Icon(icon, null, Modifier.size(CreateListingIconSize).padding(top = 2.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(label, style = MaterialTheme.typography.bodyMedium,
+        Text(label, style = MaterialTheme.typography.bodySmall,
             color    = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(88.dp))
-        Text(value, style = MaterialTheme.typography.bodyMedium,
+        Text(value, style = MaterialTheme.typography.bodySmall,
             color    = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f))
     }
 }
-

@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.notifications
+package com.clearchain.app.presentation.notifications
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.AppNotification
+import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.presentation.components.DetailTopBar
 import com.clearchain.app.presentation.components.EmptyState
 import java.text.SimpleDateFormat
@@ -48,16 +49,16 @@ fun NotificationInboxScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = { viewModel.markAllAsRead() }) {
-                        Icon(Icons.Default.DoneAll, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.mark_all_read))
-                    }
-                    TextButton(onClick = { viewModel.clearAll() }) {
-                        Icon(Icons.Default.DeleteSweep, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.cd_clear_notifications))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.mark_all_read),
+                        onClick = { viewModel.markAllAsRead() },
+                        icon = Icons.Default.DoneAll
+                    )
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.cd_clear_notifications),
+                        onClick = { viewModel.clearAll() },
+                        icon = Icons.Default.DeleteSweep
+                    )
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

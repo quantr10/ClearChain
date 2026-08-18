@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.OrganizationType
@@ -49,7 +50,6 @@ import java.util.concurrent.TimeUnit
 fun ListingDetailScreen(
     listingId: String,
     onNavigateBack: () -> Unit,
-    onRequestPickup: (String) -> Unit,
     onNavigateToListingDetail: (String) -> Unit = {},
     onNavigateToStoreProfile: (String) -> Unit = {},
     onNavigateToEdit: (String) -> Unit = {},
@@ -105,25 +105,26 @@ fun ListingDetailScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick  = { viewModel.onEvent(ListingDetailEvent.SubmitReport) },
-                    enabled  = state.reportReason.isNotBlank() && !state.isSubmittingReport
-                ) {
-                    if (state.isSubmittingReport) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                    else Text(stringResource(R.string.btn_submit))
-                }
+                ClearChainButton(
+                    text = stringResource(R.string.btn_submit),
+                    onClick = { viewModel.onEvent(ListingDetailEvent.SubmitReport) },
+                    enabled = state.reportReason.isNotBlank(),
+                    loading = state.isSubmittingReport,
+                    fillMaxWidth = false
+                )
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.onEvent(ListingDetailEvent.DismissReportDialog) }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { viewModel.onEvent(ListingDetailEvent.DismissReportDialog) }
+                )
             }
         )
     }
 
     if (state.showDeleteConfirm) {
         ConfirmDialog(
-            title         = stringResource(R.string.action_delete_count, 1),
+            title         = stringResource(R.string.delete),
             message       = stringResource(R.string.msg_delete_listing_confirm, state.listing?.title ?: ""),
             confirmLabel  = stringResource(R.string.delete),
             isDestructive = true,
@@ -161,7 +162,9 @@ fun ListingDetailScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.action_update),
+                    onClick = {
                     val n = qty.toIntOrNull()
                     when {
                         n == null             -> qtyError = errInvalid
@@ -169,10 +172,13 @@ fun ListingDetailScreen(
                         n == listing.quantity -> qtyError = errSame
                         else -> { showEditQty = false; viewModel.onEvent(ListingDetailEvent.UpdateQuantity(n)) }
                     }
-                }) { Text(stringResource(R.string.action_update)) }
+                })
             },
             dismissButton = {
-                TextButton(onClick = { showEditQty = false }) { Text(stringResource(R.string.cancel)) }
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { showEditQty = false }
+                )
             }
         )
     }
@@ -181,7 +187,12 @@ fun ListingDetailScreen(
         AlertDialog(
             onDismissRequest = { fullscreenImageUrl = null },
             confirmButton    = {},
-            dismissButton    = { TextButton(onClick = { fullscreenImageUrl = null }) { Text(stringResource(R.string.close)) } },
+            dismissButton    = {
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.close),
+                    onClick = { fullscreenImageUrl = null }
+                )
+            },
             text = {
                 ZoomableImage(
                     imageUrl           = url,
@@ -203,7 +214,7 @@ fun ListingDetailScreen(
 
                 state.error != null -> EmptyState(
                     icon        = Icons.Default.ErrorOutline,
-                    title       = stringResource(R.string.error_failed_load_listing),
+                    title       = stringResource(R.string.error_generic),
                     subtitle    = state.error,
                     actionLabel = stringResource(R.string.retry),
                     onAction    = { viewModel.onEvent(ListingDetailEvent.LoadListing(listingId)) }
@@ -285,22 +296,7 @@ fun ListingDetailScreen(
 
                             // ── Status badge — top-left ────────────────────────
                             Box(modifier = Modifier.align(Alignment.TopStart).padding(8.dp)) {
-                                if (listing.isArchived) {
-                                    Surface(
-                                        shape = RoundedCornerShape(50),
-                                        color = Color(0xCC455A64)
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.tab_archived),
-                                            style      = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color      = Color.White,
-                                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                        )
-                                    }
-                                } else {
-                                    ListingStatusBadge(listing.status)
-                                }
+                                ListingStatusBadge(listing.status)
                             }
 
                             // ── 3 action buttons — top-right, horizontal row ───
@@ -313,19 +309,6 @@ fun ListingDetailScreen(
                                         icon  = Icons.Default.Edit,
                                         label = stringResource(R.string.action_edit_qty)
                                     ) { onNavigateToEdit(listing.id) }
-                                    if (listing.isArchived) {
-                                        ImageActionButton(
-                                            icon    = Icons.Default.Unarchive,
-                                            label   = stringResource(R.string.action_restore),
-                                            loading = state.isArchiving
-                                        ) { viewModel.onEvent(ListingDetailEvent.UnarchiveListing) }
-                                    } else {
-                                        ImageActionButton(
-                                            icon    = Icons.Default.Archive,
-                                            label   = stringResource(R.string.action_archive),
-                                            loading = state.isArchiving
-                                        ) { viewModel.onEvent(ListingDetailEvent.ArchiveListing) }
-                                    }
                                     ImageActionButton(
                                         icon    = Icons.Default.Delete,
                                         tint    = Color(0xFFFF6B6B),
@@ -335,7 +318,7 @@ fun ListingDetailScreen(
                                 } else {
                                     ImageActionButton(
                                         icon  = if (state.isSaved) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        tint  = if (state.isSaved) Color(0xFFFF6B6B) else Color.White,
+                                        tint  = if (state.isSaved) Color(0xFFFF6B6B) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         label = if (state.isSaved) stringResource(R.string.cd_remove_from_saved)
                                                 else stringResource(R.string.cd_save_listing),
                                         loading = state.isTogglingFave
@@ -454,8 +437,7 @@ fun ListingDetailScreen(
                                 CompactDetailRow(
                                     icon      = Icons.Default.CalendarToday,
                                     text      = expiryText,
-                                    textColor = expiryColor,
-                                    bold      = daysUntilExpiry <= 3
+                                    textColor = expiryColor
                                 )
                                 if (!listing.groceryHours.isNullOrBlank()) {
                                     CompactDetailRow(
@@ -496,11 +478,16 @@ fun ListingDetailScreen(
                                             )
                                             Text(
                                                 address,
-                                                style    = MaterialTheme.typography.labelMedium,
+                                                style    = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.SemiBold,
                                                 color    = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            Surface(
+                                            ClearChainActionIconButton(
+                                                icon = Icons.Default.Navigation,
+                                                contentDescription = stringResource(R.string.action_get_directions),
                                                 onClick = {
                                                     val encoded = Uri.encode(address)
                                                     val uri = Uri.parse("geo:0,0?q=$encoded")
@@ -516,18 +503,8 @@ fun ListingDetailScreen(
                                                                 Uri.parse("https://maps.google.com/?q=$encoded"))
                                                         )
                                                     }
-                                                },
-                                                shape = RoundedCornerShape(6.dp),
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                                            ) {
-                                                Text(
-                                                    stringResource(R.string.action_get_directions),
-                                                    style      = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color      = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                                )
-                                            }
+                                                }
+                                            )
                                         }
                                     }
 
@@ -543,7 +520,8 @@ fun ListingDetailScreen(
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                             Text(
                                                 phone,
-                                                style = MaterialTheme.typography.labelMedium,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -551,7 +529,20 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── Similar listings card (NGO only) ───────────────
+                            // Cart action (NGO only)
+                            if (!isGrocery && listing.status == ListingStatus.AVAILABLE) {
+                                ListingDetailCartAction(
+                                    listing = listing,
+                                    cartItem = state.cartItemsByListingId[listing.id],
+                                    availableQuantity = displayQty,
+                                    enabled = !state.isUpdatingCart,
+                                    onAddToCart = { viewModel.onEvent(ListingDetailEvent.AddToCart(it)) },
+                                    onIncrementCartItem = { viewModel.onEvent(ListingDetailEvent.IncrementCartItem(it)) },
+                                    onDecrementCartItem = { viewModel.onEvent(ListingDetailEvent.DecrementCartItem(it)) }
+                                )
+                            }
+
+                            // Similar listings card (NGO only)
                             if (!isGrocery && state.similarListings.isNotEmpty()) {
                                 SectionCard(stringResource(R.string.section_similar_listings)) {
                                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -563,19 +554,6 @@ fun ListingDetailScreen(
                                             )
                                         }
                                     }
-                                }
-                            }
-
-                            // ── Reserve button (NGO only) ──────────────────────
-                            if (!isGrocery && listing.status == ListingStatus.AVAILABLE) {
-                                Button(
-                                    onClick  = { onRequestPickup(listing.id) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape    = RoundedCornerShape(10.dp)
-                                ) {
-                                    Icon(Icons.Default.ShoppingCart, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(stringResource(R.string.action_request_pickup), fontWeight = FontWeight.SemiBold)
                                 }
                             }
 
@@ -631,10 +609,40 @@ private fun DetailImageCarousel(images: List<String>, title: String, onTap: (Str
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
+private fun ListingDetailCartAction(
+    listing: Listing,
+    cartItem: CartItemData?,
+    availableQuantity: Int,
+    enabled: Boolean,
+    onAddToCart: (String) -> Unit,
+    onIncrementCartItem: (String) -> Unit,
+    onDecrementCartItem: (String) -> Unit
+) {
+    if (cartItem == null || cartItem.requestedQuantity <= 0) {
+        ClearChainButton(
+            text = stringResource(R.string.cart_add_to_cart),
+            onClick = { onAddToCart(listing.id) },
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Default.ShoppingCart,
+            enabled = enabled && availableQuantity > 0
+        )
+    } else {
+        ClearChainQuantityStepper(
+            quantity = cartItem.requestedQuantity,
+            unit = listing.unit,
+            canIncrement = cartItem.requestedQuantity < availableQuantity,
+            enabled = enabled,
+            onDecrement = { onDecrementCartItem(listing.id) },
+            onIncrement = { onIncrementCartItem(listing.id) }
+        )
+    }
+}
+
+@Composable
 private fun ImageActionButton(
     icon:    ImageVector,
     label:   String,
-    tint:    Color = Color.White,
+    tint:    Color = MaterialTheme.colorScheme.onSurfaceVariant,
     loading: Boolean = false,
     onClick: () -> Unit
 ) {
@@ -642,12 +650,11 @@ private fun ImageActionButton(
         onClick         = onClick,
         modifier        = Modifier.size(24.dp),
         shape           = CircleShape,
-        color           = Color(0x99000000),
-        shadowElevation = 2.dp
+        color           = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
+                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = tint)
             } else {
                 Icon(icon, label, Modifier.size(18.dp), tint = tint)
             }
@@ -670,12 +677,12 @@ private fun SectionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 title,
-                style      = MaterialTheme.typography.labelLarge,
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
@@ -692,7 +699,7 @@ private fun SectionCard(
 private fun CompactSectionLabel(text: String) {
     Text(
         text       = text,
-        style      = MaterialTheme.typography.labelLarge,
+        style      = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         color      = MaterialTheme.colorScheme.onSurface
     )
@@ -707,7 +714,7 @@ private fun CompactDetailRow(
     icon:      ImageVector,
     text:      String,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
-    bold:      Boolean = false
+    bold:      Boolean = true
 ) {
     Row(
         verticalAlignment     = Alignment.CenterVertically,
@@ -716,10 +723,9 @@ private fun CompactDetailRow(
         Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
             text,
-            style      = MaterialTheme.typography.labelMedium,
+            style      = MaterialTheme.typography.labelSmall,
             color      = textColor,
             fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
         )
     }
 }
-

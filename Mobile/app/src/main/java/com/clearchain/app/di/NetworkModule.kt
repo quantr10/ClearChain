@@ -92,6 +92,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCartApi(retrofit: Retrofit): CartApi =
+        retrofit.create(CartApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideAdminApi(retrofit: Retrofit): AdminApi {
         return retrofit.create(AdminApi::class.java)
     }

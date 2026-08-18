@@ -27,6 +27,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Report> Reports { get; set; } = null!;
     public DbSet<Dispute> Disputes { get; set; } = null!;
     public DbSet<SavedListing> SavedListings { get; set; } = null!;
+    public DbSet<Cart> Carts { get; set; } = null!;
+    public DbSet<CartItem> CartItems { get; set; } = null!;
+    public DbSet<PickupRequestItem> PickupRequestItems { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +50,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Report>().ToTable("reports");
         modelBuilder.Entity<Dispute>().ToTable("disputes");
         modelBuilder.Entity<SavedListing>().ToTable("savedlistings");
+        modelBuilder.Entity<Cart>().ToTable("carts");
+        modelBuilder.Entity<CartItem>().ToTable("cartitems");
+        modelBuilder.Entity<PickupRequestItem>().ToTable("pickuprequestitems");
         
         // Configure ListingGroup - ClearanceListing relationship
         modelBuilder.Entity<ListingGroup>()
@@ -137,6 +143,43 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SavedListing>()
             .HasOne(s => s.Listing).WithMany().HasForeignKey(s => s.ListingId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SavedListing>().HasIndex(s => new { s.NgoId, s.ListingId }).IsUnique();
+
+        // Cart
+        modelBuilder.Entity<Cart>()
+            .HasOne(c => c.Ngo).WithMany().HasForeignKey(c => c.NgoId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Cart>()
+            .HasIndex(c => c.NgoId).IsUnique();
+
+        modelBuilder.Entity<CartItem>()
+            .HasOne(ci => ci.Cart).WithMany(c => c.Items).HasForeignKey(ci => ci.CartId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<CartItem>()
+            .HasOne(ci => ci.Listing).WithMany().HasForeignKey(ci => ci.ListingId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<CartItem>()
+            .HasOne(ci => ci.Grocery).WithMany().HasForeignKey(ci => ci.GroceryId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<CartItem>()
+            .HasIndex(ci => new { ci.CartId, ci.ListingId }).IsUnique();
+        modelBuilder.Entity<CartItem>()
+            .HasIndex(ci => ci.GroceryId);
+
+        // Multi-listing pickup request items
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasOne(i => i.PickupRequest).WithMany(r => r.Items).HasForeignKey(i => i.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasOne(i => i.Group).WithMany().HasForeignKey(i => i.ListingGroupId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasOne(i => i.OriginalListing).WithMany().HasForeignKey(i => i.OriginalListingId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasOne(i => i.ReservedListing).WithMany().HasForeignKey(i => i.ReservedListingId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasIndex(i => i.PickupRequestId);
+        modelBuilder.Entity<PickupRequestItem>()
+            .HasIndex(i => i.ListingGroupId);
+
+        modelBuilder.Entity<ClearanceListing>()
+            .HasOne<ClearanceListing>()
+            .WithMany()
+            .HasForeignKey(l => l.SplitFromListingId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Indexes
         modelBuilder.Entity<Organization>()

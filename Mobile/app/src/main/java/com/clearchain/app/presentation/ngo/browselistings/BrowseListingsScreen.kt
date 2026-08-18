@@ -29,9 +29,11 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
+import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.launch
@@ -44,10 +46,11 @@ fun BrowseListingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showLocationSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isLocationSet, state.isCheckingLocation) {
         if (!state.isCheckingLocation && !state.isLocationSet) {
-            navController.navigate(Screen.LocationPicker.route) { launchSingleTop = true }
+            showLocationSheet = true
         }
     }
 
@@ -69,32 +72,51 @@ fun BrowseListingsScreen(
         )
     }
 
+    if (showLocationSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                if (state.isLocationSet) showLocationSheet = false
+            },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+            ) {
+                Text(
+                    text = stringResource(R.string.location_picker_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
+                )
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    LocationPickerScreen(
+                        onLocationSelected = { showLocationSheet = false },
+                        onDismiss = if (state.isLocationSet) {
+                            { showLocationSheet = false }
+                        } else {
+                            null
+                        },
+                        showTopBar = false
+                    )
+                }
+            }
+        }
+    }
+
     Scaffold(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.allListings.isEmpty() ->
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            Column(modifier = Modifier.fillMaxSize()) {
 
-                state.error != null && state.allListings.isEmpty() ->
-                    EmptyState(
-                        icon        = Icons.Default.ErrorOutline,
-                        title       = stringResource(R.string.error_generic),
-                        subtitle    = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction    = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }
-                    )
+                        // -- Static header --------------------------------------------------
 
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-
-                        // ── Static header ──────────────────────────────────────────────────
-
-                        // Row 1: Search + location pin + favorites + filter
+                        // Row 1: Search + location pin + filter
                         Row(
-                            modifier = Modifier.padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -102,23 +124,28 @@ fun BrowseListingsScreen(
                                 query         = state.searchQuery,
                                 onQueryChange = { viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it)) },
                                 placeholder   = stringResource(R.string.hint_search_by_name_grocery),
-                                modifier      = Modifier.weight(1f).padding(start = 8.dp)
+                                modifier      = Modifier.weight(1f)
                             )
                             if (state.isLocationSet) {
                                 ClearChainActionIconButton(
                                     icon               = Icons.Default.Place,
                                     contentDescription = stringResource(R.string.cd_change_location),
-                                    onClick            = { navController.navigate(Screen.LocationPickerEdit.route) },
+                                    onClick            = { showLocationSheet = true },
                                     tint               = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            ClearChainActionIconButton(
-                                icon               = if (state.showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = stringResource(R.string.cd_saved_only),
-                                onClick            = { viewModel.onEvent(BrowseListingsEvent.ToggleFavoritesOnly) },
-                                tint               = if (state.showFavoritesOnly) MaterialTheme.colorScheme.error
-                                                     else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            BadgedBox(
+                                badge = {
+                                    if (state.cartItemCount > 0) Badge { Text(state.cartItemCount.toString()) }
+                                }
+                            ) {
+                                ClearChainActionIconButton(
+                                    icon               = Icons.Default.ShoppingCart,
+                                    contentDescription = "Cart",
+                                    onClick            = { viewModel.onEvent(BrowseListingsEvent.OpenCart) },
+                                    tint               = MaterialTheme.colorScheme.primary
+                                )
+                            }
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -135,9 +162,8 @@ fun BrowseListingsScreen(
                         // Row 2: List | Map tab switcher
                         Row(
                             modifier = Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             FilterChip(
                                 selected = !state.showMapView,
@@ -160,37 +186,40 @@ fun BrowseListingsScreen(
                                 itemName       = "listing",
                                 selectedSort   = state.selectedSort,
                                 onSortSelected = { viewModel.onEvent(BrowseListingsEvent.SortOptionChanged(it)) },
-                                sortOptions    = state.availableSortOptions,
-                                modifier       = Modifier.padding(bottom = 8.dp)
+                                sortOptions    = state.availableSortOptions
                             )
                         }
 
-                        state.error?.let {
-                            ErrorBanner(
-                                message   = it,
-                                onDismiss = { viewModel.onEvent(BrowseListingsEvent.ClearError) },
-                                modifier  = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
+                        // -- Content --------------------------------------------------------
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                            when {
+                                state.isLoading && state.allListings.isEmpty() ->
+                                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                        // ── Content ────────────────────────────────────────────────────────
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (state.showMapView) {
-                                GroceryMapView(state = state, viewModel = viewModel, navController = navController)
-                            } else {
-                                ListingsListView(state = state, viewModel = viewModel, navController = navController)
+                                state.error != null && state.allListings.isEmpty() ->
+                                    EmptyState(
+                                        icon        = Icons.Default.ErrorOutline,
+                                        title       = stringResource(R.string.error_generic),
+                                        subtitle    = state.error,
+                                        actionLabel = stringResource(R.string.retry),
+                                        onAction    = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }
+                                    )
+
+                                state.showMapView ->
+                                    GroceryMapView(state = state, viewModel = viewModel, navController = navController)
+
+                                else ->
+                                    ListingsListView(state = state, viewModel = viewModel, navController = navController)
                             }
                         }
-                    }
-                }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // List view
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun ListingsListView(
@@ -221,6 +250,7 @@ private fun ListingsListView(
             ) {
                 items(items = state.filteredListings, key = { it.id }) { listing ->
                     val isFavorited = listing.id in state.favoritedIds
+                    val cartItem = state.cartItemsByListingId[listing.id]
                     ListingCard(
                         listing             = listing,
                         showGroceryInfo     = true,
@@ -230,7 +260,7 @@ private fun ListingsListView(
                         topRightAction      = {
                             IconButton(
                                 onClick  = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(listing.id)) },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
                                     imageVector        = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -244,15 +274,14 @@ private fun ListingsListView(
                             navController.navigate(Screen.PublicProfile.createRoute(listing.groceryId))
                         },
                         primaryAction       = {
-                            Button(
-                                onClick  = { viewModel.onEvent(BrowseListingsEvent.NavigateToRequestPickup(listing.id)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape    = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.ShoppingCart, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_request_pickup))
-                            }
+                            ListingCartAction(
+                                listing = listing,
+                                cartItem = cartItem,
+                                enabled = !state.isUpdatingCart,
+                                onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
+                                onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
+                                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) }
+                            )
                         }
                     )
                 }
@@ -262,9 +291,37 @@ private fun ListingsListView(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun ListingCartAction(
+    listing: Listing,
+    cartItem: CartItemData?,
+    enabled: Boolean,
+    onAddToCart: (String) -> Unit,
+    onIncrementCartItem: (String) -> Unit,
+    onDecrementCartItem: (String) -> Unit
+) {
+    if (cartItem == null || cartItem.requestedQuantity <= 0) {
+        ClearChainButton(
+            text = stringResource(R.string.cart_add_to_cart),
+            onClick = { onAddToCart(listing.id) },
+            modifier = Modifier.fillMaxWidth(),
+            icon = Icons.Default.ShoppingCart,
+            enabled = enabled
+        )
+    } else {
+        ClearChainQuantityStepper(
+            quantity = cartItem.requestedQuantity,
+            unit = listing.unit,
+            canIncrement = cartItem.requestedQuantity < listing.quantity,
+            enabled = enabled,
+            onDecrement = { onDecrementCartItem(listing.id) },
+            onIncrement = { onIncrementCartItem(listing.id) }
+        )
+    }
+}
+// -----------------------------------------------------------------------------
 // Map view
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -382,9 +439,13 @@ private fun GroceryMapView(
             GroceryPinSheet(
                 listings           = listings,
                 favoritedIds       = state.favoritedIds,
+                cartItemsByListingId = state.cartItemsByListingId,
+                isUpdatingCart     = state.isUpdatingCart,
                 onNavigateToDetail = { navController.navigate(Screen.ListingDetail.createRoute(it)) },
                 onNavigateToProfile = { navController.navigate(Screen.PublicProfile.createRoute(it)) },
-                onRequestPickup    = { viewModel.onEvent(BrowseListingsEvent.NavigateToRequestPickup(it)) },
+                onAddToCart        = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
+                onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
+                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
                 onToggleFavorite   = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(it)) },
                 onDismiss          = { viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet) }
             )
@@ -438,9 +499,13 @@ private fun GroceryPinContent(name: String, count: Int) {
 private fun GroceryPinSheet(
     listings:            List<Listing>,
     favoritedIds:        Set<String>,
+    cartItemsByListingId: Map<String, CartItemData>,
+    isUpdatingCart:      Boolean,
     onNavigateToDetail:  (String) -> Unit,
     onNavigateToProfile: (String) -> Unit,
-    onRequestPickup:     (String) -> Unit,
+    onAddToCart:         (String) -> Unit,
+    onIncrementCartItem: (String) -> Unit,
+    onDecrementCartItem: (String) -> Unit,
     onToggleFavorite:    (String) -> Unit,
     onDismiss:           () -> Unit
 ) {
@@ -479,6 +544,7 @@ private fun GroceryPinSheet(
             if (listings.size == 1) {
                 val listing     = listings.first()
                 val isFavorited = listing.id in favoritedIds
+                val cartItem    = cartItemsByListingId[listing.id]
                 ListingCard(
                     listing              = listing,
                     showGroceryInfo      = false,
@@ -488,7 +554,7 @@ private fun GroceryPinSheet(
                     topRightAction       = {
                         IconButton(
                             onClick  = { onToggleFavorite(listing.id) },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
                                 imageVector        = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -500,15 +566,14 @@ private fun GroceryPinSheet(
                     },
                     onGroceryAvatarClick = { onNavigateToProfile(listing.groceryId) },
                     primaryAction        = {
-                        Button(
-                            onClick  = { onRequestPickup(listing.id) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape    = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.ShoppingCart, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.action_request_pickup))
-                        }
+                        ListingCartAction(
+                            listing = listing,
+                            cartItem = cartItem,
+                            enabled = !isUpdatingCart,
+                            onAddToCart = onAddToCart,
+                            onIncrementCartItem = onIncrementCartItem,
+                            onDecrementCartItem = onDecrementCartItem
+                        )
                     }
                 )
             } else {
@@ -521,6 +586,7 @@ private fun GroceryPinSheet(
                 ) { page ->
                     val listing     = listings[page]
                     val isFavorited = listing.id in favoritedIds
+                    val cartItem    = cartItemsByListingId[listing.id]
                     ListingCard(
                         listing              = listing,
                         showGroceryInfo      = false,
@@ -528,7 +594,7 @@ private fun GroceryPinSheet(
                         topRightAction       = {
                             IconButton(
                                 onClick  = { onToggleFavorite(listing.id) },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
                                     imageVector        = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -540,15 +606,14 @@ private fun GroceryPinSheet(
                         },
                         onGroceryAvatarClick = { onNavigateToProfile(listing.groceryId) },
                         primaryAction        = {
-                            Button(
-                                onClick  = { onRequestPickup(listing.id) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape    = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.ShoppingCart, null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_request_pickup))
-                            }
+                            ListingCartAction(
+                                listing = listing,
+                                cartItem = cartItem,
+                                enabled = !isUpdatingCart,
+                                onAddToCart = onAddToCart,
+                                onIncrementCartItem = onIncrementCartItem,
+                                onDecrementCartItem = onDecrementCartItem
+                            )
                         }
                     )
                 }
@@ -579,9 +644,9 @@ private fun GroceryPinSheet(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Advanced Filter Bottom Sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -612,10 +677,27 @@ private fun AdvancedFilterSheet(
                     fontWeight = FontWeight.Bold
                 )
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(BrowseListingsEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(BrowseListingsEvent.ClearAdvancedFilters) }
+                    )
                 }
+            }
+
+            // Saved listings
+            FilterSection(title = stringResource(R.string.saved_listings)) {
+                FilterChip(
+                    selected = state.showFavoritesOnly,
+                    onClick  = { onEvent(BrowseListingsEvent.ToggleFavoritesOnly) },
+                    label    = { Text(stringResource(R.string.cd_saved_only), style = MaterialTheme.typography.labelSmall) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (state.showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
             }
 
             // Category
@@ -647,7 +729,7 @@ private fun AdvancedFilterSheet(
             FilterSection(title = stringResource(R.string.filter_quantity_range)) {
                 val qtyLabel = when {
                     state.filterMinQuantity > 0 && state.filterMaxQuantity != null ->
-                        "${state.filterMinQuantity}–${state.filterMaxQuantity} units"
+                        "${state.filterMinQuantity}-${state.filterMaxQuantity} units"
                     state.filterMinQuantity > 0 -> "Min ${state.filterMinQuantity} units"
                     state.filterMaxQuantity != null -> "Up to ${state.filterMaxQuantity} units"
                     else -> stringResource(R.string.filter_any)
@@ -716,9 +798,11 @@ private fun AdvancedFilterSheet(
                 }
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

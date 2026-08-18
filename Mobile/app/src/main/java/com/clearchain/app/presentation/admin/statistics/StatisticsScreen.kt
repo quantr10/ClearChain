@@ -17,6 +17,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -192,16 +195,14 @@ fun StatisticsScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
 
-                                // Daily activity heatmap
-                                if (detailed.dailyTrend.isNotEmpty()) {
-                                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                        SectionHeader(stringResource(R.string.section_daily_activity))
-                                    }
-                                    DailyHeatmapCard(
-                                        trend    = detailed.dailyTrend,
-                                        modifier = Modifier.padding(horizontal = 16.dp)
-                                    )
+                                // Activity trend
+                                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                    SectionHeader(stringResource(R.string.section_activity_trend))
                                 }
+                                ActivityTrendCard(
+                                    trend = detailed.dailyTrend,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
 
                                 // Period-over-period comparison
                                 state.previousDetailedStats?.let { prev ->
@@ -706,6 +707,139 @@ private fun OrgGeographicMap(orgs: List<Organization>) {
 }
 
 // ── Daily Activity Heatmap ────────────────────────────────────────────────────
+
+@Composable
+private fun ActivityTrendCard(
+    trend: List<DailyTrendItem>,
+    modifier: Modifier = Modifier
+) {
+    val points = trend.takeLast(14)
+    val lineColor = MaterialTheme.colorScheme.primary
+    val axisColor = MaterialTheme.colorScheme.outlineVariant
+    val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    val maxCount = points.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.ShowChart, null, tint = lineColor)
+                Text(
+                    stringResource(R.string.section_activity_trend),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "${points.sumOf { it.count }}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = lineColor
+                )
+            }
+
+            if (points.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(R.string.no_data),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                return@Column
+            }
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+            ) {
+                val leftPad = 10.dp.toPx()
+                val rightPad = 10.dp.toPx()
+                val topPad = 12.dp.toPx()
+                val bottomPad = 28.dp.toPx()
+                val chartWidth = size.width - leftPad - rightPad
+                val chartHeight = size.height - topPad - bottomPad
+                val bottomY = topPad + chartHeight
+
+                drawLine(
+                    color = axisColor,
+                    start = Offset(leftPad, bottomY),
+                    end = Offset(size.width - rightPad, bottomY),
+                    strokeWidth = 1.dp.toPx()
+                )
+
+                val xStep = if (points.size == 1) 0f else chartWidth / (points.size - 1)
+                val offsets = points.mapIndexed { index, item ->
+                    val x = if (points.size == 1) leftPad + chartWidth / 2 else leftPad + index * xStep
+                    val normalized = item.count.toFloat() / maxCount
+                    val y = bottomY - normalized * chartHeight
+                    Offset(x, y)
+                }
+
+                val fillPath = Path().apply {
+                    moveTo(offsets.first().x, bottomY)
+                    offsets.forEachIndexed { index, point ->
+                        if (index == 0) lineTo(point.x, point.y) else lineTo(point.x, point.y)
+                    }
+                    lineTo(offsets.last().x, bottomY)
+                    close()
+                }
+                drawPath(fillPath, fillColor)
+
+                val linePath = Path().apply {
+                    moveTo(offsets.first().x, offsets.first().y)
+                    offsets.drop(1).forEach { lineTo(it.x, it.y) }
+                }
+                drawPath(
+                    path = linePath,
+                    color = lineColor,
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                offsets.forEach { point ->
+                    drawCircle(color = lineColor, radius = 4.dp.toPx(), center = point)
+                    drawCircle(color = Color.White, radius = 2.dp.toPx(), center = point)
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    points.first().date.takeLast(5),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    stringResource(R.string.analytics_completed_pickups_count, points.sumOf { it.count }),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    points.last().date.takeLast(5),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun DailyHeatmapCard(

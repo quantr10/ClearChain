@@ -66,6 +66,8 @@ data class OrganizationDto(
     // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val state: String? = null,
+    val zipCode: String? = null,
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null
@@ -126,6 +128,7 @@ fun OrganizationDto.toDomain(): Organization {
         },
         hours = hours, profilePictureUrl = profilePictureUrl, createdAt = createdAt,
         latitude = latitude, longitude = longitude,
+        state = state, zipCode = zipCode,
         contactPerson = contactPerson, pickupInstructions = pickupInstructions,
         description = description
     )

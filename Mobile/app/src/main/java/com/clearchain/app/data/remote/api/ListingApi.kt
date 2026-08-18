@@ -57,6 +57,6 @@ interface ListingApi {
     @PUT("listings/{id}/archive")
     suspend fun archiveListing(@Path("id") id: String): ListingResponse
 
-    @PUT("listings/{id}/unarchive")
-    suspend fun unarchiveListing(@Path("id") id: String): ListingResponse
+    @PUT("listings/{id}/restore")
+    suspend fun restoreListing(@Path("id") id: String): ListingResponse
 }

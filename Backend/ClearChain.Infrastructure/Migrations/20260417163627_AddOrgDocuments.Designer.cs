@@ -32,10 +32,6 @@ namespace ClearChain.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("archivedat");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("text")
@@ -60,10 +56,6 @@ namespace ClearChain.Infrastructure.Migrations
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uuid")
                         .HasColumnName("groupid");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean")
-                        .HasColumnName("isarchived");
 
                     b.Property<string>("Notes")
                         .HasColumnType("text")

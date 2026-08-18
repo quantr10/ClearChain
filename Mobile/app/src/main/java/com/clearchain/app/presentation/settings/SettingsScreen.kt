@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.settings
+package com.clearchain.app.presentation.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.BuildConfig
 import com.clearchain.app.R
+import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.presentation.components.DetailTopBar
 
 @Composable
@@ -35,7 +36,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // ── Appearance ────────────────────────────────────────────────
+            // -- Appearance ------------------------------------------------
             SettingsSectionHeader(stringResource(R.string.theme))
 
             SettingsItem(
@@ -49,15 +50,14 @@ fun SettingsScreen(
             ) {
                 var expanded by remember { mutableStateOf(false) }
                 Box {
-                    TextButton(onClick = { expanded = true }) {
-                        Text(
-                            text = when (state.theme) {
-                                "light" -> stringResource(R.string.theme_light)
-                                "dark"  -> stringResource(R.string.theme_dark)
-                                else    -> stringResource(R.string.theme_system)
-                            }
-                        )
-                    }
+                    ClearChainOutlinedButton(
+                        text = when (state.theme) {
+                            "light" -> stringResource(R.string.theme_light)
+                            "dark"  -> stringResource(R.string.theme_dark)
+                            else    -> stringResource(R.string.theme_system)
+                        },
+                        onClick = { expanded = true }
+                    )
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         listOf(
                             "system" to R.string.theme_system,
@@ -79,29 +79,28 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Language ──────────────────────────────────────────────────
+            // -- Language --------------------------------------------------
             SettingsItem(
                 icon = Icons.Default.Language,
                 title = stringResource(R.string.language),
                 subtitle = when (state.language) {
-                    "vi" -> "Tiếng Việt"
+                    "vi" -> "Ti?ng Vi?t"
                     else -> "English"
                 }
             ) {
                 var expanded by remember { mutableStateOf(false) }
                 Box {
-                    TextButton(onClick = { expanded = true }) {
-                        Text(
-                            text = when (state.language) {
-                                "vi" -> "VI"
-                                else -> "EN"
-                            }
-                        )
-                    }
+                    ClearChainOutlinedButton(
+                        text = when (state.language) {
+                            "vi" -> "VI"
+                            else -> "EN"
+                        },
+                        onClick = { expanded = true }
+                    )
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         listOf(
                             "en" to "English",
-                            "vi" to "Tiếng Việt"
+                            "vi" to "Ti?ng Vi?t"
                         ).forEach { (code, name) ->
                             DropdownMenuItem(
                                 text = { Text(name) },
@@ -120,7 +119,7 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // ── Notifications ─────────────────────────────────────────────
+            // -- Notifications ---------------------------------------------
             SettingsSectionHeader(stringResource(R.string.notifications_settings))
 
             SettingsSwitchItem(
@@ -146,7 +145,7 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // ── About ─────────────────────────────────────────────────────
+            // -- About -----------------------------------------------------
             SettingsSectionHeader(stringResource(R.string.about))
 
             SettingsItem(
@@ -170,7 +169,7 @@ fun SettingsScreen(
     }
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// -- Sub-components ------------------------------------------------------------
 
 @Composable
 private fun SettingsSectionHeader(title: String) {

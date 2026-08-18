@@ -112,15 +112,6 @@ fun AdminDashboardScreen(
                 modifier            = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // ── Error banner ───────────────────────────────────────────
-                AnimatedVisibility(visible = state.error != null, enter = fadeIn(), exit = fadeOut()) {
-                    AlertBanner(
-                        message = state.error ?: "",
-                        type    = AlertType.ERROR,
-                        icon    = Icons.Default.ErrorOutline
-                    )
-                }
-
                 if (state.isLoading && state.stats == null) {
                     Box(
                         modifier         = Modifier.fillMaxWidth().height(200.dp),
@@ -230,28 +221,26 @@ fun AdminDashboardScreen(
                 }
 
                 // ── Quick actions ──────────────────────────────────────────
-                DashboardSection(title = stringResource(R.string.admin_dashboard)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        DashboardActionCard(
-                            icon     = Icons.Default.VerifiedUser,
-                            title    = stringResource(R.string.verification_queue),
-                            subtitle = stringResource(R.string.admin_pending_approvals, state.stats?.unverifiedOrganizations ?: 0),
-                            badge    = state.stats?.unverifiedOrganizations?.takeIf { it > 0 }?.toString(),
-                            onClick  = { navController.navigate(Screen.Verification.route) }
-                        )
-                        DashboardActionCard(
-                            icon     = Icons.Default.History,
-                            title    = stringResource(R.string.transactions),
-                            subtitle = stringResource(R.string.admin_total_requests, state.stats?.totalPickupRequests ?: 0),
-                            onClick  = { navController.navigate(Screen.Transactions.route) }
-                        )
-                        DashboardActionCard(
-                            icon     = Icons.Default.BarChart,
-                            title    = stringResource(R.string.statistics),
-                            subtitle = stringResource(R.string.system_health),
-                            onClick  = { navController.navigate(Screen.AdminStatistics.route) }
-                        )
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    DashboardActionCard(
+                        icon     = Icons.Default.VerifiedUser,
+                        title    = stringResource(R.string.verification_queue),
+                        subtitle = stringResource(R.string.admin_pending_approvals, state.stats?.unverifiedOrganizations ?: 0),
+                        badge    = state.stats?.unverifiedOrganizations?.takeIf { it > 0 }?.toString(),
+                        onClick  = { navController.navigate(Screen.Verification.route) }
+                    )
+                    DashboardActionCard(
+                        icon     = Icons.Default.History,
+                        title    = stringResource(R.string.transactions),
+                        subtitle = stringResource(R.string.admin_total_requests, state.stats?.totalPickupRequests ?: 0),
+                        onClick  = { navController.navigate(Screen.Transactions.route) }
+                    )
+                    DashboardActionCard(
+                        icon     = Icons.Default.BarChart,
+                        title    = stringResource(R.string.statistics),
+                        subtitle = stringResource(R.string.system_health),
+                        onClick  = { navController.navigate(Screen.AdminStatistics.route) }
+                    )
                 }
 
                 // ── Recent activity feed ───────────────────────────────────
