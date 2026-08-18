@@ -207,19 +207,6 @@ namespace ClearChain.Infrastructure.Migrations
                 type: "text",
                 nullable: true);
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "archivedat",
-                table: "clearancelistings",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<bool>(
-                name: "isarchived",
-                table: "clearancelistings",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
-
             migrationBuilder.AddColumn<int>(
                 name: "viewcount",
                 table: "clearancelistings",
@@ -698,14 +685,6 @@ namespace ClearChain.Infrastructure.Migrations
             migrationBuilder.DropColumn(
                 name: "sourcepickuprequestid",
                 table: "inventory");
-
-            migrationBuilder.DropColumn(
-                name: "archivedat",
-                table: "clearancelistings");
-
-            migrationBuilder.DropColumn(
-                name: "isarchived",
-                table: "clearancelistings");
 
             migrationBuilder.DropColumn(
                 name: "viewcount",

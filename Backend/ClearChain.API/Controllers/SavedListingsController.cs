@@ -1,4 +1,5 @@
 using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,8 @@ public class SavedListingsController : ControllerBase
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
         var listing = await _context.ClearanceListings.FindAsync(listingId);
-        if (listing == null) return NotFound(new { message = "Listing not found" });
+        if (listing == null || listing.Status == ListingStatus.Archived)
+            return NotFound(new { message = "Listing not found" });
 
         var alreadySaved = await _context.SavedListings
             .AnyAsync(s => s.NgoId == userId && s.ListingId == listingId);
@@ -73,7 +75,7 @@ public class SavedListingsController : ControllerBase
 
         var query = _context.SavedListings
             .Include(s => s.Listing).ThenInclude(l => l!.Grocery)
-            .Where(s => s.NgoId == userId && s.Listing != null && !s.Listing.IsArchived);
+            .Where(s => s.NgoId == userId && s.Listing != null && s.Listing.Status != ListingStatus.Archived);
 
         var total = await query.CountAsync();
         var items = await query
@@ -121,7 +123,7 @@ public class SavedListingsController : ControllerBase
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
         var ids = await _context.SavedListings
-            .Where(s => s.NgoId == userId)
+            .Where(s => s.NgoId == userId && s.Listing != null && s.Listing.Status != ListingStatus.Archived)
             .Select(s => s.ListingId.ToString())
             .ToListAsync();
 

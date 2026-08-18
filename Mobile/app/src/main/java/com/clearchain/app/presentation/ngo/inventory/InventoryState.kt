@@ -71,31 +71,6 @@ data class InventoryState(
         (if (filterMinQty > 0.0) 1 else 0) +
         (if (filterMaxQty != null) 1 else 0)
 
-    val expiringItems: List<InventoryItem> get() {
-        val today = java.time.LocalDate.now()
-        val threshold = today.plusDays(3)
-        return allItems.filter { item ->
-            item.status == InventoryStatus.ACTIVE &&
-            runCatching {
-                val exp = java.time.LocalDate.parse(item.expiryDate.take(10))
-                !exp.isBefore(today) && !exp.isAfter(threshold)
-            }.getOrDefault(false)
-        }
-    }
-
-    // Items expiring within 48 hours (critical level)
-    val criticalExpiryItems: List<InventoryItem> get() {
-        val today = java.time.LocalDate.now()
-        val threshold = today.plusDays(2)
-        return allItems.filter { item ->
-            item.status == InventoryStatus.ACTIVE &&
-            runCatching {
-                val exp = java.time.LocalDate.parse(item.expiryDate.take(10))
-                !exp.isBefore(today) && !exp.isAfter(threshold)
-            }.getOrDefault(false)
-        }
-    }
-
     val categoryBreakdown: List<Pair<String, Int>> get() =
         allItems.filter { it.status == InventoryStatus.ACTIVE }
             .groupBy { it.category }

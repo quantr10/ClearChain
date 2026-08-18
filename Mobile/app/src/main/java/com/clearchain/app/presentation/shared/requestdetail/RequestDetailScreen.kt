@@ -10,17 +10,20 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -43,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.clearchain.app.R
@@ -50,7 +54,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
-import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.MessageApi
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
@@ -61,14 +64,14 @@ import com.clearchain.app.data.remote.dto.ReviewData
 import com.clearchain.app.data.remote.dto.SendMessageRequest
 import com.clearchain.app.data.remote.dto.SubmitReviewRequest
 import com.clearchain.app.data.remote.dto.toDomain
-import com.clearchain.app.domain.model.FoodCategory
-import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.domain.model.PickupRequestItem
 import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -87,7 +90,7 @@ import android.graphics.Color as AColor
 
 private const val PICKUP_CHECKLIST_SIZE = 5
 
-// ═══ State ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â State ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 data class RequestDetailState(
     val request: PickupRequest? = null,
     val isLoading: Boolean = false,
@@ -102,7 +105,6 @@ data class RequestDetailState(
     val messageInput: String = "",
     val isSendingMessage: Boolean = false,
     val isLoadingMessages: Boolean = false,
-    val similarListings: List<Listing> = emptyList(),
     val myReview: ReviewData? = null,
     val ngoReview: ReviewData? = null,
     val isLoadingReview: Boolean = false,
@@ -115,13 +117,12 @@ data class RequestDetailState(
     val allChecked: Boolean get() = checkedItems.size == PICKUP_CHECKLIST_SIZE
 }
 
-// ═══ ViewModel ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â ViewModel ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @HiltViewModel
 class RequestDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val pickupRequestApi: PickupRequestApi,
     private val messageApi: MessageApi,
-    private val listingApi: ListingApi,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val confirmPickupUseCase: ConfirmPickupUseCase,
     private val reviewApi: ReviewApi,
@@ -155,7 +156,6 @@ class RequestDetailViewModel @Inject constructor(
                 _state.update { it.copy(request = req, isLoading = false) }
                 loadMessages(requestId)
                 if (_state.value.currentUserType == OrganizationType.NGO) {
-                    loadSimilarListings(req.groceryId)
                     loadGroceryProfile(req.groceryId)
                 }
                 if (req.status == PickupRequestStatus.COMPLETED) {
@@ -260,7 +260,7 @@ class RequestDetailViewModel @Inject constructor(
         fun row(label: String, value: String) {
             canvas.drawText(label, 40f, y, labelPaint); canvas.drawText(value, 220f, y, valuePaint); y += 24f
         }
-        row(context.getString(R.string.label_reference_id), request.id.take(16) + "…")
+        row(context.getString(R.string.label_reference_id), request.id.take(16) + "ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦")
         row(context.getString(R.string.label_food_item),    request.listingTitle)
         row(context.getString(R.string.label_category),     request.listingCategory)
         row(context.getString(R.string.listing_quantity),   "${request.requestedQuantity}")
@@ -283,19 +283,6 @@ class RequestDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { organizationApi.getPublicProfile(groceryId).data }
                 .onSuccess { profile -> _state.update { it.copy(groceryProfile = profile) } }
-        }
-    }
-
-    private fun loadSimilarListings(groceryId: String) {
-        viewModelScope.launch {
-            try {
-                val response = listingApi.getAllListings(
-                    status = "open",
-                    groceryId = groceryId,
-                    pageSize = 6
-                )
-                _state.update { it.copy(similarListings = response.data.map { d -> d.toDomain() }) }
-            } catch (_: Exception) {}
         }
     }
 
@@ -384,7 +371,7 @@ class RequestDetailViewModel @Inject constructor(
     }
 }
 
-// ═══ Screen ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Screen ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RequestDetailScreen(
@@ -475,7 +462,7 @@ fun RequestDetailScreen(
         )
     }
 
-    // Step 1 — Checklist verification sheet
+    // Step 1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Checklist verification sheet
     if (showChecklistSheet) {
         PickupChecklistSheet(
             onDismiss = { showChecklistSheet = false },
@@ -483,7 +470,7 @@ fun RequestDetailScreen(
         )
     }
 
-    // Step 2 — Camera or Gallery choice
+    // Step 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Camera or Gallery choice
     if (showPhotoSourceDialog) {
         PhotoSourceDialog(
             onDismiss = { showPhotoSourceDialog = false },
@@ -505,7 +492,7 @@ fun RequestDetailScreen(
         )
     }
 
-    // Step 3 — Preview before upload
+    // Step 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Preview before upload
     if (showPhotoPreview && pendingPickupPhotoUri != null) {
         PhotoPreviewDialog(
             uri       = pendingPickupPhotoUri!!,
@@ -526,13 +513,19 @@ fun RequestDetailScreen(
             title   = { Text(stringResource(R.string.label_reject_request)) },
             text    = { Text(stringResource(R.string.msg_reject_request_notice)) },
             confirmButton = {
-                Button(
+                ClearChainButton(
+                    text = stringResource(R.string.reject),
                     onClick = { viewModel.reject(requestId) },
-                    colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(R.string.reject)) }
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                    fillMaxWidth = false
+                )
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissRejectDialog() }) { Text(stringResource(R.string.cancel)) }
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { viewModel.dismissRejectDialog() }
+                )
             }
         )
     }
@@ -580,7 +573,7 @@ fun RequestDetailScreen(
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 state.error != null -> EmptyState(
                     icon        = Icons.Default.ErrorOutline,
-                    title       = stringResource(R.string.error_failed_load_request),
+                    title       = stringResource(R.string.error_generic),
                     subtitle    = state.error,
                     actionLabel = stringResource(R.string.retry),
                     onAction    = { viewModel.loadRequest(requestId) }
@@ -610,7 +603,7 @@ fun RequestDetailScreen(
     }
 }
 
-// ═══ Main content ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Main content ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun RequestDetailContent(
     req: PickupRequest,
@@ -632,7 +625,7 @@ private fun RequestDetailContent(
 ) {
     val context = LocalContext.current
     var showDisputeSheet by remember { mutableStateOf(false) }
-    // ── Expiry computation (same logic as RequestCard) ──────────────────
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Expiry computation (same logic as RequestCard) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     val daysUntilExpiry: Long? = remember(req.listingExpiryDate) {
         val raw = req.listingExpiryDate ?: return@remember null
         try {
@@ -660,35 +653,19 @@ private fun RequestDetailContent(
         }
     }
 
-    // ── Pickup timestamp ────────────────────────────────────────────────
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Pickup timestamp ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     val timestampText = stringResource(
         R.string.label_pickup_on_at,
         DateTimeUtils.formatDate(req.pickupDate),
         req.pickupTime
     )
 
-    // ── Vehicle label ───────────────────────────────────────────────────
-    val vehicleLabel: String? = req.vehicleType?.takeIf { it.isNotBlank() }?.let { vt ->
-        when (vt.lowercase()) {
-            "walk"       -> stringResource(R.string.vehicle_walk)
-            "bicycle"    -> stringResource(R.string.vehicle_bicycle)
-            "motorcycle" -> stringResource(R.string.vehicle_motorcycle)
-            "car"        -> stringResource(R.string.vehicle_car)
-            "van"        -> stringResource(R.string.vehicle_van)
-            else         -> vt.replaceFirstChar { it.titlecase() }
-        }
-    }
 
     val handlingParts = buildList {
         if (req.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
         if (req.isFragile)             add(stringResource(R.string.note_fragile_items))
         if (req.isHeavy)               add(stringResource(R.string.note_heavy_load))
         req.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
-    }
-
-    val foodCategory = remember(req.listingCategory) {
-        FoodCategory.entries.find { it.name.equals(req.listingCategory, ignoreCase = true) }
-            ?: FoodCategory.OTHER
     }
 
     Column(
@@ -698,7 +675,7 @@ private fun RequestDetailContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ── 1. Avatar + party name card (with action buttons top-right) ──
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Avatar + party name card (with action buttons top-right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         val showReceiptBtn = isMyRequest && req.status == PickupRequestStatus.COMPLETED
         val partyName = if (isGrocery) req.ngoName else req.groceryName
         val partyType = if (isGrocery) stringResource(R.string.label_ngo_party)
@@ -752,7 +729,7 @@ private fun RequestDetailContent(
                         )
                     }
                 }
-                Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(partyType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -764,26 +741,18 @@ private fun RequestDetailContent(
             )
         }
 
-        // ── 2. Lifecycle timeline (already a Card) ──────────────────────
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 2. Lifecycle timeline (already a Card) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         LifecycleTimeline(request = req)
 
-        // ── 3. Product name + category ──────────────────────────────────
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.Top
-        ) {
-            Text(
-                req.listingTitle,
-                style      = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier   = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            CategoryBadge(foodCategory)
-        }
+        // Product name
+        Text(
+            req.listingTitle,
+            style      = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier   = Modifier.fillMaxWidth()
+        )
 
-        // ── 4. Description card ─────────────────────────────────────────
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 4. Description card ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         if (!req.listingDescription.isNullOrBlank()) {
             SectionCard(stringResource(R.string.label_description)) {
                 Text(
@@ -794,24 +763,29 @@ private fun RequestDetailContent(
             }
         }
 
-        // ── 5. Request Info card ────────────────────────────────────────
-        val qtyText = if (req.listingUnit.isNotBlank()) "${req.requestedQuantity} ${req.listingUnit}"
-                      else "${req.requestedQuantity}"
-        SectionCard(stringResource(R.string.label_request_information)) {
-            CompactDetailRow(Icons.Default.ShoppingCart, qtyText)
-            if (expiryText != null) {
-                CompactDetailRow(Icons.Default.CalendarToday, expiryText, expiryColor, bold = daysUntilExpiry != null && daysUntilExpiry <= 3)
-            }
-            CompactDetailRow(Icons.Default.AccessTime, timestampText, MaterialTheme.colorScheme.onSurfaceVariant)
-            if (vehicleLabel != null) {
-                CompactDetailRow(Icons.Default.LocalShipping, vehicleLabel, MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (handlingParts.isNotEmpty()) {
-                CompactDetailRow(Icons.AutoMirrored.Filled.StickyNote2, handlingParts.joinToString(" · "), MaterialTheme.colorScheme.onSurfaceVariant)
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 5. Request Info card ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+        if (req.items.isNotEmpty()) {
+            SectionCard(stringResource(R.string.cart_requested_items)) {
+                req.items.forEachIndexed { index, item ->
+                    RequestedItemRow(
+                        item = item,
+                        showDivider = index != req.items.lastIndex
+                    )
+                }
             }
         }
 
-        // ── 5b. About Us card (NGO only) ────────────────────────────────
+        SectionCard(stringResource(R.string.label_request_information)) {
+            if (expiryText != null) {
+                CompactDetailRow(Icons.Default.CalendarToday, expiryText, expiryColor)
+            }
+            CompactDetailRow(Icons.Default.AccessTime, timestampText, MaterialTheme.colorScheme.onSurfaceVariant)
+            if (handlingParts.isNotEmpty()) {
+                CompactDetailRow(Icons.AutoMirrored.Filled.StickyNote2, handlingParts.joinToString(" \u00B7 "), MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 5b. About Us card (NGO only) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         if (isNgo && groceryProfile != null) {
             val address = groceryProfile.address?.takeIf { it.isNotBlank() }
                 ?: groceryProfile.location?.takeIf { it.isNotBlank() }
@@ -830,11 +804,16 @@ private fun RequestDetailContent(
                         )
                         Text(
                             address,
-                            style    = MaterialTheme.typography.labelMedium,
+                            style    = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color    = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        Surface(
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.Navigation,
+                            contentDescription = stringResource(R.string.action_get_directions),
                             onClick = {
                                 val encoded = Uri.encode(address)
                                 val uri = Uri.parse("geo:0,0?q=$encoded")
@@ -849,18 +828,8 @@ private fun RequestDetailContent(
                                         Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=$encoded"))
                                     )
                                 }
-                            },
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                        ) {
-                            Text(
-                                stringResource(R.string.action_get_directions),
-                                style      = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color      = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
-                        }
+                            }
+                        )
                     }
                 }
 
@@ -876,7 +845,8 @@ private fun RequestDetailContent(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             phone,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -884,67 +854,57 @@ private fun RequestDetailContent(
             }
         }
 
-        // ── 6. Action error ─────────────────────────────────────────────
-        if (state.actionError != null) {
-            AlertBanner(message = state.actionError.orEmpty(), type = AlertType.ERROR, icon = Icons.Default.ErrorOutline)
-        }
-
-        // ── 7. Action buttons ───────────────────────────────────────────
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 7. Action buttons ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         if (isMyRequest) {
             if (isNgo && req.status == PickupRequestStatus.READY) {
-                Button(
-                    onClick  = onConfirmPickup,
+                ClearChainButton(
+                    text = stringResource(R.string.action_confirm_pickup_photo),
+                    onClick = onConfirmPickup,
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                ) {
-                    Icon(Icons.Default.PhotoCamera, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_confirm_pickup_photo))
-                }
+                    icon = Icons.Default.PhotoCamera,
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                )
             }
 
             if (isGrocery && req.status == PickupRequestStatus.PENDING) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = onApprove, modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp)) {
-                        Icon(Icons.Default.Check, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.approve))
-                    }
-                    OutlinedButton(
-                        onClick  = onReject,
+                    ClearChainButton(
+                        text = stringResource(R.string.approve),
+                        onClick = onApprove,
                         modifier = Modifier.weight(1f),
-                        shape    = RoundedCornerShape(10.dp),
-                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        border   = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Close, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.reject))
-                    }
+                        icon = Icons.Default.Check
+                    )
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.reject),
+                        onClick = onReject,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Close,
+                        contentColor = MaterialTheme.colorScheme.error,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    )
                 }
             }
 
             if (isGrocery && req.status == PickupRequestStatus.APPROVED) {
-                Button(onClick = onMarkReady, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp)) {
-                    Icon(Icons.Default.Inventory2, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_mark_ready))
-                }
+                ClearChainButton(
+                    text = stringResource(R.string.action_mark_ready),
+                    onClick = onMarkReady,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.Check
+                )
             }
 
             if (isNgo && req.status == PickupRequestStatus.PENDING) {
-                OutlinedButton(
-                    onClick  = onCancel,
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.cancel_request),
+                    onClick = onCancel,
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    border   = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Cancel, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.cancel_request))
-                }
+                    icon = Icons.Default.Cancel,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    fillMaxWidth = true,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                )
             }
         }
 
@@ -952,7 +912,7 @@ private fun RequestDetailContent(
             LinearProgressIndicator(Modifier.fillMaxWidth())
         }
 
-        // ── 8. Rating card (NGO: submit rating; Grocery: view received rating) ──
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 8. Rating card (NGO: submit rating; Grocery: view received rating) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isNgo) {
             SectionCard(stringResource(R.string.label_rate_experience)) {
                 Row(
@@ -967,19 +927,11 @@ private fun RequestDetailContent(
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(12.dp))
-                    Surface(
-                        onClick = onShowRatingSheet,
-                        shape   = RoundedCornerShape(6.dp),
-                        color   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                    ) {
-                        Text(
-                            stringResource(R.string.action_show),
-                            style      = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color      = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
+                    ClearChainActionIconButton(
+                        icon = Icons.Default.Star,
+                        contentDescription = stringResource(R.string.action_show),
+                        onClick = onShowRatingSheet
+                    )
                 }
             }
         }
@@ -1038,25 +990,10 @@ private fun RequestDetailContent(
             }
         }
 
-        // ── 9. Proof Photo card (completed) ─────────────────────────────
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 9. Proof Photo card (completed) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         if (req.status == PickupRequestStatus.COMPLETED && req.proofPhotoUrl != null) {
             SectionCard(stringResource(R.string.proof_photo)) {
                 ZoomablePhoto(url = req.proofPhotoUrl)
-            }
-        }
-
-        // ── 10. More from store card (NGO only) ─────────────────────────
-        if (isNgo && state.similarListings.isNotEmpty()) {
-            SectionCard(stringResource(R.string.label_more_from_store)) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(state.similarListings) { listing ->
-                        ListingCard(
-                            listing  = listing,
-                            onClick  = { onNavigateToListing(listing.id) },
-                            modifier = Modifier.width(220.dp)
-                        )
-                    }
-                }
             }
         }
 
@@ -1064,12 +1001,12 @@ private fun RequestDetailContent(
     }
 }
 
-// ═══ Circular overlay action button ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Circular overlay action button ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ImageActionButton(
     icon:    ImageVector,
     label:   String,
-    tint:    Color   = Color.White,
+    tint:    Color   = MaterialTheme.colorScheme.onSurfaceVariant,
     loading: Boolean = false,
     onClick: () -> Unit
 ) {
@@ -1077,12 +1014,11 @@ private fun ImageActionButton(
         onClick         = onClick,
         modifier        = Modifier.size(24.dp),
         shape           = CircleShape,
-        color           = Color(0x99000000),
-        shadowElevation = 2.dp
+        color           = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
+                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = tint)
             } else {
                 Icon(icon, label, Modifier.size(18.dp), tint = tint)
             }
@@ -1090,7 +1026,7 @@ private fun ImageActionButton(
     }
 }
 
-// ═══ Section card ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Section card ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun SectionCard(
     title: String,
@@ -1102,12 +1038,12 @@ private fun SectionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 title,
-                style      = MaterialTheme.typography.labelLarge,
+                style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color      = MaterialTheme.colorScheme.onSurface
             )
@@ -1116,24 +1052,100 @@ private fun SectionCard(
     }
 }
 
-// ═══ Compact section label ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Compact section label ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
+@Composable
+private fun RequestedItemRow(
+    item: PickupRequestItem,
+    showDivider: Boolean
+) {
+    val quantityText = if (item.listingUnit.isNotBlank()) {
+        "${item.requestedQuantity} ${item.listingUnit}"
+    } else {
+        item.requestedQuantity.toString()
+    }
+    val expiryText = item.listingExpiryDate
+        ?.let { stringResource(R.string.label_expires_date, DateTimeUtils.formatDate(it)) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ProductThumbnail(
+                imageUrl = item.listingPhotoUrl,
+                contentDescription = item.listingTitle,
+                size = 48.dp
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = item.listingTitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                expiryText?.let {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Text(
+                    text = quantityText,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        if (showDivider) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        }
+    }
+}
+
 @Composable
 private fun CompactSectionLabel(text: String) {
     Text(
         text       = text,
-        style      = MaterialTheme.typography.labelLarge,
+        style      = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         color      = MaterialTheme.colorScheme.onSurface
     )
 }
 
-// ═══ Compact detail row ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Compact detail row ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun CompactDetailRow(
     icon:      androidx.compose.ui.graphics.vector.ImageVector,
     text:      String,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
-    bold:      Boolean = false
+    bold:      Boolean = true
 ) {
     Row(
         verticalAlignment     = Alignment.CenterVertically,
@@ -1142,36 +1154,36 @@ private fun CompactDetailRow(
         Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
             text,
-            style      = MaterialTheme.typography.labelMedium,
+            style      = MaterialTheme.typography.labelSmall,
             color      = textColor,
             fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
         )
     }
 }
 
-// ═══ Request info row (icon + colored text, no label) ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Request info row (icon + colored text, no label) ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun RequestInfoRow(
     icon:      androidx.compose.ui.graphics.vector.ImageVector,
     text:      String,
     textColor: Color,
-    bold:      Boolean = false
+    bold:      Boolean = true
 ) {
     Row(
-        verticalAlignment     = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(icon, null, Modifier.size(16.dp).padding(top = 2.dp), tint = textColor)
+        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
             text       = text,
-            style      = MaterialTheme.typography.bodyMedium,
+            style      = MaterialTheme.typography.labelSmall,
             color      = textColor,
             fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
         )
     }
 }
 
-// ═══ Zoomable proof photo ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Zoomable proof photo ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ZoomablePhoto(url: String) {
     var scale  by remember { mutableFloatStateOf(1f) }
@@ -1208,7 +1220,7 @@ private fun ZoomablePhoto(url: String) {
     }
 }
 
-// ═══ Lifecycle Timeline ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Lifecycle Timeline ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun LifecycleTimeline(request: PickupRequest) {
     val icons = listOf(
@@ -1230,7 +1242,7 @@ private fun LifecycleTimeline(request: PickupRequest) {
     val green = MaterialTheme.colorScheme.primary
     val muted = MaterialTheme.colorScheme.outlineVariant
 
-    // ── Current-stage text (only for active statuses) ───────────────
+    // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Current-stage text (only for active statuses) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     val statusTitle = when (request.status) {
         PickupRequestStatus.PENDING   -> stringResource(R.string.label_status_submitted)
         PickupRequestStatus.APPROVED  -> stringResource(R.string.label_status_approved)
@@ -1280,12 +1292,12 @@ private fun LifecycleTimeline(request: PickupRequest) {
                     Text(
                         statusTitle,
                         style      = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         color      = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         statusSub,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -1356,7 +1368,7 @@ private fun LifecycleTimeline(request: PickupRequest) {
     }
 }
 
-// ═══ Chat Section ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Chat Section ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ChatSection(
     messages:      List<MessageData>,
@@ -1371,6 +1383,10 @@ private fun ChatSection(
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
+    val inputInteractionSource = remember { MutableInteractionSource() }
+    val inputFocused by inputInteractionSource.collectIsFocusedAsState()
+    val inputBorderColor = if (inputFocused) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.outlineVariant
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (isLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -1396,32 +1412,61 @@ private fun ChatSection(
         Row(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment     = Alignment.Bottom
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
-                value         = messageInput,
+            BasicTextField(
+                value = messageInput,
                 onValueChange = onInputChanged,
-                modifier      = Modifier.weight(1f),
-                placeholder   = { Text(stringResource(R.string.hint_type_message)) },
-                shape         = RoundedCornerShape(20.dp),
-                maxLines      = 4,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(32.dp)
+                    .border(1.dp, inputBorderColor, ShapeMedium)
+                    .padding(horizontal = 12.dp),
+                textStyle = MaterialTheme.typography.labelSmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                singleLine = true,
+                interactionSource = inputInteractionSource,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send, keyboardType = KeyboardType.Text),
                 keyboardActions = KeyboardActions(onSend = { onSend() }),
-                enabled         = !isSending
+                enabled = !isSending,
+                decorationBox = { innerTextField ->
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(Modifier.weight(1f)) {
+                            if (messageInput.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.hint_type_message),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                }
             )
-            IconButton(
-                onClick  = onSend,
-                enabled  = messageInput.isNotBlank() && !isSending,
-                modifier = Modifier.size(48.dp).background(
-                    color = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(24.dp)
-                )
+            Surface(
+                onClick = onSend,
+                enabled = messageInput.isNotBlank() && !isSending,
+                modifier = Modifier.size(24.dp),
+                shape = CircleShape,
+                color = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant
             ) {
-                if (isSending) {
-                    CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.cd_send), tint = Color.White, modifier = Modifier.size(20.dp))
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (isSending) {
+                        CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            stringResource(R.string.cd_send),
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
         }
@@ -1448,18 +1493,23 @@ private fun ChatBubble(message: MessageData, isMine: Boolean) {
             color    = bubbleColor,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(message.content, style = MaterialTheme.typography.bodyMedium, color = textColor)
-                Text(DateTimeUtils.getTimeAgo(message.sentAt),
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.align(Alignment.End))
-            }
+            Text(
+                message.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            )
         }
+        Text(
+            DateTimeUtils.getTimeAgo(message.sentAt),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp, start = 8.dp, end = 8.dp)
+        )
     }
 }
 
-// ═══ Dispute Sheet ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Dispute Sheet ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
@@ -1574,21 +1624,20 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
             )
 
             // Submit
-            Button(
-                onClick  = onDismiss,
-                enabled  = selectedReason.isNotBlank(),
+            ClearChainButton(
+                text = stringResource(R.string.dispute_submit),
+                onClick = onDismiss,
+                enabled = selectedReason.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.Flag, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.dispute_submit))
-            }
+                icon = Icons.Default.Flag,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
+            )
         }
     }
 }
 
-// ═══ Rating Sheet ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Rating Sheet ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RatingSheet(
@@ -1625,7 +1674,7 @@ private fun RatingSheet(
             }
 
             if (myReview != null) {
-                // ── Read-only: already rated ────────────────────────────
+                // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Read-only: already rated ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
                 Column(
                     modifier            = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -1662,7 +1711,7 @@ private fun RatingSheet(
                     }
                 }
             } else {
-                // ── Interactive: not yet rated ──────────────────────────
+                // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Interactive: not yet rated ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
                 Text(
                     stringResource(R.string.rate_and_review),
                     style = MaterialTheme.typography.titleSmall,
@@ -1687,41 +1736,37 @@ private fun RatingSheet(
                     value         = comment,
                     onValueChange = { comment = it },
                     modifier      = Modifier.fillMaxWidth(),
-                    label         = { Text(stringResource(R.string.label_comments_optional)) },
+                    label         = {
+                        OptionalFieldLabel(
+                            text = stringResource(R.string.label_comments_optional),
+                            isOptional = true
+                        )
+                    },
                     placeholder   = { Text(stringResource(R.string.hint_pickup_experience)) },
                     minLines      = 2,
                     maxLines      = 4,
                     shape         = RoundedCornerShape(12.dp)
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.cancel),
                         onClick  = onDismiss,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Button(
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.save),
                         onClick  = { onSubmit(selectedRating, comment.ifBlank { null }) },
                         modifier = Modifier.weight(1f),
-                        enabled  = selectedRating > 0 && !isSubmitting
-                    ) {
-                        if (isSubmitting) {
-                            CircularProgressIndicator(
-                                modifier    = Modifier.size(16.dp),
-                                color       = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(stringResource(R.string.save))
-                        }
-                    }
+                        enabled  = selectedRating > 0,
+                        loading = isSubmitting
+                    )
                 }
             }
         }
     }
 }
 
-// ═══ Step 2 — Camera or Gallery choice ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Step 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Camera or Gallery choice ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun PhotoSourceDialog(
     onDismiss: () -> Unit,
@@ -1739,34 +1784,28 @@ private fun PhotoSourceDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(2.dp))
-                Button(
+                ClearChainButton(
+                    text = stringResource(R.string.action_take_photo_camera),
                     onClick  = onCamera,
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.PhotoCamera, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_take_photo_camera))
-                }
-                OutlinedButton(
+                    icon = Icons.Default.PhotoCamera
+                )
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.action_choose_gallery),
                     onClick  = onGallery,
                     modifier = Modifier.fillMaxWidth(),
-                    shape    = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Photo, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_choose_gallery))
-                }
+                    icon = Icons.Default.Photo
+                )
             }
         },
         confirmButton  = {},
         dismissButton  = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }
 
-// ═══ Step 3 — Photo preview before upload ═══
+// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Step 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Photo preview before upload ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun PhotoPreviewDialog(
     uri:       Uri,
@@ -1798,17 +1837,16 @@ private fun PhotoPreviewDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm, enabled = !isLoading) {
-                if (isLoading) {
-                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Text(stringResource(R.string.action_confirm_upload))
-                }
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_confirm_upload),
+                onClick = onConfirm,
+                enabled = !isLoading,
+                loading = isLoading,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }

@@ -32,14 +32,16 @@ import com.clearchain.app.presentation.grocery.managerequests.ManageRequestsScre
 import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
 import com.clearchain.app.presentation.ngo.NgoDashboardScreen
 import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
+import com.clearchain.app.presentation.ngo.cart.CartPickupScreen
+import com.clearchain.app.presentation.ngo.cart.CartScreen
 import com.clearchain.app.presentation.ngo.inventory.InventoryScreen
 import com.clearchain.app.presentation.ngo.listingdetail.ListingDetailScreen
 import com.clearchain.app.presentation.ngo.inventorydetail.InventoryDetailScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
-import com.clearchain.app.presentation.ngo.requestpickup.RequestPickupScreen
 import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
 import com.clearchain.app.presentation.onboarding.OnboardingScreen
 import com.clearchain.app.presentation.profile.ProfileScreen
+import com.clearchain.app.presentation.profile.AccountDetailScreen
 import com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 import kotlinx.coroutines.flow.first
@@ -143,6 +145,25 @@ fun NavGraph(
             BrowseListingsScreen(navController = navController)
         }
 
+        composable(Screen.Cart.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            CartScreen(
+                onNavigate = { route -> navController.navigate(route) }
+            )
+        }
+
+        composable(
+            route = Screen.CartPickup.route,
+            arguments = listOf(navArgument("groceryId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            val groceryId = backStackEntry.arguments?.getString("groceryId") ?: ""
+            CartPickupScreen(
+                groceryId = groceryId,
+                onNavigate = { route -> navController.navigate(route) }
+            )
+        }
+
         composable(
             route = Screen.MyRequests.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://ngo/requests" })
@@ -201,9 +222,6 @@ fun NavGraph(
             ListingDetailScreen(
                 listingId = listingId,
                 onNavigateBack = { navController.navigateUp() },
-                onRequestPickup = { id ->
-                    navController.navigate(Screen.RequestPickup.createRoute(id))
-                },
                 onNavigateToListingDetail = { id ->
                     navController.navigate(Screen.ListingDetail.createRoute(id))
                 },
@@ -213,17 +231,6 @@ fun NavGraph(
                 onNavigateToEdit = { id ->
                     navController.navigate(Screen.EditListing.createRoute(id))
                 }
-            )
-        }
-
-        composable(
-            route = Screen.RequestPickup.route,
-            arguments = listOf(navArgument("listingId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            RequestPickupScreen(
-                listingId = backStackEntry.arguments?.getString("listingId") ?: "",
-                onNavigateBack = { navController.navigateUp() }
             )
         }
 
@@ -249,12 +256,14 @@ fun NavGraph(
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
             InventoryDetailScreen(
                 itemId = itemId,
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 },
                 onNavigateToPublicProfile = { orgId ->
                     navController.navigate(Screen.PublicProfile.createRoute(orgId))
+                },
+                onNavigateToListingDetail = { listingId ->
+                    navController.navigate(Screen.ListingDetail.createRoute(listingId))
                 }
             )
         }
@@ -307,6 +316,11 @@ fun NavGraph(
             AnalyticsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
+        composable(Screen.AccountDetail.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
+            AccountDetailScreen()
+        }
+
         composable(Screen.Help.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             HelpScreen(onNavigateBack = { navController.navigateUp() })
@@ -316,7 +330,12 @@ fun NavGraph(
             route = Screen.PublicProfile.route,
             arguments = listOf(navArgument("orgId") { type = NavType.StringType })
         ) {
-            PublicProfileScreen(onNavigateBack = { navController.navigateUp() })
+            PublicProfileScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToListingDetail = { listingId ->
+                    navController.navigate(Screen.ListingDetail.createRoute(listingId))
+                }
+            )
         }
 
         composable(
@@ -359,7 +378,6 @@ fun NavGraph(
                 onShowBottomBar(true, user?.type)
             }
             ProfileScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onLogout = {
                     onShowBottomBar(false, null)
                     navController.navigate(Screen.Login.route) {
@@ -367,7 +385,8 @@ fun NavGraph(
                     }
                 },
                 onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) },
-                onNavigateToHelp = { navController.navigate(Screen.Help.route) }
+                onNavigateToHelp = { navController.navigate(Screen.Help.route) },
+                onNavigateToAccountDetail = { navController.navigate(Screen.AccountDetail.route) }
             )
         }
     }

@@ -23,7 +23,6 @@ data class PickupRequestEntity(
     val createdAt: String,
     val proofPhotoUrl: String? = null,
     val cancellationReason: String? = null,
-    val vehicleType: String? = null,
     val licensePlate: String? = null,
     val requiresRefrigeration: Boolean = false,
     val isFragile: Boolean = false,
@@ -47,7 +46,6 @@ fun PickupRequestEntity.toDomain(): PickupRequest = PickupRequest(
     listingCategory = listingCategory,
     createdAt = createdAt,
     proofPhotoUrl = proofPhotoUrl,
-    vehicleType = vehicleType,
     requiresRefrigeration = requiresRefrigeration,
     isFragile = isFragile,
     isHeavy = isHeavy
@@ -69,7 +67,6 @@ fun PickupRequest.toEntity(): PickupRequestEntity = PickupRequestEntity(
     listingCategory = listingCategory,
     createdAt = createdAt,
     proofPhotoUrl = proofPhotoUrl,
-    vehicleType = vehicleType,
     requiresRefrigeration = requiresRefrigeration,
     isFragile = isFragile,
     isHeavy = isHeavy

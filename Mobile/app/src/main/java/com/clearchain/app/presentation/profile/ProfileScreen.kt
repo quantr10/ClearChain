@@ -1,13 +1,6 @@
 package com.clearchain.app.presentation.profile
 
-import androidx.activity.compose.BackHandler
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,8 +20,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -40,23 +31,17 @@ import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.presentation.components.AddressSuggestionField
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
-import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Root
-// ═══════════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToAnalytics: () -> Unit = {},
     onNavigateToHelp: () -> Unit = {},
+    onNavigateToAccountDetail: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -64,6 +49,12 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    val verificationMessage = when (state.user?.verificationStatus) {
+        VerificationStatus.PENDING -> stringResource(R.string.msg_org_under_review)
+        VerificationStatus.REJECTED -> stringResource(R.string.msg_verification_rejected_profile)
+        else -> null
+    }
+    SnackbarMessageEffect(snackbarHostState, verificationMessage)
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -72,22 +63,13 @@ fun ProfileScreen(
                     event.message, duration = SnackbarDuration.Short
                 )
                 is UiEvent.Navigate -> onLogout()
-                else -> {}
+                else -> Unit
             }
         }
     }
 
-    if (state.isEditing) {
-        EditProfileScaffold(
-            state             = state,
-            snackbarHostState = snackbarHostState,
-            onEvent           = viewModel::onEvent
-        )
-        return
-    }
-
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -97,24 +79,22 @@ fun ProfileScreen(
 
                 state.user != null ->
                     ProfileViewContent(
-                        state                 = state,
-                        onNavigateBack        = onNavigateBack,
-                        onEditClick           = { viewModel.onEvent(ProfileEvent.StartEdit) },
-                        onChangePassword      = { showChangePasswordDialog = true },
-                        onLogout              = { showLogoutDialog = true },
-                        onAvatarSelected      = { uri -> viewModel.onEvent(ProfileEvent.AvatarSelected(uri)) },
-                        onDeleteAccount       = { showDeleteAccountDialog = true },
-                        onRefresh             = { viewModel.onEvent(ProfileEvent.Refresh) },
+                        state = state,
+                        onChangePassword = { showChangePasswordDialog = true },
+                        onLogout = { showLogoutDialog = true },
+                        onDeleteAccount = { showDeleteAccountDialog = true },
                         onNavigateToAnalytics = onNavigateToAnalytics,
-                        onNavigateToHelp      = onNavigateToHelp
+                        onNavigateToHelp = onNavigateToHelp,
+                        onNavigateToAccountDetail = onNavigateToAccountDetail
                     )
 
                 else ->
                     EmptyState(
-                        icon        = Icons.Default.ErrorOutline,
-                        title       = stringResource(R.string.error_failed_load_profile),
+                        icon = Icons.Default.ErrorOutline,
+                        title = stringResource(R.string.error_generic),
+                        subtitle = state.error,
                         actionLabel = stringResource(R.string.retry),
-                        onAction    = { viewModel.onEvent(ProfileEvent.Refresh) }
+                        onAction = { viewModel.onEvent(ProfileEvent.Refresh) }
                     )
             }
         }
@@ -122,11 +102,11 @@ fun ProfileScreen(
 
     if (showLogoutDialog) {
         DestructiveConfirmDialog(
-            title        = stringResource(R.string.logout),
-            message      = "",
+            title = stringResource(R.string.logout),
+            message = "",
             confirmLabel = stringResource(R.string.logout),
-            onConfirm    = { showLogoutDialog = false; onLogout() },
-            onDismiss    = { showLogoutDialog = false }
+            onConfirm = { showLogoutDialog = false; onLogout() },
+            onDismiss = { showLogoutDialog = false }
         )
     }
 
@@ -134,8 +114,8 @@ fun ProfileScreen(
         ChangePasswordDialog(
             isLoading = state.isChangingPassword,
             onDismiss = { showChangePasswordDialog = false },
-            onConfirm = { current, new_ ->
-                viewModel.onEvent(ProfileEvent.ChangePassword(current, new_))
+            onConfirm = { current, newPassword ->
+                viewModel.onEvent(ProfileEvent.ChangePassword(current, newPassword))
                 showChangePasswordDialog = false
             }
         )
@@ -153,226 +133,66 @@ fun ProfileScreen(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// View mode
-// ═══════════════════════════════════════════════════════════════════════════════
-
 @Composable
 private fun ProfileViewContent(
     state: ProfileState,
-    onNavigateBack: () -> Unit,
-    onEditClick: () -> Unit,
     onChangePassword: () -> Unit,
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
-    onRefresh: () -> Unit,
-    onAvatarSelected: (android.net.Uri) -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
-    onNavigateToHelp: () -> Unit = {}
+    onNavigateToHelp: () -> Unit = {},
+    onNavigateToAccountDetail: () -> Unit = {}
 ) {
-    val user          = state.user!!
-    val context       = LocalContext.current
-    val missingFields = user.getMissingFields()
-    val totalRequired = if (user.type == OrganizationType.ADMIN) 0 else 5
-    val filledCount   = (totalRequired - missingFields.size).coerceAtLeast(0)
-    val completeness  = if (totalRequired == 0) 1f else filledCount.toFloat() / totalRequired
-
-    val avatarPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) onAvatarSelected(uri) }
+    val user = state.user!!
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Hero ──────────────────────────────────────────────────────────
-        ProfileHero(
-            user               = user,
-            onNavigateBack     = onNavigateBack,
-            onEditClick        = onEditClick,
-            isUploadingAvatar  = state.isUploadingAvatar,
-            onAvatarClick      = {
-                avatarPickerLauncher.launch(
-                    androidx.activity.result.PickVisualMediaRequest(
-                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                    )
-                )
-            }
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.End
-        ) {
-            FilledTonalButton(onClick = onEditClick) {
-                Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.label_edit_profile))
-            }
-        }
+        ProfileHero(user = user)
 
         Column(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // ── Verification alert ─────────────────────────────────────────
-            when (user.verificationStatus) {
-                VerificationStatus.PENDING ->
-                    AlertBanner(
-                        message = stringResource(R.string.msg_org_under_review),
-                        type    = AlertType.WARNING,
-                        icon    = Icons.Default.Schedule
-                    )
-                VerificationStatus.REJECTED ->
-                    AlertBanner(
-                        message = stringResource(R.string.msg_verification_rejected_profile),
-                        type    = AlertType.ERROR,
-                        icon    = Icons.Default.Cancel
-                    )
-                VerificationStatus.APPROVED -> Unit
-            }
-
-            // ── Profile completeness ───────────────────────────────────────
-            if (missingFields.isNotEmpty()) {
-                ProfileCompletenessCard(
-                    filledCount   = filledCount,
-                    totalRequired = totalRequired,
-                    completeness  = completeness,
-                    missingFields = missingFields,
-                    onEditClick   = onEditClick
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DashboardActionCard(
+                    icon = Icons.Default.Info,
+                    title = stringResource(R.string.account_detail),
+                    onClick = onNavigateToAccountDetail
                 )
-            }
-
-            // ── About ──────────────────────────────────────────────────────
-            if (!user.description.isNullOrBlank()) {
-                DashboardSection(title = stringResource(R.string.about)) {
-                    InfoCard {
-                        Text(
-                            text  = user.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
-
-            // ── Contact ────────────────────────────────────────────────────
-            DashboardSection(title = stringResource(R.string.section_contact)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ContactActionRow(
-                        icon  = Icons.Default.Email,
-                        label = stringResource(R.string.email),
-                        value = user.email
-                    ) {
-                        context.startActivity(
-                            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${user.email}"))
-                        )
-                    }
-                    ContactActionRow(
-                        icon    = Icons.Default.Phone,
-                        label   = stringResource(R.string.onboarding_phone_label),
-                        value   = user.phone.ifBlank { stringResource(R.string.label_not_set) },
-                        enabled = user.phone.isNotBlank()
-                    ) {
-                        context.startActivity(
-                            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
-                        )
-                    }
-                }
-            }
-
-            // ── Location & Hours ───────────────────────────────────────────
-            DashboardSection(title = stringResource(R.string.section_location_hours)) {
-                InfoCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        InfoRow(Icons.Default.Home,     stringResource(R.string.onboarding_address_label), user.address.ifBlank { stringResource(R.string.label_not_set) })
-                        InfoRow(Icons.Default.Place,    stringResource(R.string.onboarding_city_label),    user.location.ifBlank { stringResource(R.string.label_not_set) })
-                        InfoRow(Icons.Default.Schedule, stringResource(R.string.onboarding_hours_label),   user.hours ?: stringResource(R.string.label_not_set))
-                        if (user.latitude != null && user.longitude != null) {
-                            InfoRow(
-                                icon  = Icons.Default.MyLocation,
-                                label = stringResource(R.string.label_gps_coordinates),
-                                value = "%.5f, %.5f".format(user.latitude, user.longitude)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // ── Organization details ───────────────────────────────────────
-            if (user.type != OrganizationType.ADMIN) {
-                DashboardSection(title = stringResource(R.string.section_org_details)) {
-                    InfoCard {
-                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            InfoRow(
-                                icon  = Icons.Default.Person,
-                                label = stringResource(R.string.onboarding_contact_label),
-                                value = user.contactPerson ?: stringResource(R.string.label_not_set)
-                            )
-                            if (user.type == OrganizationType.GROCERY) {
-                                InfoRow(
-                                    icon  = Icons.Default.DirectionsWalk,
-                                    label = stringResource(R.string.onboarding_pickup_instructions_label),
-                                    value = user.pickupInstructions ?: stringResource(R.string.label_not_set)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ── Account Stats ──────────────────────────────────────────────
-            state.stats?.let { stats ->
-                DashboardSection(title = stringResource(R.string.account_stats)) {
-                    AccountStatsCard(stats = stats, orgType = user.type)
-                }
-            }
-
-            // ── Team Members ──────────────────────────────────────────────────
-            DashboardSection(title = stringResource(R.string.section_team_members)) {
-                TeamMembersCard(user = user)
-            }
-
-            // ── Account ────────────────────────────────────────────────────
-            DashboardSection(title = stringResource(R.string.section_account)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    InfoCard {
-                        InfoRow(
-                            icon  = Icons.Default.CalendarToday,
-                            label = stringResource(R.string.label_member_since_field),
-                            value = runCatching { DateTimeUtils.formatDate(user.createdAt) }
-                                .getOrDefault(user.createdAt)
-                        )
-                    }
-                    SettingsClickableRow(
-                        icon    = Icons.Default.BarChart,
-                        label   = stringResource(R.string.label_analytics),
-                        onClick = onNavigateToAnalytics
-                    )
-                    SettingsClickableRow(
-                        icon    = Icons.Default.HelpOutline,
-                        label   = stringResource(R.string.label_help_faq),
-                        onClick = onNavigateToHelp
-                    )
-                    SettingsClickableRow(
-                        icon  = Icons.Default.Lock,
-                        label = stringResource(R.string.label_change_password),
-                        onClick = onChangePassword
-                    )
-                    SettingsClickableRow(
-                        icon          = Icons.Default.Logout,
-                        label         = stringResource(R.string.logout),
-                        isDestructive = true,
-                        onClick       = onLogout
-                    )
-                    SettingsClickableRow(
-                        icon          = Icons.Default.DeleteForever,
-                        label         = stringResource(R.string.label_delete_account),
-                        isDestructive = true,
-                        onClick       = onDeleteAccount
-                    )
-                }
+                DashboardActionCard(
+                    icon = Icons.Default.BarChart,
+                    title = stringResource(R.string.label_analytics),
+                    onClick = onNavigateToAnalytics
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.HelpOutline,
+                    title = stringResource(R.string.label_help_faq),
+                    onClick = onNavigateToHelp
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.label_change_password),
+                    onClick = onChangePassword
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.Logout,
+                    title = stringResource(R.string.logout),
+                    iconContainerColor = MaterialTheme.colorScheme.errorContainer,
+                    iconTint = MaterialTheme.colorScheme.error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                    onClick = onLogout
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.DeleteForever,
+                    title = stringResource(R.string.label_delete_account),
+                    iconContainerColor = MaterialTheme.colorScheme.errorContainer,
+                    iconTint = MaterialTheme.colorScheme.error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                    onClick = onDeleteAccount
+                )
             }
 
             Spacer(Modifier.height(8.dp))
@@ -380,18 +200,8 @@ private fun ProfileViewContent(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Hero header
-// ═══════════════════════════════════════════════════════════════════════════════
-
 @Composable
-private fun ProfileHero(
-    user: Organization,
-    onNavigateBack: () -> Unit,
-    onEditClick: () -> Unit,
-    onAvatarClick: () -> Unit = {},
-    isUploadingAvatar: Boolean = false
-) {
+private fun ProfileHero(user: Organization) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
@@ -399,13 +209,6 @@ private fun ProfileHero(
             .height(248.dp)
             .background(Brush.verticalGradient(listOf(BrandTeal, BrandGreen)))
     ) {
-        IconButton(
-            onClick  = onNavigateBack,
-            modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
-        ) {
-            Icon(Icons.Default.ArrowBack, stringResource(R.string.cd_back), tint = Color.White)
-        }
-
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -413,421 +216,79 @@ private fun ProfileHero(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Avatar — tappable to change photo
             Box(
                 modifier = Modifier
                     .size(84.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White.copy(alpha = 0.2f))
-                    .clickable(enabled = !isUploadingAvatar, onClick = onAvatarClick),
+                    .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!user.profilePictureUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model              = ImageRequest.Builder(context)
+                        model = ImageRequest.Builder(context)
                             .data(user.profilePictureUrl).crossfade(true).build(),
                         contentDescription = stringResource(R.string.cd_profile_photo_of, user.name),
-                        modifier           = Modifier.fillMaxSize(),
-                        contentScale       = ContentScale.Crop
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
                     Icon(
                         imageVector = when (user.type) {
                             OrganizationType.GROCERY -> Icons.Default.Store
-                            OrganizationType.NGO     -> Icons.Default.VolunteerActivism
-                            OrganizationType.ADMIN   -> Icons.Default.AdminPanelSettings
+                            OrganizationType.NGO -> Icons.Default.VolunteerActivism
+                            OrganizationType.ADMIN -> Icons.Default.AdminPanelSettings
                         },
                         contentDescription = stringResource(R.string.cd_org_type, user.type.name.lowercase()),
-                        modifier           = Modifier.size(44.dp),
-                        tint               = Color.White
+                        modifier = Modifier.size(44.dp),
+                        tint = Color.White
                     )
-                }
-                // Camera overlay / upload spinner
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isUploadingAvatar) {
-                        CircularProgressIndicator(
-                            modifier  = Modifier.size(14.dp),
-                            color     = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            Icons.Default.PhotoCamera,
-                            contentDescription = stringResource(R.string.cd_add_photo),
-                            modifier           = Modifier.size(14.dp),
-                            tint               = Color.White
-                        )
-                    }
                 }
             }
 
             Text(
-                text       = user.name,
-                style      = MaterialTheme.typography.headlineSmall,
+                text = user.name,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color      = Color.White
+                color = Color.White
             )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 StatusBadge(
-                    label           = when (user.type) {
+                    label = when (user.type) {
                         OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
-                        OrganizationType.NGO     -> stringResource(R.string.role_ngo)
-                        OrganizationType.ADMIN   -> stringResource(R.string.role_admin)
+                        OrganizationType.NGO -> stringResource(R.string.role_ngo)
+                        OrganizationType.ADMIN -> stringResource(R.string.role_admin)
                     },
                     backgroundColor = Color.White.copy(alpha = 0.22f),
-                    contentColor    = Color.White
+                    contentColor = Color.White
                 )
                 when (user.verificationStatus) {
                     VerificationStatus.APPROVED ->
                         StatusBadge(
-                            label           = stringResource(R.string.label_verified_badge),
+                            label = stringResource(R.string.label_verified_badge),
                             backgroundColor = Color.White.copy(alpha = 0.22f),
-                            contentColor    = Color.White,
-                            icon            = Icons.Default.CheckCircle
+                            contentColor = Color.White,
+                            icon = Icons.Default.CheckCircle
                         )
                     VerificationStatus.PENDING ->
                         StatusBadge(
-                            label           = stringResource(R.string.label_pending_review_badge),
+                            label = stringResource(R.string.label_pending_review_badge),
                             backgroundColor = Color(0xFFD97706).copy(alpha = 0.85f),
-                            contentColor    = Color.White,
-                            icon            = Icons.Default.Schedule
+                            contentColor = Color.White,
+                            icon = Icons.Default.Schedule
                         )
                     VerificationStatus.REJECTED ->
                         StatusBadge(
-                            label           = stringResource(R.string.label_rejected_badge),
+                            label = stringResource(R.string.label_rejected_badge),
                             backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                            contentColor    = Color.White,
-                            icon            = Icons.Default.Cancel
+                            contentColor = Color.White,
+                            icon = Icons.Default.Cancel
                         )
                 }
             }
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Profile completeness card
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun ProfileCompletenessCard(
-    filledCount: Int,
-    totalRequired: Int,
-    completeness: Float,
-    missingFields: List<String>,
-    onEditClick: () -> Unit
-) {
-    Card(
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text       = stringResource(R.string.msg_profile_pct_complete, (completeness * 100).toInt()),
-                        style      = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text  = stringResource(R.string.msg_fields_filled, filledCount, totalRequired),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    )
-                }
-                TextButton(onClick = onEditClick) {
-                    Text(stringResource(R.string.label_complete), fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
-                }
-            }
-            LinearProgressIndicator(
-                progress   = { completeness },
-                modifier   = Modifier.fillMaxWidth(),
-                color      = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.15f)
-            )
-            Text(
-                text  = stringResource(R.string.msg_missing_fields, missingFields.joinToString(" · ")),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
-            )
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Shared small components
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun ContactActionRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    val notSet = stringResource(R.string.label_not_set)
-    Surface(
-        shape          = RoundedCornerShape(12.dp),
-        color          = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        modifier       = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape    = CircleShape,
-                color    = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, null, modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text       = value,
-                    style      = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color      = if (enabled && value != notSet)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            if (enabled && value != notSet) {
-                Icon(Icons.Default.OpenInNew, null, modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SettingsClickableRow(
-    icon: ImageVector,
-    label: String,
-    isDestructive: Boolean = false,
-    onClick: () -> Unit
-) {
-    val fg = if (isDestructive) MaterialTheme.colorScheme.error
-             else MaterialTheme.colorScheme.onSurface
-    Surface(
-        onClick        = onClick,
-        shape          = RoundedCornerShape(12.dp),
-        color          = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        modifier       = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier              = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, modifier = Modifier.size(20.dp), tint = fg)
-            Text(label,
-                style      = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color      = fg,
-                modifier   = Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.outlineVariant)
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Edit mode scaffold
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EditProfileScaffold(
-    state: ProfileState,
-    snackbarHostState: SnackbarHostState,
-    onEvent: (ProfileEvent) -> Unit
-) {
-    BackHandler { onEvent(ProfileEvent.CancelEdit) }
-
-    Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            SectionHeader(stringResource(R.string.section_general))
-
-            ClearChainTextField(
-                value         = state.editName,
-                onValueChange = { onEvent(ProfileEvent.EditNameChanged(it)) },
-                label         = stringResource(R.string.org_name_label),
-                leadingIcon   = Icons.Default.Business,
-                imeAction     = ImeAction.Next,
-                isError       = state.editNameError != null,
-                errorMessage  = state.editNameError,
-                enabled       = !state.isSavingProfile
-            )
-            ClearChainTextField(
-                value         = state.editDescription,
-                onValueChange = { onEvent(ProfileEvent.EditDescriptionChanged(it)) },
-                label         = stringResource(R.string.label_description),
-                placeholder   = stringResource(R.string.hint_org_description),
-                leadingIcon   = Icons.Default.Description,
-                imeAction     = ImeAction.Next,
-                enabled       = !state.isSavingProfile,
-                singleLine    = false,
-                minLines      = 2,
-                maxLines      = 4
-            )
-
-            SectionHeader(stringResource(R.string.section_contact))
-
-            ClearChainTextField(
-                value         = state.editPhone,
-                onValueChange = { onEvent(ProfileEvent.EditPhoneChanged(it)) },
-                label         = stringResource(R.string.onboarding_phone_label),
-                placeholder   = stringResource(R.string.hint_phone_profile),
-                leadingIcon   = Icons.Default.Phone,
-                keyboardType  = KeyboardType.Phone,
-                imeAction     = ImeAction.Next,
-                isError       = state.editPhoneError != null,
-                errorMessage  = state.editPhoneError,
-                enabled       = !state.isSavingProfile
-            )
-            AddressSuggestionField(
-                value             = state.editAddress,
-                onValueChange     = { onEvent(ProfileEvent.EditAddressChanged(it)) },
-                onAddressSelected = { s ->
-                    onEvent(ProfileEvent.EditAddressChanged(s.fullAddress))
-                    onEvent(ProfileEvent.EditLocationChanged(s.city))
-                    onEvent(ProfileEvent.EditLocationCoordsChanged(s.latitude, s.longitude))
-                },
-                label       = stringResource(R.string.onboarding_address_label),
-                placeholder = stringResource(R.string.onboarding_address_placeholder),
-                enabled     = !state.isSavingProfile
-            )
-            ClearChainTextField(
-                value         = state.editLocation,
-                onValueChange = { onEvent(ProfileEvent.EditLocationChanged(it)) },
-                label         = stringResource(R.string.label_city_location),
-                placeholder   = stringResource(R.string.onboarding_city_placeholder),
-                leadingIcon   = Icons.Default.Place,
-                imeAction     = ImeAction.Next,
-                enabled       = !state.isSavingProfile
-            )
-
-            SectionHeader(stringResource(R.string.onboarding_hours_label))
-
-            TimePickerField(
-                value          = state.editOpenTime,
-                onTimeSelected = { onEvent(ProfileEvent.EditOpenTimeChanged(it)) },
-                label          = stringResource(R.string.label_opening_time),
-                enabled        = !state.isSavingProfile
-            )
-            TimePickerField(
-                value          = state.editCloseTime,
-                onTimeSelected = { onEvent(ProfileEvent.EditCloseTimeChanged(it)) },
-                label          = stringResource(R.string.label_closing_time),
-                enabled        = !state.isSavingProfile
-            )
-
-            if (state.user?.type == OrganizationType.NGO || state.user?.type == OrganizationType.GROCERY) {
-                SectionHeader(stringResource(R.string.section_org_details))
-                ClearChainTextField(
-                    value         = state.editContactPerson,
-                    onValueChange = { onEvent(ProfileEvent.EditContactPersonChanged(it)) },
-                    label         = stringResource(R.string.label_contact_person_star),
-                    placeholder   = stringResource(R.string.hint_contact_person),
-                    leadingIcon   = Icons.Default.Person,
-                    imeAction     = ImeAction.Next,
-                    isError       = state.editContactPersonError != null,
-                    errorMessage  = state.editContactPersonError,
-                    enabled       = !state.isSavingProfile
-                )
-            }
-
-            if (state.user?.type == OrganizationType.GROCERY) {
-                ClearChainTextField(
-                    value         = state.editPickupInstructions,
-                    onValueChange = { onEvent(ProfileEvent.EditPickupInstructionsChanged(it)) },
-                    label         = stringResource(R.string.onboarding_pickup_instructions_label),
-                    placeholder   = stringResource(R.string.hint_pickup_instructions_long),
-                    leadingIcon   = Icons.Default.DirectionsWalk,
-                    imeAction     = ImeAction.Done,
-                    enabled       = !state.isSavingProfile,
-                    singleLine    = false,
-                    minLines      = 2,
-                    maxLines      = 3
-                )
-            }
-
-            AnimatedVisibility(visible = state.error != null, enter = fadeIn(), exit = fadeOut()) {
-                AlertBanner(
-                    message = state.error ?: "",
-                    type    = AlertType.ERROR,
-                    icon    = Icons.Default.ErrorOutline
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ClearChainOutlinedButton(
-                    text     = stringResource(R.string.cancel),
-                    onClick  = { onEvent(ProfileEvent.CancelEdit) },
-                    modifier = Modifier.weight(1f)
-                )
-                ClearChainButton(
-                    text     = stringResource(R.string.action_save_changes),
-                    onClick  = { onEvent(ProfileEvent.SaveProfile) },
-                    loading  = state.isSavingProfile,
-                    enabled  = !state.isSavingProfile,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -905,7 +366,8 @@ private fun ChangePasswordDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.action_change),
                 enabled = !isLoading,
                 onClick = {
                     when {
@@ -917,14 +379,27 @@ private fun ChangePasswordDialog(
                         newPassword != confirmNewPassword      -> error = errDontMatch
                         else -> onConfirm(currentPassword, newPassword)
                     }
-                }
-            ) {
-                if (isLoading) CircularProgressIndicator(Modifier.size(16.dp))
-                else Text(stringResource(R.string.action_change))
-            }
+                },
+                fillMaxWidth = false,
+                loading = isLoading
+            )
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+        dismissButton = {
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
+        }
     )
+}
+
+@Composable
+private fun StatItem(label: String, value: String, icon: ImageVector) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -952,17 +427,6 @@ private fun AccountStatsCard(stats: com.clearchain.app.domain.model.OrgStats, or
     }
 }
 
-@Composable
-private fun StatItem(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Team Members Card
@@ -1124,17 +588,22 @@ private fun DeleteAccountDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick  = { if (password.isNotBlank()) onConfirm(password) },
-                enabled  = password.isNotBlank() && !isLoading,
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                else Text(stringResource(R.string.label_delete_account))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.label_delete_account),
+                onClick = { if (password.isNotBlank()) onConfirm(password) },
+                enabled = password.isNotBlank() && !isLoading,
+                loading = isLoading,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.cancel),
+                onClick = onDismiss,
+                enabled = !isLoading
+            )
         }
     )
 }

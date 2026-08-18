@@ -31,11 +31,9 @@ public class ListingData
     // ═══ NEW (Part 2): Distance from NGO's search location ═══
     public double? DistanceKm { get; set; }
 
-    // ═══ Analytics & archive ═══
+    // ═══ Analytics ═══
     public int ViewCount { get; set; }
     public int RequestCount { get; set; }
-    public bool IsArchived { get; set; }
-    public string? ArchivedAt { get; set; }
 
     // ═══ Multi-image ═══
     public List<string> ImageUrls { get; set; } = new();
@@ -54,5 +52,6 @@ public class ListingGroupSummary
     public int OriginalQuantity { get; set; }
     public int TotalReserved { get; set; }
     public int TotalAvailable { get; set; }
+    public int TotalRemoved { get; set; }
     public int ChildListingsCount { get; set; }
 }

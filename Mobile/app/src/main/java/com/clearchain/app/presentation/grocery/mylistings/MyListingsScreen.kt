@@ -81,7 +81,9 @@ fun MyListingsScreen(
         // Bulk action bottom bar
         bottomBar = {
             AnimatedVisibility(
-                visible = state.isSelectionMode && state.selectedCount > 0,
+                visible = state.isSelectionMode &&
+                    state.selectedCount > 0 &&
+                    state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED),
                 enter   = slideInVertically { it },
                 exit    = slideOutVertically { it }
             ) {
@@ -96,37 +98,48 @@ fun MyListingsScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (state.activeTab == MyListingsTab.AVAILABLE || state.activeTab == MyListingsTab.ARCHIVED) {
-                            OutlinedButton(
-                                onClick  = {
-                                    if (state.activeTab == MyListingsTab.ARCHIVED) viewModel.onEvent(MyListingsEvent.BulkRestore)
-                                    else viewModel.onEvent(MyListingsEvent.BulkArchive)
-                                },
-                                modifier = Modifier.weight(1f),
-                                enabled  = !state.isBulkOperating
-                            ) {
-                                if (state.isBulkOperating) {
-                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                                } else if (state.activeTab == MyListingsTab.ARCHIVED) {
-                                    Icon(Icons.Default.Unarchive, null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(stringResource(R.string.bulk_restore))
-                                } else {
-                                    Icon(Icons.Default.Archive, null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(stringResource(R.string.action_archive))
-                                }
+                        when (state.activeTab) {
+                            MyListingsTab.AVAILABLE -> {
+                                ClearChainOutlinedButton(
+                                    text = stringResource(R.string.action_archive),
+                                    onClick = { viewModel.onEvent(MyListingsEvent.BulkArchive) },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isBulkOperating,
+                                    loading = state.bulkOperation == MyListingsBulkOperation.ARCHIVE,
+                                    icon = Icons.Default.Archive
+                                )
+                                ClearChainButton(
+                                    text = stringResource(R.string.delete),
+                                    onClick = { showBulkDeleteConfirm = true },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isBulkOperating,
+                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError,
+                                    icon = Icons.Default.Delete
+                                )
                             }
-                        }
-                        Button(
-                            onClick  = { showBulkDeleteConfirm = true },
-                            modifier = Modifier.weight(1f),
-                            enabled  = !state.isBulkOperating,
-                            colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.action_delete_count, state.selectedCount))
+                            MyListingsTab.ARCHIVED -> {
+                                ClearChainOutlinedButton(
+                                    text = stringResource(R.string.action_restore),
+                                    onClick = { viewModel.onEvent(MyListingsEvent.BulkRestore) },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isBulkOperating,
+                                    loading = state.bulkOperation == MyListingsBulkOperation.RESTORE,
+                                    icon = Icons.Default.Unarchive
+                                )
+                                ClearChainButton(
+                                    text = stringResource(R.string.delete),
+                                    onClick = { showBulkDeleteConfirm = true },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isBulkOperating,
+                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError,
+                                    icon = Icons.Default.Delete
+                                )
+                            }
+                            else -> Unit
                         }
                     }
                 }
@@ -146,25 +159,9 @@ fun MyListingsScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.allListings.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.error != null && state.allListings.isEmpty() -> {
-                    EmptyState(
-                        icon       = Icons.Default.ErrorOutline,
-                        title      = stringResource(R.string.msg_failed_load_listings),
-                        subtitle   = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction   = { viewModel.onEvent(MyListingsEvent.LoadListings) }
-                    )
-                }
-
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                         Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -191,9 +188,8 @@ fun MyListingsScreen(
                         Row(
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             val tabs = listOf(
                                 MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
@@ -211,47 +207,44 @@ fun MyListingsScreen(
                             }
                         }
 
-                        if (state.isSelectionMode) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                                    .padding(bottom = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                CircleCheckbox(
-                                    checked = state.allSelected,
-                                    onCheckedChange = {
-                                        if (state.allSelected) viewModel.onEvent(MyListingsEvent.DeselectAll)
-                                        else viewModel.onEvent(MyListingsEvent.SelectAll)
-                                    }
-                                )
-                                Text(
-                                    text  = stringResource(R.string.n_listings_selected, state.selectedCount),
-                                    style = MaterialTheme.typography.bodyMedium
+                        ResultsCountAndSort(
+                            count          = state.filteredListings.size,
+                            itemName       = "listing",
+                            selectedSort   = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
+                            sortOptions    = state.availableSortOptions,
+                            countText      = if (state.isSelectionMode) {
+                                "${state.selectedCount} ${if (state.selectedCount == 1) "listing" else "listings"} selected"
+                            } else null,
+                            leadingContent = if (state.isSelectionMode) {
+                                {
+                                    CircleCheckbox(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) viewModel.onEvent(MyListingsEvent.DeselectAll)
+                                            else viewModel.onEvent(MyListingsEvent.SelectAll)
+                                        }
+                                    )
+                                }
+                            } else null
+                        )
+
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        when {
+                            state.isLoading && state.allListings.isEmpty() -> {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+
+                            state.error != null && state.allListings.isEmpty() -> {
+                                EmptyState(
+                                    icon       = Icons.Default.ErrorOutline,
+                                    title      = stringResource(R.string.error_generic),
+                                    subtitle   = state.error,
+                                    actionLabel = stringResource(R.string.retry),
+                                    onAction   = { viewModel.onEvent(MyListingsEvent.LoadListings) }
                                 )
                             }
-                        } else {
-                            ResultsCountAndSort(
-                                count          = state.filteredListings.size,
-                                itemName       = "listing",
-                                selectedSort   = state.selectedSort,
-                                onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
-                                sortOptions    = state.availableSortOptions,
-                                modifier       = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
 
-                        state.error?.let {
-                            ErrorBanner(
-                                message  = it,
-                                onDismiss = { viewModel.onEvent(MyListingsEvent.ClearError) },
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
-
-                        when {
                             state.filteredListings.isEmpty() -> {
                                 EmptyState(
                                     icon   = if (state.allListings.isEmpty()) Icons.Default.PostAdd else Icons.Default.FilterAlt,
@@ -285,18 +278,20 @@ fun MyListingsScreen(
                                                         }
                                                     },
                                                     onLongClick  = {
-                                                        if (!state.isSelectionMode) {
-                                                            viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
+                                                        if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED)) {
+                                                            if (!state.isSelectionMode) {
+                                                                viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
+                                                            }
+                                                            viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
                                                         }
-                                                        viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
                                                     }
                                                 ),
                                                 showGroceryInfo = false,
-                                                topRightAction  = if (!state.isSelectionMode && (listing.isArchived || listing.status == ListingStatus.AVAILABLE)) {
+                                                topRightAction  = if (!state.isSelectionMode && listing.status == ListingStatus.AVAILABLE) {
                                                     {
                                                         IconButton(
                                                             onClick  = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
-                                                            modifier = Modifier.size(32.dp)
+                                                            modifier = Modifier.size(24.dp)
                                                         ) {
                                                             Icon(
                                                                 Icons.Default.Edit,
@@ -316,13 +311,13 @@ fun MyListingsScreen(
                                                         ) {
                                                             if (listing.viewCount > 0) {
                                                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                                                    Icon(Icons.Default.Visibility, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                    Icon(Icons.Default.Visibility, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                                                     Text("${listing.viewCount}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                                 }
                                                             }
                                                             if (listing.requestCount > 0) {
                                                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                                                    Icon(Icons.Default.Inventory, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.primary)
+                                                                    Icon(Icons.Default.Inventory, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                                                                     Text("${listing.requestCount} req", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                                                 }
                                                             }
@@ -361,8 +356,7 @@ fun MyListingsScreen(
                                 }
                             }
                         }
-                    }
-                }
+                        }
             }
         }
     }
@@ -397,9 +391,10 @@ private fun MyListingsFilterSheet(
                 Text(stringResource(R.string.advanced_filters),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(MyListingsEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(MyListingsEvent.ClearAdvancedFilters) }
+                    )
                 }
             }
 
@@ -450,9 +445,11 @@ private fun MyListingsFilterSheet(
                 )
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -468,8 +465,8 @@ private fun CircleCheckbox(
         modifier        = modifier.size(24.dp),
         shape           = CircleShape,
         color           = if (checked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.92f),
-        border          = if (!checked) BorderStroke(2.dp, MaterialTheme.colorScheme.outline) else null,
-        shadowElevation = 2.dp
+        border          = if (!checked) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
+        shadowElevation = 1.dp
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (checked) {
@@ -519,7 +516,9 @@ private fun EditQuantityDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.action_update),
+                onClick = {
                 val newQty = quantity.toIntOrNull()
                 when {
                     newQty == null -> error = errorInvalidNumber
@@ -527,8 +526,10 @@ private fun EditQuantityDialog(
                     newQty == currentQuantity -> error = errorSameAsCurrent
                     else -> onConfirm(newQty)
                 }
-            }) { Text(stringResource(R.string.action_update)) }
+            })
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+        dismissButton = {
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
+        }
     )
 }

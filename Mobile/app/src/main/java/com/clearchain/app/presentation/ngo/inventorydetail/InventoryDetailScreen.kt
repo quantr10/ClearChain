@@ -1,15 +1,15 @@
-﻿package com.clearchain.app.presentation.ngo.inventorydetail
+package com.clearchain.app.presentation.ngo.inventorydetail
 
 import android.content.Intent
-import android.net.Uri
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,14 +17,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -32,27 +31,23 @@ import com.clearchain.app.R
 import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.DateTimeUtils
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
-// ═══ Screen ═══
+// --- Screen ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryDetailScreen(
     itemId: String,
-    onNavigateBack: () -> Unit,
     onNavigateToRequestDetail: (String) -> Unit = {},
     onNavigateToPublicProfile: (String) -> Unit = {},
+    onNavigateToListingDetail: (String) -> Unit = {},
     viewModel: InventoryDetailViewModel = hiltViewModel()
 ) {
     val state            by viewModel.state.collectAsState()
     val context          = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    var fullscreenPhoto  by remember { mutableStateOf<String?>(null) }
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.uploadPhoto(itemId, it) }
-    }
+    var showFullPhoto by remember { mutableStateOf(false) }
 
     LaunchedEffect(itemId) { viewModel.loadItem(itemId) }
     LaunchedEffect(Unit) {
@@ -61,24 +56,6 @@ fun InventoryDetailScreen(
                 snackbarHostState.showSnackbar(event.message)
             }
         }
-    }
-
-    // Fullscreen photo dialog
-    fullscreenPhoto?.let { url ->
-        AlertDialog(
-            onDismissRequest = { fullscreenPhoto = null },
-            confirmButton = {
-                TextButton(onClick = { fullscreenPhoto = null }) { Text(stringResource(R.string.dialog_close)) }
-            },
-            text = {
-                AsyncImage(
-                    model          = url,
-                    contentDescription = stringResource(R.string.doc_photo_description),
-                    modifier       = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                    contentScale   = ContentScale.Fit
-                )
-            }
-        )
     }
 
     // QR label bottom sheet
@@ -107,12 +84,15 @@ fun InventoryDetailScreen(
             }
         }
     }
-
-    BackHandler(state.isEditing) { viewModel.cancelEdit() }
+    if (showFullPhoto) {
+        state.item?.photoUrl?.let { photoUrl ->
+            FullPhotoDialog(photoUrl = photoUrl, onDismiss = { showFullPhoto = false })
+        }
+    }
 
     Scaffold(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -120,321 +100,169 @@ fun InventoryDetailScreen(
 
                 state.error != null -> EmptyState(
                     icon        = Icons.Default.ErrorOutline,
-                    title       = stringResource(R.string.failed_to_load_item),
+                    title       = stringResource(R.string.error_generic),
                     subtitle    = state.error,
                     actionLabel = stringResource(R.string.retry),
                     onAction    = { viewModel.loadItem(itemId) }
                 )
 
-                state.isEditing && state.item != null -> {
-                    EditItemContent(
-                        state    = state,
-                        itemId   = itemId,
-                        viewModel = viewModel
-                    )
-                }
-
                 state.item != null -> {
                     val item = state.item!!
+                    val daysUntilExpiry = remember(item.expiryDate) { daysUntilExpiry(item.expiryDate) }
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // ── Header ─────────────────────────────
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.Top
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    item.productName,
-                                    style      = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    item.category,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            InventoryStatusBadge(status = item.status)
-                        }
+                        InventoryHeroCard(
+                            item = item,
+                            daysUntilExpiry = daysUntilExpiry,
+                            groceryName = state.relatedRequest?.groceryName,
+                            onViewGroceryProfile = state.relatedRequest?.let { request ->
+                                { onNavigateToPublicProfile(request.groceryId) }
+                            },
+                            onExpandPhoto = { showFullPhoto = true },
+                            onShowQr = { viewModel.showQrSheet() }
+                        )
 
-                        // ── QR + Edit actions ─────────────────
-                        if (item.status == InventoryStatus.ACTIVE) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick  = { viewModel.showQrSheet() },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.QrCode, null, Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.generate_qr_label))
-                                }
-                                Button(
-                                    onClick  = { viewModel.startEdit() },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(stringResource(R.string.edit_item))
-                                }
-                            }
-                        }
-
-                        HorizontalDivider()
-
-                        // ── Quantity Card ──────────────────────
-                        SectionHeader(stringResource(R.string.section_quantity))
-                        Card(
-                            shape  = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                        InventorySectionCard(stringResource(R.string.section_item_details)) {
+                            InventoryDetailRow(
+                                icon = Icons.Default.Scale,
+                                label = stringResource(R.string.section_quantity),
+                                value = "${formatInventoryQuantity(item.quantity)} ${item.unit}"
                             )
-                        ) {
-                            Row(
-                                modifier              = Modifier.fillMaxWidth().padding(16.dp),
-                                verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(Icons.Default.Scale, null, Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    "${item.quantity} ${item.unit}",
-                                    style      = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = MaterialTheme.colorScheme.onPrimaryContainer
+                            InventoryDetailRow(
+                                icon = Icons.Default.Event,
+                                label = stringResource(R.string.inventory_step_expires),
+                                value = DateTimeUtils.formatDate(item.expiryDate),
+                                valueColor = if (item.status == InventoryStatus.ACTIVE && (daysUntilExpiry ?: 99L) <= 3L) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                            InventoryDetailRow(
+                                icon = Icons.Default.Inventory,
+                                label = stringResource(R.string.inventory_step_received),
+                                value = DateTimeUtils.formatDate(item.receivedAt)
+                            )
+                            item.distributedAt?.let {
+                                InventoryDetailRow(
+                                    icon = Icons.Default.VolunteerActivism,
+                                    label = stringResource(R.string.inventory_step_distributed),
+                                    value = DateTimeUtils.formatDate(it)
                                 )
                             }
                         }
 
-                        // ── Timeline / Lifecycle ───────────────
-                        SectionHeader(stringResource(R.string.section_lifecycle))
-                        LifecycleTimeline(item = item)
+                        InventorySectionCard(stringResource(R.string.section_lifecycle)) {
+                            LifecycleStep(
+                                icon = Icons.Default.Inventory,
+                                title = stringResource(R.string.inventory_step_received),
+                                value = DateTimeUtils.formatDate(item.receivedAt),
+                                active = true
+                            )
+                            LifecycleStep(
+                                icon = if (item.status == InventoryStatus.EXPIRED) Icons.Default.Warning else Icons.Default.Event,
+                                title = if (item.status == InventoryStatus.EXPIRED) {
+                                    stringResource(R.string.inventory_step_expired)
+                                } else {
+                                    stringResource(R.string.inventory_step_expires)
+                                },
+                                value = DateTimeUtils.formatDate(item.expiryDate),
+                                active = item.status != InventoryStatus.DISTRIBUTED
+                            )
+                            LifecycleStep(
+                                icon = Icons.Default.VolunteerActivism,
+                                title = stringResource(R.string.inventory_step_distributed),
+                                value = item.distributedAt?.let { DateTimeUtils.formatDate(it) }
+                                    ?: stringResource(R.string.not_yet_distributed),
+                                active = item.status == InventoryStatus.DISTRIBUTED
+                            )
+                        }
 
-                        // ── Source Traceability ────────────────
+                        // -- Source Traceability ----------------
                         state.relatedRequest?.let { request ->
-                            HorizontalDivider()
-                            SectionHeader(stringResource(R.string.section_source))
-
-                            // Origin chain card
-                            Card(
-                                shape  = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            InventorySectionCard(stringResource(R.string.section_source)) {
+                                InventoryDetailRow(
+                                    icon = Icons.Default.Store,
+                                    label = stringResource(R.string.donated_by),
+                                    value = request.groceryName
                                 )
-                            ) {
-                                Column(
-                                    modifier            = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment     = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(Icons.Default.AccountTree, null,
-                                            tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                                        Text(
-                                            stringResource(R.string.origin_chain),
-                                            style      = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color      = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.2f)
+                                InventoryDetailRow(
+                                    icon = Icons.Default.Inventory2,
+                                    label = stringResource(R.string.label_listing),
+                                    value = request.listingTitle
+                                )
+                                InventoryDetailRow(
+                                    icon = Icons.Default.LocalShipping,
+                                    label = stringResource(R.string.label_pickup_date),
+                                    value = DateTimeUtils.formatDate(request.pickupDate)
+                                )
+                                InventoryDetailRow(
+                                    icon = Icons.Default.ShoppingCart,
+                                    label = stringResource(R.string.label_original_qty),
+                                    value = "${request.requestedQuantity}"
+                                )
+                                request.notes?.takeIf { it.isNotBlank() }?.let { notes ->
+                                    InventoryDetailRow(
+                                        icon = Icons.Default.StickyNote2,
+                                        label = stringResource(R.string.label_notes),
+                                        value = notes
                                     )
-                                    TraceabilityRow(
-                                        icon  = Icons.Default.Store,
-                                        label = stringResource(R.string.donated_by),
-                                        value = request.groceryName,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                    TraceabilityRow(
-                                        icon  = Icons.Default.Inventory2,
-                                        label = stringResource(R.string.label_listing),
-                                        value = request.listingTitle,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                    TraceabilityRow(
-                                        icon  = Icons.Default.LocalShipping,
-                                        label = stringResource(R.string.label_pickup_date),
-                                        value = request.pickupDate,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                    TraceabilityRow(
-                                        icon  = Icons.Default.ShoppingCart,
-                                        label = stringResource(R.string.label_original_qty),
-                                        value = "${request.requestedQuantity}",
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                    request.notes?.let { notes ->
-                                        if (notes.isNotBlank()) {
-                                            TraceabilityRow(
-                                                icon  = Icons.Default.StickyNote2,
-                                                label = stringResource(R.string.label_notes),
-                                                value = notes,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                                            )
-                                        }
-                                    }
                                 }
-                            }
-
-                            // Tap to view full request
-                            OutlinedButton(
-                                onClick  = { onNavigateToRequestDetail(request.id) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.OpenInNew, null, Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.view_full_request))
-                            }
-                            OutlinedButton(
-                                onClick  = { onNavigateToPublicProfile(request.groceryId) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.Store, null, Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.action_view_grocery_profile))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    ClearChainOutlinedButton(
+                                        text = stringResource(R.string.view_full_request),
+                                        onClick  = { onNavigateToRequestDetail(request.id) },
+                                        modifier = Modifier.weight(1f),
+                                        icon = Icons.Default.OpenInNew
+                                    )
+                                    ClearChainOutlinedButton(
+                                        text = stringResource(R.string.action_view_grocery_profile),
+                                        onClick  = { onNavigateToPublicProfile(request.groceryId) },
+                                        modifier = Modifier.weight(1f),
+                                        icon = Icons.Default.Store
+                                    )
+                                }
                             }
                         }
 
                         if (state.isLoadingRequest) {
-                            Row(
-                                modifier              = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.loading_source_info),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-
-                        // ── Photo Documentation ────────────────
-                        HorizontalDivider()
-                        SectionHeader(stringResource(R.string.section_documentation))
-                        state.photoUploadError?.let { err ->
-                            AlertBanner(
-                                message = err,
-                                type    = AlertType.ERROR,
-                                icon    = Icons.Default.ErrorOutline
-                            )
-                        }
-                        if (item.photoUrl != null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { fullscreenPhoto = item.photoUrl }
-                            ) {
-                                AsyncImage(
-                                    model              = item.photoUrl,
-                                    contentDescription = stringResource(R.string.doc_photo_description),
-                                    modifier           = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale       = ContentScale.Crop
-                                )
-                                Surface(
-                                    modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
-                                    color    = Color.Black.copy(alpha = 0.6f),
-                                    shape    = RoundedCornerShape(50)
-                                ) {
-                                    Row(
-                                        modifier          = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(Icons.Default.ZoomIn, null, Modifier.size(14.dp), tint = Color.White)
-                                        Text(stringResource(R.string.tap_to_expand), style = MaterialTheme.typography.labelSmall, color = Color.White)
-                                    }
-                                }
-                            }
-                            if (item.status == InventoryStatus.ACTIVE) {
-                                OutlinedButton(
-                                    onClick  = { photoPickerLauncher.launch("image/*") },
+                            InventorySectionCard(stringResource(R.string.section_source)) {
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    enabled  = !state.isUploadingPhoto
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.ChangeCircle, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(stringResource(R.string.replace_photo))
-                                }
-                            }
-                        } else if (item.status == InventoryStatus.ACTIVE) {
-                            Card(
-                                shape  = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                            ) {
-                                Column(
-                                    modifier            = Modifier.fillMaxWidth().padding(16.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Icon(Icons.Default.AddAPhoto, null,
-                                        Modifier.size(40.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(8.dp))
                                     Text(
-                                        stringResource(R.string.no_photo_attached),
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        stringResource(R.string.loading_source_info),
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    Button(
-                                        onClick  = { photoPickerLauncher.launch("image/*") },
-                                        enabled  = !state.isUploadingPhoto,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        if (state.isUploadingPhoto) {
-                                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp,
-                                                color = MaterialTheme.colorScheme.onPrimary)
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(stringResource(R.string.uploading))
-                                        } else {
-                                            Icon(Icons.Default.AddAPhoto, null, Modifier.size(18.dp))
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(stringResource(R.string.attach_photo))
-                                        }
-                                    }
                                 }
                             }
                         }
 
-                        // ── Status Card ──────────────────────
-                        HorizontalDivider()
-                        when (item.status) {
-                            InventoryStatus.ACTIVE -> StatusInfoCard(
-                                icon    = Icons.Default.Info,
-                                message = stringResource(R.string.status_active_info),
-                                color   = MaterialTheme.colorScheme.secondaryContainer,
-                                tint    = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            InventoryStatus.DISTRIBUTED -> StatusInfoCard(
-                                icon    = Icons.Default.VolunteerActivism,
-                                message = stringResource(R.string.status_distributed_info),
-                                color   = MaterialTheme.colorScheme.tertiaryContainer,
-                                tint    = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                            InventoryStatus.EXPIRED -> StatusInfoCard(
-                                icon    = Icons.Default.Warning,
-                                message = stringResource(R.string.status_expired_info),
-                                color   = MaterialTheme.colorScheme.errorContainer,
-                                tint    = MaterialTheme.colorScheme.error
-                            )
+                        if (state.moreFromStore.isNotEmpty()) {
+                            InventorySectionCard(stringResource(R.string.label_more_from_store)) {
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    items(state.moreFromStore, key = { it.id }) { listing ->
+                                        ListingCard(
+                                            listing = listing,
+                                            onClick = { onNavigateToListingDetail(listing.id) },
+                                            modifier = Modifier.width(220.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Spacer(Modifier.height(16.dp))
@@ -445,212 +273,317 @@ fun InventoryDetailScreen(
     }
 }
 
-// ── Edit Item Content ─────────────────────────────────────────────────────────
+// -- Edit Item Content ---------------------------------------------------------
 
 @Composable
-private fun EditItemContent(
-    state:     InventoryDetailState,
-    itemId:    String,
-    viewModel: InventoryDetailViewModel
+private fun InventoryHeroCard(
+    item: com.clearchain.app.domain.model.InventoryItem,
+    daysUntilExpiry: Long?,
+    groceryName: String?,
+    onViewGroceryProfile: (() -> Unit)?,
+    onExpandPhoto: () -> Unit,
+    onShowQr: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        state.saveError?.let { error ->
-            AlertBanner(
-                message = error,
-                type    = AlertType.ERROR,
-                icon    = Icons.Default.ErrorOutline
-            )
-        }
-
-        SectionHeader(stringResource(R.string.section_item_details))
-
-        OutlinedTextField(
-            value         = state.editProductName,
-            onValueChange = { viewModel.onEditProductNameChanged(it) },
-            label         = { Text(stringResource(R.string.label_product_name)) },
-            modifier      = Modifier.fillMaxWidth(),
-            singleLine    = true,
-            leadingIcon   = { Icon(Icons.Default.Inventory2, null) }
-        )
-
-        OutlinedTextField(
-            value         = state.editCategory,
-            onValueChange = { viewModel.onEditCategoryChanged(it) },
-            label         = { Text(stringResource(R.string.label_category)) },
-            modifier      = Modifier.fillMaxWidth(),
-            singleLine    = true,
-            leadingIcon   = { Icon(Icons.Default.Category, null) }
-        )
-
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            OutlinedTextField(
-                value         = state.editQuantity,
-                onValueChange = { viewModel.onEditQuantityChanged(it) },
-                label         = { Text(stringResource(R.string.label_quantity_required)) },
-                modifier      = Modifier.weight(2f),
-                singleLine    = true,
-                leadingIcon   = { Icon(Icons.Default.Scale, null) }
-            )
-            OutlinedTextField(
-                value         = state.editUnit,
-                onValueChange = { viewModel.onEditUnitChanged(it) },
-                label         = { Text(stringResource(R.string.label_unit)) },
-                modifier      = Modifier.weight(1f),
-                singleLine    = true
-            )
-        }
-
-        OutlinedTextField(
-            value         = state.editExpiryDate,
-            onValueChange = { viewModel.onEditExpiryDateChanged(it) },
-            label         = { Text(stringResource(R.string.label_expiry_date_format)) },
-            modifier      = Modifier.fillMaxWidth(),
-            singleLine    = true,
-            leadingIcon   = { Icon(Icons.Default.DateRange, null) }
-        )
-
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                onClick  = { viewModel.cancelEdit() },
-                modifier = Modifier.weight(1f),
-                enabled  = !state.isSaving
-            ) { Text(stringResource(R.string.cancel)) }
-
-            Button(
-                onClick  = { viewModel.saveEdit(itemId) },
-                modifier = Modifier.weight(1f),
-                enabled  = !state.isSaving
-            ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary)
+            Box(Modifier.fillMaxWidth().height(200.dp)) {
+                if (!item.photoUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = item.photoUrl,
+                        contentDescription = item.productName,
+                        modifier = Modifier.fillMaxSize().clickable(onClick = onExpandPhoto),
+                        contentScale = ContentScale.Crop
+                    )
                 } else {
-                    Icon(Icons.Default.Save, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.save))
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-    }
-}
-
-// ── Lifecycle Timeline ────────────────────────────────────────────────────────
-
-@Composable
-private fun LifecycleTimeline(item: com.clearchain.app.domain.model.InventoryItem) {
-    data class LifecycleStep(
-        val icon:  androidx.compose.ui.graphics.vector.ImageVector,
-        val label: String,
-        val date:  String
-    )
-    val steps = buildList {
-        add(LifecycleStep(Icons.Default.Inventory, stringResource(R.string.inventory_step_received), DateTimeUtils.formatDate(item.receivedAt)))
-        if (item.status == InventoryStatus.DISTRIBUTED && item.distributedAt != null)
-            add(LifecycleStep(Icons.Default.VolunteerActivism, stringResource(R.string.inventory_step_distributed), DateTimeUtils.formatDate(item.distributedAt)))
-        if (item.status == InventoryStatus.EXPIRED)
-            add(LifecycleStep(Icons.Default.Warning, stringResource(R.string.inventory_step_expired), DateTimeUtils.formatDate(item.expiryDate)))
-        else
-            add(LifecycleStep(Icons.Default.EventBusy, stringResource(R.string.inventory_step_expires), DateTimeUtils.formatDate(item.expiryDate)))
-    }
-
-    Card(
-        shape  = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(
-            modifier            = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            steps.forEachIndexed { idx, step ->
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(step.icon, null, Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary)
-                    Column {
-                        Text(step.label, style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(step.date, style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold)
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoCamera,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        )
                     }
                 }
-                if (idx < steps.lastIndex) {
-                    HorizontalDivider(
-                        Modifier.padding(start = 32.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
+
+                Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+                    InventoryStatusBadge(status = item.status)
                 }
+
+                if (item.status == InventoryStatus.ACTIVE) {
+                    Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                        InventoryImageActionButton(
+                            icon = Icons.Default.QrCode,
+                            label = stringResource(R.string.generate_qr_label),
+                            onClick = onShowQr
+                        )
+                    }
+                }
+
+                val urgencyText = when {
+                    item.status == InventoryStatus.EXPIRED -> stringResource(R.string.listing_expired_label)
+                    daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
+                    daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
+                    daysUntilExpiry != null && daysUntilExpiry <= 3L -> stringResource(R.string.listing_expiring_soon)
+                    else -> null
+                }
+                if (urgencyText != null) {
+                    val urgencyColor = when {
+                        item.status == InventoryStatus.EXPIRED || daysUntilExpiry == 0L -> Color(0xCCB71C1C)
+                        daysUntilExpiry == 1L -> Color(0xCCE65100)
+                        else -> Color(0xCCF57F17)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(urgencyColor)
+                            .padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            urgencyText.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                if (!groceryName.isNullOrBlank() && onViewGroceryProfile != null) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp)
+                            .size(38.dp)
+                            .clickable(onClick = onViewGroceryProfile),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(2.dp, Color.White),
+                        shadowElevation = 3.dp
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                groceryName.take(1).uppercase(),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                item.productName,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            InventoryCategoryBadge(category = item.category)
+        }
+
+        Text(
+            text = expirySummaryText(item.status, daysUntilExpiry, item.expiryDate),
+            style = MaterialTheme.typography.labelSmall,
+            color = expirySummaryColor(item.status, daysUntilExpiry),
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun InventoryImageActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(24.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(
+                icon,
+                contentDescription = label,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun InventorySectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ClearChainCard {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun LifecycleStep(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    value: String,
+    active: Boolean
+) {
+    val color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier.size(30.dp),
+            shape = MaterialTheme.shapes.small,
+            color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = color)
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun InventoryDetailRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String? = null,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (label == null) {
+            Text(
+                text = value,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = valueColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = valueColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
 }
 
-// ── Traceability Row ──────────────────────────────────────────────────────────
+private fun formatInventoryQuantity(quantity: Double): String {
+    return if (quantity % 1.0 == 0.0) {
+        quantity.toInt().toString()
+    } else {
+        quantity.toString()
+    }
+}
+
+private fun daysUntilExpiry(expiryDate: String): Long? {
+    return try {
+        ChronoUnit.DAYS.between(LocalDate.now(), LocalDate.parse(expiryDate.take(10)))
+    } catch (_: Exception) {
+        null
+    }
+}
 
 @Composable
-private fun TraceabilityRow(
-    icon:  androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    color: Color
-) {
-    Row(
-        verticalAlignment     = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(icon, null, Modifier.size(16.dp).padding(top = 2.dp), tint = color.copy(alpha = 0.7f))
-        Column {
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                color = color.copy(alpha = 0.7f))
-            Text(value, style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold, color = color)
+private fun expirySummaryText(status: InventoryStatus, daysUntilExpiry: Long?, expiryDate: String): String {
+    if (status == InventoryStatus.EXPIRED) return stringResource(R.string.listing_expired_label)
+    return when (daysUntilExpiry) {
+        null -> DateTimeUtils.formatDate(expiryDate)
+        0L -> stringResource(R.string.listing_expires_today)
+        1L -> stringResource(R.string.listing_expires_tomorrow)
+        else -> if (daysUntilExpiry > 1L) {
+            stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
+        } else {
+            stringResource(R.string.listing_expired_label)
         }
     }
 }
 
-// ── Status Info Card ──────────────────────────────────────────────────────────
-
 @Composable
-private fun StatusInfoCard(
-    icon:    androidx.compose.ui.graphics.vector.ImageVector,
-    message: String,
-    color:   Color,
-    tint:    Color
-) {
-    Card(
-        shape  = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = color)
-    ) {
-        Row(
-            modifier              = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(icon, null, tint = tint)
-            Text(message, style = MaterialTheme.typography.bodyMedium,
-                color = tint)
-        }
+private fun expirySummaryColor(status: InventoryStatus, daysUntilExpiry: Long?): Color {
+    return when {
+        status == InventoryStatus.EXPIRED -> MaterialTheme.colorScheme.error
+        daysUntilExpiry != null && daysUntilExpiry <= 3L -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 
-// ── QR Label Bottom Sheet ─────────────────────────────────────────────────────
+// -- QR Label Bottom Sheet -----------------------------------------------------
 
 @Composable
 private fun QrLabelSheet(
@@ -696,15 +629,8 @@ private fun QrLabelSheet(
         }
 
         // Label details card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape    = RoundedCornerShape(12.dp),
-            colors   = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
+        ClearChainSurfaceCard {
             Column(
-                modifier            = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 LabelRow(stringResource(R.string.label_product), productName)
@@ -719,14 +645,17 @@ private fun QrLabelSheet(
             modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.dialog_close))
-            }
-            Button(onClick = onShare, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Default.Share, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.btn_share_label))
-            }
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.dialog_close),
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f)
+            )
+            ClearChainButton(
+                text = stringResource(R.string.btn_share_label),
+                onClick = onShare,
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Share
+            )
         }
 
         Spacer(Modifier.height(16.dp))

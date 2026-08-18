@@ -65,4 +65,7 @@ data class VerificationQueueState(
 
     val checklistComplete: Boolean get() =
         checkedItems.size == VERIFICATION_CHECKLIST_SIZE
+
+    val allSelected: Boolean get() =
+        filteredOrgs.isNotEmpty() && selectedOrgIds.containsAll(filteredOrgs.map { it.id })
 }

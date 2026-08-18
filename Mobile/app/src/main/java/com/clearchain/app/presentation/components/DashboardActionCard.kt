@@ -21,29 +21,27 @@ import androidx.compose.ui.unit.dp
 fun DashboardActionCard(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String = "",
     badge: String? = null,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    iconContainerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
+    val cardColors = CardDefaults.cardColors(containerColor = containerColor)
+    val cardElevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    val content: @Composable ColumnScope.() -> Unit = {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = iconContainerColor,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.size(48.dp)
             ) {
@@ -52,7 +50,7 @@ fun DashboardActionCard(
                         icon,
                         contentDescription = null,
                         modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = iconTint
                     )
                 }
             }
@@ -65,7 +63,8 @@ fun DashboardActionCard(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = titleColor
                     )
                     badge?.let {
                         Surface(
@@ -82,18 +81,41 @@ fun DashboardActionCard(
                         }
                     }
                 }
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
+            if (onClick != null) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
         }
+    }
+
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = cardColors,
+            elevation = cardElevation,
+            content = content
+        )
+    } else {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = cardColors,
+            elevation = cardElevation,
+            content = content
+        )
     }
 }

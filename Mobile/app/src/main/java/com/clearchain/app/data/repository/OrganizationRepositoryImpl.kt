@@ -16,6 +16,8 @@ class OrganizationRepositoryImpl @Inject constructor(
         phone: String?,
         address: String?,
         location: String?,
+        state: String?,
+        zipCode: String?,
         hours: String?,
         latitude: Double?,
         longitude: Double?,
@@ -26,7 +28,7 @@ class OrganizationRepositoryImpl @Inject constructor(
         return try {
             val request = UpdateProfileRequest(
                 name = name, phone = phone, address = address,
-                location = location, hours = hours,
+                location = location, state = state, zipCode = zipCode, hours = hours,
                 latitude = latitude, longitude = longitude,
                 contactPerson = contactPerson,
                 pickupInstructions = pickupInstructions,
@@ -43,6 +45,8 @@ class OrganizationRepositoryImpl @Inject constructor(
                         phone = phone ?: "",
                         address = address ?: "",
                         location = location ?: "",
+                        state = state,
+                        zipCode = zipCode,
                         hours = hours,
                         latitude = latitude,
                         longitude = longitude,

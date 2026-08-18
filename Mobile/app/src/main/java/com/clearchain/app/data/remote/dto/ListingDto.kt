@@ -63,11 +63,9 @@ data class ListingData(
     // ═══ NEW (Part 2): Distance from NGO ═══
     val distanceKm: Double? = null,
 
-    // ═══ Analytics + Archive ═══
+    // ═══ Analytics ═══
     val viewCount: Int = 0,
     val requestCount: Int = 0,
-    val isArchived: Boolean = false,
-    val archivedAt: String? = null,
     val imageUrls: List<String> = emptyList(),
 
     // ═══ Grocery coordinates (for map pins) ═══
@@ -85,6 +83,7 @@ data class ListingGroupSummaryDto(
     val originalQuantity: Int,
     val totalReserved: Int,
     val totalAvailable: Int,
+    val totalRemoved: Int = 0,
     val childListingsCount: Int
 )
 
@@ -123,6 +122,7 @@ fun ListingData.toDomain(): Listing {
             "reserved" -> ListingStatus.RESERVED
             "completed" -> ListingStatus.COMPLETED
             "expired" -> ListingStatus.EXPIRED
+            "archived" -> ListingStatus.ARCHIVED
             else -> ListingStatus.AVAILABLE
         },
         imageUrl = imageUrl,
@@ -138,16 +138,15 @@ fun ListingData.toDomain(): Listing {
                 originalQuantity = it.originalQuantity,
                 totalReserved = it.totalReserved,
                 totalAvailable = it.totalAvailable,
+                totalRemoved = it.totalRemoved,
                 childListingsCount = it.childListingsCount
             )
         },
         // NEW (Part 2)
         distanceKm = distanceKm,
-        // Analytics + Archive
+        // Analytics
         viewCount = viewCount,
         requestCount = requestCount,
-        isArchived = isArchived,
-        archivedAt = archivedAt,
         imageUrls = imageUrls,
         groceryLatitude = groceryLatitude,
         groceryLongitude = groceryLongitude,

@@ -14,6 +14,10 @@ public class UpdateProfileRequest
 
     public string? Location { get; set; }
 
+    public string? State { get; set; }
+
+    public string? ZipCode { get; set; }
+
     public string? Hours { get; set; }
 
     // ═══ NEW FIELDS (Part 1) ═══

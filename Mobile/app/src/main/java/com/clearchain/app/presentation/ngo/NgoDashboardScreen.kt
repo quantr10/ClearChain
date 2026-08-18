@@ -3,7 +3,7 @@ package com.clearchain.app.presentation.ngo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -78,11 +79,11 @@ fun NgoDashboardScreen(
 
                 Column(
                     modifier            = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // ── Today's summary ────────────────────────────────────
                     state.todaySummary?.let { summary ->
-                        DashboardSection(title = stringResource(R.string.section_todays_summary)) {
+                        DashboardSection(title = "") {
                             Row(
                                 modifier              = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -116,7 +117,7 @@ fun NgoDashboardScreen(
                     val userLat = state.userLatitude
                     val userLng = state.userLongitude
                     if (userLat != null && userLng != null) {
-                        DashboardSection(title = stringResource(R.string.section_nearby_listings)) {
+                        DashboardSection(title = "") {
                             NearbyListingsMiniMap(
                                 userLat         = userLat,
                                 userLng         = userLng,
@@ -128,12 +129,15 @@ fun NgoDashboardScreen(
                     }
 
                     // ── Impact Tracker ─────────────────────────────────────
-                    DashboardSection(title = stringResource(R.string.section_your_impact)) {
-                        ImpactTrackerCard(impact = state.impact)
+                    DashboardSection(
+                        title = "",
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        ImpactTrackerContent(impact = state.impact)
                     }
 
                     // ── Weekly Goal ────────────────────────────────────────
-                    DashboardSection(title = stringResource(R.string.section_weekly_goal)) {
+                    DashboardSection(title = "") {
                         WeeklyGoalCard(
                             completed = state.weeklyCompleted,
                             goal      = state.weeklyGoal,
@@ -144,7 +148,7 @@ fun NgoDashboardScreen(
                     // ── Upcoming Pickups ───────────────────────────────────
                     val upcoming = state.todaySummary?.upcomingPickups.orEmpty()
                     if (upcoming.isNotEmpty()) {
-                        DashboardSection(title = stringResource(R.string.section_todays_pickups)) {
+                        DashboardSection(title = "") {
                             UpcomingPickupsTimeline(
                                 pickups   = upcoming,
                                 onViewAll = { navController.navigate(Screen.MyRequests.route) }
@@ -153,52 +157,46 @@ fun NgoDashboardScreen(
                     }
 
                     // ── Activity Trend + Recent Activity ──────────────────
-                    if (state.activities.isNotEmpty()) {
-                        val sparklineData = buildDailyActivityCounts(state.activities)
-                        DashboardSection(title = stringResource(R.string.section_activity_trend)) {
-                            ActivitySparklineCard(
-                                title = stringResource(R.string.label_actions_this_week),
-                                data  = sparklineData
-                            )
+                    val sparklineData = buildDailyActivityCounts(state.activities)
+                    DashboardSection(title = "") {
+                        ActivitySparklineCard(
+                            title = stringResource(R.string.label_actions_this_week),
+                            data  = sparklineData
+                        )
+                        if (state.activities.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                state.activities.take(5).forEach { item ->
-                                    ActivityFeedItem(item = item)
-                                }
-                            }
+                            ActivityFeedList(activities = state.activities.take(5))
                             if (state.activities.size > 5) {
-                                TextButton(
+                                Spacer(Modifier.height(8.dp))
+                                ClearChainButton(
+                                    text = stringResource(R.string.action_view_more),
                                     onClick  = { showActivitySheet = true },
                                     modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.action_view_more))
-                                }
+                                )
                             }
                         }
                     }
 
                     // ── Quick Actions ──────────────────────────────────────
-                    DashboardSection(title = stringResource(R.string.section_quick_actions)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            DashboardActionCard(
-                                icon     = Icons.Default.RestaurantMenu,
-                                title    = stringResource(R.string.action_browse_food),
-                                subtitle = stringResource(R.string.action_browse_food_subtitle),
-                                onClick  = { navController.navigate(Screen.BrowseListings.route) }
-                            )
-                            DashboardActionCard(
-                                icon     = Icons.Default.LocalShipping,
-                                title    = stringResource(R.string.action_my_requests),
-                                subtitle = stringResource(R.string.action_my_requests_subtitle),
-                                onClick  = { navController.navigate(Screen.MyRequests.route) }
-                            )
-                            DashboardActionCard(
-                                icon     = Icons.Default.Inventory,
-                                title    = stringResource(R.string.action_inventory),
-                                subtitle = stringResource(R.string.action_inventory_subtitle),
-                                onClick  = { navController.navigate(Screen.Inventory.route) }
-                            )
-                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DashboardActionCard(
+                            icon     = Icons.Default.RestaurantMenu,
+                            title    = stringResource(R.string.action_browse_food),
+                            subtitle = stringResource(R.string.action_browse_food_subtitle),
+                            onClick  = { navController.navigate(Screen.BrowseListings.route) }
+                        )
+                        DashboardActionCard(
+                            icon     = Icons.Default.LocalShipping,
+                            title    = stringResource(R.string.action_my_requests),
+                            subtitle = stringResource(R.string.action_my_requests_subtitle),
+                            onClick  = { navController.navigate(Screen.MyRequests.route) }
+                        )
+                        DashboardActionCard(
+                            icon     = Icons.Default.Inventory,
+                            title    = stringResource(R.string.action_inventory),
+                            subtitle = stringResource(R.string.action_inventory_subtitle),
+                            onClick  = { navController.navigate(Screen.Inventory.route) }
+                        )
                     }
 
                     Spacer(Modifier.height(8.dp))
@@ -252,19 +250,21 @@ internal fun ActivityHistorySheet(
             }
             Spacer(Modifier.height(8.dp))
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                items(displayed) { item ->
-                    ActivityFeedItem(item = item)
+                itemsIndexed(displayed) { index, item ->
+                    ActivityFeedItemWithDivider(
+                        item = item,
+                        showDivider = index < displayed.lastIndex
+                    )
                 }
                 if (!showAll && activities.size > 20) {
                     item {
-                        TextButton(
+                        ClearChainButton(
+                            text = stringResource(R.string.action_view_more),
                             onClick  = { showAll = true },
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.action_view_more))
-                        }
+                        )
                     }
                 }
             }
@@ -273,45 +273,38 @@ internal fun ActivityHistorySheet(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Impact Tracker Card
+// Impact Tracker Content
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ImpactTrackerCard(impact: ImpactMetrics) {
-    Card(
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+private fun ImpactTrackerContent(impact: ImpactMetrics) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            ImpactMetricItem(
-                icon  = Icons.Default.Scale,
-                value = impact.kgSaved,
-                unit  = "kg",
-                label = stringResource(R.string.impact_food_saved),
-                color = BrandGreen
-            )
-            VerticalDivider(modifier = Modifier.height(64.dp))
-            ImpactMetricItem(
-                icon  = Icons.Default.Restaurant,
-                value = impact.mealsProvided,
-                unit  = "",
-                label = stringResource(R.string.impact_meals),
-                color = MaterialTheme.colorScheme.tertiary
-            )
-            VerticalDivider(modifier = Modifier.height(64.dp))
-            ImpactMetricItem(
-                icon  = Icons.Default.EnergySavingsLeaf,
-                value = impact.co2AvoidedKg,
-                unit  = "kg",
-                label = stringResource(R.string.impact_co2),
-                color = BrandTeal
-            )
-        }
+        ImpactMetricItem(
+            icon  = Icons.Default.Scale,
+            value = impact.kgSaved,
+            unit  = "kg",
+            label = stringResource(R.string.impact_food_saved),
+            color = BrandGreen
+        )
+        VerticalDivider(modifier = Modifier.height(64.dp))
+        ImpactMetricItem(
+            icon  = Icons.Default.Restaurant,
+            value = impact.mealsProvided,
+            unit  = "",
+            label = stringResource(R.string.impact_meals),
+            color = MaterialTheme.colorScheme.tertiary
+        )
+        VerticalDivider(modifier = Modifier.height(64.dp))
+        ImpactMetricItem(
+            icon  = Icons.Default.EnergySavingsLeaf,
+            value = impact.co2AvoidedKg,
+            unit  = "kg",
+            label = stringResource(R.string.impact_co2),
+            color = BrandTeal
+        )
     }
 }
 
@@ -388,8 +381,8 @@ private fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
                     )
                     Text(
                         text  = stringResource(R.string.weekly_pickups),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
                 Text(
@@ -432,14 +425,14 @@ private fun UpcomingPickupsTimeline(
                 PickupTimelineItem(pickup = pickup, isLast = index == minOf(pickups.size, 3) - 1)
             }
             if (pickups.size > 3) {
-                TextButton(
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.view_all_pickups, pickups.size),
                     onClick  = onViewAll,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(stringResource(R.string.view_all_pickups, pickups.size))
-                }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    fillMaxWidth = true
+                )
             }
         }
     }
@@ -542,10 +535,14 @@ private fun NearbyListingsMiniMap(
         position = CameraPosition.fromLatLngZoom(center, 12f)
     }
 
-    Card(
-        shape    = RoundedCornerShape(16.dp),
-        modifier = modifier
+    Column(
+        modifier            = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Card(
+            shape    = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
         Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
             GoogleMap(
                 modifier            = Modifier.fillMaxSize(),
@@ -606,16 +603,13 @@ private fun NearbyListingsMiniMap(
                 }
             }
         }
-
-        // "View all" row
-        TextButton(
-            onClick  = onViewAll,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
-        ) {
-            Text(stringResource(R.string.action_browse_all_listings))
-            Spacer(Modifier.width(4.dp))
-            Icon(Icons.Default.ArrowForward, null, Modifier.size(14.dp))
         }
+
+        ClearChainButton(
+            text = stringResource(R.string.action_browse_all_listings),
+            onClick  = onViewAll,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -671,11 +665,16 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
         else                 -> Icons.Default.Info
     }
     val iconColor = when (item.type) {
-        "listing_created"  -> MaterialTheme.colorScheme.primary
-        "pickup_completed" -> MaterialTheme.colorScheme.primary
-        "pickup_cancelled" -> MaterialTheme.colorScheme.error
-        "pickup_approved"  -> MaterialTheme.colorScheme.tertiary
-        else               -> MaterialTheme.colorScheme.onSurfaceVariant
+        "listing_created"    -> MaterialTheme.colorScheme.primary
+        "pickup_completed"   -> MaterialTheme.colorScheme.primary
+        "pickup_cancelled"   -> MaterialTheme.colorScheme.error
+        "pickup_approved"    -> MaterialTheme.colorScheme.tertiary
+        "inventory_received" -> MaterialTheme.colorScheme.onSurfaceVariant
+        else                 -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val iconContainerColor = when (item.type) {
+        "pickup_cancelled" -> MaterialTheme.colorScheme.errorContainer
+        else               -> iconColor.copy(alpha = 0.12f)
     }
     val timeLabel = remember(item.timestamp) {
         try {
@@ -684,25 +683,45 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
         } catch (_: Exception) { "" }
     }
     Row(
-        modifier              = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment     = Alignment.Top
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment     = Alignment.CenterVertically
     ) {
-        Box(
-            modifier         = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(iconColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+        Surface(
+            modifier = Modifier.size(28.dp),
+            shape = CircleShape,
+            color = iconContainerColor
         ) {
-            Icon(icon, null, tint = iconColor, modifier = Modifier.size(18.dp))
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(16.dp))
+            }
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = item.subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
         if (timeLabel.isNotEmpty()) {
-            Text(timeLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = timeLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                maxLines = 1
+            )
         }
     }
 }
@@ -710,6 +729,37 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Grocery Pin Content (for map markers)
 // ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+internal fun ActivityFeedList(
+    activities: List<ActivityItemData>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        activities.forEachIndexed { index, item ->
+            ActivityFeedItemWithDivider(
+                item = item,
+                showDivider = index < activities.lastIndex
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityFeedItemWithDivider(
+    item: ActivityItemData,
+    showDivider: Boolean
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        ActivityFeedItem(item = item)
+        if (showDivider) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 38.dp, top = 8.dp, bottom = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
 
 @Composable
 private fun GroceryPinContent(name: String, count: Int) {

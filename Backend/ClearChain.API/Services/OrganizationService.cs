@@ -96,6 +96,8 @@ public class OrganizationService : IOrganizationService
         if (!string.IsNullOrEmpty(request.Phone)) user.Phone = request.Phone;
         if (!string.IsNullOrEmpty(request.Address)) user.Address = request.Address;
         if (!string.IsNullOrEmpty(request.Location)) user.Location = request.Location;
+        if (request.State != null) user.State = request.State;
+        if (request.ZipCode != null) user.ZipCode = request.ZipCode;
         if (request.Hours != null) user.Hours = request.Hours;
 
         // ═══ NEW FIELDS (Part 1) ═══
@@ -122,6 +124,8 @@ public class OrganizationService : IOrganizationService
             Phone = org.Phone ?? "",
             Address = org.Address ?? "",
             Location = org.Location ?? "",
+            State = org.State ?? "",
+            ZipCode = org.ZipCode ?? "",
             Verified = org.Verified,
             VerificationStatus = org.VerificationStatus,
             Hours = org.Hours,

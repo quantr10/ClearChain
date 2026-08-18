@@ -22,9 +22,8 @@ data class RegisterState(
     // Password strength meter
     val passwordStrength: PasswordStrength = PasswordStrength.NONE,
 
-    // Email availability check
-    val isCheckingEmail: Boolean = false,
-    val emailAvailable: Boolean? = null,  // null = not checked yet
+    // Email submit error state
+    val emailAlreadyExists: Boolean = false,
 
     // Terms of service
     val tosAccepted: Boolean = false,

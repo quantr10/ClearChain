@@ -34,7 +34,6 @@ class PickupRequestRepositoryImpl @Inject constructor(
         pickupDate: String,
         pickupTime: String,
         notes: String?,
-        vehicleType: String?,
         requiresRefrigeration: Boolean,
         isFragile: Boolean,
         isHeavy: Boolean
@@ -47,7 +46,6 @@ class PickupRequestRepositoryImpl @Inject constructor(
                     pickupDate = pickupDate,
                     pickupTime = pickupTime,
                     notes = notes,
-                    vehicleType = vehicleType,
                     requiresRefrigeration = requiresRefrigeration,
                     isFragile = isFragile,
                     isHeavy = isHeavy

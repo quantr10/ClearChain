@@ -19,6 +19,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.DisputeApi
+import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.DetailTopBar
 import com.clearchain.app.util.HapticUtils
 import com.clearchain.app.util.UiEvent
@@ -186,25 +187,12 @@ fun DisputeScreen(
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
 
-            Button(
-                onClick = { HapticUtils.confirm(context); viewModel.submit() },
-                enabled = !state.isSubmitting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                if (state.isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(Icons.Default.Flag, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.dispute_submit), fontWeight = FontWeight.SemiBold)
-                }
-            }
+            ClearChainButton(
+                text = stringResource(R.string.dispute_submit),
+                onClick = { viewModel.submit() },
+                loading = state.isSubmitting,
+                icon = Icons.Default.Flag
+            )
 
             Spacer(Modifier.height(16.dp))
         }

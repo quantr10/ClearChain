@@ -28,8 +28,6 @@ public class ClearanceListing
     public int SplitIndex { get; set; } = 0;  // Order in group
     
     public int ViewCount { get; set; } = 0;
-    public bool IsArchived { get; set; } = false;
-    public DateTime? ArchivedAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

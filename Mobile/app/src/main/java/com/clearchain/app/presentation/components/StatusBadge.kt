@@ -44,7 +44,7 @@ fun StatusBadge(
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             icon?.let {
@@ -85,6 +85,7 @@ fun ListingStatusBadge(status: ListingStatus) {
         ListingStatus.RESERVED  -> BadgeStyle(StatusColors.ReservedBg, StatusColors.ReservedOnBg, stringResource(R.string.status_reserved), Icons.Default.Lock)
         ListingStatus.COMPLETED -> BadgeStyle(StatusColors.CompletedBg, StatusColors.CompletedOnBg, stringResource(R.string.status_completed), Icons.Default.Done)
         ListingStatus.EXPIRED   -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
+        ListingStatus.ARCHIVED  -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_archived), Icons.Default.Archive)
     }
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
 }
@@ -117,4 +118,35 @@ fun CategoryBadge(category: FoodCategory) {
         backgroundColor = color.copy(alpha = 0.12f),
         contentColor = color
     )
+}
+
+fun formatCategoryName(category: String): String {
+    val normalized = category
+        .trim()
+        .replace('_', ' ')
+        .lowercase()
+
+    return normalized.replaceFirstChar { char ->
+        if (char.isLowerCase()) char.titlecase() else char.toString()
+    }
+}
+
+@Composable
+fun InventoryCategoryBadge(
+    category: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        shape = RoundedCornerShape(6.dp),
+        modifier = modifier
+    ) {
+        Text(
+            text = formatCategoryName(category),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }

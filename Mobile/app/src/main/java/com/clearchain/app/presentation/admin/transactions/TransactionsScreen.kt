@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.admin.transactions
+package com.clearchain.app.presentation.admin.transactions
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -135,7 +135,7 @@ fun TransactionsScreen(
                 modifier = Modifier.padding(bottom = 4.dp)
             )
 
-            // ── Aggregate stats header ──────────────────────────────────────
+            // -- Aggregate stats header --------------------------------------
             if (state.allTransactions.isNotEmpty()) {
                 TransactionStatsHeader(state = state)
             }
@@ -194,9 +194,9 @@ fun TransactionsScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Transactions filter bottom sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -226,9 +226,10 @@ private fun TransactionsFilterSheet(
                     fontWeight = FontWeight.Bold
                 )
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(TransactionsEvent.DatePresetSelected(null)) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(TransactionsEvent.DatePresetSelected(null)) }
+                    )
                 }
             }
 
@@ -236,20 +237,22 @@ private fun TransactionsFilterSheet(
                 DateRangeFilterRow(state = state, onEvent = onEvent)
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Date range filter row
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Aggregate stats header
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun TransactionStatsHeader(state: TransactionsState) {
@@ -339,7 +342,7 @@ private fun DateRangeFilterRow(
                     label    = {
                         val label2 = when {
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
-                                "${state.filterStartDate!!.takeLast(5)} – ${state.filterEndDate!!.takeLast(5)}"
+                                "${state.filterStartDate!!.takeLast(5)} � ${state.filterEndDate!!.takeLast(5)}"
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null ->
                                 "From ${state.filterStartDate!!.takeLast(5)}"
                             else -> label
@@ -366,30 +369,26 @@ private fun DateRangeFilterRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            OutlinedButton(
+            ClearChainOutlinedButton(
+                text = state.filterStartDate ?: stringResource(R.string.label_from),
                 onClick  = { onEvent(TransactionsEvent.ShowDatePicker(forStart = true)) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(state.filterStartDate ?: stringResource(R.string.label_from), style = MaterialTheme.typography.labelMedium)
-            }
-            Text("–", style = MaterialTheme.typography.bodyMedium)
-            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.CalendarToday
+            )
+            Text("�", style = MaterialTheme.typography.bodyMedium)
+            ClearChainOutlinedButton(
+                text = state.filterEndDate ?: stringResource(R.string.label_to),
                 onClick  = { onEvent(TransactionsEvent.ShowDatePicker(forStart = false)) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(state.filterEndDate ?: stringResource(R.string.label_to), style = MaterialTheme.typography.labelMedium)
-            }
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.CalendarToday
+            )
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Date picker dialog (used for custom range)
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -410,7 +409,8 @@ private fun DatePickerForTransaction(
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton    = {
-            TextButton(
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.ok),
                 onClick = {
                     pickerState.selectedDateMillis?.let { ms ->
                         val date = java.time.Instant.ofEpochMilli(ms)
@@ -421,9 +421,11 @@ private fun DatePickerForTransaction(
                     }
                 },
                 enabled = pickerState.selectedDateMillis != null
-            ) { Text(stringResource(R.string.ok)) }
+            )
         },
-        dismissButton    = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
+        dismissButton    = {
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
+        }
     ) {
         DatePicker(
             state    = pickerState,
@@ -433,9 +435,9 @@ private fun DatePickerForTransaction(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Expandable transaction card
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun ExpandableTransactionCard(
@@ -463,7 +465,7 @@ private fun ExpandableTransactionCard(
         else CardDefaults.cardColors()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // ── Header row (always visible) ──────────────────────────────────
+            // -- Header row (always visible) ----------------------------------
             Row(
                 modifier              = Modifier
                     .fillMaxWidth()
@@ -496,7 +498,7 @@ private fun ExpandableTransactionCard(
                         }
                     }
                     Text(
-                        "${transaction.groceryName} → ${transaction.ngoName}",
+                        "${transaction.groceryName} ? ${transaction.ngoName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -519,7 +521,7 @@ private fun ExpandableTransactionCard(
                 }
             }
 
-            // ── Expanded details ─────────────────────────────────────────────
+            // -- Expanded details ---------------------------------------------
             AnimatedVisibility(
                 visible = isExpanded,
                 enter   = expandVertically(),
@@ -543,11 +545,11 @@ private fun ExpandableTransactionCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = onViewDetail) {
-                            Icon(Icons.Default.OpenInNew, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_view_details))
-                        }
+                        ClearChainOutlinedButton(
+                            text = stringResource(R.string.action_view_details),
+                            onClick = onViewDetail,
+                            icon = Icons.Default.OpenInNew
+                        )
                     }
                 }
             }
@@ -555,9 +557,9 @@ private fun ExpandableTransactionCard(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Export dialog
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun ExportDialog(
@@ -599,14 +601,15 @@ private fun ExportDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onShare) {
-                Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.share))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.share),
+                onClick = onShare,
+                fillMaxWidth = false,
+                icon = Icons.Default.Share
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }

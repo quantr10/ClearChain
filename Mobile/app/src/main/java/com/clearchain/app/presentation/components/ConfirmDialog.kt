@@ -58,23 +58,22 @@ fun ConfirmDialog(
             )
         },
         confirmButton = {
-            Button(
+            ClearChainButton(
+                text = resolvedConfirm,
                 onClick = {
                     if (isDestructive) HapticUtils.warning(context) else HapticUtils.confirm(context)
                     onConfirm()
                 },
-                colors = if (isDestructive) ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                ) else ButtonDefaults.buttonColors()
-            ) {
-                Text(resolvedConfirm)
-            }
+                fillMaxWidth = false,
+                containerColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                contentColor = if (isDestructive) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
+            )
         },
         dismissButton = {
-            TextButton(onClick = { HapticUtils.tick(context); onDismiss() }) {
-                Text(resolvedDismiss)
-            }
+            ClearChainOutlinedButton(
+                text = resolvedDismiss,
+                onClick = { HapticUtils.tick(context); onDismiss() }
+            )
         }
     )
 }

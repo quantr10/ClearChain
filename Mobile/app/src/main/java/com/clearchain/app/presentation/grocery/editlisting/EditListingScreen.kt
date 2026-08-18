@@ -141,24 +141,24 @@ fun EditListingScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(40.dp)
+                                .height(32.dp)
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
                                 .menuAnchor()
-                                .padding(horizontal = 12.dp),
+                                .padding(horizontal = 8.dp),
                             verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Default.Category, null, Modifier.size(18.dp), tint = iconTint)
+                            Icon(Icons.Default.Category, null, Modifier.size(14.dp), tint = iconTint)
                             Text(
                                 stringResource(FoodCategory.valueOf(state.category).labelResId),
-                                style    = MaterialTheme.typography.labelLarge,
+                                style    = MaterialTheme.typography.labelSmall,
                                 color    = textColor,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(
                                 if (state.showCategoryDropdown) Icons.Default.ArrowDropUp
                                 else Icons.Default.ArrowDropDown,
-                                null, Modifier.size(18.dp), tint = iconTint
+                                null, Modifier.size(14.dp), tint = iconTint
                             )
                         }
                         ExposedDropdownMenu(
@@ -167,7 +167,7 @@ fun EditListingScreen(
                         ) {
                             FoodCategory.entries.forEach { cat ->
                                 DropdownMenuItem(
-                                    text    = { Text(stringResource(cat.labelResId)) },
+                                    text    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) },
                                     onClick = { viewModel.onEvent(EditListingEvent.CategoryChanged(cat.name)) }
                                 )
                             }
@@ -205,7 +205,7 @@ fun EditListingScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(40.dp)
+                                    .height(32.dp)
                                     .border(
                                         1.dp,
                                         if (state.unitError != null) MaterialTheme.colorScheme.error
@@ -213,16 +213,16 @@ fun EditListingScreen(
                                         ShapeMedium
                                     )
                                     .menuAnchor()
-                                    .padding(horizontal = 12.dp),
+                                    .padding(horizontal = 8.dp),
                                 verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(state.unit, style = MaterialTheme.typography.labelLarge,
+                                Text(state.unit, style = MaterialTheme.typography.labelSmall,
                                     color = textColor, modifier = Modifier.weight(1f))
                                 Icon(
                                     if (state.showUnitDropdown) Icons.Default.ArrowDropUp
                                     else Icons.Default.ArrowDropDown,
-                                    null, Modifier.size(18.dp), tint = iconTint
+                                    null, Modifier.size(14.dp), tint = iconTint
                                 )
                             }
                             ExposedDropdownMenu(
@@ -231,7 +231,7 @@ fun EditListingScreen(
                             ) {
                                 listOf("kg", "g", "L", "mL", "pieces", "boxes", "bags").forEach { unit ->
                                     DropdownMenuItem(
-                                        text    = { Text(unit) },
+                                        text    = { Text(unit, style = MaterialTheme.typography.labelSmall) },
                                         onClick = { viewModel.onEvent(EditListingEvent.UnitChanged(unit)) }
                                     )
                                 }
@@ -275,16 +275,19 @@ fun EditListingScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier              = Modifier.padding(14.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp)
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Default.Schedule, null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(18.dp))
+                                modifier = Modifier.size(14.dp))
                             Text(
                                 state.groceryHours ?: stringResource(R.string.label_pickup_hours_not_set),
-                                style      = MaterialTheme.typography.bodySmall,
+                                style      = MaterialTheme.typography.labelSmall,
                                 color      = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontWeight = FontWeight.Medium
                             )
@@ -292,46 +295,25 @@ fun EditListingScreen(
                     }
                 }
 
-                // ── Error banner ──────────────────────────────────────────────
-                AnimatedVisibility(visible = state.error != null, enter = fadeIn(), exit = fadeOut()) {
-                    AlertBanner(
-                        message = state.error ?: "",
-                        type    = AlertType.ERROR,
-                        icon    = Icons.Default.ErrorOutline
-                    )
-                }
-
                 // ── Cancel + Save buttons ─────────────────────────────────────
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.cancel),
                         onClick  = { navController.navigateUp() },
                         modifier = Modifier.weight(1f),
-                        shape    = RoundedCornerShape(10.dp),
                         enabled  = !busy
-                    ) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Button(
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.save),
                         onClick  = { viewModel.onEvent(EditListingEvent.SaveListing) },
                         modifier = Modifier.weight(1f),
-                        shape    = RoundedCornerShape(10.dp),
-                        enabled  = canSave && !busy
-                    ) {
-                        if (busy) {
-                            CircularProgressIndicator(
-                                modifier    = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color       = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Icon(Icons.Default.Save, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.save))
-                        }
-                    }
+                        enabled  = canSave && !busy,
+                        loading = busy,
+                        icon = Icons.Default.Save
+                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -344,6 +326,7 @@ fun EditListingScreen(
 private fun FieldCard(
     label: String,
     modifier: Modifier = Modifier,
+    isOptional: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -352,11 +335,16 @@ private fun FieldCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
+            modifier            = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(label, style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            OptionalFieldLabel(
+                text       = label.replace("*", "").trim(),
+                isOptional = isOptional,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color      = MaterialTheme.colorScheme.onSurface
+            )
             content()
         }
     }

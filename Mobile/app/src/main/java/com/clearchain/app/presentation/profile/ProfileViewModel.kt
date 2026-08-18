@@ -73,6 +73,10 @@ class ProfileViewModel @Inject constructor(
                 _state.update { it.copy(editAddress = event.address, editAddressError = null) }
             is ProfileEvent.EditLocationChanged ->
                 _state.update { it.copy(editLocation = event.location, editLocationError = null) }
+            is ProfileEvent.EditStateChanged ->
+                _state.update { it.copy(editState = event.state) }
+            is ProfileEvent.EditZipCodeChanged ->
+                _state.update { it.copy(editZipCode = event.zipCode) }
             is ProfileEvent.EditOpenTimeChanged ->
                 _state.update { it.copy(editOpenTime = event.time) }
             is ProfileEvent.EditCloseTimeChanged ->
@@ -177,6 +181,8 @@ class ProfileViewModel @Inject constructor(
                 editPhone             = user.phone,
                 editAddress           = user.address,
                 editLocation          = user.location,
+                editState             = user.state ?: "",
+                editZipCode           = user.zipCode ?: "",
                 editOpenTime          = user.hours?.substringBefore(" - ", "") ?: "",
                 editCloseTime         = user.hours?.substringAfter(" - ", "") ?: "",
                 editContactPerson     = user.contactPerson ?: "",
@@ -216,6 +222,8 @@ class ProfileViewModel @Inject constructor(
                 phone               = s.editPhone,
                 address             = s.editAddress,
                 location            = s.editLocation,
+                state               = s.editState,
+                zipCode             = s.editZipCode,
                 hours               = if (s.editOpenTime.isNotBlank() && s.editCloseTime.isNotBlank())
                                           "${s.editOpenTime} - ${s.editCloseTime}" else null,
                 latitude            = s.editLat,

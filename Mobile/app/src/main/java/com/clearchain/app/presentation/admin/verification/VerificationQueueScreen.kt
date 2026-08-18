@@ -1,8 +1,9 @@
-﻿package com.clearchain.app.presentation.admin.verification
+package com.clearchain.app.presentation.admin.verification
 
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -98,28 +99,27 @@ fun VerificationQueueScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            stringResource(R.string.selected_count, state.selectedOrgIds.size),
+                            "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedButton(
+                        ClearChainButton(
+                            text = stringResource(R.string.action_reject_all_batch),
                             onClick  = { viewModel.onEvent(VerificationQueueEvent.BatchReject) },
-                            colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            enabled  = !state.isProcessing
-                        ) {
-                            Icon(Icons.Default.Cancel, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_reject_all_batch))
-                        }
-                        Button(
+                            enabled  = !state.isProcessing,
+                            fillMaxWidth = false,
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                            icon = Icons.Default.Cancel
+                        )
+                        ClearChainButton(
+                            text = stringResource(R.string.action_approve_all_batch),
                             onClick  = { viewModel.onEvent(VerificationQueueEvent.BatchApprove) },
-                            enabled  = !state.isProcessing
-                        ) {
-                            Icon(Icons.Default.CheckCircle, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.action_approve_all_batch))
-                        }
+                            enabled  = !state.isProcessing,
+                            fillMaxWidth = false,
+                            icon = Icons.Default.CheckCircle
+                        )
                     }
                 }
             }
@@ -128,21 +128,7 @@ fun VerificationQueueScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.organizations.isEmpty() -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.organizations.isEmpty() -> {
-                    EmptyState(
-                        icon     = Icons.Default.Business,
-                        title    = stringResource(R.string.empty_no_organizations),
-                        subtitle = stringResource(R.string.empty_no_organizations_subtitle)
-                    )
-                }
-
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                         // Search + filter
                         Row(
                             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
@@ -196,53 +182,45 @@ fun VerificationQueueScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
-                            listOf(
-                                state.organizations.size to MaterialTheme.colorScheme.onSurfaceVariant,
-                                state.pendingOrgs.size   to MaterialTheme.colorScheme.secondary,
-                                state.approvedOrgs.size  to BrandGreen,
-                                state.rejectedOrgs.size  to MaterialTheme.colorScheme.error
-                            ).zip(listOf(
-                                stringResource(R.string.filter_all_count, state.organizations.size),
-                                stringResource(R.string.filter_pending_count, state.pendingOrgs.size),
-                                stringResource(R.string.filter_approved_count, state.approvedOrgs.size),
-                                stringResource(R.string.filter_rejected_count, state.rejectedOrgs.size)
-                            )).forEach { (countColor, label) ->
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = countColor.second.copy(alpha = 0.12f)
-                                ) {
-                                    Text(
-                                        text     = label,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                        style    = MaterialTheme.typography.labelSmall,
-                                        color    = countColor.second,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-
-                        // Batch mode selection toolbar
-                        if (state.isBatchMode) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    stringResource(R.string.verification_batch_mode_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.weight(1f)
+                            if (state.isBatchMode) {
+                                SelectionCircleButton(
+                                    checked = state.allSelected,
+                                    onCheckedChange = {
+                                        if (state.allSelected) viewModel.onEvent(VerificationQueueEvent.ClearSelection)
+                                        else viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
+                                    }
                                 )
-                                TextButton(
-                                    onClick = { viewModel.onEvent(VerificationQueueEvent.SelectAllVisible) }
-                                ) { Text(stringResource(R.string.select_all)) }
-                                TextButton(
-                                    onClick = { viewModel.onEvent(VerificationQueueEvent.ClearSelection) }
-                                ) { Text(stringResource(R.string.cancel)) }
+                                Text(
+                                    text = "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            } else {
+                                listOf(
+                                    state.organizations.size to MaterialTheme.colorScheme.onSurfaceVariant,
+                                    state.pendingOrgs.size   to MaterialTheme.colorScheme.secondary,
+                                    state.approvedOrgs.size  to BrandGreen,
+                                    state.rejectedOrgs.size  to MaterialTheme.colorScheme.error
+                                ).zip(listOf(
+                                    stringResource(R.string.filter_all_count, state.organizations.size),
+                                    stringResource(R.string.filter_pending_count, state.pendingOrgs.size),
+                                    stringResource(R.string.filter_approved_count, state.approvedOrgs.size),
+                                    stringResource(R.string.filter_rejected_count, state.rejectedOrgs.size)
+                                )).forEach { (countColor, label) ->
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = countColor.second.copy(alpha = 0.12f)
+                                    ) {
+                                        Text(
+                                            text     = label,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                            style    = MaterialTheme.typography.labelSmall,
+                                            color    = countColor.second,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -254,7 +232,24 @@ fun VerificationQueueScreen(
                                 contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                if (state.filteredOrgs.isEmpty()) {
+                                if (state.isLoading && state.organizations.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillParentMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator()
+                                        }
+                                    }
+                                } else if (state.organizations.isEmpty()) {
+                                    item {
+                                        EmptyState(
+                                            icon     = Icons.Default.Business,
+                                            title    = stringResource(R.string.empty_no_organizations),
+                                            subtitle = stringResource(R.string.empty_no_organizations_subtitle)
+                                        )
+                                    }
+                                } else if (state.filteredOrgs.isEmpty()) {
                                     item {
                                         EmptyState(
                                             icon     = Icons.Default.FilterAlt,
@@ -290,12 +285,8 @@ fun VerificationQueueScreen(
                 }
             }
         }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Advanced filter sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -322,9 +313,10 @@ private fun VerificationFilterSheet(
                 Text(stringResource(R.string.advanced_filters),
                     style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (state.activeFilterCount > 0) {
-                    TextButton(onClick = { onEvent(VerificationQueueEvent.ClearAdvancedFilters) }) {
-                        Text(stringResource(R.string.action_clear_all))
-                    }
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(VerificationQueueEvent.ClearAdvancedFilters) }
+                    )
                 }
             }
 
@@ -343,9 +335,11 @@ private fun VerificationFilterSheet(
                 }
             }
 
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.action_apply_filters))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -391,7 +385,7 @@ private fun OrganizationCard(
                 verticalAlignment     = Alignment.Top
             ) {
                 if (isBatchMode) {
-                    Checkbox(
+                    SelectionCircleButton(
                         checked   = isSelected,
                         onCheckedChange = { onToggleSelect() },
                         modifier  = Modifier.size(24.dp)
@@ -460,7 +454,8 @@ private fun OrganizationCard(
                     docs.forEach { (label, url) ->
                         val isPdf = url.endsWith(".pdf", ignoreCase = true) ||
                             organization.documentMimeType?.contains("pdf") == true
-                        OutlinedButton(
+                        ClearChainOutlinedButton(
+                            text = label,
                             onClick = {
                                 if (isPdf) {
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -470,29 +465,19 @@ private fun OrganizationCard(
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Icon(
-                                if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Image,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(label, style = MaterialTheme.typography.labelSmall)
-                        }
+                            icon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Image
+                        )
                     }
                 }
             }
 
             // View Profile button (always visible)
-            OutlinedButton(
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.cd_view_profile),
                 onClick  = onViewProfile,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Person, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.cd_view_profile))
-            }
+                modifier = Modifier.fillMaxWidth(),
+                icon = Icons.Default.Person
+            )
 
             // Action buttons for PENDING orgs
             if (organization.verificationStatus == VerificationStatus.PENDING) {
@@ -500,34 +485,57 @@ private fun OrganizationCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick  = onReject,
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.reject),
+                        onClick = onReject,
                         modifier = Modifier.weight(1f),
-                        enabled  = !isProcessing,
-                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(Icons.Default.Cancel, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.reject))
-                    }
-                    Button(
+                        enabled = !isProcessing,
+                        icon = Icons.Default.Cancel,
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.approve),
                         onClick  = onApprove,
                         modifier = Modifier.weight(1f),
-                        enabled  = !isProcessing
-                    ) {
-                        Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.approve))
-                    }
+                        enabled  = !isProcessing,
+                        icon = Icons.Default.CheckCircle
+                    )
                 }
             }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun SelectionCircleButton(
+    checked: Boolean,
+    onCheckedChange: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onCheckedChange,
+        modifier = modifier.size(24.dp),
+        shape = RoundedCornerShape(50),
+        color = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        border = if (checked) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shadowElevation = 1.dp
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (checked) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Approval checklist dialog
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun ApprovalChecklistDialog(
@@ -573,19 +581,22 @@ private fun ApprovalChecklistDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm, enabled = checklistComplete) {
-                Text(stringResource(R.string.verification_approve_org))
-            }
+            ClearChainButton(
+                text = stringResource(R.string.verification_approve_org),
+                onClick = onConfirm,
+                enabled = checklistComplete,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Rejection dialog with template reasons
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 @Composable
 private fun RejectOrgDialog(
@@ -637,14 +648,17 @@ private fun RejectOrgDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick  = onConfirm,
-                enabled  = reason.isNotBlank(),
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) { Text(stringResource(R.string.reject)) }
+            ClearChainButton(
+                text = stringResource(R.string.reject),
+                onClick = onConfirm,
+                enabled = reason.isNotBlank(),
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+                fillMaxWidth = false
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     )
 }

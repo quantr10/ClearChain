@@ -7,7 +7,7 @@ namespace ClearChain.API.DTOs.Listings;
 public class ListingGroupData
 {
     public string Id { get; set; } = string.Empty;
-    public string OriginalListingId { get; set; } = string.Empty;
+    public string? OriginalListingId { get; set; }
     public string GroceryId { get; set; } = string.Empty;
     
     // Product info
@@ -20,6 +20,7 @@ public class ListingGroupData
     public int TotalReserved { get; set; }
     public int TotalAvailable { get; set; }
     public int TotalCompleted { get; set; }
+    public int TotalRemoved { get; set; }
     
     public bool IsFullyConsumed { get; set; }
     public string CreatedAt { get; set; } = string.Empty;

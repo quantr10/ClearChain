@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.InventoryItem
@@ -28,7 +29,7 @@ fun InventoryItemCard(
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column(
             modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // ── Header ────────────────────────────────────────────────────
             Row(
@@ -36,17 +37,21 @@ fun InventoryItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
+                ProductThumbnail(
+                    imageUrl = item.photoUrl,
+                    contentDescription = item.productName,
+                    size = 48.dp
+                )
+                Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = item.productName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = item.category,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    InventoryCategoryBadge(category = item.category)
                 }
                 Spacer(Modifier.width(8.dp))
                 InventoryStatusBadge(item.status)
@@ -55,45 +60,42 @@ fun InventoryItemCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             // ── Details grid ─────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    InfoRow(Icons.Default.Scale, stringResource(R.string.listing_quantity), "${item.quantity} ${item.unit}")
-                    InfoRow(Icons.Default.DateRange, stringResource(R.string.inventory_step_received), DateTimeUtils.formatDate(item.receivedAt))
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val expiryColor = if (item.status == InventoryStatus.ACTIVE)
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.onSurface
-                    InfoRow(
-                        icon = Icons.Default.Event,
-                        label = stringResource(R.string.inventory_step_expires),
-                        value = DateTimeUtils.formatDate(item.expiryDate),
-                        valueColor = expiryColor
-                    )
-                    item.distributedAt?.let {
-                        InfoRow(Icons.Default.CheckCircle, stringResource(R.string.inventory_step_distributed), DateTimeUtils.formatDate(it))
-                    }
-                }
+            val expiryColor = if (item.status == InventoryStatus.ACTIVE) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            CompactInventoryRow(
+                icon = Icons.Default.Scale,
+                text = "${item.quantity} ${item.unit}",
+                textColor = MaterialTheme.colorScheme.onSurface
+            )
+            CompactInventoryRow(
+                icon = Icons.Default.Event,
+                text = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(item.expiryDate)),
+                textColor = expiryColor
+            )
+            CompactInventoryRow(
+                icon = Icons.Default.Inventory,
+                text = "${stringResource(R.string.inventory_step_received)}: ${DateTimeUtils.formatDate(item.receivedAt)}"
+            )
+            item.distributedAt?.let {
+                CompactInventoryRow(
+                    icon = Icons.Default.CheckCircle,
+                    text = "${stringResource(R.string.inventory_step_distributed)}: ${DateTimeUtils.formatDate(it)}"
+                )
             }
 
             // ── Action / Status notice ────────────────────────────────────
             when (item.status) {
                 InventoryStatus.ACTIVE -> {
                     if (onDistribute != null) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        Button(
+                        ClearChainButton(
+                            text = stringResource(R.string.action_mark_distributed),
                             onClick = { showDistributeDialog = true },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.VolunteerActivism, null, Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.action_mark_distributed))
-                        }
+                            icon = Icons.Default.VolunteerActivism
+                        )
                     }
                 }
                 InventoryStatus.EXPIRED -> {
@@ -127,6 +129,28 @@ fun InventoryItemCard(
             confirmLabel = stringResource(R.string.ok),
             onConfirm = { onDistribute?.invoke(item.id); showDistributeDialog = false },
             onDismiss = { showDistributeDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun CompactInventoryRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

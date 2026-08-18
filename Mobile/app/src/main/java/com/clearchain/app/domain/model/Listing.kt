@@ -36,11 +36,9 @@ data class Listing(
     // ═══ NEW (Part 2): Distance from NGO location ═══
     val distanceKm: Double? = null,
 
-    // ═══ Analytics + Archive ═══
+    // ═══ Analytics ═══
     val viewCount: Int = 0,
     val requestCount: Int = 0,
-    val isArchived: Boolean = false,
-    val archivedAt: String? = null,
     val imageUrls: List<String> = emptyList(),
 
     // Grocery store coordinates for map pins
@@ -58,6 +56,7 @@ data class ListingGroupSummary(
     val originalQuantity: Int,
     val totalReserved: Int,
     val totalAvailable: Int,
+    val totalRemoved: Int = 0,
     val childListingsCount: Int
 )
 
@@ -79,7 +78,8 @@ enum class ListingStatus(@StringRes val labelResId: Int) {
     AVAILABLE(R.string.status_listing_available),
     RESERVED(R.string.status_listing_reserved),
     COMPLETED(R.string.status_listing_completed),
-    EXPIRED(R.string.status_listing_expired)
+    EXPIRED(R.string.status_listing_expired),
+    ARCHIVED(R.string.status_listing_archived)
 }
 
 fun FoodCategory.displayName(): String {
@@ -102,5 +102,6 @@ fun ListingStatus.displayName(): String {
         ListingStatus.RESERVED -> "Reserved"
         ListingStatus.COMPLETED -> "Completed"
         ListingStatus.EXPIRED -> "Expired"
+        ListingStatus.ARCHIVED -> "Archived"
     }
 }

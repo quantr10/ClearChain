@@ -119,7 +119,7 @@ fun PhotoPickerDialog(
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     Text(stringResource(R.string.label_compressing_image))
@@ -138,7 +138,8 @@ fun PhotoPickerDialog(
                 ) {
                     Text(stringResource(R.string.label_proof_photo_hint))
 
-                    OutlinedButton(
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_take_photo_camera),
                         onClick = {
                             if (cameraPermissionState.status.isGranted) {
                                 photoUri = createImageFile()
@@ -147,17 +148,12 @@ fun PhotoPickerDialog(
                                 cameraPermissionState.launchPermissionRequest()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = stringResource(R.string.cd_camera)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_take_photo_camera))
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Default.CameraAlt
+                    )
 
-                    OutlinedButton(
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_choose_gallery),
                         onClick = {
                             galleryLauncher.launch(
                                 androidx.activity.result.PickVisualMediaRequest(
@@ -165,22 +161,14 @@ fun PhotoPickerDialog(
                                 )
                             )
                         },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PhotoLibrary,
-                            contentDescription = stringResource(R.string.cd_gallery)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.action_choose_gallery))
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Default.PhotoLibrary
+                    )
                 }
             },
             confirmButton = { },
             dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+                ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
             }
         )
     }

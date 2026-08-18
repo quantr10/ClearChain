@@ -40,6 +40,7 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.delay
+import androidx.compose.material3.SnackbarDuration
 
 @Composable
 fun OnboardingScreen(
@@ -48,35 +49,16 @@ fun OnboardingScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    SnackbarMessageEffect(snackbarHostState, state.error)
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.Navigate    -> onFinished()
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message, duration = SnackbarDuration.Short)
                 else -> {}
             }
         }
-    }
-
-    // Draft recovery dialog
-    if (state.showDraftRecoveryDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onEvent(OnboardingEvent.DismissDraftDialog) },
-            icon = { Icon(Icons.Default.RestoreFromTrash, null) },
-            title = { Text(stringResource(R.string.onboarding_draft_title)) },
-            text = { Text(stringResource(R.string.onboarding_draft_message)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.onEvent(OnboardingEvent.RestoreDraft) }) {
-                    Text(stringResource(R.string.onboarding_restore_draft))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onEvent(OnboardingEvent.DismissDraftDialog) }) {
-                    Text(stringResource(R.string.onboarding_start_fresh))
-                }
-            }
-        )
     }
 
     Scaffold(
@@ -90,9 +72,7 @@ fun OnboardingScreen(
         ) {
             OnboardingHeader(
                 currentStep = state.currentStep,
-                totalSteps  = state.totalSteps,
-                userType    = state.userType,
-                onSaveDraft = { viewModel.onEvent(OnboardingEvent.SaveDraft) }
+                totalSteps  = state.totalSteps
             )
 
             AnimatedContent(
@@ -118,26 +98,13 @@ fun OnboardingScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = state.error != null,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            ) {
-                AlertBanner(
-                    message = state.error ?: "",
-                    type    = AlertType.ERROR,
-                    icon    = Icons.Default.ErrorOutline,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-
             Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 when (state.currentStep) {
                     1 -> ClearChainButton(
                         text    = stringResource(R.string.onboarding_continue),
                         onClick = { viewModel.onEvent(OnboardingEvent.NextStep) },
                         loading = state.isSaving,
-                        enabled = !state.isSaving,
-                        icon    = Icons.Default.ArrowForward,
+                        enabled = !state.isSaving && state.canContinueStep1,
                         modifier = Modifier.fillMaxWidth()
                     )
                     2 -> Row(
@@ -151,19 +118,29 @@ fun OnboardingScreen(
                             modifier = Modifier.weight(1f)
                         )
                         ClearChainButton(
-                            text    = if (state.isSaving) "" else stringResource(R.string.onboarding_complete),
+                            text    = stringResource(R.string.onboarding_complete),
                             onClick = { viewModel.onEvent(OnboardingEvent.NextStep) },
                             loading = state.isSaving,
-                            enabled = !state.isSaving,
+                            enabled = !state.isSaving && state.canContinueStep2,
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    3 -> ClearChainButton(
-                        text    = stringResource(R.string.onboarding_get_started),
-                        onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
-                        icon    = Icons.Default.RocketLaunch,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    3 -> Row(
+                        modifier            = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ClearChainOutlinedButton(
+                            text    = stringResource(R.string.onboarding_back),
+                            onClick = { viewModel.onEvent(OnboardingEvent.PreviousStep) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        ClearChainButton(
+                            text    = stringResource(R.string.onboarding_get_started),
+                            onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
+                            icon    = Icons.Default.RocketLaunch,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -175,17 +152,8 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingHeader(
     currentStep: Int,
-    totalSteps: Int,
-    userType: OrganizationType?,
-    onSaveDraft: () -> Unit
+    totalSteps: Int
 ) {
-    val stepLabels = listOf(
-        stringResource(R.string.onboarding_step_your_info),
-        stringResource(R.string.onboarding_step_location),
-        stringResource(R.string.onboarding_step_all_set)
-    )
-    val label      = stepLabels.getOrNull(currentStep - 1) ?: ""
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -193,6 +161,12 @@ private fun OnboardingHeader(
             .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text  = stringResource(R.string.onboarding_welcome),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -200,33 +174,10 @@ private fun OnboardingHeader(
             ) {
                 Text(
                     text  = stringResource(R.string.onboarding_setup_profile),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (currentStep < 3) {
-                        TextButton(
-                            onClick = onSaveDraft,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(Icons.Default.Save, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(stringResource(R.string.onboarding_save_draft), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
-                        }
-                    }
-                    Surface(
-                        color = Color.White.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text     = label,
-                            style    = MaterialTheme.typography.labelSmall,
-                            color    = Color.White,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
             }
 
             Row(
@@ -279,22 +230,6 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
             .padding(horizontal = 24.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text       = stringResource(R.string.onboarding_welcome),
-            style      = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text  = if (state.userType == OrganizationType.GROCERY)
-                stringResource(R.string.onboarding_grocery_intro)
-            else
-                stringResource(R.string.onboarding_ngo_intro),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(Modifier.height(4.dp))
-
         ClearChainTextField(
             value         = state.phone,
             onValueChange = { viewModel.onEvent(OnboardingEvent.PhoneChanged(it)) },
@@ -312,6 +247,7 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
             value         = state.description,
             onValueChange = { viewModel.onEvent(OnboardingEvent.DescriptionChanged(it)) },
             label         = stringResource(R.string.onboarding_about_label),
+            isOptional    = true,
             placeholder   = stringResource(R.string.onboarding_about_placeholder),
             leadingIcon   = Icons.Default.Description,
             imeAction     = ImeAction.Next,
@@ -355,19 +291,6 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             .padding(horizontal = 24.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text       = stringResource(R.string.onboarding_location_heading),
-            style      = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text  = stringResource(R.string.onboarding_location_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(Modifier.height(4.dp))
-
         AddressSuggestionField(
             value         = state.address,
             onValueChange = { viewModel.onEvent(OnboardingEvent.AddressChanged(it)) },
@@ -376,6 +299,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                     OnboardingEvent.AddressSelected(
                         address = suggestion.fullAddress,
                         city    = suggestion.city,
+                        state   = suggestion.state,
+                        zipCode = suggestion.zipCode,
                         lat     = suggestion.latitude,
                         lng     = suggestion.longitude
                     )
@@ -383,7 +308,9 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             },
             label       = stringResource(R.string.onboarding_address_label),
             placeholder = stringResource(R.string.onboarding_address_placeholder),
-            enabled     = !state.isSaving
+            enabled     = !state.isSaving,
+            isError     = state.addressError != null,
+            errorMessage = state.addressError
         )
 
         ClearChainTextField(
@@ -398,40 +325,59 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             enabled       = !state.isSaving
         )
 
-        Surface(
-            color  = MaterialTheme.colorScheme.surfaceVariant,
-            shape  = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier            = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ClearChainTextField(
+                value         = state.state,
+                onValueChange = { viewModel.onEvent(OnboardingEvent.StateChanged(it)) },
+                label         = stringResource(R.string.onboarding_state_label),
+                placeholder   = stringResource(R.string.onboarding_state_placeholder),
+                leadingIcon   = Icons.Default.Map,
+                imeAction     = ImeAction.Next,
+                enabled       = !state.isSaving,
+                modifier      = Modifier.weight(1f)
+            )
+            ClearChainTextField(
+                value         = state.zipCode,
+                onValueChange = { viewModel.onEvent(OnboardingEvent.ZipCodeChanged(it)) },
+                label         = stringResource(R.string.onboarding_zip_label),
+                placeholder   = stringResource(R.string.onboarding_zip_placeholder),
+                leadingIcon   = Icons.Default.LocalPostOffice,
+                keyboardType  = KeyboardType.Number,
+                imeAction     = ImeAction.Next,
+                enabled       = !state.isSaving,
+                modifier      = Modifier.weight(1f)
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            OptionalFieldLabel(
+                text       = stringResource(R.string.onboarding_hours_label),
+                isOptional = false,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium
+            )
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text       = stringResource(R.string.onboarding_hours_label),
-                    style      = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(Modifier.weight(1f)) {
-                        TimePickerField(
-                            value          = state.openTime,
-                            onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
-                            label          = stringResource(R.string.onboarding_hours_opens),
-                            enabled        = !state.isSaving
-                        )
-                    }
-                    Box(Modifier.weight(1f)) {
-                        TimePickerField(
-                            value          = state.closeTime,
-                            onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
-                            label          = stringResource(R.string.onboarding_hours_closes),
-                            enabled        = !state.isSaving
-                        )
-                    }
+                Box(Modifier.weight(1f)) {
+                    TimePickerField(
+                        value          = state.openTime,
+                        onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
+                        label          = "",
+                        enabled        = !state.isSaving
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    TimePickerField(
+                        value          = state.closeTime,
+                        onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
+                        label          = "",
+                        enabled        = !state.isSaving
+                    )
                 }
             }
         }
@@ -441,6 +387,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 value         = state.pickupInstructions,
                 onValueChange = { viewModel.onEvent(OnboardingEvent.PickupInstructionsChanged(it)) },
                 label         = stringResource(R.string.onboarding_pickup_instructions_label),
+                isOptional    = true,
                 placeholder   = stringResource(R.string.onboarding_pickup_instructions_placeholder),
                 leadingIcon   = Icons.Default.DirectionsWalk,
                 imeAction     = ImeAction.Done,
@@ -452,32 +399,18 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
         }
 
         // ── Verification document upload ─────────────────────────────
-        HorizontalDivider()
-
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    Icons.Default.VerifiedUser,
-                    null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Column {
-                    Text(
-                        text  = stringResource(R.string.onboarding_doc_label),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text  = stringResource(R.string.onboarding_doc_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            OptionalFieldLabel(
+                text       = stringResource(R.string.onboarding_doc_label),
+                isOptional = true,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text  = stringResource(R.string.onboarding_doc_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (state.verificationDocumentUri != null) {
                 Surface(
@@ -510,15 +443,13 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                     }
                 }
             } else {
-                OutlinedButton(
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.onboarding_upload_document),
                     onClick = { documentPickerLauncher.launch("*/*") },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isSaving
-                ) {
-                    Icon(Icons.Default.Upload, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.onboarding_upload_document))
-                }
+                    enabled = !state.isSaving,
+                    icon = Icons.Default.Upload
+                )
             }
         }
     }
@@ -577,7 +508,7 @@ private fun Step3Content(state: OnboardingState) {
 
         Text(
             text       = stringResource(R.string.onboarding_all_set),
-            style      = MaterialTheme.typography.headlineMedium,
+            style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             textAlign  = TextAlign.Center,
             modifier   = Modifier.graphicsLayer(alpha = alpha)
@@ -590,7 +521,7 @@ private fun Step3Content(state: OnboardingState) {
                 stringResource(R.string.onboarding_grocery_complete)
             else
                 stringResource(R.string.onboarding_ngo_complete),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier  = Modifier.graphicsLayer(alpha = alpha)
@@ -612,43 +543,20 @@ private fun Step3Content(state: OnboardingState) {
             )
         }
 
-        Surface(
-            color    = MaterialTheme.colorScheme.surfaceVariant,
-            shape    = MaterialTheme.shapes.large,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .graphicsLayer(alpha = alpha)
+                .graphicsLayer(alpha = alpha),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column(
-                modifier            = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                features.forEach { (icon, label) ->
-                    Row(
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Box(
-                            modifier         = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector    = icon,
-                                contentDescription = null,
-                                modifier       = Modifier.size(18.dp),
-                                tint           = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Text(
-                            text  = label,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+            features.forEach { (icon, label) ->
+                DashboardActionCard(
+                    icon = icon,
+                    title = label,
+                    onClick = null,
+                    iconContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

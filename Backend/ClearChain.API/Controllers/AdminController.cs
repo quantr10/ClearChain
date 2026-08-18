@@ -269,7 +269,6 @@ public class AdminController : ControllerBase
 
         var totalListings    = await listingsQuery.CountAsync();
         var activeListings   = await listingsQuery.CountAsync(l => l.Status == ListingStatus.Open);
-        var archivedListings = await listingsQuery.CountAsync(l => l.IsArchived);
 
         var totalRequests    = await requestsQuery.CountAsync();
         var completedReqs    = await requestsQuery.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
@@ -355,7 +354,7 @@ public class AdminController : ControllerBase
             {
                 period = new { from = start?.ToString("o"), to = end?.ToString("o"), preset },
                 organizations = new { totalOrgs, totalGroceries, totalNgos, verifiedOrgs, pendingVerif },
-                listings = new { totalListings, activeListings, archivedListings },
+                listings = new { totalListings, activeListings },
                 requests = new { totalRequests, completedReqs, pendingReqs, cancelledReqs },
                 impact = new { kgSaved, mealsEquivalent, co2Saved, totalBeneficiaries },
                 categoryBreakdown,

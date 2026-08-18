@@ -28,7 +28,10 @@ public class EmailService : IEmailService
         var pass = _config["SMTP_PASS"];
         var from = _config["SMTP_FROM"] ?? user;
 
-        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user))
+        if (string.IsNullOrWhiteSpace(host) ||
+            string.IsNullOrWhiteSpace(user) ||
+            string.IsNullOrWhiteSpace(pass) ||
+            string.IsNullOrWhiteSpace(from))
         {
             _logger.LogWarning("SMTP not configured — skipping verification email to {Email}", toEmail);
             return;

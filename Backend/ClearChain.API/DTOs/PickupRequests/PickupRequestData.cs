@@ -24,9 +24,23 @@ public class PickupRequestData
     public string? ProofPhotoUrl { get; set; }
     public double? NgoPickupRate { get; set; }
     public int NgoTotalCompleted { get; set; }
-    public string? VehicleType { get; set; }
     public bool RequiresRefrigeration { get; set; } = false;
     public bool IsFragile { get; set; } = false;
     public bool IsHeavy { get; set; } = false;
     public string? ListingDescription { get; set; }
+    public List<PickupRequestItemData> Items { get; set; } = new();
+}
+
+public class PickupRequestItemData
+{
+    public string Id { get; set; } = string.Empty;
+    public string? ListingGroupId { get; set; }
+    public string? OriginalListingId { get; set; }
+    public string? ReservedListingId { get; set; }
+    public int RequestedQuantity { get; set; }
+    public string ListingTitle { get; set; } = string.Empty;
+    public string ListingCategory { get; set; } = string.Empty;
+    public string? ListingExpiryDate { get; set; }
+    public string ListingUnit { get; set; } = string.Empty;
+    public string? ListingPhotoUrl { get; set; }
 }

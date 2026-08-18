@@ -36,8 +36,7 @@ data class OrgBreakdown(
 @Serializable
 data class ListingBreakdown(
     val totalListings: Int = 0,
-    val activeListings: Int = 0,
-    val archivedListings: Int = 0
+    val activeListings: Int = 0
 )
 
 @Serializable

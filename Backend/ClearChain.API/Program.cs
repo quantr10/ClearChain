@@ -56,10 +56,8 @@ builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>(
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IImageAnalysisService, AzureVisionService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-
-// ❌ REMOVED: Background service (replaced by Hangfire)
-// builder.Services.AddHostedService<NotificationSchedulerService>();
 
 // Add SignalR with custom user ID provider
 builder.Services.AddSignalR();

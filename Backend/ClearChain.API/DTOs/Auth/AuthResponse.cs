@@ -18,6 +18,8 @@ public class OrganizationDto
     public string Phone { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public string ZipCode { get; set; } = string.Empty;
     public bool Verified { get; set; }
     public string VerificationStatus { get; set; } = string.Empty;
     public string? Hours { get; set; }

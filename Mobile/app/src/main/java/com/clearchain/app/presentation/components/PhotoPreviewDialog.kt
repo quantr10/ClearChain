@@ -83,22 +83,18 @@ fun PhotoPreviewDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_retake),
                         onClick = onRetake,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(stringResource(R.string.action_retake))
-                    }
+                        contentColor = Color.White
+                    )
 
-                    Button(
+                    ClearChainButton(
+                        text = stringResource(R.string.action_confirm_upload),
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(stringResource(R.string.action_confirm_upload))
-                    }
+                    )
                 }
             }
         }

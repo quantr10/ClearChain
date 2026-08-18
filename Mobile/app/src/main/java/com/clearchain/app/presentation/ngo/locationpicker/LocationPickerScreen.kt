@@ -62,6 +62,7 @@ data class LocationPickerState(
     val showSuggestions: Boolean = false,
     val isSearching: Boolean = false,
     val isLoadingGps: Boolean = false,
+    val isSavingLocation: Boolean = false,
     val isReverseGeocoding: Boolean = false,
     val isInitializing: Boolean = true,    // True until first position resolved
     val needsGpsAutoDetect: Boolean = false, // True if no saved/profile location
@@ -262,8 +263,13 @@ class LocationPickerViewModel @Inject constructor(
     fun saveAndFinish(onDone: () -> Unit) {
         val s = _state.value
         viewModelScope.launch {
-            locationPreferenceStore.save(LocationPreference(s.latitude, s.longitude, s.radiusKm, s.displayName.ifBlank { "Selected Location" }))
-            onDone()
+            _state.update { it.copy(isSavingLocation = true, error = null) }
+            try {
+                locationPreferenceStore.save(LocationPreference(s.latitude, s.longitude, s.radiusKm, s.displayName.ifBlank { "Selected Location" }))
+                onDone()
+            } catch (e: Exception) {
+                _state.update { it.copy(isSavingLocation = false, error = e.message ?: "Failed to save location") }
+            }
         }
     }
 
@@ -282,6 +288,7 @@ class LocationPickerViewModel @Inject constructor(
 fun LocationPickerScreen(
     onLocationSelected: () -> Unit,
     onDismiss: (() -> Unit)? = null,
+    showTopBar: Boolean = true,
     viewModel: LocationPickerViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -311,14 +318,16 @@ fun LocationPickerScreen(
 
     Scaffold(
         topBar = {
-            SimpleTopBar(
-                title   = stringResource(R.string.location_picker_title),
-                actions = {
-                    onDismiss?.let {
-                        IconButton(onClick = it) { Icon(Icons.Default.Close, stringResource(R.string.dialog_close)) }
+            if (showTopBar) {
+                SimpleTopBar(
+                    title   = stringResource(R.string.location_picker_title),
+                    actions = {
+                        onDismiss?.let {
+                            IconButton(onClick = it) { Icon(Icons.Default.Close, stringResource(R.string.dialog_close)) }
+                        }
                     }
-                }
-            )
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -393,20 +402,28 @@ fun LocationPickerScreen(
 
             // ═══ CONTROLS ═══
             Column(
-                Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Radius
-                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
-                    Column(Modifier.padding(16.dp)) {
+                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.location_search_radius), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.location_search_radius), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primary) {
-                                Text("${state.radiusKm} km", Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                                Text("${state.radiusKm} km", Modifier.padding(horizontal = 8.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
-                        Spacer(Modifier.height(4.dp))
-                        Slider(value = state.radiusKm.toFloat(), onValueChange = { viewModel.onRadiusChanged(it.toInt()) }, valueRange = 1f..50f, steps = 48)
+                        Slider(
+                            value = state.radiusKm.toFloat(),
+                            onValueChange = { viewModel.onRadiusChanged(it.toInt()) },
+                            valueRange = 1f..50f,
+                            steps = 0,
+                            modifier = Modifier.height(28.dp)
+                        )
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("1 km", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("50 km", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -416,69 +433,68 @@ fun LocationPickerScreen(
 
                 // Quick buttons
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ElevatedButton(
+                    ClearChainButton(
+                        text = stringResource(R.string.location_current),
                         onClick = {
                             if (locationPermission.status.isGranted) viewModel.useCurrentLocation(context, geocoder)
                             else { pendingGps = true; locationPermission.launchPermissionRequest() }
                         },
-                        modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), enabled = !state.isLoadingGps
-                    ) {
-                        if (state.isLoadingGps) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.MyLocation, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.location_current), style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                    }
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        enabled = !state.isSavingLocation,
+                        loading = state.isLoadingGps,
+                        icon = Icons.Default.MyLocation
+                    )
                     if (state.hasProfileLocation) {
-                        ElevatedButton(
+                        ClearChainButton(
+                            text = stringResource(R.string.location_profile),
                             onClick = { viewModel.useProfileLocation() },
-                            modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.Default.Person, null, Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(stringResource(R.string.location_profile), style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                        }
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            enabled = !state.isLoadingGps && !state.isSavingLocation,
+                            icon = Icons.Default.Person
+                        )
                     }
                 }
 
                 // Search
-                Text(stringResource(R.string.location_search_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = { viewModel.onSearchQueryChanged(it, geocoder) },
-                    placeholder = { Text(stringResource(R.string.location_search_hint)) },
-                    leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
-                    trailingIcon = {
-                        when {
-                            state.isSearching -> CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            state.searchQuery.isNotBlank() -> IconButton(onClick = { viewModel.clearSearch() }) { Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), Modifier.size(18.dp)) }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    )
-                )
+                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(stringResource(R.string.location_search_title), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        SearchBar(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onSearchQueryChanged(it, geocoder) },
+                            placeholder = stringResource(R.string.location_search_hint),
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = if (state.isSearching) {
+                                {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            } else {
+                                null
+                            }
+                        )
 
-                // Suggestions
-                if (state.showSuggestions) {
-                    Card(shape = RoundedCornerShape(14.dp), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-                        Column {
+                        if (state.showSuggestions) {
                             state.searchSuggestions.forEachIndexed { index, suggestion ->
                                 Row(
-                                    Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(horizontal = 16.dp, vertical = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                    Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(36.dp)) {
+                                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(24.dp)) {
                                         Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
                                     }
                                     Column(Modifier.weight(1f)) {
-                                        Text(suggestion.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(suggestion.fullAddress, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(suggestion.name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(suggestion.fullAddress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
-                                    Icon(Icons.Default.NorthEast, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                    Icon(Icons.Default.NorthEast, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                                 }
-                                if (index < state.searchSuggestions.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                if (index < state.searchSuggestions.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
                         }
                     }
@@ -495,15 +511,14 @@ fun LocationPickerScreen(
                 }
 
                 // Choose
-                Button(
+                ClearChainButton(
+                    text = stringResource(R.string.location_choose_this),
                     onClick = { viewModel.saveAndFinish(onLocationSelected) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Icon(Icons.Default.Check, null, Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text(stringResource(R.string.location_choose_this), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isLoadingGps,
+                    loading = state.isSavingLocation,
+                    icon = Icons.Default.Check
+                )
                 Spacer(Modifier.height(8.dp))
             }
         }

@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.auth.verify
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -20,7 +22,8 @@ import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.clearchain.app.presentation.auth.AuthHeader
+import com.clearchain.app.presentation.components.ClearChainButton
+import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
@@ -55,9 +58,7 @@ fun EmailVerificationScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuthHeader(subtitle = stringResource(R.string.email_verify_subtitle))
-
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(56.dp))
 
             Icon(
                 imageVector = Icons.Default.Email,
@@ -89,7 +90,6 @@ fun EmailVerificationScreen(
             OutlinedTextField(
                 value = state.code,
                 onValueChange = { viewModel.onEvent(EmailVerificationEvent.CodeChanged(it)) },
-                label = { Text(stringResource(R.string.email_code_label)) },
                 singleLine = true,
                 isError = state.codeError != null,
                 supportingText = state.codeError?.let { { Text(it) } },
@@ -121,41 +121,36 @@ fun EmailVerificationScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Button(
+            ClearChainButton(
+                text = stringResource(R.string.submit),
                 onClick = { viewModel.onEvent(EmailVerificationEvent.Verify) },
-                enabled = !state.isLoading && state.code.length == 6,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .height(50.dp)
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(stringResource(R.string.submit))
-                }
-            }
+                    .padding(horizontal = 32.dp),
+                enabled = state.code.length == 6,
+                loading = state.isLoading
+            )
 
             Spacer(Modifier.height(16.dp))
 
-            TextButton(
-                onClick = { viewModel.onEvent(EmailVerificationEvent.ResendCode) },
-                enabled = !state.isResending && state.resendCooldownSeconds == 0
-            ) {
-                if (state.isResending) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.email_resend_sending))
-                } else if (state.resendCooldownSeconds > 0) {
-                    Text(stringResource(R.string.email_resend_cooldown, state.resendCooldownSeconds))
-                } else {
-                    Text(stringResource(R.string.email_resend_label))
-                }
-            }
+            ClearChainButton(
+                text = when {
+                    state.resendCooldownSeconds > 0 ->
+                        stringResource(R.string.email_resend_cooldown, state.resendCooldownSeconds)
+                    else -> stringResource(R.string.email_resend_label)
+                },
+                onClick = {
+                    if (!state.isResending) {
+                        viewModel.onEvent(EmailVerificationEvent.ResendCode)
+                    }
+                },
+                modifier = Modifier
+                    .padding(horizontal = 32.dp),
+                enabled = state.resendCooldownSeconds == 0,
+                loading = state.isResending,
+                containerColor = Color.White,
+                contentColor = BrandGreen,
+                border = BorderStroke(1.dp, BrandGreen)
+            )
 
             Spacer(Modifier.height(32.dp))
         }

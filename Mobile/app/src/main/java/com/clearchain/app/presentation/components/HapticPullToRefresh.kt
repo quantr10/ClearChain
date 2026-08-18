@@ -1,9 +1,15 @@
 package com.clearchain.app.presentation.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.clearchain.app.util.HapticUtils
@@ -21,10 +27,25 @@ fun HapticPullToRefreshBox(
     content: @Composable BoxScope.() -> Unit
 ) {
     val context = LocalContext.current
+    val state = rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh    = { HapticUtils.refresh(context); onRefresh() },
-        modifier     = modifier,
+        modifier     = modifier.fillMaxSize(),
+        state        = state,
+        indicator    = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                PullToRefreshDefaults.Indicator(
+                    state        = state,
+                    isRefreshing = isRefreshing
+                )
+            }
+        },
         content      = content
     )
 }

@@ -9,10 +9,15 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -26,6 +31,8 @@ data class AddressSuggestion(
     val displayName: String,
     val fullAddress: String,
     val city: String,
+    val state: String,
+    val zipCode: String,
     val latitude: Double,
     val longitude: Double
 )
@@ -41,22 +48,34 @@ fun AddressSuggestionField(
     onValueChange: (String) -> Unit,
     onAddressSelected: (AddressSuggestion) -> Unit,
     label: String = "",
+    isOptional: Boolean = false,
     placeholder: String = "",
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
     val context = LocalContext.current
     val resolvedLabel = label.ifEmpty { stringResource(R.string.label_address) }
     val resolvedPlaceholder = placeholder.ifEmpty { stringResource(R.string.placeholder_start_typing_address) }
     val geocoder = remember { Geocoder(context, Locale.getDefault()) }
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
     var suggestions by remember { mutableStateOf<List<AddressSuggestion>>(emptyList()) }
     var showSuggestions by remember { mutableStateOf(false) }
     var searchJob by remember { mutableStateOf<Job?>(null) }
 
-    Column(modifier = modifier) {
-        OutlinedTextField(
+    BoxWithConstraints(modifier = modifier.zIndex(if (showSuggestions) 1f else 0f)) {
+        val dropdownWidth = maxWidth
+        val dropdownOffset = with(density) {
+            IntOffset(
+                x = 0,
+                y = (if (isError && !errorMessage.isNullOrBlank()) 78.dp else 56.dp).roundToPx()
+            )
+        }
+
+        ClearChainTextField(
             value = value,
             onValueChange = { newValue ->
                 onValueChange(newValue)
@@ -80,6 +99,8 @@ fun AddressSuggestionField(
                                         ?: addr.subAdminArea
                                         ?: addr.adminArea
                                         ?: "",
+                                    state = addr.adminArea ?: "",
+                                    zipCode = addr.postalCode ?: "",
                                     latitude = addr.latitude,
                                     longitude = addr.longitude
                                 )
@@ -95,63 +116,69 @@ fun AddressSuggestionField(
                     showSuggestions = false
                 }
             },
-            label = { Text(resolvedLabel) },
-            placeholder = { Text(resolvedPlaceholder) },
-            leadingIcon = { Icon(Icons.Default.Home, null) },
+            label = resolvedLabel,
+            isOptional = isOptional,
+            placeholder = resolvedPlaceholder,
+            leadingIcon = Icons.Default.Home,
+            imeAction = ImeAction.Next,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             enabled = enabled,
-            shape = RoundedCornerShape(12.dp)
+            isError = isError,
+            errorMessage = errorMessage
         )
 
         // Suggestions dropdown
         if (showSuggestions) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            Popup(
+                alignment = Alignment.TopStart,
+                offset = dropdownOffset
             ) {
-                Column {
-                    suggestions.forEachIndexed { index, suggestion ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onValueChange(suggestion.fullAddress)
-                                    onAddressSelected(suggestion)
-                                    showSuggestions = false
-                                    suggestions = emptyList()
-                                }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Place, null,
-                                Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Column {
-                                Text(
-                                    suggestion.displayName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2
+                Card(
+                    modifier = Modifier.width(dropdownWidth),
+                    shape = RoundedCornerShape(10.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column {
+                        suggestions.forEachIndexed { index, suggestion ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onValueChange(suggestion.fullAddress)
+                                        onAddressSelected(suggestion)
+                                        showSuggestions = false
+                                        suggestions = emptyList()
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Place, null,
+                                    Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                if (suggestion.city.isNotBlank()) {
+                                Column {
                                     Text(
-                                        suggestion.city,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        suggestion.displayName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 2
                                     )
+                                    if (suggestion.city.isNotBlank()) {
+                                        Text(
+                                            suggestion.city,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
-                        }
-                        if (index < suggestions.lastIndex) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
+                            if (index < suggestions.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 32.dp, end = 8.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant
+                                )
+                            }
                         }
                     }
                 }

@@ -2,6 +2,7 @@ package com.clearchain.app.data.remote.dto
 
 import android.annotation.SuppressLint
 import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.domain.model.PickupRequestItem
 import com.clearchain.app.domain.model.PickupRequestStatus
 import kotlinx.serialization.Serializable
 
@@ -13,7 +14,6 @@ data class CreatePickupRequestRequest(
     val pickupDate: String,
     val pickupTime: String,
     val notes: String? = null,
-    val vehicleType: String? = null,
     val requiresRefrigeration: Boolean = false,
     val isFragile: Boolean = false,
     val isHeavy: Boolean = false
@@ -78,11 +78,26 @@ data class PickupRequestData(
     val markedReadyAt: String? = null,
     val markedPickedUpAt: String? = null,
     val confirmedReceivedAt: String? = null,
-    val vehicleType: String? = null,
     val requiresRefrigeration: Boolean = false,
     val isFragile: Boolean = false,
     val isHeavy: Boolean = false,
-    val listingDescription: String? = null
+    val listingDescription: String? = null,
+    val items: List<PickupRequestItemData> = emptyList()
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class PickupRequestItemData(
+    val id: String,
+    val listingGroupId: String? = null,
+    val originalListingId: String? = null,
+    val reservedListingId: String? = null,
+    val requestedQuantity: Int,
+    val listingTitle: String,
+    val listingCategory: String,
+    val listingExpiryDate: String? = null,
+    val listingUnit: String = "",
+    val listingPhotoUrl: String? = null
 )
 
 // Extension function
@@ -116,10 +131,23 @@ fun PickupRequestData.toDomain(): PickupRequest {
         markedReadyAt = markedReadyAt,
         markedPickedUpAt = markedPickedUpAt,
         confirmedReceivedAt = confirmedReceivedAt,
-        vehicleType = vehicleType,
         requiresRefrigeration = requiresRefrigeration,
         isFragile = isFragile,
         isHeavy = isHeavy,
-        listingDescription = listingDescription
+        listingDescription = listingDescription,
+        items = items.map {
+            PickupRequestItem(
+                id = it.id,
+                listingGroupId = it.listingGroupId,
+                originalListingId = it.originalListingId,
+                reservedListingId = it.reservedListingId,
+                requestedQuantity = it.requestedQuantity,
+                listingTitle = it.listingTitle,
+                listingCategory = it.listingCategory,
+                listingExpiryDate = it.listingExpiryDate,
+                listingUnit = it.listingUnit,
+                listingPhotoUrl = it.listingPhotoUrl
+            )
+        }
     )
 }

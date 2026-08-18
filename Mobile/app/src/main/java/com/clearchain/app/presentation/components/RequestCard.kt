@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.util.DateTimeUtils
@@ -39,12 +38,10 @@ fun RequestCard(
     modifier: Modifier = Modifier
 ) {
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
-
-    // Parse category string → FoodCategory enum for proper CategoryBadge styling
-    val foodCategory: FoodCategory = remember(request.listingCategory) {
-        FoodCategory.entries.find {
-            it.name.equals(request.listingCategory, ignoreCase = true)
-        } ?: FoodCategory.OTHER
+    val titleText = when (viewMode) {
+        RequestViewMode.GROCERY -> request.ngoName
+        RequestViewMode.NGO -> request.groceryName
+        RequestViewMode.ADMIN -> request.listingTitle
     }
 
     // Expiry computation
@@ -63,9 +60,9 @@ fun RequestCard(
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column(
             modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // ── Header: title + category badge left, status badge right ──────
+            // Header: title + status badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -73,52 +70,26 @@ fun RequestCard(
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Product name + category badge on same row
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = request.listingTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        CategoryBadge(foodCategory)
-                    }
-                    // To / From line
                     Text(
-                        text = when (viewMode) {
-                            RequestViewMode.GROCERY -> stringResource(R.string.request_to, request.ngoName)
-                            RequestViewMode.NGO     -> stringResource(R.string.request_from, request.groceryName)
-                            RequestViewMode.ADMIN   -> stringResource(R.string.request_admin_route, request.ngoName, request.groceryName)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = titleText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 PickupStatusBadge(request.status)
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            // Details
 
-            // ── Details ──────────────────────────────────────────────────────
-
-            // Quantity + unit
-            val qtyText = if (request.listingUnit.isNotBlank())
-                "${request.requestedQuantity} ${request.listingUnit}"
-            else
-                "${request.requestedQuantity}"
-            RequestDetailRow(
-                icon = Icons.Default.ShoppingCart,
-                text = qtyText,
-                textColor = MaterialTheme.colorScheme.onSurface
-            )
+            if (request.items.isNotEmpty()) {
+                RequestItemsPreview(request)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
 
             // Expiry (only when available)
             if (daysUntilExpiry != null) {
@@ -137,8 +108,7 @@ fun RequestCard(
                 RequestDetailRow(
                     icon      = Icons.Default.CalendarToday,
                     text      = expiryText,
-                    textColor = expiryColor,
-                    bold      = daysUntilExpiry <= 3
+                    textColor = expiryColor
                 )
             }
 
@@ -154,23 +124,6 @@ fun RequestCard(
                 textColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Vehicle row
-            if (!request.vehicleType.isNullOrBlank()) {
-                val vehicleLabel = when (request.vehicleType.lowercase()) {
-                    "walk"       -> stringResource(R.string.vehicle_walk)
-                    "bicycle"    -> stringResource(R.string.vehicle_bicycle)
-                    "motorcycle" -> stringResource(R.string.vehicle_motorcycle)
-                    "car"        -> stringResource(R.string.vehicle_car)
-                    "van"        -> stringResource(R.string.vehicle_van)
-                    else         -> request.vehicleType.replaceFirstChar { it.titlecase() }
-                }
-                RequestDetailRow(
-                    icon      = Icons.Default.LocalShipping,
-                    text      = vehicleLabel,
-                    textColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
             // Handling flags + optional user note
             val handlingParts = buildList {
                 if (request.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
@@ -181,18 +134,18 @@ fun RequestCard(
             if (handlingParts.isNotEmpty()) {
                 RequestDetailRow(
                     icon      = Icons.Default.StickyNote2,
-                    text      = handlingParts.joinToString(" · "),
+                    text      = handlingParts.joinToString(" \u00B7 "),
                     textColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // ── Actions ───────────────────────────────────────────────────────
+            // Actions
             when (viewMode) {
                 RequestViewMode.GROCERY -> GroceryRequestActions(
                     request     = request,
-                    onApprove   = { showConfirmDialog = "approve" },
+                    onApprove   = { onApprove?.invoke(request.id) },
                     onReject    = { showConfirmDialog = "reject" },
-                    onMarkReady = { showConfirmDialog = "ready" }
+                    onMarkReady = { onMarkReady?.invoke(request.id) }
                 )
                 RequestViewMode.NGO -> NgoRequestActions(
                     request         = request,
@@ -204,7 +157,7 @@ fun RequestCard(
         }
     }
 
-    // ── Confirmation dialogs ──────────────────────────────────────────────────
+    // Confirmation dialogs
     showConfirmDialog?.let { action ->
         val approveTitle = stringResource(R.string.dialog_approve_title)
         val approveMsg   = stringResource(R.string.dialog_approve_message, request.ngoName, request.requestedQuantity)
@@ -244,30 +197,65 @@ fun RequestCard(
     }
 }
 
-// ── Compact detail row ────────────────────────────────────────────────────────
+// Compact detail row
+
+@Composable
+private fun RequestItemsPreview(request: PickupRequest) {
+    val visibleItems = request.items.take(5)
+    val hiddenCount = request.items.size - visibleItems.size
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        visibleItems.forEach { item ->
+            ProductThumbnail(
+                imageUrl = item.listingPhotoUrl,
+                contentDescription = item.listingTitle,
+                size = 44.dp
+            )
+        }
+        if (hiddenCount > 0) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "+$hiddenCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun RequestDetailRow(
     icon:      ImageVector,
     text:      String,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    bold:      Boolean = false
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Row(
-        verticalAlignment     = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(icon, null, Modifier.size(15.dp), tint = textColor)
+        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
             text       = text,
-            style      = MaterialTheme.typography.bodySmall,
+            style      = MaterialTheme.typography.labelSmall,
             color      = textColor,
-            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
 
-// ── Grocery-side action buttons ───────────────────────────────────────────────
+// Grocery-side action buttons
 
 @Composable
 private fun GroceryRequestActions(
@@ -278,59 +266,50 @@ private fun GroceryRequestActions(
 ) {
     when (request.status) {
         PickupRequestStatus.PENDING -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+                ClearChainButton(
+                    text = stringResource(R.string.approve),
                     onClick  = onApprove,
                     modifier = Modifier.weight(1f),
-                    shape    = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Check, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.approve))
-                }
-                OutlinedButton(
-                    onClick  = onReject,
+                    icon = Icons.Default.Check
+                )
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.reject),
+                    onClick = onReject,
                     modifier = Modifier.weight(1f),
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Close, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.reject))
-                }
+                    icon = Icons.Default.Close,
+                    contentColor = MaterialTheme.colorScheme.error
+                )
             }
         }
         PickupRequestStatus.APPROVED -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Button(
+            ClearChainButton(
+                text = stringResource(R.string.action_mark_ready),
                 onClick  = onMarkReady,
                 modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(10.dp),
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-            ) {
-                Icon(Icons.Default.Done, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.mark_ready_for_pickup))
-            }
+                icon = Icons.Default.Check
+            )
         }
         PickupRequestStatus.READY -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ClearChainButtonDefaults.Height)
             ) {
                 Row(
                     modifier              = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.HourglassTop, null,
                         tint     = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(ClearChainButtonDefaults.IconSize)
                     )
                     Text(
                         stringResource(R.string.waiting_for_confirm, request.ngoName),
@@ -344,7 +323,7 @@ private fun GroceryRequestActions(
     }
 }
 
-// ── NGO-side action buttons ───────────────────────────────────────────────────
+// NGO-side action buttons
 
 @Composable
 private fun NgoRequestActions(
@@ -354,35 +333,35 @@ private fun NgoRequestActions(
 ) {
     when (request.status) {
         PickupRequestStatus.PENDING -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            OutlinedButton(
-                onClick  = onCancel,
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.cancel_request),
+                onClick = onCancel,
                 modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(10.dp),
-                colors   = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.Cancel, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.cancel_request))
-            }
+                icon = Icons.Default.Cancel,
+                contentColor = MaterialTheme.colorScheme.error,
+                fillMaxWidth = true
+            )
         }
         PickupRequestStatus.APPROVED -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ClearChainButtonDefaults.Height)
             ) {
                 Row(
                     modifier              = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.HourglassTop, null,
                         tint     = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(ClearChainButtonDefaults.IconSize)
                     )
                     Text(
                         stringResource(R.string.note_waiting_grocery_prepare, request.groceryName),
@@ -393,16 +372,12 @@ private fun NgoRequestActions(
             }
         }
         PickupRequestStatus.READY -> {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Button(
+            ClearChainButton(
+                text = stringResource(R.string.confirm_pickup_photo),
                 onClick  = onConfirmPickup,
                 modifier = Modifier.fillMaxWidth(),
-                shape    = RoundedCornerShape(10.dp)
-            ) {
-                Icon(Icons.Default.CameraAlt, null, Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.confirm_pickup_photo))
-            }
+                icon = Icons.Default.CameraAlt
+            )
         }
         else -> {}
     }

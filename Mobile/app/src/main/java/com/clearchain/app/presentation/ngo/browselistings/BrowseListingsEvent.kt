@@ -10,7 +10,10 @@ sealed class BrowseListingsEvent {
     data class SortOptionChanged(val option: SortOption) : BrowseListingsEvent()
     data class CategoryFilterChanged(val category: String?) : BrowseListingsEvent()
 
-    data class NavigateToRequestPickup(val listingId: String) : BrowseListingsEvent()
+    data class AddToCart(val listingId: String) : BrowseListingsEvent()
+    data class IncrementCartItem(val listingId: String) : BrowseListingsEvent()
+    data class DecrementCartItem(val listingId: String) : BrowseListingsEvent()
+    object OpenCart : BrowseListingsEvent()
     object ClearError : BrowseListingsEvent()
 
     // Favorites

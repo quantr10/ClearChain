@@ -11,11 +11,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.ActivityItemData
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Aggregates activity items into daily counts for the last [days] days.
@@ -25,33 +30,46 @@ fun buildDailyActivityCounts(
     activities: List<ActivityItemData>,
     days: Int = 7
 ): List<Pair<String, Int>> {
-    val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val today = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }
-    val dayLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    val labelFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+    val parsedDates = activities.mapNotNull { parseActivityDate(it.timestamp) }
+    val endDate = parsedDates.maxOrNull() ?: LocalDate.now()
+    val startDate = endDate.minusDays((days - 1).toLong())
 
     val counts = mutableMapOf<String, Int>()
     val keys = mutableListOf<String>()
-    for (i in days - 1 downTo 0) {
-        val cal = today.clone() as Calendar
-        cal.add(Calendar.DAY_OF_YEAR, -i)
-        val key = fmt.format(cal.time)
+    for (i in 0 until days) {
+        val date = startDate.plusDays(i.toLong())
+        val key = date.format(dateFormatter)
         counts[key] = 0
         keys.add(key)
     }
 
-    activities.forEach { item ->
-        val key = item.timestamp.take(10)
+    parsedDates.forEach { date ->
+        val key = date.format(dateFormatter)
         if (counts.containsKey(key)) counts[key] = (counts[key] ?: 0) + 1
     }
 
+    if (parsedDates.isEmpty() && activities.isNotEmpty()) {
+        counts[keys.last()] = activities.size
+    }
+
     return keys.map { key ->
-        val cal = Calendar.getInstance()
-        try { cal.time = fmt.parse(key)!! } catch (_: Exception) {}
-        val label = dayLabels[cal.get(Calendar.DAY_OF_WEEK) - 1]
+        val label = runCatching {
+            LocalDate.parse(key, dateFormatter).format(labelFormatter)
+        }.getOrDefault(key.takeLast(2))
         label to (counts[key] ?: 0)
+    }
+}
+
+private fun parseActivityDate(timestamp: String): LocalDate? {
+    val offsetDate = runCatching {
+        OffsetDateTime.parse(timestamp)
+    }.getOrNull()?.atZoneSameInstant(ZoneId.systemDefault())?.toLocalDate()
+    if (offsetDate != null) return offsetDate
+
+    return Regex("\\d{4}-\\d{2}-\\d{2}").find(timestamp)?.value?.let { date ->
+        runCatching { LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE) }.getOrNull()
     }
 }
 
@@ -61,21 +79,23 @@ fun ActivitySparklineCard(
     data: List<Pair<String, Int>>,
     modifier: Modifier = Modifier
 ) {
-    if (data.isEmpty() || data.all { it.second == 0 }) return
-
     val lineColor = MaterialTheme.colorScheme.primary
     val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     val dotColor  = MaterialTheme.colorScheme.primary
-    val maxVal    = data.maxOf { it.second }.coerceAtLeast(1).toFloat()
+    val hasData = data.isNotEmpty() && data.any { it.second > 0 }
+    val chartData = if (data.isNotEmpty()) data else listOf(
+        "Sun" to 0, "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0, "Fri" to 0, "Sat" to 0
+    )
+    val maxVal = chartData.maxOf { it.second }.coerceAtLeast(1).toFloat()
 
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -84,9 +104,9 @@ fun ActivitySparklineCard(
             ) {
                 Text(
                     text       = title,
-                    style      = MaterialTheme.typography.titleSmall,
+                    style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color      = MaterialTheme.colorScheme.onSurfaceVariant
+                    color      = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text  = "Last 7 days",
@@ -98,51 +118,79 @@ fun ActivitySparklineCard(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(72.dp)
+                    .height(76.dp)
             ) {
                 val w = size.width
                 val h = size.height
-                val n = data.size
+                val n = chartData.size
                 if (n < 2) return@Canvas
 
                 val stepX = w / (n - 1).toFloat()
 
                 fun xAt(i: Int) = i * stepX
-                fun yAt(v: Int) = h - (v / maxVal) * h * 0.85f - h * 0.05f
+                fun yAt(v: Int): Float {
+                    val normalized = if (hasData) v / maxVal else 0.18f
+                    return h - normalized * h * 0.85f - h * 0.05f
+                }
 
                 // Fill path
                 val fillPath = Path().apply {
                     moveTo(xAt(0), h)
-                    lineTo(xAt(0), yAt(data[0].second))
+                    lineTo(xAt(0), yAt(chartData[0].second))
                     for (i in 1 until n) {
                         val cpX = xAt(i - 1) + stepX / 2f
-                        cubicTo(cpX, yAt(data[i - 1].second), cpX, yAt(data[i].second), xAt(i), yAt(data[i].second))
+                        cubicTo(cpX, yAt(chartData[i - 1].second), cpX, yAt(chartData[i].second), xAt(i), yAt(chartData[i].second))
                     }
                     lineTo(xAt(n - 1), h)
                     close()
                 }
-                drawPath(fillPath, brush = Brush.verticalGradient(listOf(fillColor, fillColor.copy(alpha = 0f))))
+                drawPath(
+                    fillPath,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            if (hasData) fillColor else fillColor.copy(alpha = 0.05f),
+                            fillColor.copy(alpha = 0f)
+                        )
+                    )
+                )
 
                 // Line path
                 val linePath = Path().apply {
-                    moveTo(xAt(0), yAt(data[0].second))
+                    moveTo(xAt(0), yAt(chartData[0].second))
                     for (i in 1 until n) {
                         val cpX = xAt(i - 1) + stepX / 2f
-                        cubicTo(cpX, yAt(data[i - 1].second), cpX, yAt(data[i].second), xAt(i), yAt(data[i].second))
+                        cubicTo(cpX, yAt(chartData[i - 1].second), cpX, yAt(chartData[i].second), xAt(i), yAt(chartData[i].second))
                     }
                 }
-                drawPath(linePath, color = lineColor, style = Stroke(width = 3f))
+                drawPath(
+                    linePath,
+                    color = if (hasData) lineColor else lineColor.copy(alpha = 0.35f),
+                    style = Stroke(width = 3f)
+                )
 
                 // Dots
-                data.forEachIndexed { i, (_, v) ->
-                    drawCircle(color = dotColor, radius = 5f, center = Offset(xAt(i), yAt(v)))
+                chartData.forEachIndexed { i, (_, v) ->
+                    drawCircle(
+                        color = if (hasData) dotColor else dotColor.copy(alpha = 0.35f),
+                        radius = 5f,
+                        center = Offset(xAt(i), yAt(v))
+                    )
                     drawCircle(color = androidx.compose.ui.graphics.Color.White, radius = 3f, center = Offset(xAt(i), yAt(v)))
                 }
             }
 
+            if (!hasData) {
+                Text(
+                    text = stringResource(R.string.no_data),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+
             // Day labels
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                data.forEach { (label, _) ->
+                chartData.forEach { (label, _) ->
                     Text(
                         text  = label,
                         style = MaterialTheme.typography.labelSmall,

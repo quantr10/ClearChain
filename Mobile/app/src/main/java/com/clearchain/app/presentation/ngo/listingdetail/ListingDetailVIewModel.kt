@@ -4,13 +4,18 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
+import com.clearchain.app.data.local.LocationPreferenceStore
+import com.clearchain.app.data.remote.api.CartApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.api.ReportApi
 import com.clearchain.app.data.remote.api.SavedListingApi
+import com.clearchain.app.data.remote.dto.AddCartItemRequest
+import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.data.remote.dto.SubmitReportRequest
+import com.clearchain.app.data.remote.dto.UpdateCartItemRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
-import com.clearchain.app.domain.model.ListingStatus
+import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
@@ -22,6 +27,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,9 +39,11 @@ class ListingDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val listingRepository: ListingRepository,
     private val listingApi: ListingApi,
+    private val cartApi: CartApi,
     private val reportApi: ReportApi,
     private val savedListingApi: SavedListingApi,
     private val organizationApi: OrganizationApi,
+    private val locationPreferenceStore: LocationPreferenceStore,
     private val deleteListingUseCase: DeleteListingUseCase,
     private val updateListingQuantityUseCase: UpdateListingQuantityUseCase,
     private val signalRService: SignalRService,
@@ -48,6 +60,7 @@ class ListingDetailViewModel @Inject constructor(
         viewModelScope.launch {
             getCurrentUserUseCase().first()?.let { user ->
                 _state.update { it.copy(currentUserType = user.type) }
+                if (user.type == OrganizationType.NGO) loadCart()
             }
         }
     }
@@ -60,12 +73,13 @@ class ListingDetailViewModel @Inject constructor(
             is ListingDetailEvent.ReportReasonChanged -> onReportReasonChanged(event.reason)
             ListingDetailEvent.SubmitReport          -> submitReport()
             ListingDetailEvent.ToggleSave            -> toggleSave()
-            ListingDetailEvent.ArchiveListing        -> archiveListing()
-            ListingDetailEvent.UnarchiveListing      -> unarchiveListing()
             ListingDetailEvent.ShowDeleteConfirm     -> _state.update { it.copy(showDeleteConfirm = true) }
             ListingDetailEvent.DismissDeleteConfirm  -> _state.update { it.copy(showDeleteConfirm = false) }
             ListingDetailEvent.DeleteListing         -> deleteListing()
             is ListingDetailEvent.UpdateQuantity     -> updateQuantity(event.newQuantity)
+            is ListingDetailEvent.AddToCart          -> addToCart(event.listingId)
+            is ListingDetailEvent.IncrementCartItem  -> addToCart(event.listingId)
+            is ListingDetailEvent.DecrementCartItem  -> decrementCartItem(event.listingId)
         }
     }
 
@@ -75,10 +89,11 @@ class ListingDetailViewModel @Inject constructor(
             listingRepository.getListingById(listingId).fold(
                 onSuccess = { listing ->
                     _state.update { it.copy(listing = listing, isLoading = false) }
-                    loadSimilarListings(listing.category.name, listingId)
+                    loadSimilarListings(listingId)
                     loadGroceryProfile(listing.groceryId)
                     if (_state.value.currentUserType == OrganizationType.NGO) {
                         loadSavedStatus(listingId)
+                        loadCart()
                     }
                 },
                 onFailure = { e ->
@@ -89,20 +104,66 @@ class ListingDetailViewModel @Inject constructor(
         observeSignalR(listingId)
     }
 
-    private fun loadSimilarListings(category: String, excludeId: String) {
+    private fun loadSimilarListings(excludeId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoadingSimilar = true) }
-            listingRepository.getAllListings(status = "available", category = category, pageSize = 10)
+            val locationPreference = locationPreferenceStore.locationPreference.first()
+            if (locationPreference == null) {
+                _state.update { it.copy(similarListings = emptyList(), isLoadingSimilar = false) }
+                return@launch
+            }
+
+            listingRepository.getAllListings(
+                status = "open",
+                lat = locationPreference.latitude,
+                lng = locationPreference.longitude,
+                radiusKm = locationPreference.radiusKm,
+                pageSize = 10
+            )
                 .onSuccess { listings ->
                     _state.update {
                         it.copy(
-                            similarListings = listings.filter { l -> l.id != excludeId && l.status == ListingStatus.AVAILABLE }.take(5),
+                            similarListings = listings
+                                .filter { listing ->
+                                    listing.id != excludeId &&
+                                        isWithinSelectedRadius(
+                                            listing = listing,
+                                            latitude = locationPreference.latitude,
+                                            longitude = locationPreference.longitude,
+                                            radiusKm = locationPreference.radiusKm
+                                        )
+                                }
+                                .take(5),
                             isLoadingSimilar = false
                         )
                     }
                 }
                 .onFailure { _state.update { it.copy(isLoadingSimilar = false) } }
         }
+    }
+
+    private fun isWithinSelectedRadius(
+        listing: Listing,
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Int
+    ): Boolean {
+        val groceryLat = listing.groceryLatitude
+        val groceryLng = listing.groceryLongitude
+        if (groceryLat != null && groceryLng != null) {
+            return distanceKm(latitude, longitude, groceryLat, groceryLng) <= radiusKm
+        }
+
+        return listing.distanceKm?.let { it <= radiusKm } ?: false
+    }
+
+    private fun distanceKm(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+        val radius = 6371.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLng = Math.toRadians(lng2 - lng1)
+        val a = sin(dLat / 2).pow(2.0) +
+            cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLng / 2).pow(2.0)
+        return 2 * radius * atan2(sqrt(a), sqrt(1 - a))
     }
 
     private fun loadGroceryProfile(orgId: String) {
@@ -116,6 +177,47 @@ class ListingDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { savedListingApi.getSavedListingIds().data }
                 .onSuccess { ids -> _state.update { it.copy(isSaved = listingId in ids) } }
+        }
+    }
+
+    private fun loadCart() {
+        viewModelScope.launch {
+            runCatching { cartApi.getCart() }
+                .onSuccess { response -> updateCartState(response.data) }
+        }
+    }
+
+    private fun addToCart(listingId: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingCart = true) }
+            runCatching { cartApi.addItem(AddCartItemRequest(listingId = listingId, quantity = 1)) }
+                .onSuccess { response ->
+                    updateCartState(response.data)
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                }
+            _state.update { it.copy(isUpdatingCart = false) }
+        }
+    }
+
+    private fun decrementCartItem(listingId: String) {
+        val item = _state.value.cartItemsByListingId[listingId] ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingCart = true) }
+            runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = item.requestedQuantity - 1)) }
+                .onSuccess { response -> updateCartState(response.data) }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                }
+            _state.update { it.copy(isUpdatingCart = false) }
+        }
+    }
+
+    private fun updateCartState(groups: List<CartGroupData>) {
+        _state.update {
+            it.copy(cartItemsByListingId = groups.flatMap { group -> group.items }.associateBy { item -> item.listingId })
         }
     }
 
@@ -179,42 +281,6 @@ class ListingDetailViewModel @Inject constructor(
     }
 
     // ── Grocery actions ───────────────────────────────────────────────────────
-
-    private fun archiveListing() {
-        val listing = _state.value.listing ?: return
-        viewModelScope.launch {
-            _state.update { it.copy(isArchiving = true) }
-            runCatching { listingApi.archiveListing(listing.id) }.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_archived)))
-                    loadListing(listing.id)
-                    _state.update { it.copy(isArchiving = false) }
-                },
-                onFailure = { e ->
-                    _state.update { it.copy(isArchiving = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_archive_listing_failed)))
-                }
-            )
-        }
-    }
-
-    private fun unarchiveListing() {
-        val listing = _state.value.listing ?: return
-        viewModelScope.launch {
-            _state.update { it.copy(isArchiving = true) }
-            runCatching { listingApi.unarchiveListing(listing.id) }.fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_restored)))
-                    loadListing(listing.id)
-                    _state.update { it.copy(isArchiving = false) }
-                },
-                onFailure = { e ->
-                    _state.update { it.copy(isArchiving = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_restore_listing_failed)))
-                }
-            )
-        }
-    }
 
     private fun deleteListing() {
         val listing = _state.value.listing ?: return

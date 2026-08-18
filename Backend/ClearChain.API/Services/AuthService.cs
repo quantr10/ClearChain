@@ -331,6 +331,8 @@ public class AuthService : IAuthService
             Phone = org.Phone ?? "",
             Address = org.Address ?? "",
             Location = org.Location ?? "",
+            State = org.State ?? "",
+            ZipCode = org.ZipCode ?? "",
             Verified = org.Verified,
             VerificationStatus = org.VerificationStatus,
             Hours = org.Hours,

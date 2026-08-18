@@ -60,26 +60,20 @@ fun UploadErrorDialog(
         },
         confirmButton = {
             if (canRetry) {
-                Button(
+                ClearChainButton(
+                    text = stringResource(R.string.action_retry_upload),
                     onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_retry_upload))
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.Refresh
+                )
             }
         },
         dismissButton = {
-            TextButton(
+            ClearChainOutlinedButton(
+                text = if (canRetry) stringResource(R.string.cancel) else stringResource(R.string.close),
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (canRetry) stringResource(R.string.cancel) else stringResource(R.string.close))
-            }
+            )
         }
     )
 }

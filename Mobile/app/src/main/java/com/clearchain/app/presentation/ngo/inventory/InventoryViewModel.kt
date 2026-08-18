@@ -129,12 +129,15 @@ class InventoryViewModel @Inject constructor(
                 _state.update {
                     val updated = if (event.itemId in it.selectedIds)
                         it.selectedIds - event.itemId else it.selectedIds + event.itemId
-                    it.copy(selectedIds = updated)
+                    it.copy(selectedIds = updated, isSelectionMode = updated.isNotEmpty())
                 }
             InventoryEvent.SelectAll ->
-                _state.update { it.copy(selectedIds = it.filteredItems.map { i -> i.id }.toSet()) }
+                _state.update {
+                    val selected = it.filteredItems.map { i -> i.id }.toSet()
+                    it.copy(selectedIds = selected, isSelectionMode = selected.isNotEmpty())
+                }
             InventoryEvent.DeselectAll ->
-                _state.update { it.copy(selectedIds = emptySet()) }
+                _state.update { it.copy(selectedIds = emptySet(), isSelectionMode = false) }
             InventoryEvent.BulkDistribute -> bulkDistribute()
 
             // Manual add

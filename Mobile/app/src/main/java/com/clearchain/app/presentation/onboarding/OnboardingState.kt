@@ -19,6 +19,8 @@ data class OnboardingState(
     // Step 2 fields
     val address: String = "",
     val city: String = "",
+    val state: String = "",
+    val zipCode: String = "",
     val openTime: String = "",
     val closeTime: String = "",
     val pickupInstructions: String = "",
@@ -31,13 +33,19 @@ data class OnboardingState(
     val isUploadingDocument: Boolean = false,
     val documentUploadError: String? = null,
 
-    // Draft
-    val hasSavedDraft: Boolean = false,
-    val showDraftRecoveryDialog: Boolean = false,
-
     // General
     val isSaving: Boolean = false,
     val error: String? = null,
     val addressLat: Double? = null,
     val addressLng: Double? = null,
-)
+) {
+    val canContinueStep1: Boolean
+        get() = phone.isNotBlank() &&
+            (userType !in listOf(OrganizationType.NGO, OrganizationType.GROCERY) || contactPerson.isNotBlank())
+
+    val canContinueStep2: Boolean
+        get() = address.isNotBlank() &&
+            city.isNotBlank() &&
+            openTime.isNotBlank() &&
+            closeTime.isNotBlank()
+}

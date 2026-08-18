@@ -27,6 +27,9 @@
     <string name="close">Đóng</string>
     <string name="back">Quay lại</string>
     <string name="done">Xong</string>
+    <string name="time_picker_select_hour">Chọn giờ</string>
+    <string name="time_picker_select_minute">Chọn phút</string>
+    <string name="time_picker_back_to_hours">Quay lại chọn giờ</string>
     <string name="skip">Bỏ qua</string>
     <string name="next">Tiếp theo</string>
     <string name="continue_label">Tiếp tục</string>
@@ -85,14 +88,10 @@
     <string name="listing_expiry">Ngày hết hạn</string>
     <string name="listing_notes">Ghi chú</string>
     <string name="listing_pickup_time">Khung giờ lấy hàng</string>
-    <string name="archive_listing">Lưu trữ danh mục</string>
-    <string name="unarchive_listing">Khôi phục danh mục</string>
-    <string name="archived_listings">Danh mục đã lưu trữ</string>
     <string name="expiry_urgency_critical">Hết hạn trong vòng 24 giờ</string>
     <string name="expiry_urgency_warning">Hết hạn trong 1–2 ngày</string>
     <string name="bulk_delete">Xóa đã chọn</string>
-    <string name="bulk_archive">Lưu trữ đã chọn</string>
-    <string name="bulk_restore">Khôi phục đã chọn</string>
+    <string name="tab_archived">Đã lưu trữ</string>
     <string name="draft_saved">Bản nháp đã lưu</string>
     <string name="draft_recovered">Bản nháp được khôi phục. Tiếp tục từ nơi bạn dừng lại?</string>
     <string name="preview_listing">Xem trước</string>
@@ -112,7 +111,6 @@
     <string name="reject">Từ chối</string>
     <string name="cancel_request">Hủy yêu cầu</string>
     <string name="cancellation_reason">Lý do hủy</string>
-    <string name="vehicle_type">Loại phương tiện</string>
     <string name="license_plate">Biển số xe</string>
     <string name="requires_refrigeration">Cần bảo quản lạnh</string>
     <string name="fragile_items">Hàng dễ vỡ</string>
@@ -431,19 +429,19 @@
     <string name="onboarding_restore_draft">Khôi phục bản nháp</string>
     <string name="onboarding_start_fresh">Bắt đầu lại</string>
     <string name="onboarding_welcome">Chào mừng đến ClearChain!</string>
-    <string name="onboarding_grocery_intro">Hãy thiết lập hồ sơ để bắt đầu quyên góp thực phẩm.</string>
-    <string name="onboarding_ngo_intro">Hãy thiết lập hồ sơ để bắt đầu nhận thực phẩm quyên góp.</string>
     <string name="onboarding_phone_label">Số điện thoại</string>
     <string name="onboarding_about_label">Giới thiệu tổ chức</string>
     <string name="onboarding_about_placeholder">Chia sẻ về tổ chức của bạn…</string>
     <string name="onboarding_contact_label">Người liên hệ</string>
     <string name="onboarding_contact_placeholder">Tên người liên hệ chính</string>
-    <string name="onboarding_location_heading">Bạn đang ở đâu?</string>
-    <string name="onboarding_location_subtitle">Giúp chúng tôi kết nối bạn với các đối tác gần đây.</string>
     <string name="onboarding_address_label">Địa chỉ</string>
     <string name="onboarding_address_placeholder">Bắt đầu nhập địa chỉ…</string>
     <string name="onboarding_city_label">Thành phố</string>
     <string name="onboarding_city_placeholder">TP. Hồ Chí Minh</string>
+    <string name="onboarding_state_label">Tỉnh/Bang</string>
+    <string name="onboarding_state_placeholder">IL</string>
+    <string name="onboarding_zip_label">Mã bưu chính</string>
+    <string name="onboarding_zip_placeholder">61053</string>
     <string name="onboarding_hours_label">Giờ hoạt động</string>
     <string name="onboarding_hours_opens">Mở cửa</string>
     <string name="onboarding_hours_closes">Đóng cửa</string>
@@ -556,14 +554,13 @@
     <string name="action_reject_bulk">Từ chối (%1$d)</string>
 
     <!-- My Listings -->
+
     <string name="action_archive">Lưu trữ</string>
-    <string name="action_delete_count">Xóa (%1$d)</string>
     <string name="tab_active">Đang hoạt động</string>
     <string name="tab_available">Có sẵn</string>
     <string name="tab_list_view">Danh sách</string>
     <string name="tab_map_view">Bản đồ</string>
-    <string name="tab_archived">Đã lưu trữ</string>
-    <string name="tab_archived_count">Đã lưu trữ (%1$d)</string>
+
     <string name="search_listings_placeholder">Tìm kiếm niêm yết…</string>
 
     <!-- Browse Listings -->
@@ -867,7 +864,6 @@
     <string name="label_pickup_time_field">Giờ lấy hàng</string>
     <string name="hint_select_time_slot">Chọn khung giờ</string>
     <string name="label_pickup_time_window">Giờ lấy hàng — %1$s đến %2$s</string>
-    <string name="label_transport_method">Phương tiện vận chuyển</string>
     <string name="label_special_handling">Yêu cầu đặc biệt</string>
     <string name="label_needs_refrigeration">Cần bảo quản lạnh</string>
     <string name="label_heavy_load">Hàng nặng (&gt;20 kg)</string>
@@ -1044,11 +1040,13 @@
     <string name="snack_new_listing">Có danh sách mới: %1$s</string>
     <string name="snack_listings_refreshed">Đã làm mới danh sách</string>
     <string name="snack_listing_deleted">Đã xóa danh sách</string>
-    <string name="snack_listing_archived">Đã lưu trữ danh sách</string>
-    <string name="snack_listing_restored">Đã khôi phục danh sách</string>
+
+
     <string name="snack_n_listings_deleted">Đã xóa %1$d danh sách</string>
     <string name="snack_n_listings_archived">Đã lưu trữ %1$d danh sách</string>
     <string name="snack_n_listings_restored">Đã khôi phục %1$d danh sách</string>
+
+
     <string name="n_listings_selected">Đã chọn %1$d sản phẩm</string>
     <string name="snack_quantity_updated">Đã cập nhật số lượng</string>
     <string name="snack_draft_saved">Đã lưu nháp</string>
@@ -1207,6 +1205,7 @@
     <string name="error_create_listing_failed">Không thể tạo danh sách</string>
     <string name="error_phone_required">Số điện thoại là bắt buộc</string>
     <string name="error_contact_person_required">Người liên hệ là bắt buộc</string>
+    <string name="error_contact_person_invalid">Nhập tên người liên hệ hợp lệ</string>
     <string name="error_address_required">Địa chỉ là bắt buộc</string>
     <string name="error_city_required">Thành phố là bắt buộc</string>
     <string name="error_onboarding_save_failed">Lưu thất bại. Vui lòng thử lại.</string>
@@ -1257,8 +1256,8 @@
     <string name="activity_desc_stats">%1$s tổng, %2$s hoàn thành hôm nay</string>
     <string name="cd_org_type">Tổ chức %1$s</string>
     <string name="error_delete_listing_failed">Không thể xóa danh sách</string>
-    <string name="error_archive_listing_failed">Không thể lưu trữ danh sách</string>
-    <string name="error_restore_listing_failed">Không thể khôi phục danh sách</string>
+
+
     <string name="error_bulk_approve_failed">Duyệt hàng loạt thất bại</string>
     <string name="error_bulk_reject_failed">Từ chối hàng loạt thất bại</string>
     <string name="error_load_inventory">Không thể tải tồn kho</string>
@@ -1326,11 +1325,6 @@
     <string name="uploading_image">Đang tải hình ảnh…</string>
 
     <!-- Vehicle type labels -->
-    <string name="vehicle_walk">Đi bộ</string>
-    <string name="vehicle_bicycle">Xe đạp</string>
-    <string name="vehicle_motorcycle">Xe máy</string>
-    <string name="vehicle_car">Xe hơi</string>
-    <string name="vehicle_van">Xe tải</string>
 
     <!-- Review rating labels -->
     <string name="review_rating_poor">Kém</string>
@@ -1355,4 +1349,6 @@
     <string name="status_listing_reserved">Đã đặt</string>
     <string name="status_listing_completed">Hoàn thành</string>
     <string name="status_listing_expired">Hết hạn</string>
+    <string name="status_listing_archived">Đã lưu trữ</string>
+    <string name="status_archived">Đã lưu trữ</string>
 </resources>

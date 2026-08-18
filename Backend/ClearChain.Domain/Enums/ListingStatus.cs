@@ -4,5 +4,6 @@ public enum ListingStatus
 {
     Open,
     Reserved,
-    Expired
+    Expired,
+    Archived
 }

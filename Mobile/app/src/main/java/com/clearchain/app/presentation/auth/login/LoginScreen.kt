@@ -36,6 +36,11 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val lockoutMessage = if (state.isLockedOut) {
+        stringResource(R.string.msg_account_locked, state.lockoutMinutes)
+    } else null
+
+    SnackbarMessageEffect(snackbarHostState, lockoutMessage)
     var formVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { delay(150); formVisible = true }
@@ -116,52 +121,26 @@ fun LoginScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Checkbox(
                                 checked = state.rememberMe,
                                 onCheckedChange = { viewModel.onEvent(LoginEvent.ToggleRememberMe) },
-                                enabled = !state.isLoading
+                                enabled = !state.isLoading,
+                                modifier = Modifier.size(24.dp)
                             )
                             Text(
                                 text  = stringResource(R.string.remember_me),
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.labelSmall
                             )
                         }
-                        TextButton(onClick = {}) {
-                            Text(
-                                text  = stringResource(R.string.forgot_password),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        ClearChainOutlinedButton(
+                            text = stringResource(R.string.forgot_password),
+                            onClick = {}
+                        )
                     }
 
                     // ── Lockout / system error banner ──────────────────────
-                    AnimatedVisibility(
-                        visible = state.error != null || state.systemError != null,
-                        enter   = fadeIn(),
-                        exit    = fadeOut()
-                    ) {
-                        when {
-                            state.isLockedOut -> AlertBanner(
-                                message = stringResource(R.string.msg_account_locked, state.lockoutMinutes),
-                                type    = AlertType.WARNING,
-                                icon    = Icons.Default.Lock
-                            )
-                            state.systemError != null -> AlertBanner(
-                                message = state.systemError.orEmpty(),
-                                type    = AlertType.ERROR,
-                                icon    = Icons.Default.ErrorOutline
-                            )
-                            else -> AlertBanner(
-                                message = state.error.orEmpty(),
-                                type    = AlertType.ERROR,
-                                icon    = Icons.Default.ErrorOutline
-                            )
-                        }
-                    }
-
                     ClearChainButton(
                         text    = stringResource(R.string.sign_in),
                         onClick = { viewModel.onEvent(LoginEvent.Login) },
@@ -175,7 +154,8 @@ fun LoginScreen(
                     ClearChainOutlinedButton(
                         text    = stringResource(R.string.create_new_account),
                         onClick = { navController.navigate(Screen.Register.route) },
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading,
+                        fillMaxWidth = true
                     )
                 }
             }

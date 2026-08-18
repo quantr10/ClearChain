@@ -21,6 +21,8 @@ data class Organization(
     // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val state: String? = null,
+    val zipCode: String? = null,
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
