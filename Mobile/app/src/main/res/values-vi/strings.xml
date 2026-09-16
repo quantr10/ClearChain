@@ -1054,6 +1054,7 @@
     <string name="snack_ai_applied">Đã áp dụng gợi ý AI! Vui lòng xem lại.</string>
     <string name="snack_ai_detected">AI phát hiện: %1$s (%2$d%% độ tin cậy)</string>
     <string name="snack_profile_updated">Cập nhật hồ sơ thành công</string>
+    <string name="snack_profile_updated_verify_email">Đã cập nhật hồ sơ. Kiểm tra email mới để lấy mã xác minh — bạn sẽ cần mã này để đăng nhập lại.</string>
     <string name="snack_password_changed">Đổi mật khẩu thành công</string>
     <string name="snack_avatar_updated">Cập nhật ảnh đại diện thành công</string>
     <string name="snack_account_deleted">Xóa tài khoản thành công</string>

@@ -7,6 +7,14 @@ public class UpdateProfileRequest
     [StringLength(200, MinimumLength = 3)]
     public string? Name { get; set; }
 
+    /// <summary>
+    /// Changing this re-runs email verification: the address is the login
+    /// identifier, so it is not trusted until the owner confirms it.
+    /// </summary>
+    [EmailAddress]
+    [StringLength(255)]
+    public string? Email { get; set; }
+
     [Phone]
     public string? Phone { get; set; }
 

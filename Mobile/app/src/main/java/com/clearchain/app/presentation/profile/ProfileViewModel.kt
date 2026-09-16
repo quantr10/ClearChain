@@ -16,6 +16,7 @@ import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
 import com.clearchain.app.util.ImageUtils
+import com.clearchain.app.util.ApiErrorUtils
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -261,14 +262,27 @@ class ProfileViewModel @Inject constructor(
                 description         = s.editDescription.ifBlank { null }
             )
 
+            // A changed address is unverified until confirmed, and login is gated on
+            // that, so say so rather than report a plain success.
+            val emailChanged = !s.editEmail.equals(s.user?.email, ignoreCase = true)
+
             result.fold(
                 onSuccess = {
                     loadProfile()
                     _state.update { it.copy(isSavingProfile = false, isEditing = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_profile_updated)))
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar(
+                            context.getString(
+                                if (emailChanged) R.string.snack_profile_updated_verify_email
+                                else R.string.snack_profile_updated
+                            )
+                        )
+                    )
                 },
                 onFailure = { e ->
-                    val msg = e.message ?: context.getString(R.string.error_update_profile_failed)
+                    val msg = ApiErrorUtils.messageOr(
+                        e, context.getString(R.string.error_update_profile_failed)
+                    )
                     _state.update { it.copy(isSavingProfile = false, error = msg) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
@@ -372,11 +386,9 @@ class ProfileViewModel @Inject constructor(
                 _uiEvent.send(UiEvent.Navigate("logout"))
             } catch (e: Exception) {
                 _state.update { it.copy(isDeletingAccount = false) }
-                val msg = runCatching {
-                    val body = (e as? retrofit2.HttpException)
-                        ?.response()?.errorBody()?.string()
-                    org.json.JSONObject(body ?: "").optString("message").takeIf { it.isNotBlank() }
-                }.getOrNull() ?: e.message ?: context.getString(R.string.error_delete_account_failed)
+                val msg = ApiErrorUtils.messageOr(
+                    e, context.getString(R.string.error_delete_account_failed)
+                )
                 _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }

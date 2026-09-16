@@ -20,15 +20,18 @@ public class OrganizationService : IOrganizationService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrganizationService> _logger;
     private readonly IPushNotificationService _pushNotificationService;
+    private readonly IEmailService _emailService;
 
     public OrganizationService(
         ApplicationDbContext context,
         ILogger<OrganizationService> logger,
-        IPushNotificationService pushNotificationService)
+        IPushNotificationService pushNotificationService,
+        IEmailService emailService)
     {
         _context = context;
         _logger = logger;
         _pushNotificationService = pushNotificationService;
+        _emailService = emailService;
     }
 
     public async Task<List<OrganizationDto>> GetPendingVerificationsAsync(string? type = null)
@@ -96,6 +99,10 @@ public class OrganizationService : IOrganizationService
         if (user == null)
             return (false, "User not found");
 
+        var (emailOk, emailError, emailChanged) = await TryApplyEmailChangeAsync(user, request.Email);
+        if (!emailOk)
+            return (false, emailError);
+
         // Update only provided fields (existing)
         if (!string.IsNullOrEmpty(request.Name)) user.Name = request.Name;
         if (!string.IsNullOrEmpty(request.Phone)) user.Phone = request.Phone;
@@ -119,7 +126,57 @@ public class OrganizationService : IOrganizationService
         if (resubmitted)
             await NotifyResubmissionAsync(user);
 
+        if (emailChanged)
+        {
+            await SendEmailVerificationAsync(user);
+            return (true, "Profile updated. Check your new email for a verification code — you will need it to sign in again.");
+        }
+
         return (true, resubmitted ? "Profile updated and resubmitted for review" : "Profile updated successfully");
+    }
+
+    /// <summary>
+    /// Applies a requested email change to <paramref name="user"/> without saving.
+    /// </summary>
+    /// <remarks>
+    /// The address is the login identifier and carries a unique index, so a collision
+    /// is rejected here rather than left to surface as a database error. Clearing
+    /// EmailVerified is what makes the change safe: an address nobody has confirmed
+    /// must not keep the access the old one had, which is the same rule registration
+    /// applies.
+    /// </remarks>
+    private async Task<(bool Success, string Error, bool Changed)> TryApplyEmailChangeAsync(
+        Organization user, string? requestedEmail)
+    {
+        if (string.IsNullOrWhiteSpace(requestedEmail))
+            return (true, string.Empty, false);
+
+        var email = requestedEmail.Trim().ToLower();
+        if (email == user.Email.ToLower())
+            return (true, string.Empty, false);
+
+        var taken = await _context.Organizations
+            .AnyAsync(o => o.Id != user.Id && o.Email.ToLower() == email && !o.IsDeleted);
+        if (taken)
+            return (false, "That email address is already in use", false);
+
+        user.Email = email;
+        user.EmailVerified = false;
+        return (true, string.Empty, true);
+    }
+
+    /// <summary>
+    /// Issues a fresh verification code for the user's current address, matching the
+    /// code shape and 15-minute lifetime used at registration.
+    /// </summary>
+    private async Task SendEmailVerificationAsync(Organization user)
+    {
+        var code = Random.Shared.Next(100000, 999999).ToString();
+        user.EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(code);
+        user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+        await _context.SaveChangesAsync();
+
+        await _emailService.SendVerificationEmailAsync(user.Email, user.Name, code);
     }
 
     /// <summary>

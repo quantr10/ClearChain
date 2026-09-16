@@ -1092,6 +1092,7 @@
     <string name="snack_ai_applied">AI suggestions applied! Please review and adjust.</string>
     <string name="snack_ai_detected">AI detected: %1$s (%2$d%% confidence)</string>
     <string name="snack_profile_updated">Profile updated successfully</string>
+    <string name="snack_profile_updated_verify_email">Profile updated. Check your new email for a verification code — you'll need it to sign in again.</string>
     <string name="snack_password_changed">Password changed successfully</string>
     <string name="snack_avatar_updated">Avatar updated successfully</string>
     <string name="snack_account_deleted">Account deleted successfully</string>
