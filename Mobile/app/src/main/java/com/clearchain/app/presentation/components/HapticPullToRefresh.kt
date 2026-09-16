@@ -30,10 +30,13 @@ fun HapticPullToRefreshBox(
     val state = rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh    = { HapticUtils.refresh(context); onRefresh() },
-        modifier     = modifier.fillMaxSize(),
-        state        = state,
-        indicator    = {
+        onRefresh = {
+            HapticUtils.refresh(context)
+            onRefresh()
+        },
+        modifier = modifier.fillMaxSize(),
+        state = state,
+        indicator = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -41,11 +44,11 @@ fun HapticPullToRefreshBox(
                 contentAlignment = Alignment.TopCenter
             ) {
                 PullToRefreshDefaults.Indicator(
-                    state        = state,
+                    state = state,
                     isRefreshing = isRefreshing
                 )
             }
         },
-        content      = content
+        content = content
     )
 }

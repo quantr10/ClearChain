@@ -52,21 +52,24 @@ fun MyListingsScreen(
 
     if (state.showFilterSheet) {
         MyListingsFilterSheet(
-            state     = state,
-            onEvent   = viewModel::onEvent,
+            state = state,
+            onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(MyListingsEvent.HideFilterSheet) }
         )
     }
 
     if (showBulkDeleteConfirm) {
         ConfirmDialog(
-            icon        = Icons.Default.DeleteForever,
-            title       = stringResource(R.string.bulk_delete),
-            message     = stringResource(R.string.delete_account_confirm),
+            icon = Icons.Default.DeleteForever,
+            title = stringResource(R.string.bulk_delete),
+            message = stringResource(R.string.delete_account_confirm),
             confirmLabel = stringResource(R.string.delete),
             isDestructive = true,
-            onConfirm   = { showBulkDeleteConfirm = false; viewModel.onEvent(MyListingsEvent.BulkDelete) },
-            onDismiss   = { showBulkDeleteConfirm = false }
+            onConfirm = {
+                showBulkDeleteConfirm = false
+                viewModel.onEvent(MyListingsEvent.BulkDelete)
+            },
+            onDismiss = { showBulkDeleteConfirm = false }
         )
     }
 
@@ -80,15 +83,15 @@ fun MyListingsScreen(
                 visible = state.isSelectionMode &&
                     state.selectedCount > 0 &&
                     state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED),
-                enter   = slideInVertically { it },
-                exit    = slideOutVertically { it }
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it }
             ) {
                 Surface(
                     tonalElevation = 8.dp,
                     shadowElevation = 8.dp
                 ) {
                     Row(
-                        modifier              = Modifier
+                        modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -144,9 +147,9 @@ fun MyListingsScreen(
         floatingActionButton = {
             if (!state.isSelectionMode) {
                 SmallFloatingActionButton(
-                    onClick        = { navController.navigate(Screen.CreateListing.route) },
+                    onClick = { navController.navigate(Screen.CreateListing.route) },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor   = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.Add, stringResource(R.string.cd_create_listing))
                 }
@@ -156,109 +159,116 @@ fun MyListingsScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                        ListScreenHeader {
-                        ListHeaderSearchRow(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(MyListingsEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.search_listings_placeholder)
+                ListScreenHeader {
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(MyListingsEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.search_listings_placeholder)
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            }
                         ) {
-                            BadgedBox(
-                                badge = {
-                                    if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
-                                }
-                            ) {
-                                ClearChainActionIconButton(
-                                    icon               = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.advanced_filters),
-                                    onClick            = { viewModel.onEvent(MyListingsEvent.ShowFilterSheet) }
-                                )
-                            }
+                            ClearChainActionIconButton(
+                                icon = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.advanced_filters),
+                                onClick = { viewModel.onEvent(MyListingsEvent.ShowFilterSheet) }
+                            )
                         }
+                    }
 
-                        // Tab row: Available | Archived | Reserved | Expired
-                        FilterChipsRow(
-                            tabs = listOf(
-                                MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
-                                MyListingsTab.ARCHIVED  to stringResource(R.string.tab_archived),
-                                MyListingsTab.RESERVED  to stringResource(R.string.status_reserved),
-                                MyListingsTab.EXPIRED   to stringResource(R.string.status_expired)
-                            ),
-                            selectedTab = state.activeTab,
-                            onTabSelected = { viewModel.onEvent(MyListingsEvent.TabChanged(it)) }
-                        )
+                    // Tab row: Available | Archived | Reserved | Expired
+                    FilterChipsRow(
+                        tabs = listOf(
+                            MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
+                            MyListingsTab.ARCHIVED to stringResource(R.string.tab_archived),
+                            MyListingsTab.RESERVED to stringResource(R.string.status_reserved),
+                            MyListingsTab.EXPIRED to stringResource(R.string.status_expired)
+                        ),
+                        selectedTab = state.activeTab,
+                        onTabSelected = { viewModel.onEvent(MyListingsEvent.TabChanged(it)) }
+                    )
 
-                        ResultsCountAndSort(
-                            count          = state.filteredListings.size,
-                            itemName       = "listing",
-                            selectedSort   = state.selectedSort,
-                            onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
-                            sortOptions    = state.availableSortOptions,
-                            countText      = if (state.isSelectionMode) {
-                                "${state.selectedCount} ${if (state.selectedCount == 1) "listing" else "listings"} selected"
-                            } else null,
-                            leadingContent = if (state.isSelectionMode) {
-                                {
-                                    CircleCheckbox(
-                                        checked = state.allSelected,
-                                        onCheckedChange = {
-                                            if (state.allSelected) viewModel.onEvent(MyListingsEvent.DeselectAll)
-                                            else viewModel.onEvent(MyListingsEvent.SelectAll)
+                    ResultsCountAndSort(
+                        count = state.filteredListings.size,
+                        itemName = "listing",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions,
+                        countText = if (state.isSelectionMode) {
+                            "${state.selectedCount} ${if (state.selectedCount == 1) "listing" else "listings"} selected"
+                        } else {
+                            null
+                        },
+                        leadingContent = if (state.isSelectionMode) {
+                            {
+                                CircleCheckbox(
+                                    checked = state.allSelected,
+                                    onCheckedChange = {
+                                        if (state.allSelected) {
+                                            viewModel.onEvent(MyListingsEvent.DeselectAll)
+                                        } else {
+                                            viewModel.onEvent(MyListingsEvent.SelectAll)
                                         }
-                                    )
-                                }
-                            } else null
-                        )
+                                    }
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when {
+                        state.isLoading && state.allListings.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
 
-                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        when {
-                            state.isLoading && state.allListings.isEmpty() -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
+                        state.error != null && state.allListings.isEmpty() -> {
+                            EmptyState(
+                                icon = Icons.Default.ErrorOutline,
+                                title = stringResource(R.string.error_generic),
+                                subtitle = state.error,
+                                actionLabel = stringResource(R.string.retry),
+                                onAction = { viewModel.onEvent(MyListingsEvent.LoadListings) }
+                            )
+                        }
 
-                            state.error != null && state.allListings.isEmpty() -> {
-                                EmptyState(
-                                    icon       = Icons.Default.ErrorOutline,
-                                    title      = stringResource(R.string.error_generic),
-                                    subtitle   = state.error,
-                                    actionLabel = stringResource(R.string.retry),
-                                    onAction   = { viewModel.onEvent(MyListingsEvent.LoadListings) }
-                                )
-                            }
+                        state.filteredListings.isEmpty() -> {
+                            EmptyState(
+                                icon = if (state.allListings.isEmpty()) Icons.Default.PostAdd else Icons.Default.FilterAlt,
+                                title = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings) else stringResource(R.string.empty_no_listings_filter),
+                                subtitle = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings_subtitle) else stringResource(R.string.empty_try_filters)
+                            )
+                        }
 
-                            state.filteredListings.isEmpty() -> {
-                                EmptyState(
-                                    icon   = if (state.allListings.isEmpty()) Icons.Default.PostAdd else Icons.Default.FilterAlt,
-                                    title  = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings) else stringResource(R.string.empty_no_listings_filter),
-                                    subtitle = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings_subtitle) else stringResource(R.string.empty_try_filters)
-                                )
-                            }
-
-                            else -> {
-                                HapticPullToRefreshBox(
-                                    isRefreshing = state.isRefreshing,
-                                    onRefresh    = { viewModel.onEvent(MyListingsEvent.RefreshListings) }
+                        else -> {
+                            HapticPullToRefreshBox(
+                                isRefreshing = state.isRefreshing,
+                                onRefresh = { viewModel.onEvent(MyListingsEvent.RefreshListings) }
+                            ) {
+                                LazyColumn(
+                                    contentPadding = ScreenPadding,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    LazyColumn(
-                                        contentPadding      = ScreenPadding,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(state.filteredListings, key = { it.id }) { listing ->
-                                            var showEditQty by remember { mutableStateOf(false) }
-                                            val isSelected  = listing.id in state.selectedIds
+                                    items(state.filteredListings, key = { it.id }) { listing ->
+                                        var showEditQty by remember { mutableStateOf(false) }
+                                        val isSelected = listing.id in state.selectedIds
 
-                                            Box {
+                                        Box {
                                             ListingCard(
-                                                listing          = listing,
-                                                modifier         = Modifier.combinedClickable(
-                                                    onClick      = {
+                                                listing = listing,
+                                                modifier = Modifier.combinedClickable(
+                                                    onClick = {
                                                         if (state.isSelectionMode) {
                                                             viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
                                                         } else {
                                                             navController.navigate(Screen.ListingDetail.createRoute(listing.id))
                                                         }
                                                     },
-                                                    onLongClick  = {
+                                                    onLongClick = {
                                                         if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED)) {
                                                             if (!state.isSelectionMode) {
                                                                 viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
@@ -268,21 +278,23 @@ fun MyListingsScreen(
                                                     }
                                                 ),
                                                 showGroceryInfo = false,
-                                                topRightAction  = if (!state.isSelectionMode && listing.status == ListingStatus.AVAILABLE) {
+                                                topRightAction = if (!state.isSelectionMode && listing.status == ListingStatus.AVAILABLE) {
                                                     {
                                                         IconButton(
-                                                            onClick  = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
+                                                            onClick = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
                                                             modifier = Modifier.size(24.dp)
                                                         ) {
                                                             Icon(
                                                                 Icons.Default.Edit,
                                                                 contentDescription = stringResource(R.string.action_edit_qty),
                                                                 modifier = Modifier.size(18.dp),
-                                                                tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                             )
                                                         }
                                                     }
-                                                } else null,
+                                                } else {
+                                                    null
+                                                },
                                                 secondaryActions = if (!state.isSelectionMode && (listing.viewCount > 0 || listing.requestCount > 0)) {
                                                     {
                                                         Row(
@@ -304,7 +316,9 @@ fun MyListingsScreen(
                                                             }
                                                         }
                                                     }
-                                                } else null
+                                                } else {
+                                                    null
+                                                }
                                             )
 
                                             // Selection circle overlay (top-left)
@@ -317,27 +331,27 @@ fun MyListingsScreen(
                                                         .padding(8.dp)
                                                 )
                                             }
-                                            } // end Box
+                                        } // end Box
 
-                                            if (showEditQty) {
-                                                EditQuantityDialog(
-                                                    currentQuantity = listing.quantity,
-                                                    unit = listing.unit,
-                                                    onDismiss = { showEditQty = false },
-                                                    onConfirm = { newQty ->
-                                                        showEditQty = false
-                                                        viewModel.onEvent(MyListingsEvent.UpdateListingQuantity(listing.id, newQty))
-                                                    }
-                                                )
-                                            }
+                                        if (showEditQty) {
+                                            EditQuantityDialog(
+                                                currentQuantity = listing.quantity,
+                                                unit = listing.unit,
+                                                onDismiss = { showEditQty = false },
+                                                onConfirm = { newQty ->
+                                                    showEditQty = false
+                                                    viewModel.onEvent(MyListingsEvent.UpdateListingQuantity(listing.id, newQty))
+                                                }
+                                            )
                                         }
-
-                                        item { Spacer(Modifier.height(16.dp)) }
                                     }
+
+                                    item { Spacer(Modifier.height(16.dp)) }
                                 }
                             }
                         }
-                        }
+                    }
+                }
             }
         }
     }
@@ -367,8 +381,11 @@ private fun MyListingsFilterSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.advanced_filters),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.advanced_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 if (state.activeFilterCount > 0) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.action_clear_all),
@@ -383,14 +400,14 @@ private fun MyListingsFilterSheet(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = state.selectedCategory == null,
-                        onClick  = { onEvent(MyListingsEvent.CategoryFilterChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
+                        onClick = { onEvent(MyListingsEvent.CategoryFilterChanged(null)) },
+                        label = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { cat ->
                         FilterChip(
                             selected = state.selectedCategory == cat.name,
-                            onClick  = { onEvent(MyListingsEvent.CategoryFilterChanged(if (state.selectedCategory == cat.name) null else cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
+                            onClick = { onEvent(MyListingsEvent.CategoryFilterChanged(if (state.selectedCategory == cat.name) null else cat.name)) },
+                            label = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -404,8 +421,8 @@ private fun MyListingsFilterSheet(
                         .forEach { (days, label) ->
                             FilterChip(
                                 selected = state.filterExpiryWithinDays == days,
-                                onClick  = { onEvent(MyListingsEvent.FilterExpiryWithinDaysChanged(days)) },
-                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                onClick = { onEvent(MyListingsEvent.FilterExpiryWithinDaysChanged(days)) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -419,7 +436,7 @@ private fun MyListingsFilterSheet(
             ) {
                 Text(stringResource(R.string.filter_has_requests), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Switch(
-                    checked  = state.filterHasRequests,
+                    checked = state.filterHasRequests,
                     onCheckedChange = { onEvent(MyListingsEvent.FilterHasRequestsChanged(it)) }
                 )
             }
@@ -440,11 +457,11 @@ private fun CircleCheckbox(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        onClick         = onCheckedChange,
-        modifier        = modifier.size(24.dp),
-        shape           = CircleShape,
-        color           = if (checked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.92f),
-        border          = if (!checked) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
+        onClick = onCheckedChange,
+        modifier = modifier.size(24.dp),
+        shape = CircleShape,
+        color = if (checked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.92f),
+        border = if (!checked) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
         shadowElevation = 1.dp
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -452,7 +469,7 @@ private fun CircleCheckbox(
                 Icon(
                     Icons.Default.Check,
                     contentDescription = null,
-                    tint     = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(14.dp)
                 )
             }
@@ -484,19 +501,22 @@ private fun EditQuantityDialog(
             val newQty = quantity.toIntOrNull()
             when {
                 newQty == null -> error = errorInvalidNumber
-                newQty <= 0   -> error = errorMustBePositive
+                newQty <= 0 -> error = errorMustBePositive
                 newQty == currentQuantity -> error = errorSameAsCurrent
                 else -> onConfirm(newQty)
             }
         }
     ) {
         OutlinedTextField(
-            value         = quantity,
-            onValueChange = { quantity = it; error = null },
-            label         = { Text(stringResource(R.string.label_new_quantity)) },
-            suffix        = { Text(unit) },
+            value = quantity,
+            onValueChange = {
+                quantity = it
+                error = null
+            },
+            label = { Text(stringResource(R.string.label_new_quantity)) },
+            suffix = { Text(unit) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError       = error != null,
+            isError = error != null,
             supportingText = error?.let { { Text(it) } }
         )
     }

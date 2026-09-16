@@ -4,8 +4,8 @@ import com.clearchain.app.data.local.dao.AuthTokenDao
 import com.clearchain.app.data.local.dao.NotificationDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.toDomain   // CANONICAL from UserEntity.kt
-import com.clearchain.app.data.local.entity.toEntity  // CANONICAL from UserEntity.kt
+import com.clearchain.app.data.local.entity.toDomain // CANONICAL from UserEntity.kt
+import com.clearchain.app.data.local.entity.toEntity // CANONICAL from UserEntity.kt
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.dto.*
 import com.clearchain.app.domain.model.AuthTokens
@@ -23,8 +23,11 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override suspend fun register(
-        name: String, type: String, email: String,
-        password: String, fcmToken: String?
+        name: String,
+        type: String,
+        email: String,
+        password: String,
+        fcmToken: String?
     ): Result<String> {
         return try {
             val request = RegisterRequest(name = name, type = type, email = email, password = password, fcmToken = fcmToken)
@@ -42,10 +45,14 @@ class AuthRepositoryImpl @Inject constructor(
 
             clearPreviousAccountCache()
             userDao.clearUsers()
-            authTokenDao.saveTokens(AuthTokenEntity(
-                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
-                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
-            ))
+            authTokenDao.saveTokens(
+                AuthTokenEntity(
+                    accessToken = tokens.accessToken,
+                    refreshToken = tokens.refreshToken,
+                    expiresIn = tokens.expiresIn,
+                    tokenType = tokens.tokenType
+                )
+            )
             userDao.insertUser(organization.toEntity())
             Result.success(Pair(organization, tokens))
         } catch (e: Exception) {
@@ -70,10 +77,14 @@ class AuthRepositoryImpl @Inject constructor(
 
             clearPreviousAccountCache()
             userDao.clearUsers()
-            authTokenDao.saveTokens(AuthTokenEntity(
-                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
-                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
-            ))
+            authTokenDao.saveTokens(
+                AuthTokenEntity(
+                    accessToken = tokens.accessToken,
+                    refreshToken = tokens.refreshToken,
+                    expiresIn = tokens.expiresIn,
+                    tokenType = tokens.tokenType
+                )
+            )
             userDao.insertUser(organization.toEntity())
             Result.success(Pair(organization, tokens))
         } catch (e: Exception) {
@@ -127,10 +138,14 @@ class AuthRepositoryImpl @Inject constructor(
             val (organization, tokens) = response.data.toDomain()
 
             userDao.clearUsers()
-            authTokenDao.saveTokens(AuthTokenEntity(
-                accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
-                expiresIn = tokens.expiresIn, tokenType = tokens.tokenType
-            ))
+            authTokenDao.saveTokens(
+                AuthTokenEntity(
+                    accessToken = tokens.accessToken,
+                    refreshToken = tokens.refreshToken,
+                    expiresIn = tokens.expiresIn,
+                    tokenType = tokens.tokenType
+                )
+            )
             userDao.insertUser(organization.toEntity())
             Result.success(Pair(organization, tokens))
         } catch (e: Exception) {
@@ -148,13 +163,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): Flow<Organization?> {
-        return userDao.getCurrentUserFlow().map { it?.toDomain() }  // uses canonical from UserEntity.kt
+        return userDao.getCurrentUserFlow().map { it?.toDomain() } // uses canonical from UserEntity.kt
     }
 
     override suspend fun refreshCurrentUser(): Result<Organization> {
         return try {
             val organization = authApi.getCurrentUser().data.user.toDomain()
-            userDao.insertUser(organization.toEntity())  // REPLACE on conflict — keeps same row
+            userDao.insertUser(organization.toEntity()) // REPLACE on conflict — keeps same row
             Result.success(organization)
         } catch (e: Exception) {
             Result.failure(e)

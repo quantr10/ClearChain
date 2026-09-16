@@ -19,14 +19,21 @@ class UploadVerificationDocumentUseCase @Inject constructor(
             "application/pdf",
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/heic",
+            "image/heif"
         )
-        if (mimeType.lowercase() !in allowed)
+        if (mimeType.lowercase() !in allowed) {
             return Result.failure(Exception("Only PDF, Word documents, or images (JPEG, PNG, WebP, HEIC, HEIF) are accepted"))
-        if (bytes.isEmpty())
+        }
+        if (bytes.isEmpty()) {
             return Result.failure(Exception("The selected file is empty"))
-        if (bytes.size > 10 * 1024 * 1024)
+        }
+        if (bytes.size > 10 * 1024 * 1024) {
             return Result.failure(Exception("File must be under 10 MB"))
+        }
 
         return repository.uploadVerificationDocument(bytes, fileName, mimeType)
     }

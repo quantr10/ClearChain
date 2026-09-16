@@ -328,9 +328,11 @@ class SignalRService @Inject constructor(
             // restart keeps them, so `configure` must not run again or every event would be
             // delivered twice.
             val connection = existing ?: HubConnectionBuilder.create(url)
-                .withAccessTokenProvider(Single.fromCallable {
-                    currentAccessTokenBlocking() ?: ""
-                })
+                .withAccessTokenProvider(
+                    Single.fromCallable {
+                        currentAccessTokenBlocking() ?: ""
+                    }
+                )
                 .build()
                 .also { built ->
                     configure(built)
@@ -348,7 +350,7 @@ class SignalRService @Inject constructor(
         } catch (e: Exception) {
             // A non-admin hitting the admin hub is expected, not a failure worth surfacing.
             val forbidden = e.message?.contains("403") == true ||
-                    e.message?.contains("Forbidden") == true
+                e.message?.contains("Forbidden") == true
             if (forbidden) {
                 Log.d(TAG, "ℹ️ $name hub not accessible for this account")
             } else {

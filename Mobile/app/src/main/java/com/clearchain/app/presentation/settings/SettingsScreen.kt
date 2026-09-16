@@ -35,7 +35,6 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-
             ScreenTitleRow(
                 title = stringResource(R.string.settings),
                 onBack = onNavigateBack,
@@ -50,8 +49,8 @@ fun SettingsScreen(
                 title = stringResource(R.string.theme),
                 subtitle = when (state.theme) {
                     "light" -> stringResource(R.string.theme_light)
-                    "dark"  -> stringResource(R.string.theme_dark)
-                    else    -> stringResource(R.string.theme_system)
+                    "dark" -> stringResource(R.string.theme_dark)
+                    else -> stringResource(R.string.theme_system)
                 }
             ) {
                 var expanded by remember { mutableStateOf(false) }
@@ -59,16 +58,16 @@ fun SettingsScreen(
                     ClearChainOutlinedButton(
                         text = when (state.theme) {
                             "light" -> stringResource(R.string.theme_light)
-                            "dark"  -> stringResource(R.string.theme_dark)
-                            else    -> stringResource(R.string.theme_system)
+                            "dark" -> stringResource(R.string.theme_dark)
+                            else -> stringResource(R.string.theme_system)
                         },
                         onClick = { expanded = true }
                     )
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         listOf(
                             "system" to R.string.theme_system,
-                            "light"  to R.string.theme_light,
-                            "dark"   to R.string.theme_dark
+                            "light" to R.string.theme_light,
+                            "dark" to R.string.theme_dark
                         ).forEach { (value, labelRes) ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(labelRes)) },
@@ -78,7 +77,9 @@ fun SettingsScreen(
                                 },
                                 leadingIcon = if (state.theme == value) {
                                     { Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp)) }
-                                } else null
+                                } else {
+                                    null
+                                }
                             )
                         }
                     }
@@ -116,7 +117,9 @@ fun SettingsScreen(
                                 },
                                 leadingIcon = if (state.language == code) {
                                     { Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp)) }
-                                } else null
+                                } else {
+                                    null
+                                }
                             )
                         }
                     }

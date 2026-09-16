@@ -29,7 +29,8 @@ class EmailVerificationViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val email: String = URLDecoder.decode(
-        savedStateHandle.get<String>("email") ?: "", "UTF-8"
+        savedStateHandle.get<String>("email") ?: "",
+        "UTF-8"
     )
 
     private val _state = MutableStateFlow(EmailVerificationState(email = email))

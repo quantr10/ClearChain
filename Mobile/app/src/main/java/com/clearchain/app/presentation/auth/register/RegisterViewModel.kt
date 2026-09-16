@@ -114,12 +114,16 @@ class RegisterViewModel @Inject constructor(
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get FCM token", e); null
+                Log.e(TAG, "Failed to get FCM token", e)
+                null
             }
 
             val result = registerUseCase(
-                name = s.name, type = s.type, email = s.email,
-                password = s.password, fcmToken = fcmToken
+                name = s.name,
+                type = s.type,
+                email = s.email,
+                password = s.password,
+                fcmToken = fcmToken
             )
 
             result.fold(
@@ -129,24 +133,24 @@ class RegisterViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     val raw = error.message ?: ""
-                    val emailTaken = raw.contains("409") || raw.contains("Conflict", ignoreCase = true)
-                        || raw.contains("already", ignoreCase = true)
+                    val emailTaken = raw.contains("409") || raw.contains("Conflict", ignoreCase = true) ||
+                        raw.contains("already", ignoreCase = true)
                     val (emailErr, passwordErr) = when {
                         emailTaken -> null to null
                         raw.contains("500") || raw.contains("502") || raw.contains("503") ->
                             null to context.getString(R.string.error_server)
-                        raw.contains("Unable to resolve host", ignoreCase = true)
-                            || raw.contains("timeout", ignoreCase = true)
-                            || raw.contains("connect", ignoreCase = true) ->
+                        raw.contains("Unable to resolve host", ignoreCase = true) ||
+                            raw.contains("timeout", ignoreCase = true) ||
+                            raw.contains("connect", ignoreCase = true) ->
                             null to context.getString(R.string.error_no_internet)
                         else ->
                             null to raw.ifBlank { context.getString(R.string.error_registration_failed) }
                     }
                     _state.update {
                         it.copy(
-                            isLoading     = false,
-                            error         = null,
-                            emailError    = emailErr,
+                            isLoading = false,
+                            error = null,
+                            emailError = emailErr,
                             passwordError = passwordErr
                         )
                     }
@@ -164,27 +168,36 @@ class RegisterViewModel @Inject constructor(
         val s = _state.value
         var valid = true
         if (s.name.isBlank()) {
-            _state.update { it.copy(nameError = context.getString(R.string.error_name_required)) }; valid = false
+            _state.update { it.copy(nameError = context.getString(R.string.error_name_required)) }
+            valid = false
         } else if (s.name.length < 3) {
-            _state.update { it.copy(nameError = context.getString(R.string.error_name_min_length)) }; valid = false
+            _state.update { it.copy(nameError = context.getString(R.string.error_name_min_length)) }
+            valid = false
         }
         if (s.email.isBlank()) {
-            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }
+            valid = false
         } else if (!ValidationUtils.isValidEmail(s.email)) {
-            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }
+            valid = false
         }
         if (s.password.isBlank()) {
-            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }
+            valid = false
         } else if (!ValidationUtils.isValidPassword(s.password)) {
-            _state.update { it.copy(passwordError = context.getString(R.string.error_password_complexity)) }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_complexity)) }
+            valid = false
         }
         if (s.confirmPassword.isBlank()) {
-            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_confirm_password_required)) }; valid = false
+            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_confirm_password_required)) }
+            valid = false
         } else if (s.password != s.confirmPassword) {
-            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_passwords_dont_match)) }; valid = false
+            _state.update { it.copy(confirmPasswordError = context.getString(R.string.error_passwords_dont_match)) }
+            valid = false
         }
         if (!s.tosAccepted) {
-            _state.update { it.copy(tosError = true) }; valid = false
+            _state.update { it.copy(tosError = true) }
+            valid = false
         }
         return valid
     }

@@ -49,10 +49,10 @@ data class BrowseListingsState(
     // Advanced filter bottom sheet
     val showFilterSheet: Boolean = false,
     val filterMinQuantity: Int = 0,
-    val filterMaxQuantity: Int? = null,     // null = no upper limit
-    val filterMinExpiryDays: Int = 0,       // 0 = include expired/today; >0 = must have N+ days remaining
-    val filterMaxExpiryDays: Int? = null,   // null = no limit
-    val filterMaxDistanceKm: Int? = null,   // null = use radiusKm from location pref
+    val filterMaxQuantity: Int? = null, // null = no upper limit
+    val filterMinExpiryDays: Int = 0, // 0 = include expired/today; >0 = must have N+ days remaining
+    val filterMaxExpiryDays: Int? = null, // null = no limit
+    val filterMaxDistanceKm: Int? = null, // null = use radiusKm from location pref
 
     // Map / list toggle
     val showMapView: Boolean = false,
@@ -72,11 +72,11 @@ data class BrowseListingsState(
         selectedCategory?.let { FoodCategory.valueOf(it) }
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
-        (if (filterMinQuantity > 0) 1 else 0) +
-        (if (filterMaxQuantity != null) 1 else 0) +
-        (if (filterMinExpiryDays > 0) 1 else 0) +
-        (if (filterMaxExpiryDays != null) 1 else 0) +
-        (if (filterMaxDistanceKm != null) 1 else 0) +
-        (if (showFavoritesOnly) 1 else 0)
+            (if (filterMinQuantity > 0) 1 else 0) +
+            (if (filterMaxQuantity != null) 1 else 0) +
+            (if (filterMinExpiryDays > 0) 1 else 0) +
+            (if (filterMaxExpiryDays != null) 1 else 0) +
+            (if (filterMaxDistanceKm != null) 1 else 0) +
+            (if (showFavoritesOnly) 1 else 0)
     val cartItemCount: Int get() = cartItemsByListingId.values.sumOf { it.requestedQuantity }
 }

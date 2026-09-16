@@ -167,7 +167,10 @@ fun DisputeScreen(
                     ) {
                         RadioButton(
                             selected = state.reason == reason,
-                            onClick = { HapticUtils.tick(context); viewModel.onReasonChanged(reason) }
+                            onClick = {
+                                HapticUtils.tick(context)
+                                viewModel.onReasonChanged(reason)
+                            }
                         )
                         Text(reason, style = MaterialTheme.typography.bodyMedium)
                     }

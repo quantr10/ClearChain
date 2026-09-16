@@ -11,8 +11,8 @@ sealed class TransactionsEvent {
     object ClearError : TransactionsEvent()
 
     // Date range
-    data class DatePresetSelected(val preset: String?) : TransactionsEvent()   // null = clear
-    data class CustomDateSelected(val dateStr: String) : TransactionsEvent()   // "yyyy-MM-dd"
+    data class DatePresetSelected(val preset: String?) : TransactionsEvent() // null = clear
+    data class CustomDateSelected(val dateStr: String) : TransactionsEvent() // "yyyy-MM-dd"
     data class ShowDatePicker(val forStart: Boolean) : TransactionsEvent()
     object HideDatePicker : TransactionsEvent()
 

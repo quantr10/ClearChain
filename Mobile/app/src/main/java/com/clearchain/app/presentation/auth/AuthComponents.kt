@@ -54,20 +54,20 @@ fun AuthHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector   = Icons.Default.Eco,
+                    imageVector = Icons.Default.Eco,
                     contentDescription = null,
-                    modifier      = Modifier.size(38.dp),
-                    tint          = Color.White
+                    modifier = Modifier.size(38.dp),
+                    tint = Color.White
                 )
             }
             Text(
-                text       = "ClearChain",
-                fontSize   = 26.sp,
+                text = "ClearChain",
+                fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color      = Color.White
+                color = Color.White
             )
             Text(
-                text  = subtitle,
+                text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.85f)
             )
@@ -79,15 +79,15 @@ fun AuthHeader(
 @Composable
 fun AuthDivider() {
     Row(
-        modifier          = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f))
         Text(
-            text     = "or",
+            text = "or",
             modifier = Modifier.padding(horizontal = 12.dp),
-            style    = MaterialTheme.typography.bodySmall,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         HorizontalDivider(modifier = Modifier.weight(1f))
     }

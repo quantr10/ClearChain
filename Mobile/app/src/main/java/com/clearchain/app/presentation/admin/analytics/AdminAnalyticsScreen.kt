@@ -90,9 +90,9 @@ fun AdminAnalyticsScreen(
     Scaffold(
         floatingActionButton = {
             SmallFloatingActionButton(
-                onClick        = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) },
+                onClick = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor   = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 if (state.isExporting) {
                     CircularProgressIndicator(
@@ -105,7 +105,7 @@ fun AdminAnalyticsScreen(
                 }
             }
         },
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -117,28 +117,28 @@ fun AdminAnalyticsScreen(
 
                 state.data == null ->
                     EmptyState(
-                        icon        = Icons.Default.BarChart,
-                        title       = stringResource(R.string.stats_unavailable),
-                        subtitle    = state.error ?: stringResource(R.string.stats_unavailable_subtitle),
+                        icon = Icons.Default.BarChart,
+                        title = stringResource(R.string.stats_unavailable),
+                        subtitle = state.error ?: stringResource(R.string.stats_unavailable_subtitle),
                         actionLabel = stringResource(R.string.action_retry),
-                        onAction    = { viewModel.onEvent(AdminAnalyticsEvent.Load) }
+                        onAction = { viewModel.onEvent(AdminAnalyticsEvent.Load) }
                     )
 
                 else -> {
                     val data = state.data!!
                     HapticPullToRefreshBox(
                         isRefreshing = state.isRefreshing,
-                        onRefresh    = { viewModel.onEvent(AdminAnalyticsEvent.Refresh) }
+                        onRefresh = { viewModel.onEvent(AdminAnalyticsEvent.Refresh) }
                     ) {
                         LazyColumn(
-                            state               = listState,
-                            modifier            = Modifier.fillMaxSize(),
-                            contentPadding      = ScreenPadding,
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = ScreenPadding,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             item {
                                 AnalyticsHeader(
-                                    state    = state,
+                                    state = state,
                                     onSelect = { viewModel.onEvent(AdminAnalyticsEvent.SelectPeriod(it)) }
                                 )
                             }
@@ -169,17 +169,17 @@ private fun AnalyticsHeader(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
-            modifier          = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.stats_analytics_title),
-                    style      = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text  = periodSubtitle(state.data?.period),
+                    text = periodSubtitle(state.data?.period),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -190,14 +190,14 @@ private fun AnalyticsHeader(
         }
 
         Row(
-            modifier              = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatsPeriodOption.entries.forEach { option ->
                 FilterChip(
                     selected = option == state.period,
-                    onClick  = { onSelect(option) },
-                    label    = { Text(stringResource(option.labelRes)) }
+                    onClick = { onSelect(option) },
+                    label = { Text(stringResource(option.labelRes)) }
                 )
             }
         }
@@ -208,7 +208,7 @@ private fun AnalyticsHeader(
 private fun periodSubtitle(period: StatsPeriod?): String {
     if (period == null || period.isAllTime) return stringResource(R.string.stats_all_time_subtitle)
     val from = formatIsoDate(period.from)
-    val to   = formatIsoDate(period.to)
+    val to = formatIsoDate(period.to)
     return if (from != null && to != null) {
         stringResource(R.string.stats_period_range, from, to)
     } else {
@@ -222,12 +222,12 @@ private fun periodSubtitle(period: StatsPeriod?): String {
 private fun RequestStatusCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
     val f = data.funnel
     val bars = requestStatusBars(
-        pending   = f.pending,
-        approved  = f.approved,
-        ready     = f.ready,
+        pending = f.pending,
+        approved = f.approved,
+        ready = f.ready,
         completed = f.completed,
         cancelled = f.cancelled,
-        rejected  = f.rejected
+        rejected = f.rejected
     )
 
     AnalyticsCard(AnalyticsSection.REQUESTS, stringResource(R.string.section_request_status_breakdown), highlighted) {
@@ -255,7 +255,7 @@ private fun TimingCard(data: AdminDetailedStatsData, highlighted: AnalyticsSecti
             MetricRow(stringResource(R.string.timing_p90), formatDuration(t.p90HoursToPickup))
             Spacer(Modifier.height(4.dp))
             RateContent(
-                percent     = (t.completedWithin24hRate * 100).roundToInt(),
+                percent = (t.completedWithin24hRate * 100).roundToInt(),
                 description = stringResource(R.string.timing_within_24h_detail, (t.completedWithin24hRate * 100).roundToInt())
             )
             FootNote(stringResource(R.string.timing_sample, t.sampleSize))
@@ -270,14 +270,14 @@ private fun BacklogCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
     val b = data.backlog
 
     AnalyticsCard(
-        section     = AnalyticsSection.BACKLOG,
-        title       = stringResource(R.string.section_live_backlog),
+        section = AnalyticsSection.BACKLOG,
+        title = stringResource(R.string.section_live_backlog),
         highlighted = highlighted,
-        action      = {
+        action = {
             Icon(
                 Icons.Default.Bolt,
                 contentDescription = null,
-                tint     = StatusColors.Pending,
+                tint = StatusColors.Pending,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -286,53 +286,53 @@ private fun BacklogCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BacklogTile(
-                icon     = Icons.Default.Inventory2,
-                label    = stringResource(R.string.backlog_open_listings),
-                value    = b.openListings.toString(),
+                icon = Icons.Default.Inventory2,
+                label = stringResource(R.string.backlog_open_listings),
+                value = b.openListings.toString(),
                 modifier = Modifier.weight(1f)
             )
             BacklogTile(
-                icon     = Icons.Default.Timelapse,
-                label    = stringResource(R.string.backlog_expiring_24h),
-                value    = b.expiringWithin24h.toString(),
-                urgent   = b.expiringWithin24h > 0,
+                icon = Icons.Default.Timelapse,
+                label = stringResource(R.string.backlog_expiring_24h),
+                value = b.expiringWithin24h.toString(),
+                urgent = b.expiringWithin24h > 0,
                 modifier = Modifier.weight(1f)
             )
             BacklogTile(
-                icon     = Icons.Default.MarkEmailUnread,
-                label    = stringResource(R.string.backlog_pending_requests),
-                value    = b.pendingRequests.toString(),
-                detail   = b.oldestPendingRequestHours
+                icon = Icons.Default.MarkEmailUnread,
+                label = stringResource(R.string.backlog_pending_requests),
+                value = b.pendingRequests.toString(),
+                detail = b.oldestPendingRequestHours
                     ?.takeIf { b.pendingRequests > 0 }
                     ?.let { stringResource(R.string.backlog_oldest, formatDuration(it)) },
-                urgent   = (b.oldestPendingRequestHours ?: 0.0) >= 48,
+                urgent = (b.oldestPendingRequestHours ?: 0.0) >= 48,
                 modifier = Modifier.weight(1f)
             )
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BacklogTile(
-                icon     = Icons.Default.LocalShipping,
-                label    = stringResource(R.string.backlog_ready_requests),
-                value    = b.readyRequests.toString(),
+                icon = Icons.Default.LocalShipping,
+                label = stringResource(R.string.backlog_ready_requests),
+                value = b.readyRequests.toString(),
                 modifier = Modifier.weight(1f)
             )
             BacklogTile(
-                icon     = Icons.Default.VerifiedUser,
-                label    = stringResource(R.string.backlog_pending_verifications),
-                value    = b.pendingVerifications.toString(),
-                detail   = b.oldestPendingVerificationDays
+                icon = Icons.Default.VerifiedUser,
+                label = stringResource(R.string.backlog_pending_verifications),
+                value = b.pendingVerifications.toString(),
+                detail = b.oldestPendingVerificationDays
                     ?.takeIf { b.pendingVerifications > 0 }
                     ?.let { stringResource(R.string.backlog_oldest_days, it) },
-                urgent   = (b.oldestPendingVerificationDays ?: 0) >= 7,
+                urgent = (b.oldestPendingVerificationDays ?: 0) >= 7,
                 modifier = Modifier.weight(1f)
             )
             BacklogTile(
-                icon     = Icons.Default.ReportProblem,
-                label    = stringResource(R.string.backlog_open_cases),
-                value    = (b.openDisputes + b.pendingReports).toString(),
-                detail   = stringResource(R.string.backlog_cases_detail, b.openDisputes, b.pendingReports),
-                urgent   = b.openDisputes > 0,
+                icon = Icons.Default.ReportProblem,
+                label = stringResource(R.string.backlog_open_cases),
+                value = (b.openDisputes + b.pendingReports).toString(),
+                detail = stringResource(R.string.backlog_cases_detail, b.openDisputes, b.pendingReports),
+                urgent = b.openDisputes > 0,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -379,21 +379,21 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
     val q = data.quality
 
     AnalyticsCard(
-        section     = AnalyticsSection.QUALITY,
-        title       = stringResource(R.string.section_quality),
+        section = AnalyticsSection.QUALITY,
+        title = stringResource(R.string.section_quality),
         highlighted = highlighted,
-        action      = {
+        action = {
             q.averageRating?.let {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(
                         Icons.Default.Star,
                         contentDescription = null,
-                        tint     = StatusColors.Pending,
+                        tint = StatusColors.Pending,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         String.format(Locale.getDefault(), "%.1f", it),
-                        style      = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -444,28 +444,28 @@ private fun OrganizationsCard(data: AdminDetailedStatsData, highlighted: Analyti
                 ),
                 centerValue = o.total.toString(),
                 centerLabel = stringResource(R.string.stat_total),
-                footnote    = stringResource(R.string.admin_org_total_verified, o.total, o.verified)
+                footnote = stringResource(R.string.admin_org_total_verified, o.total, o.verified)
             )
 
             if (o.pendingVerification > 0) {
                 val stale = (o.oldestPendingDays ?: 0) >= 7
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    verticalAlignment     = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         if (stale) Icons.Default.Warning else Icons.Default.HourglassTop,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint     = if (stale) MaterialTheme.colorScheme.error else StatusColors.Pending
+                        tint = if (stale) MaterialTheme.colorScheme.error else StatusColors.Pending
                     )
                     Text(
-                        text     = o.oldestPendingDays?.let {
+                        text = o.oldestPendingDays?.let {
                             stringResource(R.string.stat_pending_verification_aged, o.pendingVerification, it)
                         } ?: stringResource(R.string.stat_pending_verification, o.pendingVerification),
-                        style    = MaterialTheme.typography.labelSmall,
-                        color    = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -489,13 +489,13 @@ private fun AnalyticsCard(
     val isHighlighted = highlighted == section
     val borderColor by animateColorAsState(
         targetValue = if (isHighlighted) MaterialTheme.colorScheme.primary else Color.Transparent,
-        label       = "sectionHighlight"
+        label = "sectionHighlight"
     )
     DashboardSection(
-        title    = title,
+        title = title,
         modifier = Modifier.border(2.dp, borderColor, RoundedCornerShape(16.dp)),
-        action   = action,
-        content  = content
+        action = action,
+        content = content
     )
 }
 
@@ -510,38 +510,38 @@ private fun BacklogTile(
 ) {
     val tint = if (urgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
     Surface(
-        color    = tint.copy(alpha = 0.10f),
-        shape    = MaterialTheme.shapes.small,
+        color = tint.copy(alpha = 0.10f),
+        shape = MaterialTheme.shapes.small,
         modifier = modifier
     ) {
         Column(
-            modifier            = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Text(
-                text       = value,
-                style      = MaterialTheme.typography.titleMedium,
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color      = tint
+                color = tint
             )
             Text(
-                text      = label,
-                style     = MaterialTheme.typography.labelSmall,
-                color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                maxLines  = 2,
-                overflow  = TextOverflow.Ellipsis
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             detail?.let {
                 Text(
-                    text      = it,
-                    style     = MaterialTheme.typography.labelSmall,
-                    color     = tint.copy(alpha = 0.8f),
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tint.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
-                    maxLines  = 1,
-                    overflow  = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -551,21 +551,21 @@ private fun BacklogTile(
 @Composable
 private fun MetricRow(label: String, value: String, valueColor: Color? = null) {
     Row(
-        modifier              = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text     = label,
-            style    = MaterialTheme.typography.bodySmall,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
         Text(
-            text       = value,
-            style      = MaterialTheme.typography.bodyMedium,
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = valueColor ?: MaterialTheme.colorScheme.onSurface
+            color = valueColor ?: MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -574,7 +574,7 @@ private fun MetricRow(label: String, value: String, valueColor: Color? = null) {
 private fun SubHeading(text: String) {
     Text(
         text,
-        style      = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold
     )
 }
@@ -592,8 +592,8 @@ private fun FootNote(text: String) {
 private fun EmptyChartNote(text: String) {
     Text(
         text,
-        style    = MaterialTheme.typography.bodySmall,
-        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(vertical = 12.dp)
     )
 }
@@ -602,9 +602,9 @@ private fun EmptyChartNote(text: String) {
 
 private fun formatDuration(hours: Double?): String = when {
     hours == null -> "–"
-    hours < 1     -> "${(hours * 60).roundToInt()}m"
-    hours < 48    -> "${hours.roundToInt()}h"
-    else          -> "${(hours / 24).roundToInt()}d"
+    hours < 1 -> "${(hours * 60).roundToInt()}m"
+    hours < 48 -> "${hours.roundToInt()}h"
+    else -> "${(hours / 24).roundToInt()}d"
 }
 
 private fun formatIsoDate(iso: String?): String? = iso?.let {

@@ -30,9 +30,9 @@ fun BottomNavBar(
     )
 
     val items = when (userType) {
-        OrganizationType.NGO     -> getNgoNavigationItems()
+        OrganizationType.NGO -> getNgoNavigationItems()
         OrganizationType.GROCERY -> getGroceryNavigationItems()
-        OrganizationType.ADMIN   -> getAdminNavigationItems()
+        OrganizationType.ADMIN -> getAdminNavigationItems()
     }
 
     NavigationBar(

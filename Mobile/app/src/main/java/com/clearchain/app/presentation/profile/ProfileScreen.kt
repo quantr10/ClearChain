@@ -57,7 +57,8 @@ fun ProfileScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(
-                    event.message, duration = SnackbarDuration.Short
+                    event.message,
+                    duration = SnackbarDuration.Short
                 )
                 is UiEvent.Navigate -> onLogout()
                 else -> Unit
@@ -101,7 +102,10 @@ fun ProfileScreen(
 
     if (showLogoutDialog) {
         LogoutDialog(
-            onConfirm = { showLogoutDialog = false; onLogout() },
+            onConfirm = {
+                showLogoutDialog = false
+                onLogout()
+            },
             onDismiss = { showLogoutDialog = false }
         )
     }
@@ -375,17 +379,17 @@ private fun ChangePasswordDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, String) -> Unit
 ) {
-    var currentPassword    by remember { mutableStateOf("") }
-    var newPassword        by remember { mutableStateOf("") }
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
     var confirmNewPassword by remember { mutableStateOf("") }
-    var error              by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
 
-    val errCurrentRequired  = stringResource(R.string.error_current_password_required)
-    val errNewRequired      = stringResource(R.string.error_new_password_required)
-    val errMinLength        = stringResource(R.string.error_password_min_length)
-    val errNeedsUppercase   = stringResource(R.string.error_password_needs_uppercase)
-    val errNeedsNumber      = stringResource(R.string.error_password_needs_number)
-    val errDontMatch        = stringResource(R.string.error_passwords_dont_match)
+    val errCurrentRequired = stringResource(R.string.error_current_password_required)
+    val errNewRequired = stringResource(R.string.error_new_password_required)
+    val errMinLength = stringResource(R.string.error_password_min_length)
+    val errNeedsUppercase = stringResource(R.string.error_password_needs_uppercase)
+    val errNeedsNumber = stringResource(R.string.error_password_needs_number)
+    val errDontMatch = stringResource(R.string.error_passwords_dont_match)
 
     ConfirmDialog(
         onDismiss = onDismiss,
@@ -398,19 +402,22 @@ private fun ChangePasswordDialog(
         confirmLoading = isLoading,
         onConfirm = {
             when {
-                currentPassword.isBlank()             -> error = errCurrentRequired
-                newPassword.isBlank()                 -> error = errNewRequired
-                newPassword.length < 8                -> error = errMinLength
+                currentPassword.isBlank() -> error = errCurrentRequired
+                newPassword.isBlank() -> error = errNewRequired
+                newPassword.length < 8 -> error = errMinLength
                 !newPassword.any { it.isUpperCase() } -> error = errNeedsUppercase
-                !newPassword.any { it.isDigit() }     -> error = errNeedsNumber
-                newPassword != confirmNewPassword      -> error = errDontMatch
+                !newPassword.any { it.isDigit() } -> error = errNeedsNumber
+                newPassword != confirmNewPassword -> error = errDontMatch
                 else -> onConfirm(currentPassword, newPassword)
             }
         }
     ) {
         ClearChainTextField(
             value = currentPassword,
-            onValueChange = { currentPassword = it; error = null },
+            onValueChange = {
+                currentPassword = it
+                error = null
+            },
             label = stringResource(R.string.label_current_password),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
@@ -421,7 +428,10 @@ private fun ChangePasswordDialog(
         )
         ClearChainTextField(
             value = newPassword,
-            onValueChange = { newPassword = it; error = null },
+            onValueChange = {
+                newPassword = it
+                error = null
+            },
             label = stringResource(R.string.label_new_password),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
@@ -432,7 +442,10 @@ private fun ChangePasswordDialog(
         )
         ClearChainTextField(
             value = confirmNewPassword,
-            onValueChange = { confirmNewPassword = it; error = null },
+            onValueChange = {
+                confirmNewPassword = it
+                error = null
+            },
             label = stringResource(R.string.label_confirm_new_password),
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
@@ -442,8 +455,11 @@ private fun ChangePasswordDialog(
             unfocusedBorderColor = MaterialTheme.colorScheme.outline
         )
         error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall)
+            Text(
+                it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -462,20 +478,20 @@ private fun TeamMembersCard(user: Organization) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             MemberRow(
-                name   = user.name,
+                name = user.name,
                 detail = user.email,
-                badge  = stringResource(R.string.label_owner_badge),
-                tint   = MaterialTheme.colorScheme.primaryContainer,
+                badge = stringResource(R.string.label_owner_badge),
+                tint = MaterialTheme.colorScheme.primaryContainer,
                 onTint = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
             if (!user.contactPerson.isNullOrBlank()) {
                 HorizontalDivider()
                 MemberRow(
-                    name   = user.contactPerson,
+                    name = user.contactPerson,
                     detail = stringResource(R.string.label_contact_person),
-                    badge  = stringResource(R.string.label_contact_badge),
-                    tint   = MaterialTheme.colorScheme.secondaryContainer,
+                    badge = stringResource(R.string.label_contact_badge),
+                    tint = MaterialTheme.colorScheme.secondaryContainer,
                     onTint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
@@ -484,19 +500,20 @@ private fun TeamMembersCard(user: Organization) {
 
             // Invite placeholder (multi-user support requires backend infrastructure)
             Row(
-                verticalAlignment     = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.PersonAdd, null,
-                        tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                        Icons.Default.PersonAdd,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -513,7 +530,8 @@ private fun TeamMembersCard(user: Organization) {
                     )
                 }
                 Icon(
-                    Icons.Default.ChevronRight, null,
+                    Icons.Default.ChevronRight,
+                    null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -531,26 +549,27 @@ private fun MemberRow(
     onTint: Color
 ) {
     Row(
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
-            modifier         = Modifier
+            modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(tint),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.Default.Person, null,
-                tint     = onTint,
+                Icons.Default.Person,
+                null,
+                tint = onTint,
                 modifier = Modifier.size(20.dp)
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 name,
-                style      = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
@@ -562,8 +581,8 @@ private fun MemberRow(
         Surface(shape = RoundedCornerShape(4.dp), color = tint) {
             Text(
                 badge,
-                style    = MaterialTheme.typography.labelSmall,
-                color    = onTint,
+                style = MaterialTheme.typography.labelSmall,
+                color = onTint,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
         }
@@ -614,15 +633,15 @@ private fun DeleteAccountDialog(
         dismissible = !isLoading
     ) {
         ClearChainTextField(
-            value         = password,
+            value = password,
             onValueChange = { password = it },
-            label         = stringResource(R.string.label_confirm_password),
-            keyboardType  = KeyboardType.Password,
-            imeAction     = ImeAction.Done,
-            isPassword    = true,
+            label = stringResource(R.string.label_confirm_password),
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            isPassword = true,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            modifier      = Modifier.fillMaxWidth(),
-            enabled       = !isLoading
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isLoading
         )
     }
 }

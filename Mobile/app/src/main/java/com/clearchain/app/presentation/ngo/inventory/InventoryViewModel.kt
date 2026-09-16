@@ -119,8 +119,11 @@ class InventoryViewModel @Inject constructor(
                 _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
             is InventoryEvent.ToggleItemSelection ->
                 _state.update {
-                    val updated = if (event.itemId in it.selectedIds)
-                        it.selectedIds - event.itemId else it.selectedIds + event.itemId
+                    val updated = if (event.itemId in it.selectedIds) {
+                        it.selectedIds - event.itemId
+                    } else {
+                        it.selectedIds + event.itemId
+                    }
                     it.copy(selectedIds = updated, isSelectionMode = updated.isNotEmpty())
                 }
             InventoryEvent.SelectAll ->
@@ -136,11 +139,11 @@ class InventoryViewModel @Inject constructor(
             InventoryEvent.ShowManualAddSheet -> _state.update { it.copy(showManualAddSheet = true) }
             InventoryEvent.HideManualAddSheet -> _state.update { it.copy(showManualAddSheet = false) }
             is InventoryEvent.ManualProductNameChanged -> _state.update { it.copy(manualProductName = event.name) }
-            is InventoryEvent.ManualCategoryChanged    -> _state.update { it.copy(manualCategory = event.category) }
-            is InventoryEvent.ManualQuantityChanged    -> _state.update { it.copy(manualQuantity = event.qty) }
-            is InventoryEvent.ManualUnitChanged        -> _state.update { it.copy(manualUnit = event.unit) }
-            is InventoryEvent.ManualExpiryDateChanged  -> _state.update { it.copy(manualExpiryDate = event.date) }
-            InventoryEvent.SubmitManualAdd             -> submitManualAdd()
+            is InventoryEvent.ManualCategoryChanged -> _state.update { it.copy(manualCategory = event.category) }
+            is InventoryEvent.ManualQuantityChanged -> _state.update { it.copy(manualQuantity = event.qty) }
+            is InventoryEvent.ManualUnitChanged -> _state.update { it.copy(manualUnit = event.unit) }
+            is InventoryEvent.ManualExpiryDateChanged -> _state.update { it.copy(manualExpiryDate = event.date) }
+            InventoryEvent.SubmitManualAdd -> submitManualAdd()
 
             InventoryEvent.ExportCsv -> exportCsv()
         }
@@ -161,8 +164,8 @@ class InventoryViewModel @Inject constructor(
                         fun esc(s: String) = if (s.contains(',') || s.contains('"')) "\"${s.replace("\"", "\"\"")}\"" else s
                         sb.appendLine(
                             "${esc(item.productName)},${esc(item.category)},${item.quantity},${esc(item.unit)}," +
-                            "${item.status.name},${item.receivedAt.take(10)},${item.expiryDate.take(10)}," +
-                            "${item.distributedAt?.take(10) ?: ""}"
+                                "${item.status.name},${item.receivedAt.take(10)},${item.expiryDate.take(10)}," +
+                                "${item.distributedAt?.take(10) ?: ""}"
                         )
                     }
                     val csv = sb.toString()
@@ -287,7 +290,7 @@ class InventoryViewModel @Inject constructor(
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { item ->
                 item.productName.lowercase().contains(query) ||
-                item.category.lowercase().contains(query)
+                    item.category.lowercase().contains(query)
             }
         }
 
@@ -295,7 +298,7 @@ class InventoryViewModel @Inject constructor(
         current.selectedCategory?.let { category ->
             filtered = filtered.filter { item ->
                 item.category.equals(category, ignoreCase = true) ||
-                item.category.lowercase().replace(" ", "_") == category.lowercase()
+                    item.category.lowercase().replace(" ", "_") == category.lowercase()
             }
         }
 
@@ -374,8 +377,16 @@ class InventoryViewModel @Inject constructor(
             _state.update { it.copy(isSubmittingManual = true) }
             // Manual add API not yet implemented — show success for now
             kotlinx.coroutines.delay(500)
-            _state.update { it.copy(isSubmittingManual = false, showManualAddSheet = false,
-                manualProductName = "", manualCategory = "", manualQuantity = "", manualExpiryDate = "") }
+            _state.update {
+                it.copy(
+                    isSubmittingManual = false,
+                    showManualAddSheet = false,
+                    manualProductName = "",
+                    manualCategory = "",
+                    manualQuantity = "",
+                    manualExpiryDate = ""
+                )
+            }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
             loadInventory()
         }

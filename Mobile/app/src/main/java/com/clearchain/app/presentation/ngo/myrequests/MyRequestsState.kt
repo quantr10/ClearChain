@@ -21,7 +21,7 @@ data class MyRequestsState(
         CommonSortOptions.NAME_ASC,
         CommonSortOptions.NAME_DESC,
         CommonSortOptions.EXPIRY_ASC,
-        CommonSortOptions.EXPIRY_DESC,
+        CommonSortOptions.EXPIRY_DESC
 
     ),
     val selectedStatus: String? = null,
@@ -54,10 +54,10 @@ data class MyRequestsState(
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
     val filterCategory: String? = null,
-    val filterPickupDatePreset: String? = null  // "TODAY"|"WEEK"|"MONTH"|"PAST"|null
+    val filterPickupDatePreset: String? = null // "TODAY"|"WEEK"|"MONTH"|"PAST"|null
 ) {
     val requests: List<PickupRequest> get() = filteredRequests
     val activeFilterCount: Int get() =
         (if (filterCategory != null) 1 else 0) +
-        (if (filterPickupDatePreset != null) 1 else 0)
+            (if (filterPickupDatePreset != null) 1 else 0)
 }

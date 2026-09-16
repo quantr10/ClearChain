@@ -38,32 +38,32 @@ fun ImpactSummaryRow(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier              = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment     = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         ImpactStatCell(
-            icon      = Icons.Default.Scale,
-            label     = stringResource(R.string.impact_food_saved),
-            value     = "${kgSaved}kg",
-            color     = BrandGreen,
-            modifier  = Modifier.weight(1f)
+            icon = Icons.Default.Scale,
+            label = stringResource(R.string.impact_food_saved),
+            value = "${kgSaved}kg",
+            color = BrandGreen,
+            modifier = Modifier.weight(1f)
         )
         VerticalDivider(modifier = Modifier.height(64.dp))
         ImpactStatCell(
-            icon      = Icons.Default.Restaurant,
-            label     = stringResource(R.string.impact_meals),
-            value     = "$mealsEstimate",
-            color     = MaterialTheme.colorScheme.tertiary,
-            modifier  = Modifier.weight(1f)
+            icon = Icons.Default.Restaurant,
+            label = stringResource(R.string.impact_meals),
+            value = "$mealsEstimate",
+            color = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.weight(1f)
         )
         VerticalDivider(modifier = Modifier.height(64.dp))
         ImpactStatCell(
-            icon      = Icons.Default.EnergySavingsLeaf,
-            label     = stringResource(R.string.impact_co2),
-            value     = "${co2EstimateKg}kg",
-            color     = BrandTeal,
-            modifier  = Modifier.weight(1f)
+            icon = Icons.Default.EnergySavingsLeaf,
+            label = stringResource(R.string.impact_co2),
+            value = "${co2EstimateKg}kg",
+            color = BrandTeal,
+            modifier = Modifier.weight(1f)
         )
     }
 }

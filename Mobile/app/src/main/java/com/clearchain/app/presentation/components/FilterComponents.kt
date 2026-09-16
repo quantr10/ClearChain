@@ -37,8 +37,11 @@ fun SearchBar(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val borderColor = if (isFocused) MaterialTheme.colorScheme.primary
-                      else MaterialTheme.colorScheme.outlineVariant
+    val borderColor = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
 
     BasicTextField(
         value = query,
@@ -60,7 +63,8 @@ fun SearchBar(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
-                    Icons.Default.Search, null,
+                    Icons.Default.Search,
+                    null,
                     Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -169,28 +173,31 @@ fun SortDropdown(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text  = stringResource(R.string.sort_by) + ": ",
+            text = stringResource(R.string.sort_by) + ": ",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(
             modifier = Modifier
-                .clickable { HapticUtils.tick(context); showSheet = true }
+                .clickable {
+                    HapticUtils.tick(context)
+                    showSheet = true
+                }
                 .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text       = stringResource(selectedSort.labelResId),
-                style      = MaterialTheme.typography.labelSmall,
+                text = stringResource(selectedSort.labelResId),
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
             Icon(
                 Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -198,7 +205,7 @@ fun SortDropdown(
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
-            sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
             Column(
                 modifier = Modifier
@@ -206,14 +213,14 @@ fun SortDropdown(
                     .padding(bottom = 24.dp)
             ) {
                 Text(
-                    text       = stringResource(R.string.sort_by),
-                    style      = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.sort_by),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier   = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 8.dp),
-                    textAlign  = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 sortOptions.forEach { option ->
                     val isSelected = selectedSort == option
@@ -227,15 +234,15 @@ fun SortDropdown(
                             }
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment     = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text  = stringResource(option.labelResId),
+                            text = stringResource(option.labelResId),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         RadioButton(
                             selected = isSelected,
-                            onClick  = {
+                            onClick = {
                                 HapticUtils.tick(context)
                                 onSortSelected(option)
                                 showSheet = false
@@ -382,9 +389,9 @@ fun ResultsCountAndSort(
             )
         }
         SortDropdown(
-            selectedSort   = selectedSort,
+            selectedSort = selectedSort,
             onSortSelected = onSortSelected,
-            sortOptions    = sortOptions
+            sortOptions = sortOptions
         )
     }
 }
@@ -397,14 +404,14 @@ data class FilterChipData(val value: String?, val label: String = "", @StringRes
 // ── COMMON SORT OPTIONS ──────────────────────────────────────────────────────
 
 object CommonSortOptions {
-    val CREATED_DATE_DESC      = SortOption("date_desc",        R.string.sort_newest)
-    val CREATED_DATE_ASC       = SortOption("date_asc",         R.string.sort_oldest)
-    val DISTRIBUTED_DATE_ASC   = SortOption("distributed_date", R.string.sort_newest)
-    val DISTRIBUTED_DATE_DESC  = SortOption("distributed_date", R.string.sort_oldest)
-    val NAME_ASC               = SortOption("name_asc",         R.string.sort_a_to_z)
-    val NAME_DESC              = SortOption("name_desc",        R.string.sort_z_to_a)
-    val EXPIRY_ASC             = SortOption("expiry_asc",       R.string.sort_expiring_soon)
-    val EXPIRY_DESC            = SortOption("expiry_desc",      R.string.sort_expiring_later)
-    val PICKUP_DATE_ASC        = SortOption("pickup_date_asc",  R.string.sort_oldest)
-    val PICKUP_DATE_DESC       = SortOption("pickup_date_desc", R.string.sort_newest)
+    val CREATED_DATE_DESC = SortOption("date_desc", R.string.sort_newest)
+    val CREATED_DATE_ASC = SortOption("date_asc", R.string.sort_oldest)
+    val DISTRIBUTED_DATE_ASC = SortOption("distributed_date", R.string.sort_newest)
+    val DISTRIBUTED_DATE_DESC = SortOption("distributed_date", R.string.sort_oldest)
+    val NAME_ASC = SortOption("name_asc", R.string.sort_a_to_z)
+    val NAME_DESC = SortOption("name_desc", R.string.sort_z_to_a)
+    val EXPIRY_ASC = SortOption("expiry_asc", R.string.sort_expiring_soon)
+    val EXPIRY_DESC = SortOption("expiry_desc", R.string.sort_expiring_later)
+    val PICKUP_DATE_ASC = SortOption("pickup_date_asc", R.string.sort_oldest)
+    val PICKUP_DATE_DESC = SortOption("pickup_date_desc", R.string.sort_newest)
 }

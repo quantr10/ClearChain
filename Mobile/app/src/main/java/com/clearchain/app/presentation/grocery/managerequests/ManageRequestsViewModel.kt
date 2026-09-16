@@ -107,10 +107,11 @@ class ManageRequestsViewModel @Inject constructor(
                 _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
             is ManageRequestsEvent.ToggleItemSelection ->
                 _state.update {
-                    val updated = if (event.requestId in it.selectedIds)
+                    val updated = if (event.requestId in it.selectedIds) {
                         it.selectedIds - event.requestId
-                    else
+                    } else {
                         it.selectedIds + event.requestId
+                    }
                     it.copy(selectedIds = updated)
                 }
             ManageRequestsEvent.SelectAll ->
@@ -159,7 +160,11 @@ class ManageRequestsViewModel @Inject constructor(
         viewModelScope.launch {
             val reputations = ngoIds.map { id ->
                 async {
-                    try { id to organizationApi.getNgoReputation(id).data } catch (_: Exception) { null }
+                    try {
+                        id to organizationApi.getNgoReputation(id).data
+                    } catch (_: Exception) {
+                        null
+                    }
                 }
             }.mapNotNull { it.await() }.toMap()
             _state.update { it.copy(ngoReputations = reputations) }
@@ -188,14 +193,14 @@ class ManageRequestsViewModel @Inject constructor(
         current.filterPickupDatePreset?.let { preset ->
             val today = java.time.LocalDate.now()
             filtered = when (preset) {
-                "today"     -> filtered.filter { it.pickupDate.take(10) == today.toString() }
+                "today" -> filtered.filter { it.pickupDate.take(10) == today.toString() }
                 "this_week" -> filtered.filter {
                     runCatching {
                         val d = java.time.LocalDate.parse(it.pickupDate.take(10))
                         !d.isBefore(today) && !d.isAfter(today.plusDays(6))
                     }.getOrDefault(false)
                 }
-                "next_30"   -> filtered.filter {
+                "next_30" -> filtered.filter {
                     runCatching {
                         val d = java.time.LocalDate.parse(it.pickupDate.take(10))
                         !d.isBefore(today) && !d.isAfter(today.plusDays(29))
@@ -206,11 +211,11 @@ class ManageRequestsViewModel @Inject constructor(
         }
 
         filtered = when (current.selectedSort.value) {
-            "date_desc"        -> filtered.sortedByDescending { it.createdAt }
-            "date_asc"         -> filtered.sortedBy { it.createdAt }
-            "pickup_date_asc"  -> filtered.sortedBy { it.pickupDate }
+            "date_desc" -> filtered.sortedByDescending { it.createdAt }
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            "pickup_date_asc" -> filtered.sortedBy { it.pickupDate }
             "pickup_date_desc" -> filtered.sortedByDescending { it.pickupDate }
-            else               -> filtered
+            else -> filtered
         }
 
         _state.update { it.copy(filteredRequests = filtered) }
@@ -219,7 +224,10 @@ class ManageRequestsViewModel @Inject constructor(
     private fun approveRequest(requestId: String) {
         viewModelScope.launch {
             approvePickupRequestUseCase(requestId).fold(
-                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved))); loadRequests() },
+                onSuccess = {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved)))
+                    loadRequests()
+                },
                 onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to approve") } }
             )
         }
@@ -228,7 +236,10 @@ class ManageRequestsViewModel @Inject constructor(
     private fun rejectRequest(requestId: String) {
         viewModelScope.launch {
             cancelPickupRequestUseCase(requestId).fold(
-                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected))); loadRequests() },
+                onSuccess = {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected)))
+                    loadRequests()
+                },
                 onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to reject") } }
             )
         }
@@ -237,7 +248,10 @@ class ManageRequestsViewModel @Inject constructor(
     private fun markReadyForPickup(requestId: String) {
         viewModelScope.launch {
             markReadyForPickupUseCase(requestId).fold(
-                onSuccess = { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_marked_ready))); loadRequests() },
+                onSuccess = {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_marked_ready)))
+                    loadRequests()
+                },
                 onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to mark as ready") } }
             )
         }

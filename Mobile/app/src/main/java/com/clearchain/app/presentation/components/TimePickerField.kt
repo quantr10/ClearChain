@@ -42,10 +42,16 @@ fun TimePickerField(
     )
 
     val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
-    val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface
-        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    val iconTint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    val iconTint = if (enabled) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (label.isNotEmpty()) {
@@ -75,8 +81,11 @@ fun TimePickerField(
                     text = value,
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (value.isNotBlank()) contentColor
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    color = if (value.isNotBlank()) {
+                        contentColor
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    }
                 )
                 if (value.isNotBlank()) {
                     IconButton(

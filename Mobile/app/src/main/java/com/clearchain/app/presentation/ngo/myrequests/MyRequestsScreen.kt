@@ -40,7 +40,7 @@ fun MyRequestsScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    var showChecklistForId   by remember { mutableStateOf<String?>(null) }
+    var showChecklistForId by remember { mutableStateOf<String?>(null) }
     var showPhotoPickerForId by remember { mutableStateOf<String?>(null) }
     var showFullPhotoUrl by remember { mutableStateOf<String?>(null) }
     val uploadMessage = if (state.isUploading) {
@@ -49,7 +49,9 @@ fun MyRequestsScreen(
         } else {
             stringResource(R.string.uploading_photo)
         }
-    } else null
+    } else {
+        null
+    }
     SnackbarMessageEffect(snackbarHostState, uploadMessage)
 
     LaunchedEffect(Unit) {
@@ -80,146 +82,149 @@ fun MyRequestsScreen(
     // Rate & Review dialog
     state.showReviewDialogForId?.let { requestId ->
         ReviewDialog(
-            rating          = state.reviewRating,
-            comment         = state.reviewComment,
-            isSubmitting    = state.isSubmittingReview,
-            onRatingChange  = { viewModel.onEvent(MyRequestsEvent.ReviewRatingChanged(it)) },
+            rating = state.reviewRating,
+            comment = state.reviewComment,
+            isSubmitting = state.isSubmittingReview,
+            onRatingChange = { viewModel.onEvent(MyRequestsEvent.ReviewRatingChanged(it)) },
             onCommentChange = { viewModel.onEvent(MyRequestsEvent.ReviewCommentChanged(it)) },
-            onSubmit        = { viewModel.onEvent(MyRequestsEvent.SubmitReview) },
-            onDismiss       = { viewModel.onEvent(MyRequestsEvent.DismissReviewDialog) }
+            onSubmit = { viewModel.onEvent(MyRequestsEvent.SubmitReview) },
+            onDismiss = { viewModel.onEvent(MyRequestsEvent.DismissReviewDialog) }
         )
     }
 
     if (state.showFilterSheet) {
         MyRequestsFilterSheet(
-            state     = state,
-            onEvent   = viewModel::onEvent,
+            state = state,
+            onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(MyRequestsEvent.HideFilterSheet) }
         )
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-
-                        // -- Upload loading banner --------------------------
-                        // -- Upload error banner + retry --------------------
-                        AnimatedVisibility(
-                            visible = state.uploadError != null,
-                            enter   = fadeIn(),
-                            exit    = fadeOut()
+                // -- Upload loading banner --------------------------
+                // -- Upload error banner + retry --------------------
+                AnimatedVisibility(
+                    visible = state.uploadError != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                         ) {
-                            Column {
-                                Row(
-                                    modifier              = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                            ClearChainOutlinedButton(
+                                text = stringResource(R.string.close),
+                                onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }
+                            )
+                            if (state.uploadAttempts < 3) {
+                                ClearChainButton(
+                                    text = stringResource(R.string.retry),
+                                    onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) },
+                                    fillMaxWidth = false,
+                                    icon = Icons.Default.Refresh
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ListScreenHeader {
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.hint_search_by_item_grocery)
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            }
+                        ) {
+                            ClearChainActionIconButton(
+                                icon = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.advanced_filters),
+                                onClick = { viewModel.onEvent(MyRequestsEvent.ShowFilterSheet) }
+                            )
+                        }
+                    }
+
+                    FilterChipsRow(
+                        filters = state.availableStatusFilters,
+                        selectedFilter = state.selectedStatus,
+                        onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) }
+                    )
+
+                    ResultsCountAndSort(
+                        count = state.filteredRequests.size,
+                        itemName = "request",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when {
+                        state.isLoading && state.allRequests.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
+
+                        state.error != null && state.allRequests.isEmpty() -> {
+                            EmptyState(
+                                icon = Icons.Default.ErrorOutline,
+                                title = stringResource(R.string.error_generic),
+                                subtitle = state.error,
+                                actionLabel = stringResource(R.string.retry),
+                                onAction = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
+                            )
+                        }
+
+                        state.filteredRequests.isEmpty() -> {
+                            EmptyState(
+                                icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
+                                title = if (state.allRequests.isEmpty()) {
+                                    stringResource(R.string.empty_no_pickup_requests)
+                                } else {
+                                    stringResource(R.string.empty_no_requests_filter)
+                                },
+                                subtitle = if (state.allRequests.isEmpty()) {
+                                    stringResource(R.string.empty_requests_ngo_subtitle)
+                                } else {
+                                    stringResource(R.string.empty_try_filters)
+                                }
+                            )
+                        }
+
+                        else -> {
+                            HapticPullToRefreshBox(
+                                isRefreshing = state.isRefreshing,
+                                onRefresh = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
+                            ) {
+                                LazyColumn(
+                                    contentPadding = ScreenPadding,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    ClearChainOutlinedButton(
-                                        text = stringResource(R.string.close),
-                                        onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }
-                                    )
-                                    if (state.uploadAttempts < 3) {
-                                        ClearChainButton(
-                                            text = stringResource(R.string.retry),
-                                            onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) },
-                                            fillMaxWidth = false,
-                                            icon = Icons.Default.Refresh
+                                    items(state.filteredRequests, key = { it.id }) { request ->
+                                        RequestCardWithExtras(
+                                            request = request,
+                                            onCardClick = { onNavigateToRequestDetail(request.id) },
+                                            onCancel = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
+                                            onConfirmPickup = { showChecklistForId = it },
+                                            onViewPhoto = { showFullPhotoUrl = it },
+                                            onReview = { viewModel.onEvent(MyRequestsEvent.ShowReviewDialog(it)) },
+                                            onDispute = { viewModel.onEvent(MyRequestsEvent.DisputeRequest(it)) },
+                                            onDownloadReceipt = { viewModel.onEvent(MyRequestsEvent.GenerateReceipt(it)) }
                                         )
                                     }
-                                }
-                            }
-                        }
 
-                        ListScreenHeader {
-                        ListHeaderSearchRow(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.hint_search_by_item_grocery)
-                        ) {
-                            BadgedBox(
-                                badge = {
-                                    if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
-                                }
-                            ) {
-                                ClearChainActionIconButton(
-                                    icon               = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.advanced_filters),
-                                    onClick            = { viewModel.onEvent(MyRequestsEvent.ShowFilterSheet) }
-                                )
-                            }
-                        }
-
-                        FilterChipsRow(
-                            filters = state.availableStatusFilters,
-                            selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) }
-                        )
-
-                        ResultsCountAndSort(
-                            count = state.filteredRequests.size,
-                            itemName = "request",
-                            selectedSort = state.selectedSort,
-                            onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
-                            sortOptions = state.availableSortOptions
-                        )
-                        }
-
-                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        when {
-                            state.isLoading && state.allRequests.isEmpty() -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
-
-                            state.error != null && state.allRequests.isEmpty() -> {
-                                EmptyState(
-                                    icon = Icons.Default.ErrorOutline,
-                                    title = stringResource(R.string.error_generic),
-                                    subtitle = state.error,
-                                    actionLabel = stringResource(R.string.retry),
-                                    onAction = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
-                                )
-                            }
-
-                            state.filteredRequests.isEmpty() -> {
-                                EmptyState(
-                                    icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
-                                    title = if (state.allRequests.isEmpty()) stringResource(R.string.empty_no_pickup_requests)
-                                    else stringResource(R.string.empty_no_requests_filter),
-                                    subtitle = if (state.allRequests.isEmpty())
-                                        stringResource(R.string.empty_requests_ngo_subtitle)
-                                    else stringResource(R.string.empty_try_filters)
-                                )
-                            }
-
-                            else -> {
-                                HapticPullToRefreshBox(
-                                    isRefreshing = state.isRefreshing,
-                                    onRefresh = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
-                                ) {
-                                    LazyColumn(
-                                        contentPadding = ScreenPadding,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(state.filteredRequests, key = { it.id }) { request ->
-                                            RequestCardWithExtras(
-                                                request  = request,
-                                                onCardClick     = { onNavigateToRequestDetail(request.id) },
-                                                onCancel        = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
-                                                onConfirmPickup = { showChecklistForId = it },
-                                                onViewPhoto     = { showFullPhotoUrl = it },
-                                                onReview        = { viewModel.onEvent(MyRequestsEvent.ShowReviewDialog(it)) },
-                                                onDispute       = { viewModel.onEvent(MyRequestsEvent.DisputeRequest(it)) },
-                                                onDownloadReceipt = { viewModel.onEvent(MyRequestsEvent.GenerateReceipt(it)) }
-                                            )
-                                        }
-
-                                        item { Spacer(Modifier.height(16.dp)) }
-                                    }
+                                    item { Spacer(Modifier.height(16.dp)) }
                                 }
                             }
                         }
@@ -227,12 +232,16 @@ fun MyRequestsScreen(
                 }
             }
         }
+    }
 
     // Step 1 - Checklist verification
     showChecklistForId?.let { requestId ->
         PickupChecklistSheet(
             onDismiss = { showChecklistForId = null },
-            onNext    = { showChecklistForId = null; showPhotoPickerForId = requestId }
+            onNext = {
+                showChecklistForId = null
+                showPhotoPickerForId = requestId
+            }
         )
     }
 
@@ -258,14 +267,14 @@ fun MyRequestsScreen(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun MyRequestsFilterSheet(
-    state:     MyRequestsState,
-    onEvent:   (MyRequestsEvent) -> Unit,
+    state: MyRequestsState,
+    onEvent: (MyRequestsEvent) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier            = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
@@ -273,9 +282,9 @@ private fun MyRequestsFilterSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.advanced_filters),
@@ -294,22 +303,24 @@ private fun MyRequestsFilterSheet(
             FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = state.filterCategory == null,
-                        onClick  = { onEvent(MyRequestsEvent.FilterCategoryChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
+                        onClick = { onEvent(MyRequestsEvent.FilterCategoryChanged(null)) },
+                        label = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { category ->
                         FilterChip(
                             selected = state.filterCategory == category.name,
-                            onClick  = {
-                                onEvent(MyRequestsEvent.FilterCategoryChanged(
-                                    if (state.filterCategory == category.name) null else category.name
-                                ))
+                            onClick = {
+                                onEvent(
+                                    MyRequestsEvent.FilterCategoryChanged(
+                                        if (state.filterCategory == category.name) null else category.name
+                                    )
+                                )
                             },
-                            label    = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) }
+                            label = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -319,23 +330,25 @@ private fun MyRequestsFilterSheet(
             FilterSection(title = stringResource(R.string.filter_pickup_date)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        null    to stringResource(R.string.filter_any),
+                        null to stringResource(R.string.filter_any),
                         "TODAY" to stringResource(R.string.preset_today),
-                        "WEEK"  to stringResource(R.string.preset_this_week),
+                        "WEEK" to stringResource(R.string.preset_this_week),
                         "MONTH" to stringResource(R.string.preset_this_month),
-                        "PAST"  to stringResource(R.string.filter_past)
+                        "PAST" to stringResource(R.string.filter_past)
                     ).forEach { (preset, label) ->
                         FilterChip(
                             selected = state.filterPickupDatePreset == preset,
-                            onClick  = {
-                                onEvent(MyRequestsEvent.FilterPickupDatePresetChanged(
-                                    if (state.filterPickupDatePreset == preset) null else preset
-                                ))
+                            onClick = {
+                                onEvent(
+                                    MyRequestsEvent.FilterPickupDatePresetChanged(
+                                        if (state.filterPickupDatePreset == preset) null else preset
+                                    )
+                                )
                             },
-                            label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -356,26 +369,26 @@ private fun MyRequestsFilterSheet(
 
 @Composable
 private fun RequestCardWithExtras(
-    request:          PickupRequest,
-    onCardClick:      () -> Unit,
-    onCancel:         (String) -> Unit,
-    onConfirmPickup:  (String) -> Unit,
-    onViewPhoto:      (String) -> Unit,
-    onReview:         (String) -> Unit,
-    onDispute:        (String) -> Unit,
+    request: PickupRequest,
+    onCardClick: () -> Unit,
+    onCancel: (String) -> Unit,
+    onConfirmPickup: (String) -> Unit,
+    onViewPhoto: (String) -> Unit,
+    onReview: (String) -> Unit,
+    onDispute: (String) -> Unit,
     onDownloadReceipt: (String) -> Unit = {}
 ) {
     Card(
-        shape    = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         RequestCard(
-            request         = request,
-            modifier        = Modifier.clickable { onCardClick() },
-            viewMode        = RequestViewMode.NGO,
-            onCancel        = onCancel,
+            request = request,
+            modifier = Modifier.clickable { onCardClick() },
+            viewMode = RequestViewMode.NGO,
+            onCancel = onCancel,
             onConfirmPickup = onConfirmPickup,
-            onViewPhoto     = onViewPhoto
+            onViewPhoto = onViewPhoto
         )
     }
 }
@@ -386,13 +399,13 @@ private fun RequestCardWithExtras(
 
 @Composable
 private fun ReviewDialog(
-    rating:          Int,
-    comment:         String,
-    isSubmitting:    Boolean,
-    onRatingChange:  (Int) -> Unit,
+    rating: Int,
+    comment: String,
+    isSubmitting: Boolean,
+    onRatingChange: (Int) -> Unit,
     onCommentChange: (String) -> Unit,
-    onSubmit:        () -> Unit,
-    onDismiss:       () -> Unit
+    onSubmit: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     ConfirmDialog(
         onDismiss = onDismiss,
@@ -409,50 +422,50 @@ private fun ReviewDialog(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Star rating row
             Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    (1..5).forEach { star ->
-                        IconButton(onClick = { onRatingChange(star) }) {
-                            Icon(
-                                imageVector = if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = stringResource(R.string.cd_star_n, star),
-                                tint   = if (star <= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                (1..5).forEach { star ->
+                    IconButton(onClick = { onRatingChange(star) }) {
+                        Icon(
+                            imageVector = if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = stringResource(R.string.cd_star_n, star),
+                            tint = if (star <= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(32.dp)
+                        )
                     }
                 }
-                Text(
-                    text  = when (rating) {
-                        1 -> stringResource(R.string.review_rating_poor)
-                        2 -> stringResource(R.string.review_rating_below_avg)
-                        3 -> stringResource(R.string.review_rating_average)
-                        4 -> stringResource(R.string.review_rating_good)
-                        5 -> stringResource(R.string.review_rating_excellent)
-                        else -> ""
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                OutlinedTextField(
-                    value         = comment,
-                    onValueChange = onCommentChange,
-                    label         = {
-                        OptionalFieldLabel(
-                            text = stringResource(R.string.label_comments_optional),
-                            isOptional = true
-                        )
-                    },
-                    placeholder   = { Text(stringResource(R.string.hint_pickup_experience)) },
-                    singleLine    = false,
-                    maxLines      = 4,
-                    modifier      = Modifier.fillMaxWidth(),
-                    enabled       = !isSubmitting
-                )
             }
+            Text(
+                text = when (rating) {
+                    1 -> stringResource(R.string.review_rating_poor)
+                    2 -> stringResource(R.string.review_rating_below_avg)
+                    3 -> stringResource(R.string.review_rating_average)
+                    4 -> stringResource(R.string.review_rating_good)
+                    5 -> stringResource(R.string.review_rating_excellent)
+                    else -> ""
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            OutlinedTextField(
+                value = comment,
+                onValueChange = onCommentChange,
+                label = {
+                    OptionalFieldLabel(
+                        text = stringResource(R.string.label_comments_optional),
+                        isOptional = true
+                    )
+                },
+                placeholder = { Text(stringResource(R.string.hint_pickup_experience)) },
+                singleLine = false,
+                maxLines = 4,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSubmitting
+            )
         }
+    }
 }

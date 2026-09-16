@@ -78,7 +78,7 @@ class NotificationRepositoryImpl @Inject constructor(
             System.currentTimeMillis() - retention.retentionDays * MILLIS_PER_DAY
         )
 
-        Log.d(TAG, "Synced $synced notifications ($unreadCount unread) over ${page} page(s)")
+        Log.d(TAG, "Synced $synced notifications ($unreadCount unread) over $page page(s)")
         Result.success(retention)
     } catch (e: Exception) {
         // Offline is normal here — the cached inbox stays on screen.

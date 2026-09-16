@@ -37,12 +37,17 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val lockoutMessage = if (state.isLockedOut) {
         stringResource(R.string.msg_account_locked, state.lockoutMinutes)
-    } else null
+    } else {
+        null
+    }
 
     SnackbarMessageEffect(snackbarHostState, lockoutMessage)
     var formVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { delay(150); formVisible = true }
+    LaunchedEffect(Unit) {
+        delay(150)
+        formVisible = true
+    }
 
     LaunchedEffect(true) {
         viewModel.uiEvent.collect { event ->
@@ -59,7 +64,7 @@ fun LoginScreen(
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -72,44 +77,44 @@ fun LoginScreen(
 
             AnimatedVisibility(
                 visible = formVisible,
-                enter   = fadeIn() + slideInVertically { it / 4 }
+                enter = fadeIn() + slideInVertically { it / 4 }
             ) {
                 Column(
                     modifier = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text       = stringResource(R.string.sign_in_to_account),
-                        style      = MaterialTheme.typography.titleLarge,
+                        text = stringResource(R.string.sign_in_to_account),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
 
                     ClearChainTextField(
-                        value         = state.email,
+                        value = state.email,
                         onValueChange = { viewModel.onEvent(LoginEvent.EmailChanged(it)) },
-                        label         = stringResource(R.string.email_address),
-                        placeholder   = stringResource(R.string.hint_email_you),
-                        leadingIcon   = Icons.Default.Email,
-                        keyboardType  = KeyboardType.Email,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.emailError != null,
-                        errorMessage  = state.emailError,
-                        enabled       = !state.isLoading && !state.isLockedOut
+                        label = stringResource(R.string.email_address),
+                        placeholder = stringResource(R.string.hint_email_you),
+                        leadingIcon = Icons.Default.Email,
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next,
+                        isError = state.emailError != null,
+                        errorMessage = state.emailError,
+                        enabled = !state.isLoading && !state.isLockedOut
                     )
 
                     ClearChainTextField(
-                        value         = state.password,
+                        value = state.password,
                         onValueChange = { viewModel.onEvent(LoginEvent.PasswordChanged(it)) },
-                        label         = stringResource(R.string.password),
-                        placeholder   = stringResource(R.string.enter_password),
-                        leadingIcon   = Icons.Default.Lock,
-                        keyboardType  = KeyboardType.Password,
-                        imeAction     = ImeAction.Done,
-                        onImeAction   = { if (!state.isLockedOut) viewModel.onEvent(LoginEvent.Login) },
-                        isPassword    = true,
-                        isError       = state.passwordError != null,
-                        errorMessage  = state.passwordError,
-                        enabled       = !state.isLoading && !state.isLockedOut
+                        label = stringResource(R.string.password),
+                        placeholder = stringResource(R.string.enter_password),
+                        leadingIcon = Icons.Default.Lock,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        onImeAction = { if (!state.isLockedOut) viewModel.onEvent(LoginEvent.Login) },
+                        isPassword = true,
+                        isError = state.passwordError != null,
+                        errorMessage = state.passwordError,
+                        enabled = !state.isLoading && !state.isLockedOut
                     )
 
                     // ── Remember me + Forgot password row ────────────────────
@@ -129,7 +134,7 @@ fun LoginScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text  = stringResource(R.string.remember_me),
+                                text = stringResource(R.string.remember_me),
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -141,17 +146,17 @@ fun LoginScreen(
 
                     // ── Lockout / system error banner ────────────────────────
                     ClearChainButton(
-                        text    = stringResource(R.string.sign_in),
+                        text = stringResource(R.string.sign_in),
                         onClick = { viewModel.onEvent(LoginEvent.Login) },
                         loading = state.isLoading,
-                        enabled = !state.isLoading && !state.isLockedOut
-                                && state.email.isNotBlank() && state.password.isNotBlank()
+                        enabled = !state.isLoading && !state.isLockedOut &&
+                            state.email.isNotBlank() && state.password.isNotBlank()
                     )
 
                     AuthDivider()
 
                     ClearChainOutlinedButton(
-                        text    = stringResource(R.string.create_new_account),
+                        text = stringResource(R.string.create_new_account),
                         onClick = { navController.navigate(Screen.Register.route) },
                         enabled = !state.isLoading,
                         fillMaxWidth = true

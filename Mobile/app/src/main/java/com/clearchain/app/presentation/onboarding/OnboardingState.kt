@@ -42,7 +42,7 @@ data class OnboardingState(
     val isSaving: Boolean = false,
     val error: String? = null,
     val addressLat: Double? = null,
-    val addressLng: Double? = null,
+    val addressLng: Double? = null
 ) {
     val canContinueStep1: Boolean
         get() = phone.isNotBlank() &&

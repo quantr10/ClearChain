@@ -41,9 +41,9 @@ data class NgoDashboardState(
 ) {
     val impact: ImpactMetrics get() {
         return ImpactMetrics(
-            kgSaved       = stats?.foodSaved ?: 0,
+            kgSaved = stats?.foodSaved ?: 0,
             mealsProvided = stats?.mealsEstimate ?: 0,
-            co2AvoidedKg  = stats?.co2EstimateKg ?: 0
+            co2AvoidedKg = stats?.co2EstimateKg ?: 0
         )
     }
     val weeklyProgress: Float get() =

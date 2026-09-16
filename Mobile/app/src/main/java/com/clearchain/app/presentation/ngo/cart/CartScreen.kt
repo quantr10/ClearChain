@@ -54,7 +54,7 @@ fun CartScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize()) {
-                    ListScreenHeader {
+                ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
                         onQueryChange = { viewModel.onEvent(CartEvent.SearchQueryChanged(it)) },
@@ -68,47 +68,47 @@ fun CartScreen(
                         onSortSelected = { viewModel.onEvent(CartEvent.SortOptionChanged(it)) },
                         sortOptions = state.availableSortOptions
                     )
-                    }
+                }
 
-                    Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        when {
-                            state.error != null && state.groups.all { it.items.isEmpty() } -> {
-                                EmptyState(
-                                    icon = Icons.Default.ErrorOutline,
-                                    title = stringResource(R.string.error_generic),
-                                    subtitle = state.error,
-                                    actionLabel = stringResource(R.string.retry),
-                                    onAction = { viewModel.onEvent(CartEvent.LoadCart) }
-                                )
-                            }
-                            state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                            visibleGroups.isEmpty() -> {
-                                EmptyState(
-                                    icon = Icons.Default.ShoppingCart,
-                                    title = stringResource(R.string.cart_empty_title),
-                                    subtitle = stringResource(R.string.cart_empty_subtitle)
-                                )
-                            }
-                            else -> {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = ScreenPadding,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(visibleGroups, key = { it.groceryId }) { group ->
-                                        CartGroupCard(
-                                            group = group,
-                                            state = state,
-                                            onEvent = viewModel::onEvent,
-                                            onListingClick = { listingId -> onNavigate(Screen.ListingDetail.createRoute(listingId)) },
-                                            onRequestPickup = { onNavigate(Screen.CartPickup.createRoute(group.groceryId)) }
-                                        )
-                                    }
-                                    item { Spacer(Modifier.height(16.dp)) }
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when {
+                        state.error != null && state.groups.all { it.items.isEmpty() } -> {
+                            EmptyState(
+                                icon = Icons.Default.ErrorOutline,
+                                title = stringResource(R.string.error_generic),
+                                subtitle = state.error,
+                                actionLabel = stringResource(R.string.retry),
+                                onAction = { viewModel.onEvent(CartEvent.LoadCart) }
+                            )
+                        }
+                        state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        visibleGroups.isEmpty() -> {
+                            EmptyState(
+                                icon = Icons.Default.ShoppingCart,
+                                title = stringResource(R.string.cart_empty_title),
+                                subtitle = stringResource(R.string.cart_empty_subtitle)
+                            )
+                        }
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = ScreenPadding,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(visibleGroups, key = { it.groceryId }) { group ->
+                                    CartGroupCard(
+                                        group = group,
+                                        state = state,
+                                        onEvent = viewModel::onEvent,
+                                        onListingClick = { listingId -> onNavigate(Screen.ListingDetail.createRoute(listingId)) },
+                                        onRequestPickup = { onNavigate(Screen.CartPickup.createRoute(group.groceryId)) }
+                                    )
                                 }
+                                item { Spacer(Modifier.height(16.dp)) }
                             }
                         }
                     }
+                }
             }
         }
     }

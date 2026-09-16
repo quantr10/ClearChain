@@ -27,7 +27,7 @@ object AppModule {
             ClearChainDatabase.DATABASE_NAME
         )
             .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
-            .fallbackToDestructiveMigration()  // last resort for versions without an explicit path
+            .fallbackToDestructiveMigration() // last resort for versions without an explicit path
             .build()
     }
 

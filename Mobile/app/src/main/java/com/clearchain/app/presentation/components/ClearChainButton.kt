@@ -139,15 +139,15 @@ fun ClearChainActionIconButton(
 ) {
     val context = LocalContext.current
     Surface(
-        onClick         = {
+        onClick = {
             if (enabled) {
                 HapticUtils.tick(context)
                 onClick()
             }
         },
-        modifier        = modifier.size(24.dp),
-        shape           = CircleShape,
-        color           = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        modifier = modifier.size(24.dp),
+        shape = CircleShape,
+        color = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(

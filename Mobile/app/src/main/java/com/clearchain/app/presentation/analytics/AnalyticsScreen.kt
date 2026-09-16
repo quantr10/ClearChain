@@ -53,7 +53,9 @@ class AnalyticsViewModel @Inject constructor(
     private val _state = MutableStateFlow(AnalyticsState())
     val state: StateFlow<AnalyticsState> = _state.asStateFlow()
 
-    init { loadAll() }
+    init {
+        loadAll()
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -78,7 +80,9 @@ class AnalyticsViewModel @Inject constructor(
                     .getOrDefault(emptyList())
                 val reputation = if (orgType == OrganizationType.NGO && user != null) {
                     runCatching { organizationApi.getNgoReputation(user.id).data }.getOrNull()
-                } else null
+                } else {
+                    null
+                }
                 _state.update {
                     it.copy(
                         stats = stats.data,
@@ -114,34 +118,34 @@ fun AnalyticsScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (state.isLoading && state.stats == null) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            } else {
-                HapticPullToRefreshBox(
-                    isRefreshing = state.isRefreshing,
-                    onRefresh = viewModel::refresh
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(ScreenPadding),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                if (state.isLoading && state.stats == null) {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                } else {
+                    HapticPullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = viewModel::refresh
                     ) {
-                        val s = state.stats
-                        if (s != null) {
-                            // Each role orders its own sections, the activity trend
-                            // included, so neither is stuck with the other's layout.
-                            if (state.orgType == OrganizationType.GROCERY) {
-                                GroceryAnalytics(s, state.activities)
-                            } else {
-                                NgoAnalytics(s, state.ngoReputation, state.activities)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(ScreenPadding),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val s = state.stats
+                            if (s != null) {
+                                // Each role orders its own sections, the activity trend
+                                // included, so neither is stuck with the other's layout.
+                                if (state.orgType == OrganizationType.GROCERY) {
+                                    GroceryAnalytics(s, state.activities)
+                                } else {
+                                    NgoAnalytics(s, state.ngoReputation, state.activities)
+                                }
                             }
+                            Spacer(Modifier.height(12.dp))
                         }
-                        Spacer(Modifier.height(12.dp))
                     }
                 }
-            }
             }
         }
     }
@@ -161,9 +165,9 @@ private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityIte
     AnalyticsSectionCard(stringResource(R.string.analytics_listings_overview)) {
         DonutChart(
             slices = listOf(
-                BarData(stringResource(R.string.status_active),  listingRing.open,     StatusColors.Available),
-                BarData(stringResource(R.string.stat_reserved),  listingRing.reserved, StatusColors.Reserved),
-                BarData(stringResource(R.string.status_expired), listingRing.expired,  StatusColors.Expired)
+                BarData(stringResource(R.string.status_active), listingRing.open, StatusColors.Available),
+                BarData(stringResource(R.string.stat_reserved), listingRing.reserved, StatusColors.Reserved),
+                BarData(stringResource(R.string.status_expired), listingRing.expired, StatusColors.Expired)
             ),
             centerValue = listingRing.total.toString(),
             centerLabel = stringResource(R.string.stat_total)
@@ -229,9 +233,9 @@ private fun NgoAnalytics(
     AnalyticsSectionCard(stringResource(R.string.analytics_inventory_status)) {
         DonutChart(
             slices = listOf(
-                BarData(stringResource(R.string.status_in_stock),    inventory.active,      StatusColors.Available),
+                BarData(stringResource(R.string.status_in_stock), inventory.active, StatusColors.Available),
                 BarData(stringResource(R.string.status_distributed), inventory.distributed, StatusColors.Distributed),
-                BarData(stringResource(R.string.status_expired),     inventory.expired,     StatusColors.Expired)
+                BarData(stringResource(R.string.status_expired), inventory.expired, StatusColors.Expired)
             ),
             centerValue = inventory.total.toString(),
             centerLabel = stringResource(R.string.stat_total)
@@ -281,12 +285,12 @@ private fun RequestStatusSection(status: RequestStatusCounts) {
     AnalyticsSectionCard(stringResource(R.string.section_request_status_breakdown)) {
         ColumnBarChart(
             bars = requestStatusBars(
-                pending   = status.pending,
-                approved  = status.approved,
-                ready     = status.ready,
+                pending = status.pending,
+                approved = status.approved,
+                ready = status.ready,
                 completed = status.completed,
                 cancelled = status.cancelled,
-                rejected  = status.rejected
+                rejected = status.rejected
             )
         )
     }
@@ -299,7 +303,7 @@ private fun RequestStatusSection(status: RequestStatusCounts) {
 private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate: Int) {
     AnalyticsSectionCard(stringResource(R.string.analytics_impact)) {
         ImpactSummaryRow(
-            kgSaved       = kgSaved,
+            kgSaved = kgSaved,
             mealsEstimate = mealsEstimate,
             co2EstimateKg = co2Estimate
         )

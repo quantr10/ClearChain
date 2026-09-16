@@ -62,157 +62,157 @@ fun AccountDetailScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-          ScreenTitleRow(
-              title = stringResource(R.string.title_account_details),
-              onBack = {
-                  if (state.isEditing) viewModel.onEvent(ProfileEvent.CancelEdit) else onNavigateBack()
-              },
-              modifier = Modifier.padding(horizontal = 16.dp)
-          )
-          Box(Modifier.weight(1f).fillMaxWidth()) {
-            when {
-                state.isLoading && user == null -> {
-                    CircularProgressIndicator(
-                        Modifier.align(Alignment.Center)
-                    )
-                }
-
-                user == null -> {
-                    EmptyState(
-                        icon = Icons.Default.ErrorOutline,
-                        title = stringResource(R.string.no_data),
-                        onAction = {}
-                    )
-                }
-
-                else -> {
-                    if (state.isEditing) {
-                        AccountDetailEditContent(
-                            state = state,
-                            onEvent = viewModel::onEvent
+            ScreenTitleRow(
+                title = stringResource(R.string.title_account_details),
+                onBack = {
+                    if (state.isEditing) viewModel.onEvent(ProfileEvent.CancelEdit) else onNavigateBack()
+                },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when {
+                    state.isLoading && user == null -> {
+                        CircularProgressIndicator(
+                            Modifier.align(Alignment.Center)
                         )
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(ScreenPadding),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OrganizationSummaryCard(
-                                user = user,
-                                averageRating = state.averageRating,
-                                reviewCount = state.reviewCount,
-                                onEdit = { viewModel.onEvent(ProfileEvent.StartEdit) }
+                    }
+
+                    user == null -> {
+                        EmptyState(
+                            icon = Icons.Default.ErrorOutline,
+                            title = stringResource(R.string.no_data),
+                            onAction = {}
+                        )
+                    }
+
+                    else -> {
+                        if (state.isEditing) {
+                            AccountDetailEditContent(
+                                state = state,
+                                onEvent = viewModel::onEvent
                             )
-
-                            if (!user.description.isNullOrBlank()) {
-                                AccountSectionCard(stringResource(R.string.about)) {
-                                    Text(
-                                        text = user.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            AccountSectionCard(stringResource(R.string.section_contact)) {
-                                CompactAccountDetailRow(
-                                    icon = Icons.Default.Email,
-                                    label = "",
-                                    value = user.email,
-                                    isAction = true
-                                ) {
-                                    context.startActivity(
-                                        Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${user.email}"))
-                                    )
-                                }
-                                CompactAccountDetailRow(
-                                    icon = Icons.Default.Phone,
-                                    label = "",
-                                    value = user.phone.ifBlank { stringResource(R.string.label_not_set) },
-                                    enabled = user.phone.isNotBlank(),
-                                    isAction = true
-                                ) {
-                                    context.startActivity(
-                                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
-                                    )
-                                }
-                            }
-
-                            AccountSectionCard(stringResource(R.string.section_location_hours)) {
-                                val addressParts = listOfNotNull(
-                                    user.address.substringBefore(',').trim().takeIf { it.isNotBlank() },
-                                    user.location.trim().takeIf { it.isNotBlank() },
-                                    user.state?.trim()?.takeIf { it.isNotBlank() },
-                                    user.zipCode?.trim()?.takeIf { it.isNotBlank() }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(ScreenPadding),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OrganizationSummaryCard(
+                                    user = user,
+                                    averageRating = state.averageRating,
+                                    reviewCount = state.reviewCount,
+                                    onEdit = { viewModel.onEvent(ProfileEvent.StartEdit) }
                                 )
-                                if (addressParts.isNotEmpty()) {
-                                    val fullAddress = addressParts.joinToString(", ")
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Home,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(14.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+
+                                if (!user.description.isNullOrBlank()) {
+                                    AccountSectionCard(stringResource(R.string.about)) {
                                         Text(
-                                            fullAddress,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        ClearChainActionIconButton(
-                                            icon = Icons.Default.Navigation,
-                                            contentDescription = stringResource(R.string.action_get_directions),
-                                            onClick = {
-                                                openInGoogleMaps(
-                                                    context,
-                                                    mapsQuery(user.latitude, user.longitude, fullAddress)
-                                                )
-                                            }
+                                            text = user.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-                                } else {
+                                }
+
+                                AccountSectionCard(stringResource(R.string.section_contact)) {
                                     CompactAccountDetailRow(
-                                        Icons.Default.Home,
+                                        icon = Icons.Default.Email,
+                                        label = "",
+                                        value = user.email,
+                                        isAction = true
+                                    ) {
+                                        context.startActivity(
+                                            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${user.email}"))
+                                        )
+                                    }
+                                    CompactAccountDetailRow(
+                                        icon = Icons.Default.Phone,
+                                        label = "",
+                                        value = user.phone.ifBlank { stringResource(R.string.label_not_set) },
+                                        enabled = user.phone.isNotBlank(),
+                                        isAction = true
+                                    ) {
+                                        context.startActivity(
+                                            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
+                                        )
+                                    }
+                                }
+
+                                AccountSectionCard(stringResource(R.string.section_location_hours)) {
+                                    val addressParts = listOfNotNull(
+                                        user.address.substringBefore(',').trim().takeIf { it.isNotBlank() },
+                                        user.location.trim().takeIf { it.isNotBlank() },
+                                        user.state?.trim()?.takeIf { it.isNotBlank() },
+                                        user.zipCode?.trim()?.takeIf { it.isNotBlank() }
+                                    )
+                                    if (addressParts.isNotEmpty()) {
+                                        val fullAddress = addressParts.joinToString(", ")
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Home,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                fullAddress,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            ClearChainActionIconButton(
+                                                icon = Icons.Default.Navigation,
+                                                contentDescription = stringResource(R.string.action_get_directions),
+                                                onClick = {
+                                                    openInGoogleMaps(
+                                                        context,
+                                                        mapsQuery(user.latitude, user.longitude, fullAddress)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    } else {
+                                        CompactAccountDetailRow(
+                                            Icons.Default.Home,
+                                            "",
+                                            stringResource(R.string.label_not_set)
+                                        )
+                                    }
+                                    CompactAccountDetailRow(
+                                        Icons.Default.Schedule,
                                         "",
-                                        stringResource(R.string.label_not_set)
+                                        user.hours ?: stringResource(R.string.label_not_set)
                                     )
                                 }
-                                CompactAccountDetailRow(
-                                    Icons.Default.Schedule,
-                                    "",
-                                    user.hours ?: stringResource(R.string.label_not_set)
-                                )
-                            }
 
-                            if (user.type == OrganizationType.GROCERY) {
-                                AccountSectionCard(
-                                    stringResource(R.string.onboarding_pickup_instructions_label)
-                                ) {
-                                    Text(
-                                        text = user.pickupInstructions
-                                            ?: stringResource(R.string.label_not_set),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                if (user.type == OrganizationType.GROCERY) {
+                                    AccountSectionCard(
+                                        stringResource(R.string.onboarding_pickup_instructions_label)
+                                    ) {
+                                        Text(
+                                            text = user.pickupInstructions
+                                                ?: stringResource(R.string.label_not_set),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
-                            }
 
-                            TeamMembersCard(user = user)
+                                TeamMembersCard(user = user)
+                            }
                         }
                     }
                 }
             }
-          }
         }
     }
 }

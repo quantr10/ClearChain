@@ -36,7 +36,7 @@ data class CreateListingState(
     val analysisError: String? = null,
 
     // Multi-image
-    val selectedImages: List<Uri> = emptyList(),  // first image is primary for upload
+    val selectedImages: List<Uri> = emptyList(), // first image is primary for upload
 
     // Draft & Preview
     val isPreviewMode: Boolean = false,

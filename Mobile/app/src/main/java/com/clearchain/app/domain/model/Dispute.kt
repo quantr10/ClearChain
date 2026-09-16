@@ -9,7 +9,7 @@ data class Dispute(
     val ngoStatement: String?,
     val groceryStatement: String?,
     val photoEvidenceUrl: String?,
-    val status: String,           // open, under_review, resolved_ngo, resolved_grocery, dismissed
+    val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String?,
     val createdAt: String,
     val resolvedAt: String?

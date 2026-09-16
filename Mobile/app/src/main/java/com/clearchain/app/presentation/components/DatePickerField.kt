@@ -36,18 +36,24 @@ fun DatePickerField(
 
     val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = 1.dp
-    val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface
-                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    val iconTint     = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                       else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    val iconTint = if (enabled) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+    }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (label.isNotEmpty()) {
             Text(
-                text       = label,
-                style      = MaterialTheme.typography.labelSmall,
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color      = contentColor
+                color = contentColor
             )
         }
         Box(
@@ -59,34 +65,41 @@ fun DatePickerField(
                 .padding(horizontal = 8.dp)
         ) {
             Row(
-                modifier              = Modifier.fillMaxSize(),
-                verticalAlignment     = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = iconTint)
                 Text(
-                    text     = value,
+                    text = value,
                     modifier = Modifier.weight(1f),
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = if (value.isNotBlank()) contentColor
-                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (value.isNotBlank()) {
+                        contentColor
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    }
                 )
                 if (value.isNotBlank() && onClearDate != null) {
                     IconButton(
-                        onClick  = { onClearDate() },
+                        onClick = { onClearDate() },
                         modifier = Modifier.size(18.dp)
                     ) {
-                        Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search),
-                            Modifier.size(14.dp), tint = iconTint)
+                        Icon(
+                            Icons.Default.Clear,
+                            stringResource(R.string.cd_clear_search),
+                            Modifier.size(14.dp),
+                            tint = iconTint
+                        )
                     }
                 }
             }
         }
         if (isError && errorMessage != null) {
             Text(
-                text     = errorMessage,
-                style    = MaterialTheme.typography.labelSmall,
-                color    = MaterialTheme.colorScheme.error,
+                text = errorMessage,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
@@ -95,7 +108,7 @@ fun DatePickerField(
     if (showPicker) {
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
-            confirmButton    = {
+            confirmButton = {
                 ClearChainOutlinedButton(
                     text = stringResource(R.string.ok),
                     onClick = {
@@ -109,7 +122,7 @@ fun DatePickerField(
                     }
                 )
             },
-            dismissButton    = {
+            dismissButton = {
                 ClearChainOutlinedButton(
                     text = stringResource(R.string.cancel),
                     onClick = { showPicker = false }

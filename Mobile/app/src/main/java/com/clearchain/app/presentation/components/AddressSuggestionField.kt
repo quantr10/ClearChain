@@ -162,7 +162,8 @@ fun AddressSuggestionField(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Place, null,
+                                    Icons.Default.Place,
+                                    null,
                                     Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )

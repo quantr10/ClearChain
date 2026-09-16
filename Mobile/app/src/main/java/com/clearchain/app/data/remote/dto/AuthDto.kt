@@ -146,8 +146,10 @@ fun OrganizationDto.toDomain(): Organization {
 fun AuthData.toDomain(): Pair<Organization, AuthTokens> {
     val organization = user.toDomain()
     val tokens = AuthTokens(
-        accessToken = accessToken, refreshToken = refreshToken,
-        expiresIn = expiresIn, tokenType = tokenType
+        accessToken = accessToken,
+        refreshToken = refreshToken,
+        expiresIn = expiresIn,
+        tokenType = tokenType
     )
     return Pair(organization, tokens)
 }

@@ -47,17 +47,17 @@ fun RegisterScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.Navigate     -> navController.navigate(event.route) {
+                is UiEvent.Navigate -> navController.navigate(event.route) {
                     popUpTo(Screen.Login.route) { inclusive = true }
                 }
-                is UiEvent.NavigateUp   -> navController.navigateUp()
-                is UiEvent.ShareFile    -> { }
+                is UiEvent.NavigateUp -> navController.navigateUp()
+                is UiEvent.ShareFile -> { }
             }
         }
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -70,37 +70,37 @@ fun RegisterScreen(
 
             AnimatedVisibility(
                 visible = true,
-                enter   = fadeIn() + slideInVertically { it / 4 }
+                enter = fadeIn() + slideInVertically { it / 4 }
             ) {
                 Column(
                     modifier = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text       = stringResource(R.string.join_clearchain),
-                        style      = MaterialTheme.typography.titleLarge,
+                        text = stringResource(R.string.join_clearchain),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
 
                     // ── Role picker ──────────────────────────────────────────
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RoleCard(
-                            icon     = Icons.Default.Store,
-                            title    = stringResource(R.string.role_grocery_title),
+                            icon = Icons.Default.Store,
+                            title = stringResource(R.string.role_grocery_title),
                             subtitle = stringResource(R.string.role_grocery_subtitle),
                             selected = state.type == "grocery",
-                            onClick  = { viewModel.onEvent(RegisterEvent.TypeChanged("grocery")) },
+                            onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("grocery")) },
                             modifier = Modifier.weight(1f),
-                            enabled  = !state.isLoading
+                            enabled = !state.isLoading
                         )
                         RoleCard(
-                            icon     = Icons.Default.VolunteerActivism,
-                            title    = stringResource(R.string.role_ngo_title),
+                            icon = Icons.Default.VolunteerActivism,
+                            title = stringResource(R.string.role_ngo_title),
                             subtitle = stringResource(R.string.role_ngo_subtitle),
                             selected = state.type == "ngo",
-                            onClick  = { viewModel.onEvent(RegisterEvent.TypeChanged("ngo")) },
+                            onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("ngo")) },
                             modifier = Modifier.weight(1f),
-                            enabled  = !state.isLoading
+                            enabled = !state.isLoading
                         )
                     }
 
@@ -108,26 +108,26 @@ fun RegisterScreen(
 
                     // ── Account fields ───────────────────────────────────────
                     ClearChainTextField(
-                        value         = state.name,
+                        value = state.name,
                         onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
-                        label         = stringResource(R.string.org_name_label),
-                        placeholder   = stringResource(R.string.org_name_placeholder),
-                        leadingIcon   = Icons.Default.Business,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.nameError != null,
-                        errorMessage  = state.nameError,
-                        enabled       = !state.isLoading
+                        label = stringResource(R.string.org_name_label),
+                        placeholder = stringResource(R.string.org_name_placeholder),
+                        leadingIcon = Icons.Default.Business,
+                        imeAction = ImeAction.Next,
+                        isError = state.nameError != null,
+                        errorMessage = state.nameError,
+                        enabled = !state.isLoading
                     )
 
                     // ── Email field with availability indicator ──────────────
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         ClearChainTextField(
-                            value         = state.email,
+                            value = state.email,
                             onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
-                            label         = stringResource(R.string.email_address),
-                            placeholder   = stringResource(R.string.hint_email_org),
-                            leadingIcon   = Icons.Default.Email,
-                            trailingIcon  = {
+                            label = stringResource(R.string.email_address),
+                            placeholder = stringResource(R.string.hint_email_org),
+                            leadingIcon = Icons.Default.Email,
+                            trailingIcon = {
                                 if (state.email.isNotEmpty()) {
                                     IconButton(
                                         onClick = { viewModel.onEvent(RegisterEvent.ClearEmail) },
@@ -142,28 +142,28 @@ fun RegisterScreen(
                                     }
                                 }
                             },
-                            keyboardType  = KeyboardType.Email,
-                            imeAction     = ImeAction.Next,
-                            isError       = state.emailError != null || state.emailAlreadyExists,
-                            errorMessage  = state.emailError,
-                            enabled       = !state.isLoading
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next,
+                            isError = state.emailError != null || state.emailAlreadyExists,
+                            errorMessage = state.emailError,
+                            enabled = !state.isLoading
                         )
                     }
 
                     // ── Password with strength meter ─────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         ClearChainTextField(
-                            value         = state.password,
+                            value = state.password,
                             onValueChange = { viewModel.onEvent(RegisterEvent.PasswordChanged(it)) },
-                            label         = stringResource(R.string.password),
-                            placeholder   = stringResource(R.string.password_placeholder),
-                            leadingIcon   = Icons.Default.Lock,
-                            keyboardType  = KeyboardType.Password,
-                            imeAction     = ImeAction.Next,
-                            isPassword    = true,
-                            isError       = state.passwordError != null,
-                            errorMessage  = state.passwordError,
-                            enabled       = !state.isLoading
+                            label = stringResource(R.string.password),
+                            placeholder = stringResource(R.string.password_placeholder),
+                            leadingIcon = Icons.Default.Lock,
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next,
+                            isPassword = true,
+                            isError = state.passwordError != null,
+                            errorMessage = state.passwordError,
+                            enabled = !state.isLoading
                         )
                         AnimatedVisibility(visible = state.passwordStrength != PasswordStrength.NONE) {
                             PasswordStrengthMeter(strength = state.passwordStrength)
@@ -171,18 +171,18 @@ fun RegisterScreen(
                     }
 
                     ClearChainTextField(
-                        value         = state.confirmPassword,
+                        value = state.confirmPassword,
                         onValueChange = { viewModel.onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
-                        label         = stringResource(R.string.confirm_password),
-                        placeholder   = stringResource(R.string.confirm_password_placeholder),
-                        leadingIcon   = Icons.Default.LockOpen,
-                        keyboardType  = KeyboardType.Password,
-                        imeAction     = ImeAction.Done,
-                        isPassword    = true,
-                        isError       = state.confirmPasswordError != null,
-                        errorMessage  = state.confirmPasswordError,
-                        onImeAction   = { viewModel.onEvent(RegisterEvent.Register) },
-                        enabled       = !state.isLoading
+                        label = stringResource(R.string.confirm_password),
+                        placeholder = stringResource(R.string.confirm_password_placeholder),
+                        leadingIcon = Icons.Default.LockOpen,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        isPassword = true,
+                        isError = state.confirmPasswordError != null,
+                        errorMessage = state.confirmPasswordError,
+                        onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
+                        enabled = !state.isLoading
                     )
 
                     // ── Terms of Service checkbox ────────────────────────────
@@ -204,8 +204,11 @@ fun RegisterScreen(
                                 enabled = !state.isLoading,
                                 modifier = Modifier.size(24.dp),
                                 colors = CheckboxDefaults.colors(
-                                    uncheckedColor = if (state.tosError) MaterialTheme.colorScheme.error
-                                                     else MaterialTheme.colorScheme.outline
+                                    uncheckedColor = if (state.tosError) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        MaterialTheme.colorScheme.outline
+                                    }
                                 )
                             )
                             Text(
@@ -227,7 +230,7 @@ fun RegisterScreen(
                         }
                         if (state.tosError) {
                             Text(
-                                text  = stringResource(R.string.must_accept_tos),
+                                text = stringResource(R.string.must_accept_tos),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(start = 32.dp)
@@ -236,21 +239,21 @@ fun RegisterScreen(
                     }
 
                     ClearChainButton(
-                        text    = stringResource(R.string.create_account),
+                        text = stringResource(R.string.create_account),
                         onClick = { viewModel.onEvent(RegisterEvent.Register) },
                         loading = state.isLoading,
-                        enabled = !state.isLoading
-                                && state.name.isNotBlank()
-                                && state.email.isNotBlank()
-                                && state.password.isNotBlank()
-                                && state.confirmPassword.isNotBlank()
-                                && state.tosAccepted
+                        enabled = !state.isLoading &&
+                            state.name.isNotBlank() &&
+                            state.email.isNotBlank() &&
+                            state.password.isNotBlank() &&
+                            state.confirmPassword.isNotBlank() &&
+                            state.tosAccepted
                     )
 
                     AuthDivider()
 
                     ClearChainOutlinedButton(
-                        text    = stringResource(R.string.sign_in),
+                        text = stringResource(R.string.sign_in),
                         onClick = { navController.navigateUp() },
                         enabled = !state.isLoading,
                         fillMaxWidth = true
@@ -265,14 +268,14 @@ fun RegisterScreen(
 
 @Composable
 private fun PasswordStrengthMeter(strength: PasswordStrength) {
-    val weakLabel   = stringResource(R.string.password_strength_weak)
+    val weakLabel = stringResource(R.string.password_strength_weak)
     val mediumLabel = stringResource(R.string.password_strength_medium)
     val strongLabel = stringResource(R.string.password_strength_strong)
     val (label, color, filledSegments) = when (strength) {
-        PasswordStrength.WEAK   -> Triple(weakLabel,   MaterialTheme.colorScheme.error, 1)
+        PasswordStrength.WEAK -> Triple(weakLabel, MaterialTheme.colorScheme.error, 1)
         PasswordStrength.MEDIUM -> Triple(mediumLabel, MaterialTheme.colorScheme.tertiary, 2)
         PasswordStrength.STRONG -> Triple(strongLabel, MaterialTheme.colorScheme.primary, 3)
-        else                    -> Triple("",           Color.Transparent, 0)
+        else -> Triple("", Color.Transparent, 0)
     }
 
     Row(
@@ -290,7 +293,7 @@ private fun PasswordStrengthMeter(strength: PasswordStrength) {
             )
         }
         Text(
-            text  = label,
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             color = color,
             modifier = Modifier.width(40.dp)
@@ -310,10 +313,16 @@ private fun RoleCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary
-                      else MaterialTheme.colorScheme.outlineVariant
-    val bgColor     = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                      else MaterialTheme.colorScheme.surface
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+    val bgColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
 
     Box(
         modifier = modifier
@@ -338,20 +347,26 @@ private fun RoleCard(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
-                tint = if (selected) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
             Text(
-                text       = title,
-                style      = MaterialTheme.typography.labelMedium,
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                textAlign  = TextAlign.Center,
-                modifier   = Modifier.fillMaxWidth(),
-                color      = if (selected) MaterialTheme.colorScheme.primary
-                             else MaterialTheme.colorScheme.onSurface
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
             Text(
-                text  = subtitle,
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),

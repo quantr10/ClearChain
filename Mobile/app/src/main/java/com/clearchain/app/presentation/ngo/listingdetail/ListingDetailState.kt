@@ -37,5 +37,5 @@ data class ListingDetailState(
 
     // Grocery: action states
     val isDeleting: Boolean = false,
-    val showDeleteConfirm: Boolean = false,
+    val showDeleteConfirm: Boolean = false
 )

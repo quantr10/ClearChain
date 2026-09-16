@@ -195,14 +195,14 @@ private fun DonutRing(
             visible.forEach { slice ->
                 val sweep = 360f * slice.value / total
                 drawArc(
-                    color      = slice.color,
+                    color = slice.color,
                     startAngle = startAngle,
                     // A 2-degree gap in place of a stroke keeps neighbouring slices apart.
                     sweepAngle = (sweep - 2f).coerceAtLeast(0.5f),
-                    useCenter  = false,
-                    style      = Stroke(width = strokeWidth),
-                    topLeft    = Offset(strokeWidth / 2, strokeWidth / 2),
-                    size       = Size(size.width - strokeWidth, size.height - strokeWidth)
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth),
+                    topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
+                    size = Size(size.width - strokeWidth, size.height - strokeWidth)
                 )
                 startAngle += sweep
             }
@@ -332,8 +332,11 @@ fun RateContent(
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp)),
             color = barColor
-                ?: if (percent >= goodThreshold) com.clearchain.app.ui.theme.BrandGreen
-                   else MaterialTheme.colorScheme.error,
+                ?: if (percent >= goodThreshold) {
+                    com.clearchain.app.ui.theme.BrandGreen
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
             drawStopIndicator = {}
         )
@@ -360,10 +363,10 @@ fun requestStatusBars(
     cancelled: Int,
     rejected: Int
 ): List<BarData> = listOf(
-    BarData(stringResource(R.string.status_pending),   pending,   StatusColors.Pending),
-    BarData(stringResource(R.string.status_approved),  approved,  StatusColors.Approved),
-    BarData(stringResource(R.string.status_ready),     ready,     StatusColors.Ready),
+    BarData(stringResource(R.string.status_pending), pending, StatusColors.Pending),
+    BarData(stringResource(R.string.status_approved), approved, StatusColors.Approved),
+    BarData(stringResource(R.string.status_ready), ready, StatusColors.Ready),
     BarData(stringResource(R.string.status_completed), completed, StatusColors.Completed),
     BarData(stringResource(R.string.status_cancelled), cancelled, StatusColors.Expired),
-    BarData(stringResource(R.string.status_rejected),  rejected,  StatusColors.Rejected)
+    BarData(stringResource(R.string.status_rejected), rejected, StatusColors.Rejected)
 )

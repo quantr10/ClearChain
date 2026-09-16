@@ -50,7 +50,6 @@ data class Organization(
      */
     fun requiresVerificationGate(): Boolean =
         type != OrganizationType.ADMIN && verificationStatus != VerificationStatus.APPROVED
-
 }
 
 @Serializable

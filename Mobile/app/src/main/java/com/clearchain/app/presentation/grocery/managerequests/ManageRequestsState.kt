@@ -21,7 +21,7 @@ data class ManageRequestsState(
         CommonSortOptions.EXPIRY_ASC,
         CommonSortOptions.EXPIRY_DESC,
         CommonSortOptions.NAME_ASC,
-        CommonSortOptions.NAME_DESC,
+        CommonSortOptions.NAME_DESC
     ),
     val selectedStatus: String? = null,
     val availableStatusFilters: List<FilterChipData> = listOf(
@@ -52,5 +52,5 @@ data class ManageRequestsState(
     val allSelected: Boolean get() = filteredRequests.isNotEmpty() && selectedIds.containsAll(filteredRequests.map { it.id })
     val activeFilterCount: Int get() =
         (if (filterCategory != null) 1 else 0) +
-        (if (filterPickupDatePreset != null) 1 else 0)
+            (if (filterPickupDatePreset != null) 1 else 0)
 }

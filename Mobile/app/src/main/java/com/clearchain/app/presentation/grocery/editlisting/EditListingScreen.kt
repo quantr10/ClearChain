@@ -47,14 +47,14 @@ fun EditListingScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.NavigateUp   -> navController.navigateUp()
+                is UiEvent.NavigateUp -> navController.navigateUp()
                 else -> Unit
             }
         }
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -63,266 +63,301 @@ fun EditListingScreen(
                 onBack = { navController.navigateUp() },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-          when {
-            state.isLoading -> Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            else -> Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(ScreenPadding),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                val busy = state.isSaving
-                val titleInvalid    = state.title.isBlank() || state.title.length < 3
-                val descInvalid     = state.description.isBlank()
-                val qtyInvalid      = (state.quantity.toIntOrNull() ?: 0) <= 0
-                val expiryInvalid   = state.expiryDate.isBlank()
-                val canSave = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
-
-                // ── Photo (read-only) ────────────────────────────────────────
-                if (state.imageUrl.isNotBlank()) {
-                    Card(
-                        modifier  = Modifier.fillMaxWidth(),
-                        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        AsyncImage(
-                            model              = state.imageUrl,
-                            contentDescription = null,
-                            modifier           = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+            when {
+                state.isLoading -> Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
+                    CircularProgressIndicator()
                 }
+                else -> Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(ScreenPadding),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val busy = state.isSaving
+                    val titleInvalid = state.title.isBlank() || state.title.length < 3
+                    val descInvalid = state.description.isBlank()
+                    val qtyInvalid = (state.quantity.toIntOrNull() ?: 0) <= 0
+                    val expiryInvalid = state.expiryDate.isBlank()
+                    val canSave = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
-                // ── Title ────────────────────────────────────────────────────
-                FieldCard(label = stringResource(R.string.label_title)) {
-                    ClearChainTextField(
-                        value         = state.title,
-                        onValueChange = { viewModel.onEvent(EditListingEvent.TitleChanged(it)) },
-                        placeholder   = stringResource(R.string.label_title_placeholder),
-                        leadingIcon   = Icons.Default.ShoppingCart,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.titleError != null,
-                        errorMessage  = state.titleError,
-                        enabled       = !busy
-                    )
-                }
-
-                // ── Description ──────────────────────────────────────────────
-                FieldCard(label = stringResource(R.string.label_description)) {
-                    ClearChainTextField(
-                        value         = state.description,
-                        onValueChange = { viewModel.onEvent(EditListingEvent.DescriptionChanged(it)) },
-                        placeholder   = stringResource(R.string.label_description_placeholder),
-                        leadingIcon   = Icons.Default.Description,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.descriptionError != null,
-                        errorMessage  = state.descriptionError,
-                        enabled       = !busy,
-                        singleLine    = false,
-                        minLines      = 2,
-                        maxLines      = 4
-                    )
-                }
-
-                // ── Category ─────────────────────────────────────────────────
-                FieldCard(label = stringResource(R.string.label_category)) {
-                    val iconTint  = if (!busy) MaterialTheme.colorScheme.onSurfaceVariant
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    val textColor = if (!busy) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    ExposedDropdownMenuBox(
-                        expanded         = state.showCategoryDropdown,
-                        onExpandedChange = { if (!busy) viewModel.onEvent(EditListingEvent.ToggleCategoryDropdown) }
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp)
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                                .menuAnchor()
-                                .padding(horizontal = 8.dp),
-                            verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // ── Photo (read-only) ────────────────────────────────────────
+                    if (state.imageUrl.isNotBlank()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
-                            Icon(Icons.Default.Category, null, Modifier.size(14.dp), tint = iconTint)
-                            Text(
-                                stringResource(FoodCategory.valueOf(state.category).labelResId),
-                                style    = MaterialTheme.typography.labelSmall,
-                                color    = textColor,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                if (state.showCategoryDropdown) Icons.Default.ArrowDropUp
-                                else Icons.Default.ArrowDropDown,
-                                null, Modifier.size(14.dp), tint = iconTint
+                            AsyncImage(
+                                model = state.imageUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
                             )
                         }
-                        ExposedDropdownMenu(
-                            expanded         = state.showCategoryDropdown,
-                            onDismissRequest = { viewModel.onEvent(EditListingEvent.ToggleCategoryDropdown) }
-                        ) {
-                            FoodCategory.entries.forEach { cat ->
-                                DropdownMenuItem(
-                                    text    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) },
-                                    onClick = { viewModel.onEvent(EditListingEvent.CategoryChanged(cat.name)) }
-                                )
-                            }
-                        }
                     }
-                }
 
-                // ── Quantity + Unit ──────────────────────────────────────────
-                FieldCard(label = stringResource(R.string.label_quantity_short)) {
-                    val iconTint  = if (!busy) MaterialTheme.colorScheme.onSurfaceVariant
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    val textColor = if (!busy) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    // ── Title ────────────────────────────────────────────────────
+                    FieldCard(label = stringResource(R.string.label_title)) {
                         ClearChainTextField(
-                            value         = state.quantity,
-                            onValueChange = { viewModel.onEvent(EditListingEvent.QuantityChanged(it)) },
-                            placeholder   = stringResource(R.string.hint_quantity_number),
-                            leadingIcon   = Icons.Default.Numbers,
-                            keyboardType  = KeyboardType.Number,
-                            imeAction     = ImeAction.Next,
-                            isError       = state.quantityError != null,
-                            errorMessage  = state.quantityError,
-                            enabled       = !busy,
-                            modifier      = Modifier.weight(1f)
+                            value = state.title,
+                            onValueChange = { viewModel.onEvent(EditListingEvent.TitleChanged(it)) },
+                            placeholder = stringResource(R.string.label_title_placeholder),
+                            leadingIcon = Icons.Default.ShoppingCart,
+                            imeAction = ImeAction.Next,
+                            isError = state.titleError != null,
+                            errorMessage = state.titleError,
+                            enabled = !busy
                         )
+                    }
+
+                    // ── Description ──────────────────────────────────────────────
+                    FieldCard(label = stringResource(R.string.label_description)) {
+                        ClearChainTextField(
+                            value = state.description,
+                            onValueChange = { viewModel.onEvent(EditListingEvent.DescriptionChanged(it)) },
+                            placeholder = stringResource(R.string.label_description_placeholder),
+                            leadingIcon = Icons.Default.Description,
+                            imeAction = ImeAction.Next,
+                            isError = state.descriptionError != null,
+                            errorMessage = state.descriptionError,
+                            enabled = !busy,
+                            singleLine = false,
+                            minLines = 2,
+                            maxLines = 4
+                        )
+                    }
+
+                    // ── Category ─────────────────────────────────────────────────
+                    FieldCard(label = stringResource(R.string.label_category)) {
+                        val iconTint = if (!busy) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        }
+                        val textColor = if (!busy) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        }
                         ExposedDropdownMenuBox(
-                            expanded         = state.showUnitDropdown,
-                            onExpandedChange = { if (!busy) viewModel.onEvent(EditListingEvent.ToggleUnitDropdown) },
-                            modifier         = Modifier.weight(1f)
+                            expanded = state.showCategoryDropdown,
+                            onExpandedChange = { if (!busy) viewModel.onEvent(EditListingEvent.ToggleCategoryDropdown) }
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(32.dp)
-                                    .border(
-                                        1.dp,
-                                        if (state.unitError != null) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.outlineVariant,
-                                        ShapeMedium
-                                    )
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
                                     .menuAnchor()
                                     .padding(horizontal = 8.dp),
-                                verticalAlignment     = Alignment.CenterVertically,
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(state.unit, style = MaterialTheme.typography.labelSmall,
-                                    color = textColor, modifier = Modifier.weight(1f))
+                                Icon(Icons.Default.Category, null, Modifier.size(14.dp), tint = iconTint)
+                                Text(
+                                    stringResource(FoodCategory.valueOf(state.category).labelResId),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = textColor,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 Icon(
-                                    if (state.showUnitDropdown) Icons.Default.ArrowDropUp
-                                    else Icons.Default.ArrowDropDown,
-                                    null, Modifier.size(14.dp), tint = iconTint
+                                    if (state.showCategoryDropdown) {
+                                        Icons.Default.ArrowDropUp
+                                    } else {
+                                        Icons.Default.ArrowDropDown
+                                    },
+                                    null,
+                                    Modifier.size(14.dp),
+                                    tint = iconTint
                                 )
                             }
                             ExposedDropdownMenu(
-                                expanded         = state.showUnitDropdown,
-                                onDismissRequest = { viewModel.onEvent(EditListingEvent.ToggleUnitDropdown) }
+                                expanded = state.showCategoryDropdown,
+                                onDismissRequest = { viewModel.onEvent(EditListingEvent.ToggleCategoryDropdown) }
                             ) {
-                                listOf("kg", "g", "L", "mL", "pieces", "boxes", "bags").forEach { unit ->
+                                FoodCategory.entries.forEach { cat ->
                                     DropdownMenuItem(
-                                        text    = { Text(unit, style = MaterialTheme.typography.labelSmall) },
-                                        onClick = { viewModel.onEvent(EditListingEvent.UnitChanged(unit)) }
+                                        text = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) },
+                                        onClick = { viewModel.onEvent(EditListingEvent.CategoryChanged(cat.name)) }
                                     )
                                 }
                             }
                         }
                     }
-                    if (state.unitError != null) {
-                        Text(state.unitError!!, style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 4.dp))
-                    }
-                }
 
-                // ── Expiry Date ──────────────────────────────────────────────
-                val futureDates = remember {
-                    object : SelectableDates {
-                        override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                            val date = Instant.ofEpochMilli(utcTimeMillis)
-                                .atZone(ZoneId.of("UTC")).toLocalDate()
-                            return !date.isBefore(LocalDate.now())
+                    // ── Quantity + Unit ──────────────────────────────────────────
+                    FieldCard(label = stringResource(R.string.label_quantity_short)) {
+                        val iconTint = if (!busy) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
                         }
-                    }
-                }
-                FieldCard(label = stringResource(R.string.label_expiry_date)) {
-                    DatePickerField(
-                        value           = state.expiryDate,
-                        onDateSelected  = { viewModel.onEvent(EditListingEvent.ExpiryDateChanged(it)) },
-                        isError         = state.expiryDateError != null,
-                        errorMessage    = state.expiryDateError,
-                        enabled         = !busy,
-                        selectableDates = futureDates,
-                        onClearDate     = { viewModel.onEvent(EditListingEvent.ExpiryDateChanged("")) }
-                    )
-                }
-
-                // ── Pickup Hours (read-only from profile) ────────────────────
-                FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
-                    Surface(
-                        color    = MaterialTheme.colorScheme.secondaryContainer,
-                        shape    = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                        val textColor = if (!busy) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        }
                         Row(
-                            modifier              = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp)
-                                .padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment     = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.Schedule, null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(14.dp))
+                            ClearChainTextField(
+                                value = state.quantity,
+                                onValueChange = { viewModel.onEvent(EditListingEvent.QuantityChanged(it)) },
+                                placeholder = stringResource(R.string.hint_quantity_number),
+                                leadingIcon = Icons.Default.Numbers,
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Next,
+                                isError = state.quantityError != null,
+                                errorMessage = state.quantityError,
+                                enabled = !busy,
+                                modifier = Modifier.weight(1f)
+                            )
+                            ExposedDropdownMenuBox(
+                                expanded = state.showUnitDropdown,
+                                onExpandedChange = { if (!busy) viewModel.onEvent(EditListingEvent.ToggleUnitDropdown) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(32.dp)
+                                        .border(
+                                            1.dp,
+                                            if (state.unitError != null) {
+                                                MaterialTheme.colorScheme.error
+                                            } else {
+                                                MaterialTheme.colorScheme.outlineVariant
+                                            },
+                                            ShapeMedium
+                                        )
+                                        .menuAnchor()
+                                        .padding(horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        state.unit,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = textColor,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        if (state.showUnitDropdown) {
+                                            Icons.Default.ArrowDropUp
+                                        } else {
+                                            Icons.Default.ArrowDropDown
+                                        },
+                                        null,
+                                        Modifier.size(14.dp),
+                                        tint = iconTint
+                                    )
+                                }
+                                ExposedDropdownMenu(
+                                    expanded = state.showUnitDropdown,
+                                    onDismissRequest = { viewModel.onEvent(EditListingEvent.ToggleUnitDropdown) }
+                                ) {
+                                    listOf("kg", "g", "L", "mL", "pieces", "boxes", "bags").forEach { unit ->
+                                        DropdownMenuItem(
+                                            text = { Text(unit, style = MaterialTheme.typography.labelSmall) },
+                                            onClick = { viewModel.onEvent(EditListingEvent.UnitChanged(unit)) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (state.unitError != null) {
                             Text(
-                                state.groceryHours ?: stringResource(R.string.label_pickup_hours_not_set),
-                                style      = MaterialTheme.typography.labelSmall,
-                                color      = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontWeight = FontWeight.Medium
+                                state.unitError!!,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 4.dp)
                             )
                         }
                     }
-                }
 
-                // ── Cancel + Save buttons ────────────────────────────────────
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ClearChainOutlinedButton(
-                        text = stringResource(R.string.cancel),
-                        onClick  = { navController.navigateUp() },
-                        modifier = Modifier.weight(1f),
-                        enabled  = !busy
-                    )
-                    ClearChainButton(
-                        text = stringResource(R.string.save),
-                        onClick  = { viewModel.onEvent(EditListingEvent.SaveListing) },
-                        modifier = Modifier.weight(1f),
-                        enabled  = canSave && !busy,
-                        loading = busy,
-                        icon = Icons.Default.Save
-                    )
-                }
+                    // ── Expiry Date ──────────────────────────────────────────────
+                    val futureDates = remember {
+                        object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                val date = Instant.ofEpochMilli(utcTimeMillis)
+                                    .atZone(ZoneId.of("UTC")).toLocalDate()
+                                return !date.isBefore(LocalDate.now())
+                            }
+                        }
+                    }
+                    FieldCard(label = stringResource(R.string.label_expiry_date)) {
+                        DatePickerField(
+                            value = state.expiryDate,
+                            onDateSelected = { viewModel.onEvent(EditListingEvent.ExpiryDateChanged(it)) },
+                            isError = state.expiryDateError != null,
+                            errorMessage = state.expiryDateError,
+                            enabled = !busy,
+                            selectableDates = futureDates,
+                            onClearDate = { viewModel.onEvent(EditListingEvent.ExpiryDateChanged("")) }
+                        )
+                    }
 
-                Spacer(Modifier.height(16.dp))
+                    // ── Pickup Hours (read-only from profile) ────────────────────
+                    FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(32.dp)
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Schedule,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    state.groceryHours ?: stringResource(R.string.label_pickup_hours_not_set),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // ── Cancel + Save buttons ────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ClearChainOutlinedButton(
+                            text = stringResource(R.string.cancel),
+                            onClick = { navController.navigateUp() },
+                            modifier = Modifier.weight(1f),
+                            enabled = !busy
+                        )
+                        ClearChainButton(
+                            text = stringResource(R.string.save),
+                            onClick = { viewModel.onEvent(EditListingEvent.SaveListing) },
+                            modifier = Modifier.weight(1f),
+                            enabled = canSave && !busy,
+                            loading = busy,
+                            icon = Icons.Default.Save
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                }
             }
-          }
         }
     }
 }
@@ -335,20 +370,20 @@ private fun FieldCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier  = modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             OptionalFieldLabel(
-                text       = label.replace("*", "").trim(),
+                text = label.replace("*", "").trim(),
                 isOptional = isOptional,
-                style      = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color      = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
             content()
         }

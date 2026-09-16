@@ -66,12 +66,12 @@ fun StatusBadge(
 @Composable
 fun PickupStatusBadge(status: PickupRequestStatus) {
     val style = when (status) {
-        PickupRequestStatus.PENDING   -> BadgeStyle(StatusColors.PendingBg, StatusColors.PendingOnBg, stringResource(R.string.status_pending), Icons.Default.Schedule)
-        PickupRequestStatus.APPROVED  -> BadgeStyle(StatusColors.ApprovedBg, StatusColors.ApprovedOnBg, stringResource(R.string.status_approved), Icons.Default.ThumbUp)
-        PickupRequestStatus.READY     -> BadgeStyle(StatusColors.ReadyBg, StatusColors.ReadyOnBg, stringResource(R.string.status_ready), Icons.Default.CheckCircle)
+        PickupRequestStatus.PENDING -> BadgeStyle(StatusColors.PendingBg, StatusColors.PendingOnBg, stringResource(R.string.status_pending), Icons.Default.Schedule)
+        PickupRequestStatus.APPROVED -> BadgeStyle(StatusColors.ApprovedBg, StatusColors.ApprovedOnBg, stringResource(R.string.status_approved), Icons.Default.ThumbUp)
+        PickupRequestStatus.READY -> BadgeStyle(StatusColors.ReadyBg, StatusColors.ReadyOnBg, stringResource(R.string.status_ready), Icons.Default.CheckCircle)
         PickupRequestStatus.COMPLETED -> BadgeStyle(StatusColors.CompletedBg, StatusColors.CompletedOnBg, stringResource(R.string.status_completed), Icons.Default.Done)
         PickupRequestStatus.CANCELLED -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, stringResource(R.string.status_cancelled), Icons.Default.Cancel)
-        PickupRequestStatus.REJECTED  -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, stringResource(R.string.status_rejected), Icons.Default.Block)
+        PickupRequestStatus.REJECTED -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, stringResource(R.string.status_rejected), Icons.Default.Block)
     }
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
 }
@@ -80,10 +80,10 @@ fun PickupStatusBadge(status: PickupRequestStatus) {
 fun ListingStatusBadge(status: ListingStatus) {
     val style = when (status) {
         ListingStatus.AVAILABLE -> BadgeStyle(StatusColors.AvailableBg, StatusColors.AvailableOnBg, stringResource(R.string.status_available), Icons.Default.CheckCircle)
-        ListingStatus.RESERVED  -> BadgeStyle(StatusColors.ReservedBg, StatusColors.ReservedOnBg, stringResource(R.string.status_reserved), Icons.Default.Lock)
+        ListingStatus.RESERVED -> BadgeStyle(StatusColors.ReservedBg, StatusColors.ReservedOnBg, stringResource(R.string.status_reserved), Icons.Default.Lock)
         ListingStatus.COMPLETED -> BadgeStyle(StatusColors.CompletedBg, StatusColors.CompletedOnBg, stringResource(R.string.status_completed), Icons.Default.Done)
-        ListingStatus.EXPIRED   -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
-        ListingStatus.ARCHIVED  -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_archived), Icons.Default.Archive)
+        ListingStatus.EXPIRED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
+        ListingStatus.ARCHIVED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_archived), Icons.Default.Archive)
     }
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
 }
@@ -91,9 +91,9 @@ fun ListingStatusBadge(status: ListingStatus) {
 @Composable
 fun InventoryStatusBadge(status: InventoryStatus) {
     val style = when (status) {
-        InventoryStatus.ACTIVE      -> BadgeStyle(StatusColors.AvailableBg, StatusColors.AvailableOnBg, stringResource(R.string.status_active), Icons.Default.Inventory)
+        InventoryStatus.ACTIVE -> BadgeStyle(StatusColors.AvailableBg, StatusColors.AvailableOnBg, stringResource(R.string.status_active), Icons.Default.Inventory)
         InventoryStatus.DISTRIBUTED -> BadgeStyle(StatusColors.DistributedBg, StatusColors.DistributedOnBg, stringResource(R.string.status_distributed), Icons.Default.Done)
-        InventoryStatus.EXPIRED     -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
+        InventoryStatus.EXPIRED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
     }
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
 }
@@ -101,15 +101,15 @@ fun InventoryStatusBadge(status: InventoryStatus) {
 // Shared category → color mapping, reused anywhere a FoodCategory needs a swatch
 // (badges, bar charts, legends) so the same category always reads the same color.
 fun FoodCategory.chartColor(): Color = when (this) {
-    FoodCategory.FRUITS     -> CategoryColors.Fruits
+    FoodCategory.FRUITS -> CategoryColors.Fruits
     FoodCategory.VEGETABLES -> CategoryColors.Vegetables
-    FoodCategory.DAIRY      -> CategoryColors.Dairy
-    FoodCategory.BAKERY     -> CategoryColors.Bakery
-    FoodCategory.MEAT       -> CategoryColors.Meat
-    FoodCategory.SEAFOOD    -> CategoryColors.Seafood
-    FoodCategory.PACKAGED   -> CategoryColors.Packaged
-    FoodCategory.BEVERAGES  -> CategoryColors.Beverages
-    FoodCategory.OTHER      -> CategoryColors.Other
+    FoodCategory.DAIRY -> CategoryColors.Dairy
+    FoodCategory.BAKERY -> CategoryColors.Bakery
+    FoodCategory.MEAT -> CategoryColors.Meat
+    FoodCategory.SEAFOOD -> CategoryColors.Seafood
+    FoodCategory.PACKAGED -> CategoryColors.Packaged
+    FoodCategory.BEVERAGES -> CategoryColors.Beverages
+    FoodCategory.OTHER -> CategoryColors.Other
 }
 
 @Composable

@@ -92,7 +92,7 @@ class InventoryDetailViewModel @Inject constructor(
         }
     }
 
-    fun showQrSheet()  = _state.update { it.copy(showQrSheet = true) }
+    fun showQrSheet() = _state.update { it.copy(showQrSheet = true) }
     fun dismissQrSheet() = _state.update { it.copy(showQrSheet = false) }
 
     private fun loadRelatedRequest(requestId: String) {

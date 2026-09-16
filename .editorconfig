@@ -66,5 +66,16 @@ ij_kotlin_allow_trailing_comma = false
 ij_kotlin_allow_trailing_comma_on_call_site = false
 ij_continuation_indent_size = 4
 
+; ktlint, via the Spotless task (./gradlew spotlessApply). Two standard rules
+; are off because they contradict conventions this project deliberately keeps:
+; star imports are the agreed style, and @Composable functions are PascalCase.
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_function-naming = disabled
+; Screens declare several composables per file, which is the Compose norm.
+ktlint_standard_filename = disabled
+; DTOs and UI state annotate individual fields in place ("yyyy-MM-dd",
+; "null = all"). That is the house pattern and reads better than a line above.
+ktlint_standard_discouraged-comment-location = disabled
+
 [*.{xml,gradle}]
 indent_size = 4

@@ -35,14 +35,14 @@ fun GroceryDashboardScreen(
     navController: NavController,
     viewModel: GroceryDashboardViewModel = hiltViewModel()
 ) {
-    val state             by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         HapticPullToRefreshBox(
             isRefreshing = state.isRefreshing,
-            onRefresh    = viewModel::refresh,
-            modifier     = Modifier
+            onRefresh = viewModel::refresh,
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
@@ -52,9 +52,9 @@ fun GroceryDashboardScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 DashboardWelcomeHeader(
-                    userName       = state.userName,
-                    subtitle       = stringResource(R.string.grocery_dashboard_subtitle),
-                    roleLabel      = stringResource(R.string.role_grocery),
+                    userName = state.userName,
+                    subtitle = stringResource(R.string.grocery_dashboard_subtitle),
+                    roleLabel = stringResource(R.string.role_grocery),
                     profilePictureUrl = state.profilePictureUrl,
                     gradientColors = listOf(BrandTeal, BrandGreen),
                     onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
@@ -62,7 +62,7 @@ fun GroceryDashboardScreen(
                 )
 
                 Column(
-                    modifier            = Modifier.padding(ScreenPadding),
+                    modifier = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // ── Impact ───────────────────────────────────────────────
@@ -70,11 +70,11 @@ fun GroceryDashboardScreen(
                     // before today's workload.
                     state.stats?.let { stats ->
                         DashboardSection(
-                            title      = stringResource(R.string.analytics_impact),
+                            title = stringResource(R.string.analytics_impact),
                             titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
                         ) {
                             ImpactSummaryRow(
-                                kgSaved       = stats.foodSaved,
+                                kgSaved = stats.foodSaved,
                                 mealsEstimate = stats.mealsEstimate,
                                 co2EstimateKg = stats.co2EstimateKg
                             )
@@ -87,8 +87,8 @@ fun GroceryDashboardScreen(
                     DashboardSection(title = "") {
                         WeeklyGoalCard(
                             completed = state.weeklyCompleted,
-                            goal      = state.weeklyGoal,
-                            progress  = state.weeklyProgress
+                            goal = state.weeklyGoal,
+                            progress = state.weeklyProgress
                         )
                     }
 
@@ -97,7 +97,7 @@ fun GroceryDashboardScreen(
                     if (upcomingPickups.isNotEmpty()) {
                         DashboardSection(title = "") {
                             GroceryUpcomingPickupsTimeline(
-                                pickups   = upcomingPickups,
+                                pickups = upcomingPickups,
                                 onViewAll = { navController.navigate(Screen.PickupRequests.route) }
                             )
                         }
@@ -108,7 +108,7 @@ fun GroceryDashboardScreen(
                     DashboardSection(title = "") {
                         ActivitySparklineCard(
                             title = stringResource(R.string.label_actions_this_week),
-                            data  = sparklineData
+                            data = sparklineData
                         )
                         if (state.activities.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
@@ -117,7 +117,7 @@ fun GroceryDashboardScreen(
                                 Spacer(Modifier.height(8.dp))
                                 ClearChainButton(
                                     text = stringResource(R.string.action_view_more),
-                                    onClick  = { showActivitySheet = true },
+                                    onClick = { showActivitySheet = true },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -127,22 +127,22 @@ fun GroceryDashboardScreen(
                     // ── Quick actions ────────────────────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
-                            icon     = Icons.Default.AddCircle,
-                            title    = stringResource(R.string.action_create_listing),
+                            icon = Icons.Default.AddCircle,
+                            title = stringResource(R.string.action_create_listing),
                             subtitle = stringResource(R.string.action_create_listing_subtitle),
-                            onClick  = { navController.navigate(Screen.CreateListing.route) }
+                            onClick = { navController.navigate(Screen.CreateListing.route) }
                         )
                         DashboardActionCard(
-                            icon     = Icons.Default.List,
-                            title    = stringResource(R.string.action_my_listings),
+                            icon = Icons.Default.List,
+                            title = stringResource(R.string.action_my_listings),
                             subtitle = stringResource(R.string.action_my_listings_subtitle),
-                            onClick  = { navController.navigate(Screen.MyListings.route) }
+                            onClick = { navController.navigate(Screen.MyListings.route) }
                         )
                         DashboardActionCard(
-                            icon     = Icons.Default.LocalShipping,
-                            title    = stringResource(R.string.action_pickup_requests),
+                            icon = Icons.Default.LocalShipping,
+                            title = stringResource(R.string.action_pickup_requests),
                             subtitle = stringResource(R.string.action_pickup_requests_subtitle),
-                            onClick  = { navController.navigate(Screen.PickupRequests.route) }
+                            onClick = { navController.navigate(Screen.PickupRequests.route) }
                         )
                     }
 
@@ -156,7 +156,7 @@ fun GroceryDashboardScreen(
     if (showActivitySheet) {
         ActivityHistorySheet(
             activities = state.activities,
-            onDismiss  = { showActivitySheet = false }
+            onDismiss = { showActivitySheet = false }
         )
     }
 }
@@ -165,7 +165,7 @@ fun GroceryDashboardScreen(
 
 @Composable
 private fun GroceryUpcomingPickupsTimeline(
-    pickups:   List<UpcomingPickupData>,
+    pickups: List<UpcomingPickupData>,
     onViewAll: () -> Unit
 ) {
     // Rendered straight onto the DashboardSection that hosts it — a Card here would
@@ -180,7 +180,7 @@ private fun GroceryUpcomingPickupsTimeline(
         if (pickups.size > 3) {
             ClearChainOutlinedButton(
                 text = stringResource(R.string.view_all_pickups, pickups.size),
-                onClick  = onViewAll,
+                onClick = onViewAll,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -193,15 +193,15 @@ private fun GroceryUpcomingPickupsTimeline(
 private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolean) {
     val statusColor = when (pickup.status.uppercase()) {
         "APPROVED" -> BrandGreen
-        "READY"    -> MaterialTheme.colorScheme.tertiary
-        else       -> MaterialTheme.colorScheme.outline
+        "READY" -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.outline
     }
     val approvedLabel = stringResource(R.string.status_approved)
-    val readyLabel    = stringResource(R.string.status_ready)
+    val readyLabel = stringResource(R.string.status_ready)
     val statusLabel = when (pickup.status.uppercase()) {
         "APPROVED" -> approvedLabel
-        "READY"    -> readyLabel
-        else       -> pickup.status
+        "READY" -> readyLabel
+        else -> pickup.status
     }
 
     Row(
@@ -229,12 +229,12 @@ private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolea
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text       = pickup.listingTitle,
-                style      = MaterialTheme.typography.bodyMedium,
+                text = pickup.listingTitle,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text  = pickup.ngoName,
+                text = pickup.ngoName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -242,8 +242,8 @@ private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolea
 
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text       = pickup.pickupTime,
-                style      = MaterialTheme.typography.labelMedium,
+                text = pickup.pickupTime,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium
             )
             Surface(
@@ -251,9 +251,9 @@ private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolea
                 color = statusColor.copy(alpha = 0.15f)
             ) {
                 Text(
-                    text     = statusLabel,
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = statusColor,
+                    text = statusLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = statusColor,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }

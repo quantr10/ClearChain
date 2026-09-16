@@ -77,10 +77,11 @@ fun PendingReviewScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val (icon, tint) = if (rejected)
+                val (icon, tint) = if (rejected) {
                     Icons.Default.ErrorOutline to MaterialTheme.colorScheme.error
-                else
+                } else {
                     Icons.Default.HourglassTop to MaterialTheme.colorScheme.secondary
+                }
 
                 Surface(
                     shape = RoundedCornerShape(50),
@@ -94,8 +95,11 @@ fun PendingReviewScreen(
 
                 Text(
                     text = stringResource(
-                        if (rejected) R.string.pending_review_rejected_title
-                        else R.string.pending_review_pending_title
+                        if (rejected) {
+                            R.string.pending_review_rejected_title
+                        } else {
+                            R.string.pending_review_pending_title
+                        }
                     ),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
@@ -103,8 +107,11 @@ fun PendingReviewScreen(
                 )
                 Text(
                     text = stringResource(
-                        if (rejected) R.string.pending_review_rejected_subtitle
-                        else R.string.pending_review_pending_subtitle
+                        if (rejected) {
+                            R.string.pending_review_rejected_subtitle
+                        } else {
+                            R.string.pending_review_pending_subtitle
+                        }
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -180,8 +187,11 @@ fun PendingReviewScreen(
                         DetailRow(
                             Icons.Default.Description,
                             stringResource(
-                                if (user.documentUrl != null) R.string.pending_review_doc_attached
-                                else R.string.pending_review_doc_missing
+                                if (user.documentUrl != null) {
+                                    R.string.pending_review_doc_attached
+                                } else {
+                                    R.string.pending_review_doc_missing
+                                }
                             )
                         )
                     }
@@ -199,8 +209,11 @@ fun PendingReviewScreen(
             )
             ClearChainOutlinedButton(
                 text = stringResource(
-                    if (rejected) R.string.pending_review_fix_and_resubmit
-                    else R.string.pending_review_edit_profile
+                    if (rejected) {
+                        R.string.pending_review_fix_and_resubmit
+                    } else {
+                        R.string.pending_review_edit_profile
+                    }
                 ),
                 onClick = onEditProfile,
                 icon = Icons.Default.Edit,

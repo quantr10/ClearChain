@@ -24,10 +24,12 @@ class UpdateProfileUseCase @Inject constructor(
     ): Result<Unit> {
         if (name.isBlank()) return Result.failure(Exception("Name is required"))
         if (name.length < 3) return Result.failure(Exception("Name must be at least 3 characters"))
-        if (email.isNotBlank() && !ValidationUtils.isValidEmail(email))
+        if (email.isNotBlank() && !ValidationUtils.isValidEmail(email)) {
             return Result.failure(Exception("Invalid email format"))
-        if (phone.isNotBlank() && !ValidationUtils.isValidPhone(phone))
+        }
+        if (phone.isNotBlank() && !ValidationUtils.isValidPhone(phone)) {
             return Result.failure(Exception("Invalid phone number"))
+        }
 
         return repository.updateProfile(
             name = name,

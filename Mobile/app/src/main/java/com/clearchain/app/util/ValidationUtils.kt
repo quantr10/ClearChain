@@ -23,6 +23,8 @@ object ValidationUtils {
     }
 
     enum class PasswordStrength {
-        WEAK, MEDIUM, STRONG
+        WEAK,
+        MEDIUM,
+        STRONG
     }
 }

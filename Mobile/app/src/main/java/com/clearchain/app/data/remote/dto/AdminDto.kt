@@ -90,23 +90,23 @@ data class AdminStatsResponse(
 
 fun AdminStatsDto.toDomain(): AdminStats {
     return AdminStats(
-        totalOrganizations    = totalOrganizations,
-        totalGroceries        = totalGroceries,
-        totalNgos             = totalNgos,
+        totalOrganizations = totalOrganizations,
+        totalGroceries = totalGroceries,
+        totalNgos = totalNgos,
         verifiedOrganizations = verifiedOrganizations,
         unverifiedOrganizations = unverifiedOrganizations,
-        totalListings         = totalListings,
-        activeListings        = activeListings,
-        reservedListings      = reservedListings,
-        expiredListings       = expiredListings,
-        totalPickupRequests   = totalPickupRequests,
-        pendingRequests       = pendingRequests,
-        approvedRequests      = approvedRequests,
-        readyRequests         = readyRequests,
-        rejectedRequests      = rejectedRequests,
-        completedRequests     = completedRequests,
-        cancelledRequests     = cancelledRequests,
-        totalFoodSaved        = totalFoodSaved
+        totalListings = totalListings,
+        activeListings = activeListings,
+        reservedListings = reservedListings,
+        expiredListings = expiredListings,
+        totalPickupRequests = totalPickupRequests,
+        pendingRequests = pendingRequests,
+        approvedRequests = approvedRequests,
+        readyRequests = readyRequests,
+        rejectedRequests = rejectedRequests,
+        completedRequests = completedRequests,
+        cancelledRequests = cancelledRequests,
+        totalFoodSaved = totalFoodSaved
     )
 }
 
@@ -114,17 +114,17 @@ fun AdminOrganizationDto.toDomain(): Organization = Organization(
     id = id, name = name,
     type = when (type.uppercase()) {
         "GROCERY" -> OrganizationType.GROCERY
-        "NGO"     -> OrganizationType.NGO
-        "ADMIN"   -> OrganizationType.ADMIN
-        else      -> OrganizationType.NGO
+        "NGO" -> OrganizationType.NGO
+        "ADMIN" -> OrganizationType.ADMIN
+        else -> OrganizationType.NGO
     },
     email = email, phone = phone,
     address = address, location = location,
     verified = verified,
     verificationStatus = when (verificationStatus.uppercase()) {
         "APPROVED", "VERIFIED" -> VerificationStatus.APPROVED
-        "REJECTED"             -> VerificationStatus.REJECTED
-        else                   -> VerificationStatus.PENDING
+        "REJECTED" -> VerificationStatus.REJECTED
+        else -> VerificationStatus.PENDING
     },
     hours = null, profilePictureUrl = null, createdAt = createdAt,
     documentUrl = documentUrl,

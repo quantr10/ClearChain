@@ -240,13 +240,16 @@ class OnboardingViewModel @Inject constructor(
                 location = s.city,
                 state = s.state,
                 zipCode = s.zipCode,
-                hours = if (s.openTime.isNotBlank() && s.closeTime.isNotBlank())
-                    "${s.openTime} - ${s.closeTime}" else null,
+                hours = if (s.openTime.isNotBlank() && s.closeTime.isNotBlank()) {
+                    "${s.openTime} - ${s.closeTime}"
+                } else {
+                    null
+                },
                 latitude = s.addressLat,
                 longitude = s.addressLng,
                 contactPerson = s.contactPerson.ifBlank { null },
                 pickupInstructions = s.pickupInstructions.ifBlank { null },
-                description = s.description.ifBlank { null },
+                description = s.description.ifBlank { null }
             )
 
             result.fold(

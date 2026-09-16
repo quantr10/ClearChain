@@ -51,8 +51,8 @@ fun TransactionsScreen(
 
     if (state.showFilterSheet) {
         TransactionsFilterSheet(
-            state     = state,
-            onEvent   = viewModel::onEvent,
+            state = state,
+            onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(TransactionsEvent.HideFilterSheet) }
         )
     }
@@ -60,8 +60,8 @@ fun TransactionsScreen(
     // Date picker dialog
     if (state.showDatePickerDialog) {
         DatePickerForTransaction(
-            isStart   = state.datePickerForStart,
-            initial   = if (state.datePickerForStart) state.filterStartDate else state.filterEndDate,
+            isStart = state.datePickerForStart,
+            initial = if (state.datePickerForStart) state.filterStartDate else state.filterEndDate,
             onConfirm = { viewModel.onEvent(TransactionsEvent.CustomDateSelected(it)) },
             onDismiss = { viewModel.onEvent(TransactionsEvent.HideDatePicker) }
         )
@@ -85,53 +85,53 @@ fun TransactionsScreen(
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ListScreenHeader {
-            ListHeaderSearchRow(
-                query = state.searchQuery,
-                onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
-                placeholder = stringResource(R.string.search_transactions_placeholder)
-            ) {
-                ClearChainActionIconButton(
-                    icon               = Icons.Default.FileDownload,
-                    contentDescription = stringResource(R.string.export_csv),
-                    onClick            = { viewModel.onEvent(TransactionsEvent.ShowExportDialog) }
-                )
-                BadgedBox(
-                    badge = {
-                        if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
-                    }
+                ListHeaderSearchRow(
+                    query = state.searchQuery,
+                    onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
+                    placeholder = stringResource(R.string.search_transactions_placeholder)
                 ) {
                     ClearChainActionIconButton(
-                        icon               = Icons.Default.Tune,
-                        contentDescription = stringResource(R.string.advanced_filters),
-                        onClick            = { viewModel.onEvent(TransactionsEvent.ShowFilterSheet) }
+                        icon = Icons.Default.FileDownload,
+                        contentDescription = stringResource(R.string.export_csv),
+                        onClick = { viewModel.onEvent(TransactionsEvent.ShowExportDialog) }
                     )
+                    BadgedBox(
+                        badge = {
+                            if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                        }
+                    ) {
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.Tune,
+                            contentDescription = stringResource(R.string.advanced_filters),
+                            onClick = { viewModel.onEvent(TransactionsEvent.ShowFilterSheet) }
+                        )
+                    }
                 }
-            }
 
-            FilterChipsRow(
-                filters = listOf(
-                    FilterChipData(null,        stringResource(R.string.filter_all)),
-                    FilterChipData("PENDING",   stringResource(R.string.status_pending)),
-                    FilterChipData("APPROVED",  stringResource(R.string.status_approved)),
-                    FilterChipData("READY",     stringResource(R.string.status_ready)),
-                    FilterChipData("COMPLETED", stringResource(R.string.status_completed))
-                ),
-                selectedFilter = state.selectedStatus,
-                onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) }
-            )
+                FilterChipsRow(
+                    filters = listOf(
+                        FilterChipData(null, stringResource(R.string.filter_all)),
+                        FilterChipData("PENDING", stringResource(R.string.status_pending)),
+                        FilterChipData("APPROVED", stringResource(R.string.status_approved)),
+                        FilterChipData("READY", stringResource(R.string.status_ready)),
+                        FilterChipData("COMPLETED", stringResource(R.string.status_completed))
+                    ),
+                    selectedFilter = state.selectedStatus,
+                    onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) }
+                )
             }
 
             ResultsCountAndSort(
-                count          = state.filteredTransactions.size,
-                itemName       = "transaction",
-                selectedSort   = state.selectedSort,
+                count = state.filteredTransactions.size,
+                itemName = "transaction",
+                selectedSort = state.selectedSort,
                 onSortSelected = { viewModel.onEvent(TransactionsEvent.SortOptionChanged(it)) },
-                sortOptions    = state.availableSortOptions
+                sortOptions = state.availableSortOptions
             )
 
             when {
@@ -142,31 +142,31 @@ fun TransactionsScreen(
                 }
                 state.allTransactions.isEmpty() -> {
                     EmptyState(
-                        icon     = Icons.Default.Receipt,
-                        title    = stringResource(R.string.admin_transactions_empty),
+                        icon = Icons.Default.Receipt,
+                        title = stringResource(R.string.admin_transactions_empty),
                         subtitle = stringResource(R.string.transactions_empty_subtitle)
                     )
                 }
                 state.filteredTransactions.isEmpty() -> {
                     EmptyState(
-                        icon     = Icons.Default.FilterAlt,
-                        title    = stringResource(R.string.empty_no_transactions_filter),
+                        icon = Icons.Default.FilterAlt,
+                        title = stringResource(R.string.empty_no_transactions_filter),
                         subtitle = stringResource(R.string.empty_try_filters)
                     )
                 }
                 else -> {
                     HapticPullToRefreshBox(
                         isRefreshing = state.isRefreshing,
-                        onRefresh    = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
+                        onRefresh = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
                     ) {
                         LazyColumn(
-                            contentPadding      = ScreenPadding,
+                            contentPadding = ScreenPadding,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(state.filteredTransactions, key = { it.id }) { transaction ->
                                 TransactionCard(
-                                    transaction  = transaction,
-                                    isFlagged    = transaction.id in state.flaggedIds,
+                                    transaction = transaction,
+                                    isFlagged = transaction.id in state.flaggedIds,
                                     onViewDetail = { onNavigateToRequestDetail(transaction.id) }
                                 )
                             }
@@ -186,14 +186,14 @@ fun TransactionsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TransactionsFilterSheet(
-    state:     TransactionsState,
-    onEvent:   (TransactionsEvent) -> Unit,
+    state: TransactionsState,
+    onEvent: (TransactionsEvent) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier            = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
@@ -201,9 +201,9 @@ private fun TransactionsFilterSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.advanced_filters),
@@ -237,40 +237,41 @@ private fun TransactionsFilterSheet(
 
 @Composable
 private fun DateRangeFilterRow(
-    state:   TransactionsState,
+    state: TransactionsState,
     onEvent: (TransactionsEvent) -> Unit
 ) {
     val presets = listOf(
-        null    to stringResource(R.string.preset_all_time),
+        null to stringResource(R.string.preset_all_time),
         "TODAY" to stringResource(R.string.preset_today),
-        "WEEK"  to stringResource(R.string.preset_this_week),
+        "WEEK" to stringResource(R.string.preset_this_week),
         "MONTH" to stringResource(R.string.preset_this_month),
         "CUSTOM" to stringResource(R.string.preset_custom)
     )
     Row(
-        modifier              = Modifier
+        modifier = Modifier
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment     = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            Icons.Default.DateRange, null,
+            Icons.Default.DateRange,
+            null,
             modifier = Modifier.size(16.dp),
-            tint     = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         presets.forEach { (key, label) ->
             if (key == "CUSTOM") {
                 FilterChip(
                     selected = state.selectedDatePreset == "CUSTOM",
-                    onClick  = {
+                    onClick = {
                         if (state.selectedDatePreset == "CUSTOM") {
                             onEvent(TransactionsEvent.DatePresetSelected(null))
                         } else {
                             onEvent(TransactionsEvent.ShowDatePicker(forStart = true))
                         }
                     },
-                    label    = {
+                    label = {
                         val label2 = when {
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
                                 "${state.filterStartDate!!.takeLast(5)} \u2013 ${state.filterEndDate!!.takeLast(5)}"
@@ -280,15 +281,21 @@ private fun DateRangeFilterRow(
                         }
                         Text(label2)
                     },
-                    leadingIcon = if (state.selectedDatePreset == "CUSTOM") ({
-                        Icon(Icons.Default.EditCalendar, null, Modifier.size(14.dp))
-                    }) else null
+                    leadingIcon = if (state.selectedDatePreset == "CUSTOM") {
+                        (
+                            {
+                                Icon(Icons.Default.EditCalendar, null, Modifier.size(14.dp))
+                            }
+                            )
+                    } else {
+                        null
+                    }
                 )
             } else {
                 FilterChip(
                     selected = state.selectedDatePreset == key,
-                    onClick  = { onEvent(TransactionsEvent.DatePresetSelected(key)) },
-                    label    = { Text(label) }
+                    onClick = { onEvent(TransactionsEvent.DatePresetSelected(key)) },
+                    label = { Text(label) }
                 )
             }
         }
@@ -296,20 +303,20 @@ private fun DateRangeFilterRow(
     // When custom is active, show start/end pickers
     if (state.selectedDatePreset == "CUSTOM") {
         Row(
-            modifier              = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment     = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             ClearChainOutlinedButton(
                 text = state.filterStartDate ?: stringResource(R.string.label_from),
-                onClick  = { onEvent(TransactionsEvent.ShowDatePicker(forStart = true)) },
+                onClick = { onEvent(TransactionsEvent.ShowDatePicker(forStart = true)) },
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.CalendarToday
             )
             Text("\u2013", style = MaterialTheme.typography.bodyMedium)
             ClearChainOutlinedButton(
                 text = state.filterEndDate ?: stringResource(R.string.label_to),
-                onClick  = { onEvent(TransactionsEvent.ShowDatePicker(forStart = false)) },
+                onClick = { onEvent(TransactionsEvent.ShowDatePicker(forStart = false)) },
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.CalendarToday
             )
@@ -324,14 +331,14 @@ private fun DateRangeFilterRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DatePickerForTransaction(
-    isStart:  Boolean,
-    initial:  String?,
+    isStart: Boolean,
+    initial: String?,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val initialMs = remember(initial) {
         runCatching {
-            val ld  = java.time.LocalDate.parse(initial ?: throw Exception())
+            val ld = java.time.LocalDate.parse(initial ?: throw Exception())
             ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
         }.getOrNull()
     }
@@ -339,7 +346,7 @@ private fun DatePickerForTransaction(
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
-        confirmButton    = {
+        confirmButton = {
             ClearChainOutlinedButton(
                 text = stringResource(R.string.ok),
                 onClick = {
@@ -354,14 +361,18 @@ private fun DatePickerForTransaction(
                 enabled = pickerState.selectedDateMillis != null
             )
         },
-        dismissButton    = {
+        dismissButton = {
             ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
     ) {
         DatePicker(
-            state    = pickerState,
-            headline = { Text(stringResource(if (isStart) R.string.label_select_start_date else R.string.label_select_end_date),
-                modifier = Modifier.padding(horizontal = 24.dp)) }
+            state = pickerState,
+            headline = {
+                Text(
+                    stringResource(if (isStart) R.string.label_select_start_date else R.string.label_select_end_date),
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+            }
         )
     }
 }
@@ -372,35 +383,35 @@ private fun DatePickerForTransaction(
 
 @Composable
 private fun TransactionCard(
-    transaction:  PickupRequest,
-    isFlagged:    Boolean = false,
+    transaction: PickupRequest,
+    isFlagged: Boolean = false,
     onViewDetail: () -> Unit
 ) {
     ClearChainCard(
         onClick = onViewDetail,
-        border  = if (isFlagged) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)) else null
+        border = if (isFlagged) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)) else null
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // -- Header: who gave to whom + status ----------------------------
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Top
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
-                    text       = stringResource(
+                    text = stringResource(
                         R.string.label_org_transfer,
                         transaction.groceryName,
                         transaction.ngoName
                     ),
-                    style      = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis,
-                    modifier   = Modifier.weight(1f)
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(6.dp))
                 Column(
@@ -410,10 +421,10 @@ private fun TransactionCard(
                     PickupStatusBadge(transaction.status)
                     if (isFlagged) {
                         StatusBadge(
-                            label           = stringResource(R.string.label_overdue),
+                            label = stringResource(R.string.label_overdue),
                             backgroundColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor    = MaterialTheme.colorScheme.onErrorContainer,
-                            icon            = Icons.Default.Warning
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            icon = Icons.Default.Warning
                         )
                     }
                 }
@@ -447,8 +458,8 @@ private fun TransactionCard(
 
             val handlingParts = buildList {
                 if (transaction.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
-                if (transaction.isFragile)             add(stringResource(R.string.note_fragile_items))
-                if (transaction.isHeavy)               add(stringResource(R.string.note_heavy_load))
+                if (transaction.isFragile) add(stringResource(R.string.note_fragile_items))
+                if (transaction.isHeavy) add(stringResource(R.string.note_heavy_load))
                 transaction.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
             }
             if (handlingParts.isNotEmpty()) {
@@ -467,8 +478,8 @@ private fun TransactionCard(
 
 @Composable
 private fun ExportDialog(
-    csvText:  String,
-    onShare:  () -> Unit,
+    csvText: String,
+    onShare: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ConfirmDialog(
@@ -487,15 +498,15 @@ private fun ExportDialog(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Surface(
-            color  = MaterialTheme.colorScheme.surfaceVariant,
-            shape  = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(160.dp)
         ) {
             Text(
-                text     = csvText.lines().take(6).joinToString("\n"),
-                style    = MaterialTheme.typography.labelSmall,
+                text = csvText.lines().take(6).joinToString("\n"),
+                style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier
                     .verticalScroll(rememberScrollState())
                     .padding(10.dp)
