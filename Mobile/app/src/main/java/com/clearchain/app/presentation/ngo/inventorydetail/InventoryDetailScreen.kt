@@ -5,7 +5,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.clearchain.app.R
@@ -39,6 +39,7 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun InventoryDetailScreen(
     itemId: String,
+    onNavigateBack: () -> Unit = {},
     onNavigateToRequestDetail: (String) -> Unit = {},
     onNavigateToPublicProfile: (String) -> Unit = {},
     onNavigateToListingDetail: (String) -> Unit = {},
@@ -94,7 +95,13 @@ fun InventoryDetailScreen(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.inventory_detail_title),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
 
@@ -113,13 +120,14 @@ fun InventoryDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(ScreenPadding),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         InventoryHeroCard(
                             item = item,
                             daysUntilExpiry = daysUntilExpiry,
                             groceryName = state.relatedRequest?.groceryName,
+                            groceryProfilePictureUrl = state.relatedRequest?.groceryProfilePictureUrl,
                             onViewGroceryProfile = state.relatedRequest?.let { request ->
                                 { onNavigateToPublicProfile(request.groceryId) }
                             },
@@ -269,6 +277,7 @@ fun InventoryDetailScreen(
                     }
                 }
             }
+            }
         }
     }
 }
@@ -280,6 +289,7 @@ private fun InventoryHeroCard(
     item: com.clearchain.app.domain.model.InventoryItem,
     daysUntilExpiry: Long?,
     groceryName: String?,
+    groceryProfilePictureUrl: String? = null,
     onViewGroceryProfile: (() -> Unit)?,
     onExpandPhoto: () -> Unit,
     onShowQr: () -> Unit
@@ -357,26 +367,14 @@ private fun InventoryHeroCard(
                 }
 
                 if (!groceryName.isNullOrBlank() && onViewGroceryProfile != null) {
-                    Surface(
+                    OverlayAvatar(
+                        imageUrl = groceryProfilePictureUrl,
+                        name     = groceryName,
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(8.dp)
-                            .size(38.dp)
-                            .clickable(onClick = onViewGroceryProfile),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        border = BorderStroke(2.dp, Color.White),
-                        shadowElevation = 3.dp
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                groceryName.take(1).uppercase(),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                            .padding(8.dp),
+                        onClick  = onViewGroceryProfile
+                    )
                 }
             }
         }
@@ -602,9 +600,10 @@ private fun QrLabelSheet(
     Column(
         modifier            = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             stringResource(R.string.qr_item_label_title),

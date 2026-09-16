@@ -10,9 +10,8 @@ import androidx.core.app.NotificationCompat
 import com.clearchain.app.MainActivity
 import com.clearchain.app.R
 import com.clearchain.app.data.local.database.ClearChainDatabase
-import com.clearchain.app.data.local.entity.FCMTokenEntity
 import com.clearchain.app.data.local.entity.NotificationEntity
-import java.util.UUID
+import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,13 +19,26 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
+/**
+ * Receives pushes and turns them into an inbox entry plus a system notification.
+ *
+ * The server sends data-only messages. A message carrying a `notification` block would be drawn
+ * by the system while the app is backgrounded and [onMessageReceived] would never run, so the
+ * notification could not be recorded — the inbox would be missing exactly the notifications the
+ * user wasn't there to see. Data-only means this method always runs and the app builds the
+ * system notification itself.
+ */
 @AndroidEntryPoint
 class FCMService : FirebaseMessagingService() {
 
     @Inject
     lateinit var database: ClearChainDatabase
+
+    @Inject
+    lateinit var registerFCMTokenUseCase: RegisterFCMTokenUseCase
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -38,37 +50,38 @@ class FCMService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "🔔 New FCM token: $token")
-        
+        Log.d(TAG, "🔔 FCM token rotated")
+
+        // Saving locally is not enough — the server can only push to tokens it has been told
+        // about, so the rotation has to be published or this device goes quiet.
         serviceScope.launch {
-            try {
-                database.fcmTokenDao().saveToken(FCMTokenEntity(token = token))
-                Log.d(TAG, "✅ FCM token saved to database")
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error saving FCM token", e)
-            }
+            registerFCMTokenUseCase.register(token)
         }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        
-        Log.d(TAG, "📩 Message received from: ${message.from}")
-        Log.d(TAG, "📦 Data: ${message.data}")
-        
-        val title = message.notification?.title ?: message.data["title"] ?: "ClearChain"
-        val body = message.notification?.body ?: message.data["body"] ?: ""
+
+        val data = message.data
+        Log.d(TAG, "📩 Push received: ${data["type"]}")
+
+        val title = data["title"] ?: message.notification?.title ?: "ClearChain"
+        val body = data["body"] ?: message.notification?.body ?: ""
 
         serviceScope.launch {
             try {
+                val (relatedId, relatedType) = deriveRelation(data)
+
                 database.notificationDao().insert(
                     NotificationEntity(
-                        id = message.messageId ?: UUID.randomUUID().toString(),
-                        type = message.data["type"] ?: "general",
+                        // The server's row id, so the same notification arriving again over
+                        // SignalR or an inbox sync replaces this row instead of duplicating it.
+                        id = data["notificationId"] ?: message.messageId ?: UUID.randomUUID().toString(),
+                        type = data["type"] ?: "general",
                         title = title,
                         body = body,
-                        relatedId = message.data["relatedId"],
-                        relatedType = message.data["relatedType"],
+                        relatedId = relatedId,
+                        relatedType = relatedType,
                         isRead = false,
                         createdAt = System.currentTimeMillis()
                     )
@@ -78,9 +91,19 @@ class FCMService : FirebaseMessagingService() {
             }
         }
 
-        if (message.notification != null) {
-            showNotification(title, body, message.data)
-        }
+        showNotification(title, body, data)
+    }
+
+    /**
+     * Mirrors the server's mapping from payload key to inbox relation, so a notification opened
+     * from the tray deep-links to the same place as one opened from the inbox.
+     */
+    private fun deriveRelation(data: Map<String, String>): Pair<String?, String?> = when {
+        data["requestId"] != null -> data["requestId"] to "pickup_request"
+        data["listingId"] != null -> data["listingId"] to "listing"
+        data["inventoryId"] != null -> data["inventoryId"] to "inventory"
+        data["organizationId"] != null -> data["organizationId"] to "organization"
+        else -> null to null
     }
 
     private fun showNotification(
@@ -90,22 +113,17 @@ class FCMService : FirebaseMessagingService() {
     ) {
         createNotificationChannel()
 
-        // ✅ Create intent with deep link data
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            
-            // Add data as extras
-            data.forEach { (key, value) ->
-                putExtra(key, value)
-            }
-            
-            Log.d(TAG, "🔗 Creating intent with data: $data")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+            data.forEach { (key, value) -> putExtra(key, value) }
         }
 
-        // ✅ Use unique request code for each notification
         val pendingIntent = PendingIntent.getActivity(
             this,
-            System.currentTimeMillis().toInt(), // Unique request code
+            System.currentTimeMillis().toInt(), // Unique per notification so extras aren't reused
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -114,14 +132,15 @@ class FCMService : FirebaseMessagingService() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
 
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
-        
+        getSystemService(NotificationManager::class.java)
+            .notify(System.currentTimeMillis().toInt(), notification)
+
         Log.d(TAG, "🔔 Notification shown: $title")
     }
 
@@ -132,11 +151,11 @@ class FCMService : FirebaseMessagingService() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Pickup requests and inventory updates"
+                description = "Pickup requests, listings and inventory updates"
             }
 
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
         }
     }
 }

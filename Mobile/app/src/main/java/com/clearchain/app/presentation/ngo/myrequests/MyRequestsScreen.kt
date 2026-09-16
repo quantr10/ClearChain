@@ -1,7 +1,6 @@
 ﻿package com.clearchain.app.presentation.ngo.myrequests
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,11 +21,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.PickupRequest
-import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
 
@@ -137,17 +136,12 @@ fun MyRequestsScreen(
                             }
                         }
 
-                        Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListScreenHeader {
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.hint_search_by_item_grocery)
                         ) {
-                            SearchBar(
-                                query         = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
-                                placeholder   = stringResource(R.string.hint_search_by_item_grocery),
-                                modifier      = Modifier.weight(1f)
-                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -174,6 +168,7 @@ fun MyRequestsScreen(
                             onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
                             sortOptions = state.availableSortOptions
                         )
+                        }
 
                         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
@@ -208,7 +203,7 @@ fun MyRequestsScreen(
                                     onRefresh = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
                                 ) {
                                     LazyColumn(
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        contentPadding = ScreenPadding,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         items(state.filteredRequests, key = { it.id }) { request ->
@@ -249,7 +244,10 @@ fun MyRequestsScreen(
                 viewModel.onEvent(MyRequestsEvent.ConfirmPickupWithPhoto(requestId, uri))
                 showPhotoPickerForId = null
             },
-            onDismiss = { showPhotoPickerForId = null }
+            onDismiss = { showPhotoPickerForId = null },
+            title = stringResource(R.string.label_add_photo_proof),
+            message = stringResource(R.string.msg_choose_photo_source),
+            previewMessage = stringResource(R.string.msg_submit_photo_proof)
         )
     }
 }
@@ -273,7 +271,7 @@ private fun MyRequestsFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier              = Modifier.fillMaxWidth(),
@@ -397,13 +395,21 @@ private fun ReviewDialog(
     onSubmit:        () -> Unit,
     onDismiss:       () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = { if (!isSubmitting) onDismiss() },
-        title = { Text(stringResource(R.string.label_rate_experience)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Star rating row
-                Row(
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onSubmit,
+        icon = Icons.Default.StarRate,
+        title = stringResource(R.string.label_rate_experience),
+        message = stringResource(R.string.msg_rate_experience),
+        confirmLabel = stringResource(R.string.action_submit_review),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmLoading = isSubmitting,
+        dismissEnabled = !isSubmitting,
+        dismissible = !isSubmitting
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Star rating row
+            Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment     = Alignment.CenterVertically
@@ -449,21 +455,5 @@ private fun ReviewDialog(
                     enabled       = !isSubmitting
                 )
             }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.action_submit_review),
-                onClick = onSubmit,
-                loading = isSubmitting,
-                fillMaxWidth = false
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.cancel),
-                onClick = onDismiss,
-                enabled = !isSubmitting
-            )
         }
-    )
 }

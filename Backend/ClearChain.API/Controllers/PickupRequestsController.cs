@@ -1,4 +1,6 @@
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.PickupRequests;
+using ClearChain.API.Middleware;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +23,7 @@ public class PickupRequestsController : ControllerBase
     // ── POST api/pickuprequests ───────────────────────────────────────────────
 
     [HttpPost]
+    [RequireVerifiedOrganization]
     public async Task<ActionResult<PickupRequestResponse>> CreatePickupRequest(
         [FromBody] CreatePickupRequestRequest request)
     {
@@ -97,10 +100,11 @@ public class PickupRequestsController : ControllerBase
         if (proofPhoto == null || proofPhoto.Length == 0)
             return BadRequest(new { message = "Proof photo is required to confirm pickup" });
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-        var extension = Path.GetExtension(proofPhoto.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(extension))
-            return BadRequest(new { message = "Invalid file type. Allowed: jpg, jpeg, png, webp" });
+        if (!StorageBucketPolicy.IsAllowedImage(proofPhoto.ContentType))
+            return BadRequest(new { message = $"Only {StorageBucketPolicy.ImageTypesMessage} are accepted" });
+
+        if (proofPhoto.Length > StorageBucketPolicy.ImageMaxBytes)
+            return BadRequest(new { message = $"Photo must be under {StorageBucketPolicy.ImageMaxBytes / 1024 / 1024} MB" });
 
         using var stream = proofPhoto.OpenReadStream();
         var result = await _service.MarkPickedUpAsync(id, userId, stream, proofPhoto.FileName);

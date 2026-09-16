@@ -1,6 +1,5 @@
 package com.clearchain.app.presentation.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -160,22 +158,4 @@ fun ClearChainActionIconButton(
             )
         }
     }
-}
-
-@Composable
-fun ClearChainDestructiveButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    loading: Boolean = false
-) {
-    // ClearChainButton already fires confirm haptic; no additional wrap needed
-    ClearChainButton(
-        text = text,
-        onClick = onClick,
-        modifier = modifier,
-        loading = loading,
-        containerColor = MaterialTheme.colorScheme.error,
-        contentColor = MaterialTheme.colorScheme.onError
-    )
 }

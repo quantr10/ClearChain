@@ -22,19 +22,6 @@ data class MessageListResponse(
 )
 
 @Serializable
-data class MessageThreadData(
-    val pickupRequestId: String,
-    val lastMessage: MessageData,
-    val unreadCount: Int = 0
-)
-
-@Serializable
-data class MessageThreadsResponse(
-    val message: String = "",
-    val data: List<MessageThreadData> = emptyList()
-)
-
-@Serializable
 data class SendMessageRequest(
     val content: String
 )

@@ -12,8 +12,12 @@ data class PickupRequest(
     val listingId: String,
     val ngoId: String,
     val ngoName: String,
+    // Not persisted in the Room cache: offline the party card falls back to the
+    // initial anyway, since the image itself needs the network.
+    val ngoProfilePictureUrl: String? = null,
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val status: PickupRequestStatus,
     val requestedQuantity: Int,
     val pickupDate: String,
@@ -32,6 +36,8 @@ data class PickupRequest(
     val isFragile: Boolean = false,
     val isHeavy: Boolean = false,
     val listingDescription: String? = null,
+    val groceryLocation: String? = null,
+    val distanceKm: Double? = null,
     val items: List<PickupRequestItem> = emptyList()
 )
 
@@ -63,7 +69,7 @@ fun PickupRequestStatus.displayName(): String {
     return when (this) {
         PickupRequestStatus.PENDING   -> "Pending"
         PickupRequestStatus.APPROVED  -> "Approved"
-        PickupRequestStatus.READY     -> "Ready for Pickup"
+        PickupRequestStatus.READY     -> "Ready"
         PickupRequestStatus.COMPLETED -> "Completed"
         PickupRequestStatus.CANCELLED -> "Cancelled"
         PickupRequestStatus.REJECTED  -> "Rejected"

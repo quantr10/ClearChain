@@ -18,7 +18,8 @@ interface AdminApi {
 
     @PUT("admin/organizations/{id}/unverify")
     suspend fun unverifyOrganization(
-        @Path("id") id: String
+        @Path("id") id: String,
+        @Body body: RejectOrganizationBody = RejectOrganizationBody()
     ): OrganizationResponse
 
     @GET("admin/statistics/overview")
@@ -31,17 +32,9 @@ interface AdminApi {
         @Query("preset") preset: String = "all"
     ): AdminDetailedStatsResponse
 
-    @GET("admin/health")
-    suspend fun getSystemHealth(): AdminHealthResponse
-
     @GET("admin/alerts")
     suspend fun getAlertFeed(): AdminAlertFeedResponse
 
     @GET("admin/pickuprequests")
     suspend fun getAllPickupRequests(): PickupRequestsResponse
-
-    @GET("admin/user-growth")
-    suspend fun getUserGrowth(
-        @Query("days") days: Int = 30
-    ): UserGrowthResponse
 }

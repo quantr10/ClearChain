@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.auth.login
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -76,8 +75,8 @@ fun LoginScreen(
                 enter   = fadeIn() + slideInVertically { it / 4 }
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(ScreenPadding),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text       = stringResource(R.string.sign_in_to_account),

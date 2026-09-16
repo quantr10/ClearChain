@@ -1,11 +1,6 @@
 package com.clearchain.app.presentation.admin.transactions
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,23 +9,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextOverflow
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.PickupRequest
-import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -89,25 +85,20 @@ fun TransactionsScreen(
     }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.onEvent(TransactionsEvent.ShowExportDialog) }) {
-                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.cd_export))
-            }
-        },
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Row(
-                modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ListScreenHeader {
+            ListHeaderSearchRow(
+                query = state.searchQuery,
+                onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
+                placeholder = stringResource(R.string.search_transactions_placeholder)
             ) {
-                SearchBar(
-                    query         = state.searchQuery,
-                    onQueryChange = { viewModel.onEvent(TransactionsEvent.SearchQueryChanged(it)) },
-                    placeholder   = stringResource(R.string.search_transactions_placeholder),
-                    modifier      = Modifier.weight(1f)
+                ClearChainActionIconButton(
+                    icon               = Icons.Default.FileDownload,
+                    contentDescription = stringResource(R.string.export_csv),
+                    onClick            = { viewModel.onEvent(TransactionsEvent.ShowExportDialog) }
                 )
                 BadgedBox(
                     badge = {
@@ -131,20 +122,16 @@ fun TransactionsScreen(
                     FilterChipData("COMPLETED", stringResource(R.string.status_completed))
                 ),
                 selectedFilter = state.selectedStatus,
-                onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) },
-                modifier = Modifier.padding(bottom = 4.dp)
+                onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) }
             )
-
-            // -- Aggregate stats header --------------------------------------
-            if (state.allTransactions.isNotEmpty()) {
-                TransactionStatsHeader(state = state)
             }
 
-            Text(
-                text  = "${state.filteredTransactions.size} transaction${if (state.filteredTransactions.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            ResultsCountAndSort(
+                count          = state.filteredTransactions.size,
+                itemName       = "transaction",
+                selectedSort   = state.selectedSort,
+                onSortSelected = { viewModel.onEvent(TransactionsEvent.SortOptionChanged(it)) },
+                sortOptions    = state.availableSortOptions
             )
 
             when {
@@ -173,15 +160,13 @@ fun TransactionsScreen(
                         onRefresh    = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
                     ) {
                         LazyColumn(
-                            contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            contentPadding      = ScreenPadding,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(state.filteredTransactions, key = { it.id }) { transaction ->
-                                ExpandableTransactionCard(
-                                    transaction = transaction,
-                                    isExpanded  = state.expandedTransactionId == transaction.id,
-                                    isFlagged   = transaction.id in state.flaggedIds,
-                                    onToggle    = { viewModel.onEvent(TransactionsEvent.ToggleExpanded(transaction.id)) },
+                                TransactionCard(
+                                    transaction  = transaction,
+                                    isFlagged    = transaction.id in state.flaggedIds,
                                     onViewDetail = { onNavigateToRequestDetail(transaction.id) }
                                 )
                             }
@@ -213,7 +198,7 @@ private fun TransactionsFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier              = Modifier.fillMaxWidth(),
@@ -249,60 +234,6 @@ private fun TransactionsFilterSheet(
 // -----------------------------------------------------------------------------
 // Date range filter row
 // -----------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-// Aggregate stats header
-// -----------------------------------------------------------------------------
-
-@Composable
-private fun TransactionStatsHeader(state: TransactionsState) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape  = RoundedCornerShape(12.dp),
-        color  = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            StatPill(
-                label = stringResource(R.string.stat_total),
-                value = state.allTransactions.size.toString(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            StatPill(
-                label = stringResource(R.string.status_completed),
-                value = state.totalCompleted.toString(),
-                color = BrandGreen
-            )
-            StatPill(
-                label = stringResource(R.string.status_pending),
-                value = state.totalPending.toString(),
-                color = MaterialTheme.colorScheme.secondary
-            )
-            if (state.flaggedCount > 0) {
-                StatPill(
-                    label = stringResource(R.string.stat_overdue),
-                    value = state.flaggedCount.toString(),
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatPill(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
 
 @Composable
 private fun DateRangeFilterRow(
@@ -342,7 +273,7 @@ private fun DateRangeFilterRow(
                     label    = {
                         val label2 = when {
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
-                                "${state.filterStartDate!!.takeLast(5)} – ${state.filterEndDate!!.takeLast(5)}"
+                                "${state.filterStartDate!!.takeLast(5)} \u2013 ${state.filterEndDate!!.takeLast(5)}"
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null ->
                                 "From ${state.filterStartDate!!.takeLast(5)}"
                             else -> label
@@ -375,7 +306,7 @@ private fun DateRangeFilterRow(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.CalendarToday
             )
-            Text("–", style = MaterialTheme.typography.bodyMedium)
+            Text("\u2013", style = MaterialTheme.typography.bodyMedium)
             ClearChainOutlinedButton(
                 text = state.filterEndDate ?: stringResource(R.string.label_to),
                 onClick  = { onEvent(TransactionsEvent.ShowDatePicker(forStart = false)) },
@@ -436,122 +367,95 @@ private fun DatePickerForTransaction(
 }
 
 // -----------------------------------------------------------------------------
-// Expandable transaction card
+// Transaction card
 // -----------------------------------------------------------------------------
 
 @Composable
-private fun ExpandableTransactionCard(
+private fun TransactionCard(
     transaction:  PickupRequest,
-    isExpanded:   Boolean,
     isFlagged:    Boolean = false,
-    onToggle:     () -> Unit,
     onViewDetail: () -> Unit
 ) {
-    val statusColor = when (transaction.status) {
-        PickupRequestStatus.COMPLETED -> BrandGreen
-        PickupRequestStatus.APPROVED  -> MaterialTheme.colorScheme.primary
-        PickupRequestStatus.READY     -> MaterialTheme.colorScheme.tertiary
-        PickupRequestStatus.PENDING   -> MaterialTheme.colorScheme.secondary
-        PickupRequestStatus.CANCELLED,
-        PickupRequestStatus.REJECTED  -> MaterialTheme.colorScheme.error
-    }
-
-    Card(
-        modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isFlagged) 3.dp else 1.dp),
-        colors    = if (isFlagged)
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f))
-        else CardDefaults.cardColors()
+    ClearChainCard(
+        onClick = onViewDetail,
+        border  = if (isFlagged) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)) else null
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // -- Header row (always visible) ----------------------------------
+        Column(
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // -- Header: who gave to whom + status ----------------------------
             Row(
-                modifier              = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggle() },
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment     = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            transaction.listingTitle,
-                            style      = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (isFlagged) {
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.error
-                            ) {
-                                Text(
-                                    stringResource(R.string.label_overdue),
-                                    style    = MaterialTheme.typography.labelSmall,
-                                    color    = MaterialTheme.colorScheme.onError,
-                                    modifier = androidx.compose.ui.Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                )
-                            }
-                        }
-                    }
-                    Text(
-                        "${transaction.groceryName} ? ${transaction.ngoName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Text(
+                    text       = stringResource(
+                        R.string.label_org_transfer,
+                        transaction.groceryName,
+                        transaction.ngoName
+                    ),
+                    style      = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines   = 2,
+                    overflow   = TextOverflow.Ellipsis,
+                    modifier   = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(6.dp))
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    StatusBadge(
-                        label           = stringResource(transaction.status.labelResId),
-                        backgroundColor = statusColor.copy(alpha = 0.15f),
-                        contentColor    = statusColor
-                    )
-                    Icon(
-                        imageVector  = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) stringResource(R.string.cd_collapse) else stringResource(R.string.cd_expand),
-                        tint         = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier     = Modifier.size(20.dp)
-                    )
+                    PickupStatusBadge(transaction.status)
+                    if (isFlagged) {
+                        StatusBadge(
+                            label           = stringResource(R.string.label_overdue),
+                            backgroundColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor    = MaterialTheme.colorScheme.onErrorContainer,
+                            icon            = Icons.Default.Warning
+                        )
+                    }
                 }
             }
 
-            // -- Expanded details ---------------------------------------------
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter   = expandVertically(),
-                exit    = shrinkVertically()
-            ) {
-                Column(
-                    modifier            = Modifier.padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(Modifier.height(4.dp))
-                    InfoRow(Icons.Default.Category,       stringResource(R.string.label_category),  transaction.listingCategory)
-                    InfoRow(Icons.Default.Numbers,         stringResource(R.string.listing_quantity), stringResource(R.string.label_quantity_units, transaction.requestedQuantity))
-                    InfoRow(Icons.Default.CalendarToday,  stringResource(R.string.label_pickup_short), stringResource(R.string.label_pickup_at, transaction.pickupDate, transaction.pickupTime))
-                    InfoRow(Icons.Default.Schedule,       stringResource(R.string.label_submitted), transaction.createdAt.take(10))
-                    if (!transaction.notes.isNullOrBlank()) {
-                        InfoRow(Icons.Default.Notes, stringResource(R.string.label_notes), transaction.notes)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        ClearChainOutlinedButton(
-                            text = stringResource(R.string.action_view_details),
-                            onClick = onViewDetail,
-                            icon = Icons.Default.OpenInNew
-                        )
-                    }
-                }
+            // -- What was moved -----------------------------------------------
+            if (transaction.items.isNotEmpty()) {
+                RequestItemsPreview(transaction)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+
+            RequestDetailRow(
+                icon = Icons.Default.CalendarToday,
+                text = stringResource(
+                    R.string.label_submitted_on_at,
+                    DateTimeUtils.formatDate(transaction.createdAt),
+                    DateTimeUtils.formatTime(transaction.createdAt)
+                )
+            )
+            RequestDetailRow(
+                icon = Icons.Default.AccessTime,
+                text = stringResource(
+                    R.string.label_pickup_on_at,
+                    DateTimeUtils.formatDate(transaction.pickupDate),
+                    transaction.pickupTime
+                )
+            )
+
+            // Earliest expiry across the request's items (null on older records)
+            ExpiryDetailRow(transaction.listingExpiryDate)
+
+            val handlingParts = buildList {
+                if (transaction.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
+                if (transaction.isFragile)             add(stringResource(R.string.note_fragile_items))
+                if (transaction.isHeavy)               add(stringResource(R.string.note_heavy_load))
+                transaction.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+            if (handlingParts.isNotEmpty()) {
+                RequestDetailRow(
+                    icon = Icons.AutoMirrored.Filled.StickyNote2,
+                    text = handlingParts.joinToString(" \u00B7 ")
+                )
             }
         }
     }
@@ -567,49 +471,35 @@ private fun ExportDialog(
     onShare:  () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon  = { Icon(Icons.Default.FileDownload, null) },
-        title = { Text(stringResource(R.string.label_export_transactions)) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    "CSV preview (${csvText.lines().size - 1} rows):",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Surface(
-                    color  = MaterialTheme.colorScheme.surfaceVariant,
-                    shape  = RoundedCornerShape(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                ) {
-                    Text(
-                        text     = csvText.lines().take(6).joinToString("\n"),
-                        style    = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .verticalScroll(rememberScrollState())
-                            .padding(10.dp)
-                    )
-                }
-                Text(
-                    "Tap Share to open in another app (Notes, Files, email, etc.)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.share),
-                onClick = onShare,
-                fillMaxWidth = false,
-                icon = Icons.Default.Share
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onShare,
+        icon = Icons.Default.FileDownload,
+        title = stringResource(R.string.label_export_transactions),
+        message = stringResource(R.string.msg_export_transactions),
+        confirmLabel = stringResource(R.string.share),
+        confirmIcon = Icons.Default.Share,
+        dismissLabel = stringResource(R.string.cancel)
+    ) {
+        Text(
+            stringResource(R.string.label_csv_preview_rows, csvText.lines().size - 1),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Surface(
+            color  = MaterialTheme.colorScheme.surfaceVariant,
+            shape  = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        ) {
+            Text(
+                text     = csvText.lines().take(6).joinToString("\n"),
+                style    = MaterialTheme.typography.labelSmall,
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(10.dp)
             )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
-    )
+    }
 }

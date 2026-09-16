@@ -17,7 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.BuildConfig
 import com.clearchain.app.R
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
-import com.clearchain.app.presentation.components.DetailTopBar
+import com.clearchain.app.presentation.components.ScreenTitleRow
 
 @Composable
 fun SettingsScreen(
@@ -35,6 +35,12 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+
+            ScreenTitleRow(
+                title = stringResource(R.string.settings),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            )
 
             // -- Appearance ------------------------------------------------
             SettingsSectionHeader(stringResource(R.string.theme))

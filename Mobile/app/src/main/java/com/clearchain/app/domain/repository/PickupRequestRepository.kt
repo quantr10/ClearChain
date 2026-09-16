@@ -22,11 +22,6 @@ interface PickupRequestRepository {
 
     suspend fun getPickupRequestById(id: String): Result<PickupRequest>
 
-    suspend fun updatePickupRequestStatus(
-        id: String,
-        status: String
-    ): Result<PickupRequest>
-
     suspend fun cancelPickupRequest(id: String): Result<PickupRequest>
 
     suspend fun approvePickupRequest(id: String): Result<PickupRequest>

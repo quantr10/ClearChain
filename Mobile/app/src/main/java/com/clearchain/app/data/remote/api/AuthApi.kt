@@ -46,6 +46,10 @@ interface AuthApi {
     @POST("auth/fcm-token")
     suspend fun registerFCMToken(@Body request: RegisterFCMTokenRequest): ApiResponse<Unit>
 
+    /** Drops this device at logout so the next account on it doesn't inherit our push. */
+    @HTTP(method = "DELETE", path = "auth/fcm-token", hasBody = true)
+    suspend fun unregisterFCMToken(@Body request: RegisterFCMTokenRequest): ApiResponse<Unit>
+
     @GET("auth/check-email")
     suspend fun checkEmail(@Query("email") email: String): EmailAvailabilityResponse
 

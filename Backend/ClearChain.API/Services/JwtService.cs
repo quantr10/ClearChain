@@ -12,7 +12,6 @@ public interface IJwtService
     string GenerateAccessToken(Organization user);
     string GenerateRefreshToken();
     ClaimsPrincipal? ValidateToken(string token);
-    Guid? GetUserIdFromToken(string token);
 }
 
 public class JwtService : IJwtService
@@ -92,18 +91,5 @@ public class JwtService : IJwtService
         {
             return null;
         }
-    }
-
-    public Guid? GetUserIdFromToken(string token)
-    {
-        var principal = ValidateToken(token);
-        var userIdClaim = principal?.FindFirst(ClaimTypes.NameIdentifier) 
-                       ?? principal?.FindFirst(JwtRegisteredClaimNames.Sub);
-        
-        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            return userId;
-        }
-        return null;
     }
 }

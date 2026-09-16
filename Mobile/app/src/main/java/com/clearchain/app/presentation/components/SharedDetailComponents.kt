@@ -1,8 +1,6 @@
 package com.clearchain.app.presentation.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,9 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.CardShape
 
 @Composable
 fun InfoRow(
@@ -52,23 +50,12 @@ fun InfoRow(
 }
 
 @Composable
-fun SectionHeader(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = modifier.padding(top = 8.dp, bottom = 4.dp)
-    )
-}
-
-@Composable
 fun DashboardSection(
     title: String,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
+    /** Defaults to the small section caption; pass a larger style for a headline section. */
+    titleStyle: TextStyle? = null,
     action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -93,7 +80,7 @@ fun DashboardSection(
                     if (title.isNotBlank()) {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = titleStyle ?: MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = resolvedContentColor
                         )
@@ -103,21 +90,6 @@ fun DashboardSection(
             }
             content()
         }
-    }
-}
-
-@Composable
-fun InfoCard(
-    modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        color = containerColor,
-        shape = CardShape,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
     }
 }
 

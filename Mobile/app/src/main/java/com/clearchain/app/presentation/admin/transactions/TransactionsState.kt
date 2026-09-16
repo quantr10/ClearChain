@@ -1,6 +1,8 @@
 package com.clearchain.app.presentation.admin.transactions
 
 import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.presentation.components.CommonSortOptions
+import com.clearchain.app.presentation.components.SortOption
 
 data class TransactionsState(
     val allTransactions: List<PickupRequest> = emptyList(),
@@ -8,6 +10,13 @@ data class TransactionsState(
 
     val searchQuery: String = "",
     val selectedStatus: String? = null,
+
+    // Sort (by submission date — matches the default sort loadTransactions() already applies)
+    val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
+    val availableSortOptions: List<SortOption> = listOf(
+        CommonSortOptions.CREATED_DATE_DESC,
+        CommonSortOptions.CREATED_DATE_ASC,
+    ),
 
     // Date range filter
     val selectedDatePreset: String? = null, // "TODAY" | "WEEK" | "MONTH" | "CUSTOM" | null = all
@@ -19,7 +28,6 @@ data class TransactionsState(
     // Filter sheet
     val showFilterSheet: Boolean = false,
 
-    val expandedTransactionId: String? = null,
     val showExportDialog: Boolean = false,
     val exportCsvText: String = "",
 
@@ -30,9 +38,5 @@ data class TransactionsState(
     // Flagged: PENDING transactions older than 3 days
     val flaggedIds: Set<String> = emptySet()
 ) {
-    // Aggregate stats computed from all transactions
-    val totalCompleted: Int get() = allTransactions.count { it.status == com.clearchain.app.domain.model.PickupRequestStatus.COMPLETED }
-    val totalPending:   Int get() = allTransactions.count { it.status == com.clearchain.app.domain.model.PickupRequestStatus.PENDING }
-    val flaggedCount:   Int get() = flaggedIds.size
     val activeFilterCount: Int get() = if (selectedDatePreset != null) 1 else 0
 }

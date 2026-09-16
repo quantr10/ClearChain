@@ -1,6 +1,7 @@
 package com.clearchain.app.presentation.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -15,14 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -42,6 +43,7 @@ fun ProfileScreen(
     onNavigateToAnalytics: () -> Unit = {},
     onNavigateToHelp: () -> Unit = {},
     onNavigateToAccountDetail: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -49,12 +51,7 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
-    val verificationMessage = when (state.user?.verificationStatus) {
-        VerificationStatus.PENDING -> stringResource(R.string.msg_org_under_review)
-        VerificationStatus.REJECTED -> stringResource(R.string.msg_verification_rejected_profile)
-        else -> null
-    }
-    SnackbarMessageEffect(snackbarHostState, verificationMessage)
+    var showAvatarPickerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -80,12 +77,14 @@ fun ProfileScreen(
                 state.user != null ->
                     ProfileViewContent(
                         state = state,
+                        onChangeAvatar = { showAvatarPickerDialog = true },
                         onChangePassword = { showChangePasswordDialog = true },
                         onLogout = { showLogoutDialog = true },
                         onDeleteAccount = { showDeleteAccountDialog = true },
                         onNavigateToAnalytics = onNavigateToAnalytics,
                         onNavigateToHelp = onNavigateToHelp,
-                        onNavigateToAccountDetail = onNavigateToAccountDetail
+                        onNavigateToAccountDetail = onNavigateToAccountDetail,
+                        onNavigateToSettings = onNavigateToSettings
                     )
 
                 else ->
@@ -101,10 +100,7 @@ fun ProfileScreen(
     }
 
     if (showLogoutDialog) {
-        DestructiveConfirmDialog(
-            title = stringResource(R.string.logout),
-            message = "",
-            confirmLabel = stringResource(R.string.logout),
+        LogoutDialog(
             onConfirm = { showLogoutDialog = false; onLogout() },
             onDismiss = { showLogoutDialog = false }
         )
@@ -118,6 +114,19 @@ fun ProfileScreen(
                 viewModel.onEvent(ProfileEvent.ChangePassword(current, newPassword))
                 showChangePasswordDialog = false
             }
+        )
+    }
+
+    if (showAvatarPickerDialog) {
+        PhotoPickerDialog(
+            onPhotoSelected = { uri ->
+                viewModel.onEvent(ProfileEvent.AvatarSelected(uri))
+                showAvatarPickerDialog = false
+            },
+            onDismiss = { showAvatarPickerDialog = false },
+            title = stringResource(R.string.label_change_avatar),
+            message = stringResource(R.string.msg_avatar_source),
+            previewMessage = stringResource(R.string.msg_use_this_avatar)
         )
     }
 
@@ -136,12 +145,14 @@ fun ProfileScreen(
 @Composable
 private fun ProfileViewContent(
     state: ProfileState,
+    onChangeAvatar: () -> Unit,
     onChangePassword: () -> Unit,
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
     onNavigateToAnalytics: () -> Unit = {},
     onNavigateToHelp: () -> Unit = {},
-    onNavigateToAccountDetail: () -> Unit = {}
+    onNavigateToAccountDetail: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val user = state.user!!
 
@@ -150,10 +161,14 @@ private fun ProfileViewContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        ProfileHero(user = user)
+        ProfileHero(
+            user = user,
+            isUploadingAvatar = state.isUploadingAvatar,
+            onChangeAvatar = onChangeAvatar
+        )
 
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+            modifier = Modifier.padding(ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -162,15 +177,24 @@ private fun ProfileViewContent(
                     title = stringResource(R.string.account_detail),
                     onClick = onNavigateToAccountDetail
                 )
-                DashboardActionCard(
-                    icon = Icons.Default.BarChart,
-                    title = stringResource(R.string.label_analytics),
-                    onClick = onNavigateToAnalytics
-                )
+                // Admins have their own Statistics tab; the analytics screen reports
+                // reputation and pickup figures that only apply to an NGO or grocery.
+                if (user.type != OrganizationType.ADMIN) {
+                    DashboardActionCard(
+                        icon = Icons.Default.BarChart,
+                        title = stringResource(R.string.label_analytics),
+                        onClick = onNavigateToAnalytics
+                    )
+                }
                 DashboardActionCard(
                     icon = Icons.Default.HelpOutline,
                     title = stringResource(R.string.label_help_faq),
                     onClick = onNavigateToHelp
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.Settings,
+                    title = stringResource(R.string.settings),
+                    onClick = onNavigateToSettings
                 )
                 DashboardActionCard(
                     icon = Icons.Default.Lock,
@@ -201,8 +225,13 @@ private fun ProfileViewContent(
 }
 
 @Composable
-private fun ProfileHero(user: Organization) {
+private fun ProfileHero(
+    user: Organization,
+    isUploadingAvatar: Boolean = false,
+    onChangeAvatar: () -> Unit = {}
+) {
     val context = LocalContext.current
+    val changeAvatarLabel = stringResource(R.string.cd_change_avatar)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -216,31 +245,76 @@ private fun ProfileHero(user: Organization) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!user.profilePictureUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(user.profilePictureUrl).crossfade(true).build(),
-                        contentDescription = stringResource(R.string.cd_profile_photo_of, user.name),
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
+            // Tapping the avatar (or the role icon standing in for it) opens the
+            // photo picker; every role owns a profile picture, so it is always enabled.
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .clickable(
+                            enabled = !isUploadingAvatar,
+                            onClickLabel = changeAvatarLabel,
+                            onClick = onChangeAvatar
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!user.profilePictureUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(user.profilePictureUrl).crossfade(true).build(),
+                            contentDescription = stringResource(R.string.cd_profile_photo_of, user.name),
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = when (user.type) {
+                                OrganizationType.GROCERY -> Icons.Default.Store
+                                OrganizationType.NGO -> Icons.Default.VolunteerActivism
+                                OrganizationType.ADMIN -> Icons.Default.AdminPanelSettings
+                            },
+                            contentDescription = stringResource(R.string.cd_org_type, user.type.name.lowercase()),
+                            modifier = Modifier.size(44.dp),
+                            tint = Color.White
+                        )
+                    }
+
+                    if (isUploadingAvatar) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.35f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .offset(x = 4.dp, y = 4.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable(
+                            enabled = !isUploadingAvatar,
+                            onClickLabel = changeAvatarLabel,
+                            onClick = onChangeAvatar
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        imageVector = when (user.type) {
-                            OrganizationType.GROCERY -> Icons.Default.Store
-                            OrganizationType.NGO -> Icons.Default.VolunteerActivism
-                            OrganizationType.ADMIN -> Icons.Default.AdminPanelSettings
-                        },
-                        contentDescription = stringResource(R.string.cd_org_type, user.type.name.lowercase()),
-                        modifier = Modifier.size(44.dp),
-                        tint = Color.White
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = changeAvatarLabel,
+                        modifier = Modifier.size(16.dp),
+                        tint = BrandTeal
                     )
                 }
             }
@@ -306,8 +380,6 @@ private fun ChangePasswordDialog(
     var currentPassword    by remember { mutableStateOf("") }
     var newPassword        by remember { mutableStateOf("") }
     var confirmNewPassword by remember { mutableStateOf("") }
-    var currentPwVisible   by remember { mutableStateOf(false) }
-    var newPwVisible       by remember { mutableStateOf(false) }
     var error              by remember { mutableStateOf<String?>(null) }
 
     val errCurrentRequired  = stringResource(R.string.error_current_password_required)
@@ -317,116 +389,70 @@ private fun ChangePasswordDialog(
     val errNeedsNumber      = stringResource(R.string.error_password_needs_number)
     val errDontMatch        = stringResource(R.string.error_passwords_dont_match)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title            = { Text(stringResource(R.string.label_change_password)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value                = currentPassword,
-                    onValueChange        = { currentPassword = it; error = null },
-                    label                = { Text(stringResource(R.string.label_current_password)) },
-                    visualTransformation = if (currentPwVisible) VisualTransformation.None
-                                           else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { currentPwVisible = !currentPwVisible }) {
-                            Icon(if (currentPwVisible) Icons.Default.Visibility
-                                 else Icons.Default.VisibilityOff,
-                                 if (currentPwVisible) stringResource(R.string.label_hide_password) else stringResource(R.string.label_show_password))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true
-                )
-                OutlinedTextField(
-                    value                = newPassword,
-                    onValueChange        = { newPassword = it; error = null },
-                    label                = { Text(stringResource(R.string.label_new_password)) },
-                    visualTransformation = if (newPwVisible) VisualTransformation.None
-                                           else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { newPwVisible = !newPwVisible }) {
-                            Icon(if (newPwVisible) Icons.Default.Visibility
-                                 else Icons.Default.VisibilityOff,
-                                 if (newPwVisible) stringResource(R.string.label_hide_password) else stringResource(R.string.label_show_password))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true
-                )
-                OutlinedTextField(
-                    value                = confirmNewPassword,
-                    onValueChange        = { confirmNewPassword = it; error = null },
-                    label                = { Text(stringResource(R.string.label_confirm_new_password)) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier             = Modifier.fillMaxWidth(), singleLine = true
-                )
-                error?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall)
-                }
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.Lock,
+        title = stringResource(R.string.label_change_password),
+        message = stringResource(R.string.msg_change_password),
+        confirmLabel = stringResource(R.string.action_change),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmEnabled = !isLoading,
+        confirmLoading = isLoading,
+        onConfirm = {
+            when {
+                currentPassword.isBlank()             -> error = errCurrentRequired
+                newPassword.isBlank()                 -> error = errNewRequired
+                newPassword.length < 8                -> error = errMinLength
+                !newPassword.any { it.isUpperCase() } -> error = errNeedsUppercase
+                !newPassword.any { it.isDigit() }     -> error = errNeedsNumber
+                newPassword != confirmNewPassword      -> error = errDontMatch
+                else -> onConfirm(currentPassword, newPassword)
             }
-        },
-        confirmButton = {
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.action_change),
-                enabled = !isLoading,
-                onClick = {
-                    when {
-                        currentPassword.isBlank()             -> error = errCurrentRequired
-                        newPassword.isBlank()                 -> error = errNewRequired
-                        newPassword.length < 8                -> error = errMinLength
-                        !newPassword.any { it.isUpperCase() } -> error = errNeedsUppercase
-                        !newPassword.any { it.isDigit() }     -> error = errNeedsNumber
-                        newPassword != confirmNewPassword      -> error = errDontMatch
-                        else -> onConfirm(currentPassword, newPassword)
-                    }
-                },
-                fillMaxWidth = false,
-                loading = isLoading
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
-    )
-}
-
-@Composable
-private fun StatItem(label: String, value: String, icon: ImageVector) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        ClearChainTextField(
+            value = currentPassword,
+            onValueChange = { currentPassword = it; error = null },
+            label = stringResource(R.string.label_current_password),
+            modifier = Modifier.fillMaxWidth(),
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Next,
+            isPassword = true,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        )
+        ClearChainTextField(
+            value = newPassword,
+            onValueChange = { newPassword = it; error = null },
+            label = stringResource(R.string.label_new_password),
+            modifier = Modifier.fillMaxWidth(),
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Next,
+            isPassword = true,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        )
+        ClearChainTextField(
+            value = confirmNewPassword,
+            onValueChange = { confirmNewPassword = it; error = null },
+            label = stringResource(R.string.label_confirm_new_password),
+            modifier = Modifier.fillMaxWidth(),
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            isPassword = true,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        )
+        error?.let {
+            Text(it, color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Account stats card
 // ═══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun AccountStatsCard(stats: com.clearchain.app.domain.model.OrgStats, orgType: OrganizationType) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            if (orgType == OrganizationType.GROCERY) {
-                StatItem(stringResource(R.string.status_active), stats.activeListings.toString(), Icons.Default.Inventory)
-                StatItem(stringResource(R.string.status_pending), stats.pendingRequests.toString(), Icons.Default.Pending)
-                StatItem(stringResource(R.string.stat_completed), stats.completed.toString(), Icons.Default.CheckCircle)
-                StatItem(stringResource(R.string.impact_food_saved), "${stats.foodSaved} kg", Icons.Default.Eco)
-            } else {
-                StatItem(stringResource(R.string.label_stat_requests), stats.totalCompleted.toString(), Icons.Default.LocalShipping)
-                StatItem(stringResource(R.string.stat_in_stock), stats.inStock.toString(), Icons.Default.Inventory)
-                StatItem(stringResource(R.string.stat_distributed), stats.distributed.toString(), Icons.Default.VolunteerActivism)
-            }
-        }
-    }
-}
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Team Members Card
@@ -551,6 +577,27 @@ private fun MemberRow(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Logout dialog
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun LogoutDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        title = stringResource(R.string.logout),
+        message = stringResource(R.string.msg_logout_confirm),
+        confirmLabel = stringResource(R.string.logout),
+        dismissLabel = stringResource(R.string.cancel),
+        isDestructive = true,
+        icon = Icons.Default.Logout
+    )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Delete Account dialog
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -561,49 +608,31 @@ private fun DeleteAccountDialog(
     onConfirm: (String) -> Unit
 ) {
     var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = { if (!isLoading) onDismiss() },
-        icon  = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text(stringResource(R.string.label_delete_account), color = MaterialTheme.colorScheme.error) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.msg_delete_account_warning))
-                OutlinedTextField(
-                    value         = password,
-                    onValueChange = { password = it },
-                    label         = { Text(stringResource(R.string.label_confirm_password)) },
-                    singleLine    = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { showPassword = !showPassword }) {
-                            Icon(if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                 if (showPassword) stringResource(R.string.cd_hide_password) else stringResource(R.string.cd_show_password))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled  = !isLoading
-                )
-            }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.label_delete_account),
-                onClick = { if (password.isNotBlank()) onConfirm(password) },
-                enabled = password.isNotBlank() && !isLoading,
-                loading = isLoading,
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-                fillMaxWidth = false
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.cancel),
-                onClick = onDismiss,
-                enabled = !isLoading
-            )
-        }
-    )
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = { if (password.isNotBlank()) onConfirm(password) },
+        icon = Icons.Default.DeleteForever,
+        title = stringResource(R.string.label_delete_account),
+        message = stringResource(R.string.msg_delete_account_warning),
+        confirmLabel = stringResource(R.string.label_delete_account),
+        dismissLabel = stringResource(R.string.cancel),
+        isDestructive = true,
+        confirmEnabled = password.isNotBlank() && !isLoading,
+        confirmLoading = isLoading,
+        dismissEnabled = !isLoading,
+        dismissible = !isLoading
+    ) {
+        ClearChainTextField(
+            value         = password,
+            onValueChange = { password = it },
+            label         = stringResource(R.string.label_confirm_password),
+            keyboardType  = KeyboardType.Password,
+            imeAction     = ImeAction.Done,
+            isPassword    = true,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            modifier      = Modifier.fillMaxWidth(),
+            enabled       = !isLoading
+        )
+    }
 }

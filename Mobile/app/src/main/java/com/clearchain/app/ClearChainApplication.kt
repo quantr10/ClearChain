@@ -2,66 +2,53 @@ package com.clearchain.app
 
 import android.app.Application
 import android.util.Log
+import com.clearchain.app.data.remote.signalr.RealtimeLifecycleObserver
+import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
 import com.google.firebase.FirebaseApp
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 @HiltAndroidApp
 class ClearChainApplication : Application() {
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    @Inject
+    lateinit var realtimeLifecycleObserver: RealtimeLifecycleObserver
+
+    @Inject
+    lateinit var registerFCMTokenUseCase: RegisterFCMTokenUseCase
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
 
         Log.d("ClearChainApp", "📱 Application starting...")
 
-        // ✅ CRITICAL: Initialize Firebase first
         initializeFirebase()
 
-        // ✅ Then request FCM token
-        requestFCMToken()
+        // Binds the SignalR connection to the process being in the foreground. Nothing else in
+        // the app may connect or disconnect — see RealtimeLifecycleObserver.
+        realtimeLifecycleObserver.start()
+
+        // Re-registers this device on every launch. The token itself rarely changes, but the
+        // server only learns about it through this call, and a re-register also refreshes the
+        // token's UpdatedAt so an active device isn't swept by the stale-token job.
+        applicationScope.launch {
+            registerFCMTokenUseCase()
+                .onFailure { Log.w("ClearChainApp", "FCM registration skipped: ${it.message}") }
+        }
     }
 
     private fun initializeFirebase() {
         try {
-            // Initialize Firebase (reads google-services.json)
             FirebaseApp.initializeApp(this)
-            Log.d("ClearChainApp", "🔥 Firebase initialized successfully")
-
-            // Verify Firebase app
-            val firebaseApp = FirebaseApp.getInstance()
-            Log.d("ClearChainApp", "🔥 Firebase project: ${firebaseApp.options.projectId}")
-            Log.d("ClearChainApp", "🔥 Firebase app name: ${firebaseApp.name}")
+            Log.d("ClearChainApp", "🔥 Firebase initialized (project: ${FirebaseApp.getInstance().options.projectId})")
         } catch (e: Exception) {
             Log.e("ClearChainApp", "❌ Firebase initialization failed", e)
-            Log.e("ClearChainApp", "❌ Error: ${e.message}")
-            e.printStackTrace()
-        }
-    }
-
-    private fun requestFCMToken() {
-        applicationScope.launch {
-            try {
-                Log.d("ClearChainApp", "🔔 Requesting FCM token...")
-
-                // Force token generation
-                val token = FirebaseMessaging.getInstance().token.await()
-
-                Log.d("ClearChainApp", "✅ FCM Token obtained!")
-                Log.d("ClearChainApp", "🔔 Token (first 30 chars): ${token.take(30)}...")
-                // Token will be saved by FCMService.onNewToken()
-            } catch (e: Exception) {
-                Log.e("ClearChainApp", "❌ Failed to get FCM token", e)
-                Log.e("ClearChainApp", "❌ Error type: ${e.javaClass.simpleName}")
-                Log.e("ClearChainApp", "❌ Error message: ${e.message}")
-                e.printStackTrace()
-            }
         }
     }
 }

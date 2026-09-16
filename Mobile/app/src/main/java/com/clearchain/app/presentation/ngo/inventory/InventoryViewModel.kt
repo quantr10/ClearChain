@@ -50,7 +50,6 @@ class InventoryViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
         viewModelScope.launch {
             signalRService.inventoryItemAdded.collect { item ->
                 loadInventory()
@@ -60,13 +59,6 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch { signalRService.inventoryItemDistributed.collect { loadInventory() } }
         viewModelScope.launch { signalRService.inventoryItemExpired.collect { loadInventory() } }
         viewModelScope.launch { signalRService.inventoryItemUpdated.collect { loadInventory() } }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
     }
 
     fun onEvent(event: InventoryEvent) {
@@ -97,8 +89,7 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
 
-            is InventoryEvent.DistributeItem ->
-                _state.update { it.copy(showBeneficiaryDialogForId = event.itemId, beneficiaryCount = "") }
+            is InventoryEvent.DistributeItem -> distributeItem(event.itemId)
 
             InventoryEvent.ClearError -> _state.update { it.copy(error = null) }
 
@@ -150,18 +141,6 @@ class InventoryViewModel @Inject constructor(
             is InventoryEvent.ManualExpiryDateChanged  -> _state.update { it.copy(manualExpiryDate = event.date) }
             InventoryEvent.SubmitManualAdd             -> submitManualAdd()
 
-            // Beneficiary count dialog
-            is InventoryEvent.ShowBeneficiaryDialog ->
-                _state.update { it.copy(showBeneficiaryDialogForId = event.itemId, beneficiaryCount = "") }
-            InventoryEvent.DismissBeneficiaryDialog ->
-                _state.update { it.copy(showBeneficiaryDialogForId = null) }
-            is InventoryEvent.BeneficiaryCountChanged ->
-                _state.update { it.copy(beneficiaryCount = event.count) }
-            InventoryEvent.ConfirmDistribute -> {
-                val id = _state.value.showBeneficiaryDialogForId ?: return
-                _state.update { it.copy(showBeneficiaryDialogForId = null) }
-                distributeItem(id)
-            }
 
             InventoryEvent.ExportCsv -> exportCsv()
         }
@@ -359,13 +338,10 @@ class InventoryViewModel @Inject constructor(
     private fun distributeItem(itemId: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val beneficiaryCount = _state.value.beneficiaryCount.toIntOrNull()
             val result = distributeInventoryItemUseCase(itemId)
             result.fold(
                 onSuccess = {
-                    val msg = if (beneficiaryCount != null && beneficiaryCount > 0)
-                        getApplication<Application>().getString(R.string.snack_distributed_to_beneficiaries, beneficiaryCount)
-                    else getApplication<Application>().getString(R.string.snack_item_distributed)
+                    val msg = getApplication<Application>().getString(R.string.snack_item_distributed)
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                     loadInventory()
                 },

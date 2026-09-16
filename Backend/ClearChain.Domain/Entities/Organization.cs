@@ -16,10 +16,9 @@ public class Organization
     
     public bool Verified { get; set; }
     public string VerificationStatus { get; set; } = "pending";
+    public string? VerificationNotes { get; set; }   // Admin's note when approving/rejecting (e.g. rejection reason)
     public string? Hours { get; set; }
     
-    // Google OAuth (Phase 2)
-    public string? GoogleId { get; set; }
     public string AuthProvider { get; set; } = "local";
     public string? ProfilePictureUrl { get; set; }
     
@@ -41,9 +40,8 @@ public class Organization
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiry { get; set; }
 
-    // ═══ Onboarding documents ═══
-    public string? DocumentUrl { get; set; }        // Primary verification doc (business reg / charity cert)
-    public string? DocumentUrl2 { get; set; }       // Secondary document (optional)
+    // ═══ Onboarding document ═══
+    public string? DocumentUrl { get; set; }        // Verification doc (business reg / charity cert)
     public string? DocumentMimeType { get; set; }
 
     public DateTime CreatedAt { get; set; }

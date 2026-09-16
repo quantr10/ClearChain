@@ -15,6 +15,7 @@ data class Organization(
     val location: String,
     val verified: Boolean,
     val verificationStatus: VerificationStatus,
+    val verificationNotes: String? = null,
     val hours: String? = null,
     val profilePictureUrl: String? = null,
     val createdAt: String,
@@ -28,7 +29,6 @@ data class Organization(
     val description: String? = null,
     // ═══ Document fields ═══
     val documentUrl: String? = null,
-    val documentUrl2: String? = null,
     val documentMimeType: String? = null
 ) {
     fun isProfileComplete(): Boolean {
@@ -44,17 +44,14 @@ data class Organization(
         }
     }
 
-    fun getMissingFields(): List<String> {
-        val missing = mutableListOf<String>()
-        if (phone.isBlank()) missing.add("Phone")
-        if (address.isBlank()) missing.add("Address")
-        if (location.isBlank()) missing.add("City/Location")
-        if (hours.isNullOrBlank()) missing.add("Operating Hours")
-        if ((type == OrganizationType.NGO || type == OrganizationType.GROCERY) && contactPerson.isNullOrBlank()) {
-            missing.add("Contact Person")
-        }
-        return missing
-    }
+    /**
+     * True when the org has finished onboarding but an admin has not approved it yet
+     * (pending or rejected). Such orgs are held on the PendingReview screen and blocked
+     * from creating listings / pickup requests. Admins are never gated.
+     */
+    fun requiresVerificationGate(): Boolean =
+        type != OrganizationType.ADMIN && verificationStatus != VerificationStatus.APPROVED
+
 }
 
 @Serializable

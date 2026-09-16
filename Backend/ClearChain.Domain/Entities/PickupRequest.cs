@@ -25,7 +25,6 @@ public class PickupRequest
     public string ListingUnit { get; set; } = string.Empty;
 
     public string? CancellationReason { get; set; }  // set when Status == Cancelled
-    public string? LicensePlate { get; set; }
     public bool RequiresRefrigeration { get; set; } = false;
     public bool IsFragile { get; set; } = false;
     public bool IsHeavy { get; set; } = false;

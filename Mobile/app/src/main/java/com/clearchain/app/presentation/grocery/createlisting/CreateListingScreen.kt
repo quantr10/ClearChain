@@ -1,9 +1,6 @@
 package com.clearchain.app.presentation.grocery.createlisting
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -59,7 +57,7 @@ fun CreateListingScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
+            SmallFloatingActionButton(
                 onClick = { viewModel.onEvent(CreateListingEvent.TogglePreview) },
                 containerColor = if (state.isPreviewMode)
                     MaterialTheme.colorScheme.secondaryContainer
@@ -82,8 +80,8 @@ fun CreateListingScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(ScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.isPreviewMode) {
                 // ── Preview Mode ───────────────────────────────────────────────
@@ -115,7 +113,6 @@ fun CreateListingScreen(
                     )
                 }
                 ListingCard(listing = previewListing)
-                Spacer(Modifier.height(4.dp))
                 ClearChainButton(
                     text     = stringResource(R.string.btn_create_listing),
                     onClick  = { viewModel.onEvent(CreateListingEvent.CreateListing) },
@@ -341,15 +338,6 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Error banner ───────────────────────────────────────────────
-                val uploadingImageMessage = stringResource(R.string.uploading_image)
-                AnimatedVisibility(
-                    visible = state.isLoading && state.error == uploadingImageMessage,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    UploadingImageIndicator(message = uploadingImageMessage)
-                }
                 // ── Submit ─────────────────────────────────────────────────────
                 ClearChainButton(
                     text     = stringResource(R.string.btn_create_listing),
@@ -373,34 +361,6 @@ fun CreateListingScreen(
 }
 
 // ── Individual field card ──────────────────────────────────────────────────────
-@Composable
-private fun UploadingImageIndicator(message: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = ShapeMedium,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(ClearChainButtonDefaults.Height)
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(ClearChainButtonDefaults.IconSize),
-                strokeWidth = 2.dp
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
 @Composable
 private fun FieldCard(
     label: String,

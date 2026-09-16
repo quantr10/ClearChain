@@ -46,20 +46,27 @@ public class AuthService : IAuthService
             return (false, "Email already registered", null);
 
         var verificationCode = Random.Shared.Next(100000, 999999).ToString();
+        var type = request.Type.ToLower();
+
+        // Admin accounts don't go through org verification at all — they're trusted by
+        // definition (see Organization.requiresVerificationGate() on the client, which
+        // exempts admins the same way). Auto-approve here so one never sits in the
+        // verification queue as "pending".
+        var isAdmin = type == "admin";
 
         var organization = new Organization
         {
             Id = Guid.NewGuid(),
             Name = request.Name,
-            Type = request.Type.ToLower(),
+            Type = type,
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             AuthProvider = "local",
             EmailVerified = false,
             EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(verificationCode),
             EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15),
-            Verified = false,
-            VerificationStatus = "pending",
+            Verified = isAdmin,
+            VerificationStatus = isAdmin ? "approved" : "pending",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -335,9 +342,11 @@ public class AuthService : IAuthService
             ZipCode = org.ZipCode ?? "",
             Verified = org.Verified,
             VerificationStatus = org.VerificationStatus,
+            VerificationNotes = org.VerificationNotes,
             Hours = org.Hours,
             ProfilePictureUrl = org.ProfilePictureUrl,
             CreatedAt = org.CreatedAt.ToString("o"),
+            DocumentUrl = org.DocumentUrl,
             // NEW
             Latitude = org.Latitude,
             Longitude = org.Longitude,

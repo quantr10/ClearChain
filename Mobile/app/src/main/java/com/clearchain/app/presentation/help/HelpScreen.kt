@@ -10,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
-import com.clearchain.app.presentation.components.DetailTopBar
+import com.clearchain.app.presentation.components.ScreenTitleRow
 
 private data class FaqItem(val question: String, val answer: String)
 
@@ -68,9 +69,15 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = ScreenPadding,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item {
+                ScreenTitleRow(
+                    title = stringResource(R.string.help),
+                    onBack = onNavigateBack
+                )
+            }
             item {
                 Text(
                     "Frequently Asked Questions",

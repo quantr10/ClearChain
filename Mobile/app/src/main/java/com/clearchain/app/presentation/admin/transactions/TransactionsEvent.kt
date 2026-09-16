@@ -1,10 +1,13 @@
 package com.clearchain.app.presentation.admin.transactions
 
+import com.clearchain.app.presentation.components.SortOption
+
 sealed class TransactionsEvent {
     object LoadTransactions : TransactionsEvent()
     object RefreshTransactions : TransactionsEvent()
     data class SearchQueryChanged(val query: String) : TransactionsEvent()
     data class StatusFilterChanged(val status: String?) : TransactionsEvent()
+    data class SortOptionChanged(val option: SortOption) : TransactionsEvent()
     object ClearError : TransactionsEvent()
 
     // Date range
@@ -13,7 +16,6 @@ sealed class TransactionsEvent {
     data class ShowDatePicker(val forStart: Boolean) : TransactionsEvent()
     object HideDatePicker : TransactionsEvent()
 
-    data class ToggleExpanded(val transactionId: String) : TransactionsEvent()
     object ShowExportDialog : TransactionsEvent()
     object DismissExportDialog : TransactionsEvent()
 

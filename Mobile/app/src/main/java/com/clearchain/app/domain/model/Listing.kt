@@ -11,6 +11,7 @@ data class Listing(
     val id: String,
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val title: String,
     val description: String,
     val category: FoodCategory,

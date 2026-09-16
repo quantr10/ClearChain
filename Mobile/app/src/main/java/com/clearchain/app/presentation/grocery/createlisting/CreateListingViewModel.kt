@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.grocery.createlisting
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -253,8 +252,6 @@ private fun createListing() {
         
         val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
         if (primaryUri != null && finalImageUrl.isEmpty()) {
-            _state.update { it.copy(isLoading = true, error = context.getString(R.string.uploading_image)) }
-
             val uploadResult = listingRepository.uploadFoodImage(primaryUri)
             
             uploadResult.fold(

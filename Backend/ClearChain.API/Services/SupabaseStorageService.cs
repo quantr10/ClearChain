@@ -5,7 +5,6 @@ namespace ClearChain.API.Services;
 public interface IStorageService
 {
     Task<string> UploadPickupProofAsync(Stream fileStream, string fileName);
-    Task<bool> DeleteFileAsync(string fileUrl);
     Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId);
     Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string bucket);
 }
@@ -161,42 +160,6 @@ public class SupabaseStorageService : IStorageService
         {
             _logger.LogError(ex, "Error uploading file {FileName} to bucket {Bucket}", fileName, bucket);
             throw new Exception($"Failed to upload file: {ex.Message}", ex);
-        }
-    }
-
-    public async Task<bool> DeleteFileAsync(string fileUrl)
-    {
-        try
-        {
-            // Extract filename from URL
-            var uri = new Uri(fileUrl);
-            var pathSegments = uri.AbsolutePath.Split('/');
-            var fileName = pathSegments[^1]; // Last segment
-
-            _logger.LogInformation($"Deleting file: {fileName}");
-
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
-            httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
-
-            var deleteUrl = $"{_supabaseUrl}/storage/v1/object/{PICKUP_PROOFS_BUCKET}/{fileName}";
-
-            var response = await httpClient.DeleteAsync(deleteUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"Supabase delete failed: {errorContent}");
-                return false;
-            }
-
-            _logger.LogInformation($"File deleted successfully: {fileName}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error deleting file from URL: {fileUrl}");
-            return false;
         }
     }
 }

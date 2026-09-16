@@ -1,10 +1,8 @@
 package com.clearchain.app.presentation.admin.dashboard
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -17,24 +15,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.clearchain.app.presentation.admin.analytics.AnalyticsSection
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.util.UiEvent
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,10 +45,18 @@ fun AdminDashboardScreen(
     val scope             = rememberCoroutineScope()
     val adminDefault = stringResource(R.string.label_admin)
     var userName by remember { mutableStateOf(adminDefault) }
+    var profilePictureUrl by remember { mutableStateOf<String?>(null) }
 
+    // Collected rather than read once, so a freshly uploaded avatar shows up here
+    // without a re-login.
     LaunchedEffect(true) {
         scope.launch {
-            viewModel.getCurrentUserUseCase().first()?.let { user -> userName = user.name }
+            viewModel.getCurrentUserUseCase().collect { user ->
+                if (user != null) {
+                    userName = user.name
+                    profilePictureUrl = user.profilePictureUrl
+                }
+            }
         }
     }
 
@@ -67,10 +73,16 @@ fun AdminDashboardScreen(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        HapticPullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh    = { viewModel.onEvent(AdminDashboardEvent.RefreshStats) },
+            modifier     = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
             // ── Gradient admin header ──────────────────────────────────────
@@ -78,39 +90,18 @@ fun AdminDashboardScreen(
                 userName       = userName,
                 subtitle       = stringResource(R.string.system_health),
                 roleLabel      = stringResource(R.string.role_admin),
+                profilePictureUrl = profilePictureUrl,
                 gradientColors = listOf(
                     MaterialTheme.colorScheme.primary,
                     BrandTeal
                 ),
-                onProfileClick = { navController.navigate(Screen.Profile.route) },
-                trailingContent = {
-                    Spacer(Modifier.height(4.dp))
-                    // Refresh indicator
-                    if (state.isRefreshing) {
-                        CircularProgressIndicator(
-                            modifier   = Modifier.size(20.dp),
-                            color      = Color.White.copy(alpha = 0.7f),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.onEvent(AdminDashboardEvent.RefreshStats) },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.cd_refresh),
-                                tint     = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
+                onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
+                onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
             )
 
             Column(
-                modifier            = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                modifier            = Modifier.padding(ScreenPadding),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (state.isLoading && state.stats == null) {
                     Box(
@@ -122,70 +113,79 @@ fun AdminDashboardScreen(
                 } else {
                     // ── Platform stats ─────────────────────────────────────
                     state.stats?.let { stats ->
-                        DashboardSection(title = stringResource(R.string.section_overview)) {
-                            StatCardGrid(
-                                stats = listOf(
-                                    Triple(Icons.Default.Business,      stringResource(R.string.verification_queue), "${stats.totalOrganizations}"),
-                                    Triple(Icons.Default.Inventory,     stringResource(R.string.stat_active_listings), "${stats.activeListings}"),
-                                    Triple(Icons.Default.CheckCircle,   stringResource(R.string.stat_completed),       "${stats.completedRequests}"),
-                                    Triple(Icons.Default.Eco,           stringResource(R.string.stat_food_saved_kg),   "${stats.totalFoodSaved.toInt()}")
-                                ),
-                                accentColors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary,
-                                    MaterialTheme.colorScheme.tertiary,
-                                    BrandGreen
-                                )
+                        // Listing supply only. Request counts live in the status breakdown
+                        // and the completion meter below, so they are not repeated here.
+                        // These are live counts, so the tile opens the analytics backlog card.
+                        DrillDownSection(
+                            title         = stringResource(R.string.section_listings),
+                            section       = AnalyticsSection.BACKLOG,
+                            navController = navController
+                        ) {
+                            ListingOverview(
+                                activeCount   = "${stats.activeListings}",
+                                reservedCount = "${stats.reservedListings}",
+                                expiredCount  = "${stats.expiredListings}"
                             )
                         }
 
                         // Completion rate meter
                         if (stats.totalPickupRequests > 0) {
                             val rate = (stats.completedRequests.toFloat() / stats.totalPickupRequests * 100).toInt()
-                            Surface(
-                                color    = MaterialTheme.colorScheme.primaryContainer,
-                                shape    = MaterialTheme.shapes.large,
-                                modifier = Modifier.fillMaxWidth()
+                            DrillDownSection(
+                                // The meter inside already names itself, next to the figure
+                                // it belongs to; a section title above would say it twice.
+                                title         = "",
+                                section       = AnalyticsSection.REQUESTS,
+                                navController = navController
                             ) {
+                                // Same layout as the NGO dashboard's weekly goal card.
                                 Column(
-                                    modifier            = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    modifier            = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Row(
-                                        verticalAlignment     = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        modifier              = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment     = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            Icons.Default.TrendingUp,
-                                            null,
-                                            tint     = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        Row(
+                                            verticalAlignment     = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector        = Icons.Default.TrendingUp,
+                                                contentDescription = null,
+                                                tint     = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text       = stringResource(R.string.stat_completion_rate),
+                                                style      = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize   = 14.sp
+                                            )
+                                        }
                                         Text(
-                                            stringResource(R.string.stat_completion_rate),
+                                            text       = "$rate%",
                                             style      = MaterialTheme.typography.titleSmall,
+                                            color      = MaterialTheme.colorScheme.primary,
                                             fontWeight = FontWeight.SemiBold,
-                                            color      = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                        Spacer(Modifier.weight(1f))
-                                        Text(
-                                            "$rate%",
-                                            style      = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color      = MaterialTheme.colorScheme.primary
+                                            fontSize   = 14.sp
                                         )
                                     }
                                     LinearProgressIndicator(
-                                        progress      = { rate / 100f },
-                                        modifier      = Modifier.fillMaxWidth(),
-                                        color         = MaterialTheme.colorScheme.primary,
-                                        trackColor    = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        strokeCap     = androidx.compose.ui.graphics.StrokeCap.Round
+                                        progress   = { rate / 100f },
+                                        modifier   = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        color      = if (rate >= 100) BrandGreen else MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        stringResource(R.string.admin_completion_detail, stats.completedRequests, stats.totalPickupRequests),
+                                        text  = stringResource(R.string.admin_completion_detail, stats.completedRequests, stats.totalPickupRequests),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -195,25 +195,39 @@ fun AdminDashboardScreen(
                     // ── Request Status Bar Chart ───────────────────────────
                     state.stats?.let { stats ->
                         val barData = listOf(
-                            stringResource(R.string.status_pending)   to stats.pendingRequests,
-                            stringResource(R.string.status_approved)  to stats.approvedRequests,
-                            stringResource(R.string.status_ready)     to stats.readyRequests,
-                            stringResource(R.string.status_completed) to stats.completedRequests,
-                            stringResource(R.string.status_cancelled) to stats.cancelledRequests
+                            BarData(stringResource(R.string.status_pending),   stats.pendingRequests,   StatusColors.Pending),
+                            BarData(stringResource(R.string.status_approved),  stats.approvedRequests,  StatusColors.Approved),
+                            BarData(stringResource(R.string.status_ready),     stats.readyRequests,     StatusColors.Ready),
+                            BarData(stringResource(R.string.status_completed), stats.completedRequests, StatusColors.Completed),
+                            BarData(stringResource(R.string.status_cancelled), stats.cancelledRequests, StatusColors.Expired)
                         )
-                        if (barData.any { it.second > 0 }) {
-                            DashboardSection(title = stringResource(R.string.section_request_status_breakdown)) {
-                                RequestStatusBarChart(data = barData)
+                        if (barData.any { it.value > 0 }) {
+                            DrillDownSection(
+                                title         = stringResource(R.string.section_request_status_breakdown),
+                                section       = AnalyticsSection.REQUESTS,
+                                navController = navController
+                            ) {
+                                ColumnBarChart(bars = barData)
                             }
                         }
 
                         // ── Org Type Donut Chart ───────────────────────────
                         if (stats.totalOrganizations > 0) {
-                            DashboardSection(title = stringResource(R.string.section_org_types)) {
-                                OrgTypeDonutChart(
-                                    groceries  = stats.totalGroceries,
-                                    ngos       = stats.totalNgos,
-                                    unverified = stats.unverifiedOrganizations
+                            DrillDownSection(
+                                title         = stringResource(R.string.section_organizations),
+                                section       = AnalyticsSection.ORGANIZATIONS,
+                                navController = navController
+                            ) {
+                                // One dimension only: an unverified NGO is still an NGO, so
+                                // verification is not a third slice here.
+                                DonutChart(
+                                    slices = listOf(
+                                        BarData(stringResource(R.string.org_type_groceries), stats.totalGroceries, StatusColors.Available),
+                                        BarData(stringResource(R.string.org_type_ngos), stats.totalNgos, StatusColors.Approved)
+                                    ),
+                                    centerValue = stats.totalOrganizations.toString(),
+                                    centerLabel = stringResource(R.string.stat_total),
+                                    legendFirst = true
                                 )
                             }
                         }
@@ -221,18 +235,17 @@ fun AdminDashboardScreen(
                 }
 
                 // ── Quick actions ──────────────────────────────────────────
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DashboardActionCard(
                         icon     = Icons.Default.VerifiedUser,
                         title    = stringResource(R.string.verification_queue),
-                        subtitle = stringResource(R.string.admin_pending_approvals, state.stats?.unverifiedOrganizations ?: 0),
-                        badge    = state.stats?.unverifiedOrganizations?.takeIf { it > 0 }?.toString(),
+                        subtitle = stringResource(R.string.admin_review_organizations),
                         onClick  = { navController.navigate(Screen.Verification.route) }
                     )
                     DashboardActionCard(
                         icon     = Icons.Default.History,
                         title    = stringResource(R.string.transactions),
-                        subtitle = stringResource(R.string.admin_total_requests, state.stats?.totalPickupRequests ?: 0),
+                        subtitle = stringResource(R.string.admin_view_transactions),
                         onClick  = { navController.navigate(Screen.Transactions.route) }
                     )
                     DashboardActionCard(
@@ -246,20 +259,16 @@ fun AdminDashboardScreen(
                 // ── Recent activity feed ───────────────────────────────────
                 if (state.recentActivities.isNotEmpty()) {
                     DashboardSection(title = stringResource(R.string.section_recent_activity)) {
-                        Surface(
-                            color    = MaterialTheme.colorScheme.surfaceVariant,
-                            shape    = MaterialTheme.shapes.large,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(4.dp)) {
-                                state.recentActivities.take(5).forEachIndexed { index, activity ->
-                                    ActivityRow(activity = activity)
-                                    if (index < minOf(4, state.recentActivities.size - 1)) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(horizontal = 16.dp),
-                                            color    = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-                                        )
-                                    }
+                        // Straight onto the section — the tinted Surface that used to wrap
+                        // this was a second rounded box inside the section's own.
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            state.recentActivities.take(5).forEachIndexed { index, activity ->
+                                ActivityRow(activity = activity)
+                                if (index < minOf(4, state.recentActivities.size - 1)) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color    = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                                    )
                                 }
                             }
                         }
@@ -295,306 +304,151 @@ fun AdminDashboardScreen(
                     }
                 }
 
-                // ── User growth chart ──────────────────────────────────────
-                if (state.userGrowthData.isNotEmpty()) {
-                    DashboardSection(title = stringResource(R.string.section_new_orgs_30d)) {
-                        UserGrowthChart(data = state.userGrowthData)
-                    }
-                }
-
-                // ── System health ──────────────────────────────────────────
-                state.healthData?.let { health ->
-                    DashboardSection(title = stringResource(R.string.section_system_health)) {
-                        SystemHealthCard(health = health)
-                    }
-                }
-
                 Spacer(Modifier.height(8.dp))
             }
         }
+        }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Drill-down sections
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A dashboard card whose figures are a summary of one analytics section, and which opens
+ * that section when tapped. The home screen shows the headline; the number keeps its
+ * meaning on the next screen because it lands on the card that explains it rather than at
+ * the top of a long report.
+ */
+@Composable
+private fun DrillDownSection(
+    title: String,
+    section: AnalyticsSection,
+    navController: NavController,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    DashboardSection(
+        title      = title,
+        titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
+        modifier   = Modifier.clickable {
+            navController.navigate(Screen.AdminStatistics.createRoute(section.key))
+        },
+        content = content
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Request Status Bar Chart (Canvas)
 // ─────────────────────────────────────────────────────────────────────────────
 
-@Composable
-private fun RequestStatusBarChart(data: List<Pair<String, Int>>) {
-    val maxValue = data.maxOfOrNull { it.second } ?: 1
-    val barColors = listOf(
-        Color(0xFFFF9800), // Pending - orange
-        Color(0xFF2196F3), // Approved - blue
-        Color(0xFF9C27B0), // Ready - purple
-        Color(0xFF4CAF50), // Completed - green
-        Color(0xFF9E9E9E)  // Cancelled - grey
-    )
+// ─────────────────────────────────────────────────────────────────────────────
+// Overview tiles
+// ─────────────────────────────────────────────────────────────────────────────
 
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+/**
+ * Listing supply at a glance: what is still open is the number an admin acts on,
+ * so it carries the row, with the two follow-up states stacked beside it.
+ */
+@Composable
+private fun ListingOverview(
+    activeCount:   String,
+    reservedCount: String,
+    expiredCount:  String,
+    modifier:      Modifier = Modifier
+) {
+    Row(
+        // Intrinsic height ties the hero tile to the two stacked beside it.
+        modifier              = modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Surface(
+            color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+            shape    = MaterialTheme.shapes.small,
+            modifier = Modifier.weight(1f).fillMaxHeight()
         ) {
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Bottom
+            Column(
+                modifier            = Modifier.fillMaxSize().padding(vertical = 16.dp, horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                data.forEachIndexed { index, (label, value) ->
-                    val color = barColors.getOrElse(index) { barColors.last() }
-                    val heightFraction = if (maxValue > 0) value.toFloat() / maxValue else 0f
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            value.toString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = color
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Box(
-                            modifier = Modifier
-                                .height((120 * heightFraction.coerceAtLeast(0.02f)).dp)
-                                .fillMaxWidth(0.6f)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(color)
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            label,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 9.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Org Type Donut Chart (Canvas)
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun OrgTypeDonutChart(groceries: Int, ngos: Int, unverified: Int) {
-    val total     = groceries + ngos
-    val verified  = total - unverified
-    val groceriesLabel  = stringResource(R.string.org_type_groceries)
-    val ngosLabel       = stringResource(R.string.org_type_ngos)
-    val unverifiedLabel = stringResource(R.string.org_type_unverified)
-    val segments  = listOf(
-        Triple(groceriesLabel,  groceries,  Color(0xFF4CAF50)),
-        Triple(ngosLabel,       ngos,        Color(0xFF2196F3)),
-        Triple(unverifiedLabel, unverified,  Color(0xFFFF5722))
-    ).filter { it.second > 0 }
-    val segTotal  = segments.sumOf { it.second }.coerceAtLeast(1)
-
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // Donut
-            Canvas(modifier = Modifier.size(100.dp)) {
-                var startAngle = -90f
-                val strokeWidth = size.minDimension * 0.22f
-                segments.forEach { (_, value, color) ->
-                    val sweep = 360f * value / segTotal
-                    drawArc(
-                        color       = color,
-                        startAngle  = startAngle,
-                        sweepAngle  = sweep,
-                        useCenter   = false,
-                        style       = Stroke(width = strokeWidth),
-                        topLeft     = Offset(strokeWidth / 2, strokeWidth / 2),
-                        size        = Size(size.width - strokeWidth, size.height - strokeWidth)
-                    )
-                    startAngle += sweep
-                }
-            }
-            // Legend
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                segments.forEach { (label, value, color) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                        Text(
-                            "$label: $value",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-                Text(
-                    stringResource(R.string.admin_org_total_verified, total, verified),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(
+                    imageVector        = Icons.Default.Inventory2,
+                    contentDescription = null,
+                    tint     = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// User Growth Line Chart (Canvas)
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun UserGrowthChart(data: List<com.clearchain.app.data.remote.dto.UserGrowthDay>) {
-    if (data.isEmpty()) return
-    val maxCount = data.maxOf { it.count }.coerceAtLeast(1)
-    val lineColor = MaterialTheme.colorScheme.primary
-    val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-    val totalRegistered = data.sumOf { it.count }
-
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(stringResource(R.string.admin_new_orgs_count, totalRegistered), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.label_30_days), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Canvas(modifier = Modifier.fillMaxWidth().height(80.dp)) {
-                val w = size.width; val h = size.height
-                val step = if (data.size > 1) w / (data.size - 1) else w
-                val points = data.mapIndexed { i, d ->
-                    Offset(i * step, h - (d.count.toFloat() / maxCount) * h * 0.85f)
-                }
-                // Fill
-                val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(0f, h)
-                    points.forEach { lineTo(it.x, it.y) }
-                    lineTo(w, h); close()
-                }
-                drawPath(path, color = fillColor)
-                // Line
-                points.zipWithNext().forEach { (a, b) ->
-                    drawLine(lineColor, a, b, strokeWidth = 3f)
-                }
-                // Dots
-                points.forEach { drawCircle(lineColor, radius = 4f, center = it) }
-            }
-            // Last/first label
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(data.firstOrNull()?.date?.take(10) ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(data.lastOrNull()?.date?.take(10) ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// System Health Card
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun SystemHealthCard(health: com.clearchain.app.data.remote.dto.AdminHealthData) {
-    val isHealthy = health.status.lowercase() == "healthy"
-    val statusColor = if (isHealthy) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
-
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier.size(10.dp).clip(CircleShape).background(statusColor)
-                )
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    health.status.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleSmall,
+                    text       = activeCount,
+                    style      = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = statusColor
+                    color      = MaterialTheme.colorScheme.primary
                 )
-                Spacer(Modifier.weight(1f))
-                Text(health.timestamp.take(16).replace("T", " "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text      = stringResource(R.string.status_active),
+                    style     = MaterialTheme.typography.labelMedium,
+                    color     = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
             }
+        }
 
-            // DB health
-            Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Default.Storage, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(R.string.label_database), style = MaterialTheme.typography.bodySmall)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(if (health.database.ok) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error))
-                        Text("${health.database.latencyMs}ms", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+        Column(
+            modifier            = Modifier.weight(1f).fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SecondaryListingTile(
+                icon     = Icons.Default.Bookmark,
+                label    = stringResource(R.string.stat_reserved),
+                value    = reservedCount,
+                modifier = Modifier.weight(1f)
+            )
+            SecondaryListingTile(
+                icon     = Icons.Default.EventBusy,
+                label    = stringResource(R.string.status_expired),
+                value    = expiredCount,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
 
-            // Alert counts
-            val alerts = health.alerts
-            if (alerts.pendingVerifications > 0 || alerts.unreadNotifications > 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (alerts.pendingVerifications > 0) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.VerifiedUser, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error)
-                                Text(stringResource(R.string.admin_pending_verif_count, alerts.pendingVerifications), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                    if (alerts.unreadNotifications > 0) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(50),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Notifications, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.secondary)
-                                Text(stringResource(R.string.admin_unread_notif_count, alerts.unreadNotifications), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                            }
-                        }
-                    }
-                }
-            }
+@Composable
+private fun SecondaryListingTile(
+    icon:     ImageVector,
+    label:    String,
+    value:    String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color    = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+        shape    = MaterialTheme.shapes.small,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier          = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector        = icon,
+                contentDescription = null,
+                tint     = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text     = label,
+                style    = MaterialTheme.typography.labelSmall,
+                color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text       = value,
+                style      = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color      = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

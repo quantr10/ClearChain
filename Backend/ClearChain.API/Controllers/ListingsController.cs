@@ -2,6 +2,7 @@ using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.Listings;
+using ClearChain.API.Middleware;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +39,7 @@ public class ListingsController : ControllerBase
             Id = listing.Id.ToString(),
             GroceryId = listing.GroceryId.ToString(),
             GroceryName = listing.Grocery?.Name ?? "",
+            GroceryProfilePictureUrl = listing.Grocery?.ProfilePictureUrl,
             Title = listing.ProductName,
             Description = listing.Notes ?? "",
             Category = listing.Category,
@@ -280,6 +282,7 @@ public class ListingsController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [RequireVerifiedOrganization]
     public async Task<ActionResult<ListingResponse>> CreateListing(
         [FromBody] CreateListingRequest request)
     {
@@ -642,26 +645,6 @@ public class ListingsController : ControllerBase
         }
     }
 
-    // GET api/listings/{id}/view — Increment view count (call on open detail screen)
-    [HttpPost("{id}/view")]
-    public async Task<IActionResult> TrackView(Guid id)
-    {
-        try
-        {
-            var listing = await _context.ClearanceListings.FindAsync(id);
-            if (listing == null || listing.Status == ListingStatus.Archived) return NotFound();
-            listing.ViewCount++;
-            listing.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            return Ok(new { viewCount = listing.ViewCount });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error tracking view");
-            return StatusCode(500, new { message = "Error tracking view" });
-        }
-    }
-
     private static (TimeSpan Start, TimeSpan End)? ParseHoursWindow(string? hours)
     {
         if (string.IsNullOrWhiteSpace(hours)) return null;
@@ -678,37 +661,114 @@ public class ListingsController : ControllerBase
         return start <= end ? (start, end) : null;
     }
 
-    // GET api/listings/{id}/similar — Get similar listings (same category, same grocery or nearby)
-    [HttpGet("{id}/similar")]
-    public async Task<IActionResult> GetSimilarListings(Guid id)
+    [HttpPut("{id}")]
+    [Authorize]
+    [RequireVerifiedOrganization]
+    public async Task<ActionResult<ListingResponse>> UpdateListing(
+        Guid id,
+        [FromBody] CreateListingRequest request)
     {
         try
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not authenticated" });
+            }
+
             var listing = await _context.ClearanceListings
                 .Include(l => l.Grocery)
-                .FirstOrDefaultAsync(l => l.Id == id && l.Status != ListingStatus.Archived);
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
 
-            if (listing == null) return NotFound();
-
-            var similar = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Where(l => l.Id != id
-                    && l.Status == ListingStatus.Open
-                    && (l.Category == listing.Category || l.GroceryId == listing.GroceryId))
-                .OrderByDescending(l => l.CreatedAt)
-                .Take(10)
-                .ToListAsync();
-
-            return Ok(new
+            if (listing == null)
             {
-                message = "Similar listings retrieved",
-                data = similar.Select(l => MapListingToDto(l)).ToList()
+                return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
+            }
+
+            if (listing.Status != ListingStatus.Open)
+            {
+                return BadRequest(new { message = "Can only edit available listings" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Title))
+            {
+                return BadRequest(new { message = "Title is required" });
+            }
+
+            if (request.Quantity <= 0)
+            {
+                return BadRequest(new { message = "Quantity must be greater than 0" });
+            }
+
+            if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
+            {
+                return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
+            }
+
+            var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
+            var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
+
+            var pickupTimeStart = listing.PickupTimeStart;
+            var pickupTimeEnd = listing.PickupTimeEnd;
+
+            if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
+                TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
+            {
+                pickupTimeStart = startTime;
+            }
+
+            if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
+                TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
+            {
+                pickupTimeEnd = endTime;
+            }
+
+            // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl,
+            // fall back to whatever the listing already had if neither was sent.
+            string? resolvedPhotoUrl = listing.PhotoUrl;
+            if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+                resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
+            else if (!string.IsNullOrEmpty(request.ImageUrl))
+                resolvedPhotoUrl = request.ImageUrl;
+
+            var oldQuantity = (int)listing.Quantity;
+            var quantityDifference = request.Quantity - oldQuantity;
+
+            listing.ProductName = request.Title;
+            listing.Category = request.Category.ToUpper();
+            listing.Quantity = request.Quantity;
+            listing.Unit = request.Unit;
+            listing.ExpirationDate = expiryDateUtc;
+            listing.ClearanceDeadline = clearanceDeadlineUtc;
+            listing.Notes = request.Description;
+            listing.PhotoUrl = resolvedPhotoUrl;
+            listing.PickupTimeStart = pickupTimeStart;
+            listing.PickupTimeEnd = pickupTimeEnd;
+            listing.UpdatedAt = DateTime.UtcNow;
+
+            if (listing.GroupId.HasValue && listing.Group != null && quantityDifference != 0)
+            {
+                listing.Group.TotalAvailable += quantityDifference;
+                listing.Group.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var listingDto = MapListingToDto(listing, listing.Group);
+
+            await _listingNotificationService.NotifyListingUpdated(listingDto);
+
+            return Ok(new ListingResponse
+            {
+                Message = "Listing updated successfully",
+                Data = listingDto
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting similar listings");
-            return StatusCode(500, new { message = "An error occurred" });
+            _logger.LogError(ex, "Error updating listing");
+            return StatusCode(500, new { message = "An error occurred while updating the listing" });
         }
     }
 

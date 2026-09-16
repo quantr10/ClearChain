@@ -19,7 +19,8 @@ import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.util.DateTimeUtils
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 enum class RequestViewMode { GROCERY, NGO, ADMIN }
@@ -42,19 +43,6 @@ fun RequestCard(
         RequestViewMode.GROCERY -> request.ngoName
         RequestViewMode.NGO -> request.groceryName
         RequestViewMode.ADMIN -> request.listingTitle
-    }
-
-    // Expiry computation
-    val daysUntilExpiry: Long? = remember(request.listingExpiryDate) {
-        val raw = request.listingExpiryDate ?: return@remember null
-        try {
-            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(raw)!!
-            val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            }.time
-            TimeUnit.MILLISECONDS.toDays(date.time - today.time)
-        } catch (_: Exception) { null }
     }
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
@@ -91,26 +79,23 @@ fun RequestCard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
 
-            // Expiry (only when available)
-            if (daysUntilExpiry != null) {
-                val expiryColor = when {
-                    daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
-                    daysUntilExpiry <= 3L -> Color(0xFFE65100)
-                    else                  -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
-                val expiryText = when {
-                    daysUntilExpiry < 0     -> stringResource(R.string.listing_expired_label)
-                    daysUntilExpiry == 0L   -> stringResource(R.string.listing_expires_today)
-                    daysUntilExpiry == 1L   -> stringResource(R.string.listing_expires_tomorrow)
-                    daysUntilExpiry in 2..3 -> stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
-                    else -> stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(request.listingExpiryDate!!))
-                }
-                RequestDetailRow(
-                    icon      = Icons.Default.CalendarToday,
-                    text      = expiryText,
-                    textColor = expiryColor
+            // Where the food is, and how far the NGO has to go for it.
+            if (viewMode == RequestViewMode.NGO) {
+                GroceryLocationRow(
+                    location   = request.groceryLocation,
+                    distanceKm = request.distanceKm
                 )
             }
+
+            RequestDetailRow(
+                icon = Icons.Default.CalendarToday,
+                text = stringResource(
+                    R.string.label_submitted_on_at,
+                    DateTimeUtils.formatDate(request.createdAt),
+                    DateTimeUtils.formatTime(request.createdAt)
+                ),
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             // Pickup date + time
             val timestampText = stringResource(
@@ -123,6 +108,8 @@ fun RequestCard(
                 text = timestampText,
                 textColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            ExpiryDetailRow(request.listingExpiryDate)
 
             // Handling flags + optional user note
             val handlingParts = buildList {
@@ -178,7 +165,15 @@ fun RequestCard(
             "cancel"  -> listOf(cancelTitle,  cancelMsg,  cancelLabel,  "true")
             else -> return@let
         }
+        val dialogIcon = when (action) {
+            "approve" -> Icons.Default.CheckCircle
+            "reject"  -> Icons.Default.Cancel
+            "ready"   -> Icons.Default.Inventory2
+            "cancel"  -> Icons.Default.Cancel
+            else      -> Icons.Default.HelpOutline
+        }
         ConfirmDialog(
+            icon          = dialogIcon,
             title         = title,
             message       = message,
             confirmLabel  = label,
@@ -199,8 +194,85 @@ fun RequestCard(
 
 // Compact detail row
 
+/**
+ * The listing expiry line both request cards show. The wording stays the same at any
+ * distance - only the colour escalates - so the row reads as a date, not a countdown.
+ */
 @Composable
-private fun RequestItemsPreview(request: PickupRequest) {
+fun ExpiryDetailRow(expiryDate: String?) {
+    val expiry = expiryDate?.takeIf { it.isNotBlank() } ?: return
+
+    val daysUntilExpiry: Long = remember(expiry) {
+        try {
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(expiry)!!
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.time
+            TimeUnit.MILLISECONDS.toDays(date.time - today.time)
+        } catch (_: Exception) { Long.MAX_VALUE }
+    }
+
+    RequestDetailRow(
+        icon      = Icons.Default.CalendarToday,
+        text      = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(expiry)),
+        textColor = when {
+            daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
+            daysUntilExpiry <= 3L -> Color(0xFFE65100)
+            else                  -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    )
+}
+
+@Composable
+private fun GroceryLocationRow(location: String?, distanceKm: Double?) {
+    val place = location?.takeIf { it.isNotBlank() }
+    if (place == null && distanceKm == null) return
+
+    Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        if (place != null) {
+            Icon(
+                Icons.Default.Place, null, Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                place,
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color      = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis,
+                modifier   = Modifier.weight(1f, fill = false)
+            )
+        }
+        distanceKm?.let { km ->
+            if (place != null) {
+                Text(
+                    "·",
+                    style      = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                Icons.Default.NearMe, null, Modifier.size(12.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                stringResource(R.string.label_distance_km, km),
+                style      = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color      = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+fun RequestItemsPreview(request: PickupRequest) {
     val visibleItems = request.items.take(5)
     val hiddenCount = request.items.size - visibleItems.size
 
@@ -236,7 +308,7 @@ private fun RequestItemsPreview(request: PickupRequest) {
 }
 
 @Composable
-private fun RequestDetailRow(
+fun RequestDetailRow(
     icon:      ImageVector,
     text:      String,
     textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant

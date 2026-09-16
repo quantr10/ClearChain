@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.domain.usecase.auth.RefreshCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -11,7 +12,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val refreshCurrentUserUseCase: RefreshCurrentUserUseCase
 ) : ViewModel() {
 
     private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
@@ -33,6 +35,9 @@ class SplashViewModel @Inject constructor(
 
     // ✅ ADD: Method to get current user
     suspend fun getCurrentUser(): Organization? {
-        return getCurrentUserUseCase().first()
+        // Best-effort: pull the latest verification status from the server so an
+        // admin approval/rejection is reflected without a full re-login. Falls back
+        // to the cached user if offline.
+        return refreshCurrentUserUseCase().getOrNull() ?: getCurrentUserUseCase().first()
     }
 }

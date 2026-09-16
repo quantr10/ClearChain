@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,9 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.ShapeMedium
 
@@ -45,7 +46,9 @@ fun TimePickerField(
     isOptional: Boolean = false,
     isError: Boolean = false,
     errorMessage: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    fieldHeight: Dp = 32.dp,
+    fieldShape: Shape = ShapeMedium
 ) {
     var showPicker by remember { mutableStateOf(false) }
     val initialHour = value.takeIf { it.length >= 5 }?.substring(0, 2)?.toIntOrNull() ?: 0
@@ -75,8 +78,8 @@ fun TimePickerField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(32.dp)
-                .border(1.dp, borderColor, ShapeMedium)
+                .height(fieldHeight)
+                .border(1.dp, borderColor, fieldShape)
                 .clickable(enabled = enabled) { showPicker = true }
                 .padding(horizontal = 8.dp)
         ) {
@@ -119,26 +122,21 @@ fun TimePickerField(
     }
 
     if (showPicker) {
-        AlertDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.ok),
-                    onClick = {
-                        val h = timePickerState.hour.toString().padStart(2, '0')
-                        val m = timePickerState.minute.toString().padStart(2, '0')
-                        onTimeSelected("$h:$m")
-                        showPicker = false
-                    }
-                )
-            },
-            dismissButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { showPicker = false }
-                )
-            },
-            text = { TimePicker(state = timePickerState) }
-        )
+        ConfirmDialog(
+            onDismiss = { showPicker = false },
+            icon = Icons.Default.AccessTime,
+            title = stringResource(R.string.label_select_time),
+            message = stringResource(R.string.msg_select_time),
+            confirmLabel = stringResource(R.string.ok),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = {
+                val h = timePickerState.hour.toString().padStart(2, '0')
+                val m = timePickerState.minute.toString().padStart(2, '0')
+                onTimeSelected("$h:$m")
+                showPicker = false
+            }
+        ) {
+            TimePicker(state = timePickerState)
+        }
     }
 }

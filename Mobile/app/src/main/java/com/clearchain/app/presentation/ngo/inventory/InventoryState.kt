@@ -58,9 +58,6 @@ data class InventoryState(
     val manualExpiryDate: String = "",
     val isSubmittingManual: Boolean = false,
 
-    // Beneficiary count dialog
-    val showBeneficiaryDialogForId: String? = null,
-    val beneficiaryCount: String = ""
 ) {
     val selectedCount: Int get() = selectedIds.size
     val activeSelectedCount: Int get() = filteredItems.count { it.id in selectedIds && it.status == InventoryStatus.ACTIVE }
@@ -78,10 +75,4 @@ data class InventoryState(
             .sortedByDescending { it.second }
             .take(5)
 
-    fun getStatusCounts(): Map<InventoryStatus?, Int> = mapOf(
-        null to allItems.size,
-        InventoryStatus.ACTIVE to allItems.count { it.status == InventoryStatus.ACTIVE },
-        InventoryStatus.DISTRIBUTED to allItems.count { it.status == InventoryStatus.DISTRIBUTED },
-        InventoryStatus.EXPIRED to allItems.count { it.status == InventoryStatus.EXPIRED }
-    )
 }

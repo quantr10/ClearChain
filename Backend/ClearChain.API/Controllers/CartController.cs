@@ -1,5 +1,6 @@
 using ClearChain.API.DTOs.Cart;
 using ClearChain.API.DTOs.PickupRequests;
+using ClearChain.API.Middleware;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -55,19 +56,8 @@ public class CartController : ControllerBase
         return Ok(new CartResponse { Message = "Cart updated successfully", Data = result.Cart ?? new() });
     }
 
-    [HttpDelete("items/{itemId:guid}")]
-    public async Task<ActionResult<CartResponse>> RemoveItem(Guid itemId)
-    {
-        if (!TryGetUserId(out var userId))
-            return Unauthorized(new { message = "User not authenticated" });
-
-        var result = await _service.RemoveItemAsync(userId, itemId);
-        if (!result.Success) return MapError(result);
-
-        return Ok(new CartResponse { Message = "Cart updated successfully", Data = result.Cart ?? new() });
-    }
-
     [HttpPost("checkout")]
+    [RequireVerifiedOrganization]
     public async Task<ActionResult<PickupRequestResponse>> Checkout([FromBody] CheckoutCartGroupRequest request)
     {
         if (!TryGetUserId(out var userId))

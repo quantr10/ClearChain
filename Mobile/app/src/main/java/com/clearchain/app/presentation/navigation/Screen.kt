@@ -7,6 +7,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object Onboarding : Screen("onboarding")
+    object PendingReview : Screen("pending_review")
     object EmailVerification : Screen("email_verification/{email}") {
         fun createRoute(email: String) = "email_verification/${java.net.URLEncoder.encode(email, "UTF-8")}"
     }
@@ -27,13 +28,17 @@ sealed class Screen(val route: String) {
     object MyRequests : Screen("my_requests")
     object Inventory : Screen("inventory")
     object LocationPicker : Screen("location_picker")
-    object LocationPickerEdit : Screen("location_picker_edit")
 
     // ── Admin ─────────────────────────────────────────────
     object AdminDashboard : Screen("admin_dashboard")
     object Verification : Screen("admin/verification")
     object Transactions : Screen("admin/transactions")
-    object AdminStatistics : Screen("admin/statistics")
+    /** The section argument opens the screen scrolled to one card; omit it to open at the top. */
+    object AdminStatistics : Screen("admin/statistics?section={section}") {
+        const val BASE = "admin/statistics"
+        fun createRoute(section: String? = null) =
+            if (section.isNullOrBlank()) BASE else "$BASE?section=$section"
+    }
 
     // ── Detail screens (parameterized) ────────────────────
     object ListingDetail : Screen("listing_detail/{listingId}") {

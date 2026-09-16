@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using ClearChain.API.Common;
 using ClearChain.API.Services;
 
 namespace ClearChain.API.Controllers;
@@ -48,6 +49,12 @@ public class DisputesController : ControllerBase
         string? photoUrl = null;
         if (photo != null && photo.Length > 0)
         {
+            if (!StorageBucketPolicy.IsAllowedImage(photo.ContentType))
+                return BadRequest(new { message = $"Only {StorageBucketPolicy.ImageTypesMessage} are accepted" });
+
+            if (photo.Length > StorageBucketPolicy.ImageMaxBytes)
+                return BadRequest(new { message = $"Photo must be under {StorageBucketPolicy.ImageMaxBytes / 1024 / 1024} MB" });
+
             using var stream = photo.OpenReadStream();
             photoUrl = await _storageService.UploadFileAsync(stream, photo.FileName, photo.ContentType, "disputes");
         }
@@ -68,126 +75,6 @@ public class DisputesController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Dispute opened successfully", data = MapToDto(dispute) });
-    }
-
-    // GET api/disputes/{id}
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetDispute(Guid id)
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        var dispute = await _context.Disputes
-            .Include(d => d.Initiator)
-            .Include(d => d.PickupRequest)
-            .FirstOrDefaultAsync(d => d.Id == id);
-
-        if (dispute == null) return NotFound(new { message = "Dispute not found" });
-
-        // Only parties involved or admin can view
-        var userType = User.FindFirst("type")?.Value;
-        if (userType != "admin"
-            && dispute.InitiatorId != userId
-            && dispute.PickupRequest?.GroceryId != userId)
-            return Forbid();
-
-        return Ok(new { message = "Dispute retrieved", data = MapToDto(dispute) });
-    }
-
-    // GET api/disputes/my — my disputes (as NGO initiator or Grocery respondent)
-    [HttpGet("my")]
-    public async Task<IActionResult> GetMyDisputes()
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        var disputes = await _context.Disputes
-            .Include(d => d.Initiator)
-            .Include(d => d.PickupRequest)
-            .Where(d => d.InitiatorId == userId
-                || (d.PickupRequest != null && d.PickupRequest.GroceryId == userId))
-            .OrderByDescending(d => d.CreatedAt)
-            .ToListAsync();
-
-        return Ok(new { message = "Disputes retrieved", data = disputes.Select(MapToDto).ToList() });
-    }
-
-    // PUT api/disputes/{id}/grocery-statement — Grocery responds to dispute
-    [HttpPut("{id}/grocery-statement")]
-    public async Task<IActionResult> AddGroceryStatement(Guid id, [FromBody] AddStatementRequest request)
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        var dispute = await _context.Disputes
-            .Include(d => d.PickupRequest)
-            .FirstOrDefaultAsync(d => d.Id == id);
-
-        if (dispute == null) return NotFound();
-        if (dispute.PickupRequest?.GroceryId != userId) return Forbid();
-        if (dispute.Status != "open") return BadRequest(new { message = "Dispute is no longer open" });
-
-        dispute.GroceryStatement = request.Statement;
-        dispute.Status = "under_review";
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Statement submitted", data = MapToDto(dispute) });
-    }
-
-    // PUT api/disputes/{id}/resolve — Admin resolves
-    [HttpPut("{id}/resolve")]
-    public async Task<IActionResult> ResolveDispute(Guid id, [FromBody] ResolveDisputeRequest request)
-    {
-        var userType = User.FindFirst("type")?.Value;
-        if (userType != "admin") return Forbid();
-
-        if (!TryGetUserId(out var adminId)) return Unauthorized();
-
-        var dispute = await _context.Disputes.FindAsync(id);
-        if (dispute == null) return NotFound();
-
-        dispute.Status = request.Resolution; // "resolved_ngo", "resolved_grocery", "dismissed"
-        dispute.AdminResolution = request.Note;
-        dispute.ResolvedByAdminId = adminId;
-        dispute.ResolvedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Dispute resolved", data = MapToDto(dispute) });
-    }
-
-    // GET api/disputes — Admin: all disputes
-    [HttpGet]
-    public async Task<IActionResult> GetAllDisputes(
-        [FromQuery] string? status = null,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var userType = User.FindFirst("type")?.Value;
-        if (userType != "admin") return Forbid();
-
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 50);
-
-        var query = _context.Disputes
-            .Include(d => d.Initiator)
-            .Include(d => d.PickupRequest)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(status))
-            query = query.Where(d => d.Status == status);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(d => d.CreatedAt)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
-            .ToListAsync();
-
-        return Ok(new
-        {
-            message = "Disputes retrieved",
-            data = items.Select(MapToDto).ToList(),
-            total,
-            page = clampedPage,
-            pageSize = clampedSize,
-            totalPages = (int)Math.Ceiling((double)total / clampedSize)
-        });
     }
 
     private bool TryGetUserId(out Guid userId)
@@ -218,15 +105,4 @@ public class OpenDisputeRequest
     public Guid PickupRequestId { get; set; }
     public string Reason { get; set; } = string.Empty;
     public string? Statement { get; set; }
-}
-
-public class AddStatementRequest
-{
-    public string Statement { get; set; } = string.Empty;
-}
-
-public class ResolveDisputeRequest
-{
-    public string Resolution { get; set; } = string.Empty;
-    public string? Note { get; set; }
 }

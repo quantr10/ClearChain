@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
@@ -56,17 +56,12 @@ fun ManageRequestsScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListScreenHeader {
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.hint_search_by_item_ngo)
                         ) {
-                            SearchBar(
-                                query       = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
-                                placeholder = stringResource(R.string.hint_search_by_item_ngo),
-                                modifier    = Modifier.weight(1f)
-                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -86,24 +81,13 @@ fun ManageRequestsScreen(
                             onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) }
                         )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text  = "${state.filteredRequests.size} request${if (state.filteredRequests.size != 1) "s" else ""}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
-                            )
-                            SortDropdown(
-                                selectedSort   = state.selectedSort,
-                                onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
-                                sortOptions    = state.availableSortOptions
-                            )
+                        ResultsCountAndSort(
+                            count          = state.filteredRequests.size,
+                            itemName       = "request",
+                            selectedSort   = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
+                            sortOptions    = state.availableSortOptions
+                        )
                         }
 
                         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -138,7 +122,7 @@ fun ManageRequestsScreen(
                                     onRefresh    = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
                                 ) {
                                     LazyColumn(
-                                        contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        contentPadding      = ScreenPadding,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         items(state.filteredRequests, key = { it.id }) { request ->
@@ -184,7 +168,7 @@ private fun ManageRequestsFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

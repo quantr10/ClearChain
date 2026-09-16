@@ -90,39 +90,6 @@ public class MessagesController : ControllerBase
         return Ok(new { message = "Message sent", data = MapToDto(msg) });
     }
 
-    // GET api/messages/threads — Get all active message threads for current user
-    [HttpGet("threads")]
-    public async Task<IActionResult> GetThreads()
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        // Get last message per pickup request
-        var threads = await _context.Messages
-            .Include(m => m.Sender)
-            .Include(m => m.PickupRequest)
-            .Where(m => m.SenderId == userId || m.ReceiverId == userId)
-            .GroupBy(m => m.PickupRequestId)
-            .Select(g => g.OrderByDescending(m => m.SentAt).First())
-            .ToListAsync();
-
-        var unreadCounts = await _context.Messages
-            .Where(m => m.ReceiverId == userId && !m.IsRead)
-            .GroupBy(m => m.PickupRequestId)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Key, x => x.Count);
-
-        return Ok(new
-        {
-            message = "Threads retrieved",
-            data = threads.Select(m => new
-            {
-                pickupRequestId = m.PickupRequestId.ToString(),
-                lastMessage = MapToDto(m),
-                unreadCount = unreadCounts.TryGetValue(m.PickupRequestId, out var c) ? c : 0
-            }).ToList()
-        });
-    }
-
     private bool TryGetUserId(out Guid userId)
     {
         var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.components
 
+import android.location.Address
 import android.location.Geocoder
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
@@ -24,12 +27,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.ShapeMedium
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 data class AddressSuggestion(
     val displayName: String,
     val fullAddress: String,
+    val streetAddress: String,
     val city: String,
     val state: String,
     val zipCode: String,
@@ -40,7 +45,8 @@ data class AddressSuggestion(
 /**
  * Address input with Geocoder-based suggestions.
  * Shows dropdown of suggestions after 300ms debounce.
- * When user picks a suggestion, calls onAddressSelected with full data.
+ * When user picks a suggestion, the input keeps only the street address while
+ * onAddressSelected receives the remaining structured address data.
  */
 @Composable
 fun AddressSuggestionField(
@@ -48,12 +54,15 @@ fun AddressSuggestionField(
     onValueChange: (String) -> Unit,
     onAddressSelected: (AddressSuggestion) -> Unit,
     label: String = "",
+    showLabel: Boolean = true,
     isOptional: Boolean = false,
     placeholder: String = "",
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    fieldHeight: Dp = 32.dp,
+    fieldShape: Shape = ShapeMedium
 ) {
     val context = LocalContext.current
     val resolvedLabel = label.ifEmpty { stringResource(R.string.label_address) }
@@ -71,7 +80,7 @@ fun AddressSuggestionField(
         val dropdownOffset = with(density) {
             IntOffset(
                 x = 0,
-                y = (if (isError && !errorMessage.isNullOrBlank()) 78.dp else 56.dp).roundToPx()
+                y = (fieldHeight + if (isError && !errorMessage.isNullOrBlank()) 46.dp else 24.dp).roundToPx()
             )
         }
 
@@ -95,6 +104,7 @@ fun AddressSuggestionField(
                                 AddressSuggestion(
                                     displayName = line,
                                     fullAddress = line,
+                                    streetAddress = addr.toStreetAddress(line),
                                     city = addr.locality
                                         ?: addr.subAdminArea
                                         ?: addr.adminArea
@@ -116,7 +126,7 @@ fun AddressSuggestionField(
                     showSuggestions = false
                 }
             },
-            label = resolvedLabel,
+            label = if (showLabel) resolvedLabel else "",
             isOptional = isOptional,
             placeholder = resolvedPlaceholder,
             leadingIcon = Icons.Default.Home,
@@ -125,7 +135,9 @@ fun AddressSuggestionField(
             singleLine = true,
             enabled = enabled,
             isError = isError,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            fieldHeight = fieldHeight,
+            fieldShape = fieldShape
         )
 
         // Suggestions dropdown
@@ -145,7 +157,7 @@ fun AddressSuggestionField(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        onValueChange(suggestion.fullAddress)
+                                        onValueChange(suggestion.streetAddress)
                                         onAddressSelected(suggestion)
                                         showSuggestions = false
                                         suggestions = emptyList()
@@ -185,4 +197,17 @@ fun AddressSuggestionField(
             }
         }
     }
+}
+
+private fun Address.toStreetAddress(fullAddress: String): String {
+    val streetName = thoroughfare?.trim()?.takeIf { it.isNotBlank() }
+    val houseNumber = subThoroughfare?.trim()?.takeIf { it.isNotBlank() }
+        ?: featureName?.trim()?.takeIf { feature ->
+            streetName != null && feature != streetName && feature.any { it.isDigit() }
+        }
+
+    return listOfNotNull(houseNumber, streetName)
+        .joinToString(" ")
+        .takeIf { it.isNotBlank() }
+        ?: fullAddress.substringBefore(',').trim()
 }

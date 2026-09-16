@@ -11,8 +11,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LoginRequest(
     val email: String,
-    val password: String,
-    val deviceToken: String? = null
+    val password: String
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -35,7 +34,13 @@ data class AuthResponse(
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class MeResponse(
-    val data: AuthData
+    val data: MeData
+)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class MeData(
+    val user: OrganizationDto
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -60,6 +65,7 @@ data class OrganizationDto(
     val location: String,
     val verified: Boolean,
     val verificationStatus: String,
+    val verificationNotes: String? = null,
     val hours: String? = null,
     val profilePictureUrl: String? = null,
     val createdAt: String,
@@ -70,7 +76,9 @@ data class OrganizationDto(
     val zipCode: String? = null,
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    // ═══ Onboarding verification document ═══
+    val documentUrl: String? = null
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -126,11 +134,13 @@ fun OrganizationDto.toDomain(): Organization {
             "rejected" -> VerificationStatus.REJECTED
             else -> VerificationStatus.PENDING
         },
+        verificationNotes = verificationNotes,
         hours = hours, profilePictureUrl = profilePictureUrl, createdAt = createdAt,
         latitude = latitude, longitude = longitude,
         state = state, zipCode = zipCode,
         contactPerson = contactPerson, pickupInstructions = pickupInstructions,
-        description = description
+        description = description,
+        documentUrl = documentUrl
     )
 }
 

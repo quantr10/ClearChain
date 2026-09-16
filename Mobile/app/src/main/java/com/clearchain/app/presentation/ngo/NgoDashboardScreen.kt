@@ -16,11 +16,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -73,41 +80,28 @@ fun NgoDashboardScreen(
                     userName       = state.userName,
                     subtitle       = stringResource(R.string.ngo_dashboard_subtitle),
                     roleLabel      = stringResource(R.string.role_ngo),
+                    profilePictureUrl = state.profilePictureUrl,
                     gradientColors = listOf(BrandGreen, BrandTeal),
-                    onProfileClick = { navController.navigate(Screen.Profile.route) }
+                    onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
+                    onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
                 )
 
                 Column(
-                    modifier            = Modifier.padding(20.dp),
+                    modifier            = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ── Today's summary ────────────────────────────────────
-                    state.todaySummary?.let { summary ->
-                        DashboardSection(title = "") {
-                            Row(
-                                modifier              = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                TodaySummaryChip(
-                                    label    = stringResource(R.string.chip_requests_created),
-                                    value    = summary.requestsCreatedToday.toString(),
-                                    color    = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TodaySummaryChip(
-                                    label    = stringResource(R.string.chip_pickups),
-                                    value    = summary.pickupsToday.toString(),
-                                    color    = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TodaySummaryChip(
-                                    label    = stringResource(R.string.chip_distributed),
-                                    value    = summary.distributedToday.toString(),
-                                    color    = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
+                    // ── Impact ─────────────────────────────────────────────
+                    // First card on the page: what the organization has actually achieved
+                    // leads, before today's workload.
+                    DashboardSection(
+                        title      = stringResource(R.string.analytics_impact),
+                        titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
+                    ) {
+                        ImpactSummaryRow(
+                            kgSaved       = state.impact.kgSaved,
+                            mealsEstimate = state.impact.mealsProvided,
+                            co2EstimateKg = state.impact.co2AvoidedKg
+                        )
                     }
 
                     // ── Nearby Listings Mini-Map ───────────────────────────
@@ -126,14 +120,6 @@ fun NgoDashboardScreen(
                                 onViewAll       = { navController.navigate(Screen.BrowseListings.route) }
                             )
                         }
-                    }
-
-                    // ── Impact Tracker ─────────────────────────────────────
-                    DashboardSection(
-                        title = "",
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        ImpactTrackerContent(impact = state.impact)
                     }
 
                     // ── Weekly Goal ────────────────────────────────────────
@@ -178,7 +164,7 @@ fun NgoDashboardScreen(
                     }
 
                     // ── Quick Actions ──────────────────────────────────────
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
                             icon     = Icons.Default.RestaurantMenu,
                             title    = stringResource(R.string.action_browse_food),
@@ -231,8 +217,8 @@ internal fun ActivityHistorySheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
         ) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -272,143 +258,7 @@ internal fun ActivityHistorySheet(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Impact Tracker Content
-// ─────────────────────────────────────────────────────────────────────────────
 
-@Composable
-private fun ImpactTrackerContent(impact: ImpactMetrics) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        ImpactMetricItem(
-            icon  = Icons.Default.Scale,
-            value = impact.kgSaved,
-            unit  = "kg",
-            label = stringResource(R.string.impact_food_saved),
-            color = BrandGreen
-        )
-        VerticalDivider(modifier = Modifier.height(64.dp))
-        ImpactMetricItem(
-            icon  = Icons.Default.Restaurant,
-            value = impact.mealsProvided,
-            unit  = "",
-            label = stringResource(R.string.impact_meals),
-            color = MaterialTheme.colorScheme.tertiary
-        )
-        VerticalDivider(modifier = Modifier.height(64.dp))
-        ImpactMetricItem(
-            icon  = Icons.Default.EnergySavingsLeaf,
-            value = impact.co2AvoidedKg,
-            unit  = "kg",
-            label = stringResource(R.string.impact_co2),
-            color = BrandTeal
-        )
-    }
-}
-
-@Composable
-private fun ImpactMetricItem(
-    icon:  ImageVector,
-    value: Int,
-    unit:  String,
-    label: String,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Box(
-            modifier          = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.15f)),
-            contentAlignment  = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        }
-        Row(verticalAlignment = Alignment.Bottom) {
-            AnimatedCounter(
-                count = value,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = color
-            )
-            if (unit.isNotEmpty()) {
-                Text(
-                    text  = " $unit",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = color.copy(alpha = 0.8f)
-                )
-            }
-        }
-        Text(
-            text  = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Weekly Goal Card
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment    = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        tint   = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text  = stringResource(R.string.weekly_pickups),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Text(
-                    text  = "$completed / $goal",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            LinearProgressIndicator(
-                progress          = { progress },
-                modifier          = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                trackColor        = MaterialTheme.colorScheme.surfaceVariant,
-                color             = if (progress >= 1f) BrandGreen else MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text  = if (progress >= 1f) stringResource(R.string.goal_reached) else stringResource(R.string.goal_remaining, goal - completed),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (progress >= 1f) BrandGreen else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Upcoming Pickups Timeline
@@ -419,21 +269,21 @@ private fun UpcomingPickupsTimeline(
     pickups:   List<UpcomingPickupData>,
     onViewAll: () -> Unit
 ) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            pickups.take(3).forEachIndexed { index, pickup ->
-                PickupTimelineItem(pickup = pickup, isLast = index == minOf(pickups.size, 3) - 1)
-            }
-            if (pickups.size > 3) {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.view_all_pickups, pickups.size),
-                    onClick  = onViewAll,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    fillMaxWidth = true
-                )
-            }
+    // Rendered straight onto the DashboardSection that hosts it — a Card here would
+    // put a second rounded, elevated surface inside the section's own.
+    Column(modifier = Modifier.fillMaxWidth()) {
+        pickups.take(3).forEachIndexed { index, pickup ->
+            PickupTimelineItem(pickup = pickup, isLast = index == minOf(pickups.size, 3) - 1)
+        }
+        if (pickups.size > 3) {
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.view_all_pickups, pickups.size),
+                onClick  = onViewAll,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                fillMaxWidth = true
+            )
         }
     }
 }
@@ -539,11 +389,15 @@ private fun NearbyListingsMiniMap(
         modifier            = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Card(
-            shape    = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
+        // A clipped Box rather than a Card: the DashboardSection around it already
+        // supplies the surface and elevation, so all this needs is rounded corners
+        // for the map itself.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(16.dp))
         ) {
-        Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
             GoogleMap(
                 modifier            = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
@@ -567,15 +421,38 @@ private fun NearbyListingsMiniMap(
                 // Grocery pins grouped by location
                 val groceryPins = remember(listings) {
                     listings.groupBy { LatLng(it.groceryLatitude!!, it.groceryLongitude!!) }
-                        .mapValues { (_, list) -> list.first().groceryName to list.size }
+                        .mapValues { (_, list) ->
+                            Triple(
+                                list.first().groceryName,
+                                list.first().groceryProfilePictureUrl,
+                                list.size
+                            )
+                        }
                 }
-                groceryPins.forEach { (pos, nameCount) ->
-                    val (name, count) = nameCount
+                groceryPins.forEach { (pos, pin) ->
+                    val (name, avatarUrl, count) = pin
+                    // A marker is rasterised once per key set, so an AsyncImage inside it
+                    // would snapshot before the avatar arrives. Load it here instead and
+                    // key the marker on the result so the pin is redrawn once it lands.
+                    val avatarPainter = rememberAsyncImagePainter(
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(avatarUrl)
+                            .size(AVATAR_PIN_PX)
+                            // The marker is drawn onto a software canvas, which rejects
+                            // Coil's default hardware bitmaps outright.
+                            .allowHardware(false)
+                            .build()
+                    )
+                    val avatarReady = avatarPainter.state is AsyncImagePainter.State.Success
                     MarkerComposable(
-                        keys  = arrayOf(pos.latitude, pos.longitude, count),
+                        keys  = arrayOf(pos.latitude, pos.longitude, count, avatarReady),
                         state = MarkerState(position = pos)
                     ) {
-                        GroceryPinContent(name = name, count = count)
+                        GroceryPinContent(
+                            name   = name,
+                            avatar = avatarPainter.takeIf { avatarReady },
+                            count  = count
+                        )
                     }
                 }
             }
@@ -603,49 +480,12 @@ private fun NearbyListingsMiniMap(
                 }
             }
         }
-        }
 
         ClearChainButton(
             text = stringResource(R.string.action_browse_all_listings),
             onClick  = onViewAll,
             modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Today Summary Chip
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun TodaySummaryChip(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color    = color.copy(alpha = 0.12f),
-        shape    = MaterialTheme.shapes.small,
-        modifier = modifier
-    ) {
-        Column(
-            modifier            = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text       = value,
-                style      = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color      = color
-            )
-            Text(
-                text  = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
 
@@ -761,22 +601,33 @@ private fun ActivityFeedItemWithDivider(
     }
 }
 
+private const val AVATAR_PIN_PX = 132
+
 @Composable
-private fun GroceryPinContent(name: String, count: Int) {
+private fun GroceryPinContent(name: String, avatar: Painter?, count: Int) {
     Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.padding(4.dp)) {
         Surface(
             modifier = Modifier.size(44.dp),
             shape    = CircleShape,
             color    = MaterialTheme.colorScheme.primaryContainer,
-            border   = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            border   = BorderStroke(2.dp, Color.White)
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text       = name.take(1).uppercase(),
-                    style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                if (avatar != null) {
+                    Image(
+                        painter            = avatar,
+                        contentDescription = null,
+                        modifier           = Modifier.fillMaxSize(),
+                        contentScale       = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text       = name.take(1).uppercase(),
+                        style      = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
         if (count > 1) {

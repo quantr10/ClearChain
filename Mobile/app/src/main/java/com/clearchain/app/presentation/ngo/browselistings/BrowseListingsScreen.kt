@@ -1,6 +1,7 @@
 ﻿package com.clearchain.app.presentation.ngo.browselistings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,9 +20,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -114,18 +123,13 @@ fun BrowseListingsScreen(
 
                         // -- Static header --------------------------------------------------
 
+                        ListScreenHeader {
                         // Row 1: Search + location pin + filter
-                        Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.hint_search_by_name_grocery)
                         ) {
-                            SearchBar(
-                                query         = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(BrowseListingsEvent.SearchQueryChanged(it)) },
-                                placeholder   = stringResource(R.string.hint_search_by_name_grocery),
-                                modifier      = Modifier.weight(1f)
-                            )
                             if (state.isLocationSet) {
                                 ClearChainActionIconButton(
                                     icon               = Icons.Default.Place,
@@ -160,24 +164,16 @@ fun BrowseListingsScreen(
                         }
 
                         // Row 2: List | Map tab switcher
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilterChip(
-                                selected = !state.showMapView,
-                                onClick  = { if (state.showMapView) viewModel.onEvent(BrowseListingsEvent.ToggleMapView) },
-                                label    = { Text(stringResource(R.string.tab_list_view), style = MaterialTheme.typography.labelMedium) },
-                                shape    = RoundedCornerShape(50)
-                            )
-                            FilterChip(
-                                selected = state.showMapView,
-                                onClick  = { if (!state.showMapView) viewModel.onEvent(BrowseListingsEvent.ToggleMapView) },
-                                label    = { Text(stringResource(R.string.tab_map_view), style = MaterialTheme.typography.labelMedium) },
-                                shape    = RoundedCornerShape(50)
-                            )
-                        }
+                        FilterChipsRow(
+                            tabs = listOf(
+                                false to stringResource(R.string.tab_list_view),
+                                true  to stringResource(R.string.tab_map_view)
+                            ),
+                            selectedTab = state.showMapView,
+                            onTabSelected = { mapView ->
+                                if (mapView != state.showMapView) viewModel.onEvent(BrowseListingsEvent.ToggleMapView)
+                            }
+                        )
 
                         // Row 3: Sort (list mode only)
                         if (!state.showMapView) {
@@ -188,6 +184,7 @@ fun BrowseListingsScreen(
                                 onSortSelected = { viewModel.onEvent(BrowseListingsEvent.SortOptionChanged(it)) },
                                 sortOptions    = state.availableSortOptions
                             )
+                        }
                         }
 
                         // -- Content --------------------------------------------------------
@@ -245,7 +242,7 @@ private fun ListingsListView(
             onRefresh    = { viewModel.onEvent(BrowseListingsEvent.RefreshListings) }
         ) {
             LazyColumn(
-                contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding      = ScreenPadding,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(items = state.filteredListings, key = { it.id }) { listing ->
@@ -380,12 +377,30 @@ private fun GroceryMapView(
                 val count       = group.size
                 val groceryName = group.first().groceryName
 
+                // A marker is rasterised once per key set, so an AsyncImage inside it
+                // would snapshot before the avatar arrives. Load it here instead and
+                // key the marker on the result so the pin is redrawn once it lands.
+                val avatarPainter = rememberAsyncImagePainter(
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(group.first().groceryProfilePictureUrl)
+                        .size(AVATAR_PIN_PX)
+                        // The marker is drawn onto a software canvas, which rejects
+                        // Coil's default hardware bitmaps outright.
+                        .allowHardware(false)
+                        .build()
+                )
+                val avatarReady = avatarPainter.state is AsyncImagePainter.State.Success
+
                 MarkerComposable(
-                    keys    = arrayOf(pos.latitude, pos.longitude, count),
+                    keys    = arrayOf(pos.latitude, pos.longitude, count, avatarReady),
                     state   = MarkerState(position = pos),
                     onClick = { viewModel.onEvent(BrowseListingsEvent.GroceryPinTapped(key)); true }
                 ) {
-                    GroceryPinContent(name = groceryName, count = count)
+                    GroceryPinContent(
+                        name   = groceryName,
+                        avatar = avatarPainter.takeIf { avatarReady },
+                        count  = count
+                    )
                 }
             }
         }
@@ -454,23 +469,34 @@ private fun GroceryMapView(
 }
 
 // Custom grocery pin composable content
+private const val AVATAR_PIN_PX = 132
+
 @Composable
-private fun GroceryPinContent(name: String, count: Int) {
+private fun GroceryPinContent(name: String, avatar: Painter?, count: Int) {
     Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.padding(4.dp)) {
         Surface(
             modifier        = Modifier.size(44.dp),
             shape           = CircleShape,
             color           = MaterialTheme.colorScheme.primaryContainer,
-            border          = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
+            border          = BorderStroke(2.dp, Color.White),
             shadowElevation = 4.dp
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text       = name.take(1).uppercase(),
-                    style      = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                if (avatar != null) {
+                    Image(
+                        painter            = avatar,
+                        contentDescription = null,
+                        modifier           = Modifier.fillMaxSize(),
+                        contentScale       = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text       = name.take(1).uppercase(),
+                        style      = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
         if (count > 1) {
@@ -518,7 +544,7 @@ private fun GroceryPinSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 24.dp)
         ) {
             Row(
                 modifier              = Modifier
@@ -663,7 +689,7 @@ private fun AdvancedFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Header
             Row(

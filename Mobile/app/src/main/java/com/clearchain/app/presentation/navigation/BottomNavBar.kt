@@ -22,6 +22,12 @@ fun BottomNavBar(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val profileRoutes = setOf(
+        Screen.Profile.route,
+        Screen.AccountDetail.route,
+        Screen.Analytics.route,
+        Screen.Help.route
+    )
 
     val items = when (userType) {
         OrganizationType.NGO     -> getNgoNavigationItems()
@@ -34,13 +40,14 @@ fun BottomNavBar(
         tonalElevation = 3.dp
     ) {
         items.forEach { item ->
-            val isSelected = currentRoute == item.route
+            val isSelected = currentRoute == item.route ||
+                (item.route == Screen.Profile.route && currentRoute in profileRoutes)
 
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
                     if (currentRoute != item.route) {
-                        navController.navigate(item.route) {
+                        navController.navigate(item.navRoute) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
@@ -93,6 +100,14 @@ private fun getAdminNavigationItems(): List<NavigationItem> = listOf(
     NavigationItem(Screen.AdminDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
     NavigationItem(Screen.Verification.route, Icons.Filled.VerifiedUser, Icons.Outlined.VerifiedUser, R.string.nav_verify),
     NavigationItem(Screen.Transactions.route, Icons.Filled.History, Icons.Outlined.History, R.string.nav_history),
-    NavigationItem(Screen.AdminStatistics.route, Icons.Filled.BarChart, Icons.Outlined.BarChart, R.string.nav_stats),
+    NavigationItem(
+        route = Screen.AdminStatistics.route,
+        selectedIcon = Icons.Filled.BarChart,
+        unselectedIcon = Icons.Outlined.BarChart,
+        labelResId = R.string.nav_stats,
+        // The tab opens the screen at the top; the section argument is for the deep links
+        // the admin home uses.
+        navRoute = Screen.AdminStatistics.BASE
+    ),
     NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
 )

@@ -24,6 +24,8 @@ import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -56,11 +58,25 @@ class ListingDetailViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    /** Room this screen joined, so it can be left when the screen goes away. */
+    private var joinedListingId: String? = null
+
     init {
         viewModelScope.launch {
             getCurrentUserUseCase().first()?.let { user ->
                 _state.update { it.copy(currentUserType = user.type) }
                 if (user.type == OrganizationType.NGO) loadCart()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Leaving the room is a fire-and-forget send on the shared connection — it releases a
+        // server-side group membership without touching the connection itself.
+        joinedListingId?.let { listingId ->
+            CoroutineScope(Dispatchers.IO).launch {
+                signalRService.leaveListingRoom(listingId)
             }
         }
     }
@@ -222,6 +238,11 @@ class ListingDetailViewModel @Inject constructor(
     }
 
     private fun observeSignalR(listingId: String) {
+        // The server's `listing_{id}` group has no members until someone joins it, so without
+        // this the per-listing broadcasts never reach anyone. Left in leaveListingRoom below.
+        viewModelScope.launch { signalRService.joinListingRoom(listingId) }
+        joinedListingId = listingId
+
         viewModelScope.launch {
             signalRService.listingUpdated.collect { data ->
                 if (data.id == listingId) {

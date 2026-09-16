@@ -1,8 +1,5 @@
 package com.clearchain.app.presentation.grocery.editlisting
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -59,16 +57,22 @@ fun EditListingScreen(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        when {
-            state.isLoading -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.edit_listing),
+                onBack = { navController.navigateUp() },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+          when {
+            state.isLoading -> Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
                 CircularProgressIndicator()
             }
             else -> Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                    .weight(1f)
+                    .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                    .padding(ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val busy = state.isSaving
@@ -318,6 +322,7 @@ fun EditListingScreen(
 
                 Spacer(Modifier.height(16.dp))
             }
+          }
         }
     }
 }

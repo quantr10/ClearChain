@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,6 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartGroupData
@@ -58,7 +58,9 @@ import com.clearchain.app.presentation.components.ClearChainTextField
 import com.clearchain.app.presentation.components.DatePickerField
 import com.clearchain.app.presentation.components.EmptyState
 import com.clearchain.app.presentation.components.OptionalFieldLabel
+import com.clearchain.app.presentation.components.AvatarImage
 import com.clearchain.app.presentation.components.ProductThumbnail
+import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.presentation.components.SnackbarMessageEffect
 import com.clearchain.app.presentation.components.TimePickerField
 import com.clearchain.app.util.UiEvent
@@ -72,6 +74,7 @@ import java.time.format.DateTimeFormatter
 fun CartPickupScreen(
     groceryId: String,
     onNavigate: (String) -> Unit,
+    onNavigateBack: () -> Unit = {},
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -96,20 +99,27 @@ fun CartPickupScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            val group = state.groups.firstOrNull { it.groceryId == groceryId }
-            when {
-                state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                group == null -> EmptyState(
-                    icon = Icons.Default.ErrorOutline,
-                    title = stringResource(R.string.cart_empty_title),
-                    subtitle = stringResource(R.string.cart_empty_subtitle)
-                )
-                else -> CartPickupContent(
-                    group = group,
-                    state = state,
-                    onEvent = viewModel::onEvent
-                )
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.title_request_pickup),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                val group = state.groups.firstOrNull { it.groceryId == groceryId }
+                when {
+                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    group == null -> EmptyState(
+                        icon = Icons.Default.ErrorOutline,
+                        title = stringResource(R.string.cart_empty_title),
+                        subtitle = stringResource(R.string.cart_empty_subtitle)
+                    )
+                    else -> CartPickupContent(
+                        group = group,
+                        state = state,
+                        onEvent = viewModel::onEvent
+                    )
+                }
             }
         }
     }
@@ -144,8 +154,8 @@ private fun CartPickupContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        contentPadding = ScreenPadding,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
             Card(
@@ -153,7 +163,17 @@ private fun CartPickupContent(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(group.groceryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AvatarImage(
+                            imageUrl = group.groceryProfilePictureUrl,
+                            name = group.groceryName,
+                            size = 32
+                        )
+                        Text(group.groceryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
                     group.items.forEach { item ->
                         Row(
                             verticalAlignment = Alignment.Top,

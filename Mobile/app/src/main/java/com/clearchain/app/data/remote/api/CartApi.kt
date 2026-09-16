@@ -20,9 +20,6 @@ interface CartApi {
         @Body request: UpdateCartItemRequest
     ): CartResponse
 
-    @DELETE("cart/items/{itemId}")
-    suspend fun removeItem(@Path("itemId") itemId: String): CartResponse
-
     @POST("cart/checkout")
     suspend fun checkout(@Body request: CheckoutCartGroupRequest): PickupRequestResponse
 }

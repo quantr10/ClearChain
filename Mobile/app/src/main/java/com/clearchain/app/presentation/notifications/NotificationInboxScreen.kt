@@ -16,11 +16,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.AppNotification
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
-import com.clearchain.app.presentation.components.DetailTopBar
+import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.presentation.components.EmptyState
 import java.text.SimpleDateFormat
 import java.util.*
@@ -36,18 +37,26 @@ fun NotificationInboxScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        if (state.notifications.isEmpty()) {
-            EmptyState(
-                icon = Icons.Default.Notifications,
-                title = stringResource(R.string.no_notifications),
-                subtitle = "",
-                modifier = Modifier.padding(padding)
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.notifications),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
-        } else {
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (state.notifications.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Default.Notifications,
+                    title = stringResource(R.string.no_notifications),
+                    subtitle = stringResource(
+                        R.string.no_notifications_subtitle,
+                        state.retention.retentionDays
+                    ),
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                )
+            } else {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.mark_all_read),
@@ -62,7 +71,7 @@ fun NotificationInboxScreen(
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    contentPadding = ScreenPadding
                 ) {
                 items(state.notifications, key = { it.id }) { notification ->
                     NotificationItem(
@@ -73,7 +82,7 @@ fun NotificationInboxScreen(
                             if (id != null) onNavigateToDetail(notification.type, id)
                         }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    HorizontalDivider()
                 }
                 }
             }
@@ -96,7 +105,7 @@ private fun NotificationItem(
                     MaterialTheme.colorScheme.surface
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
     ) {

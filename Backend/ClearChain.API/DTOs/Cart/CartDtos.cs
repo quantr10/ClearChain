@@ -1,4 +1,4 @@
-namespace ClearChain.API.DTOs.Cart;
+﻿namespace ClearChain.API.DTOs.Cart;
 
 public class CartItemData
 {
@@ -6,6 +6,7 @@ public class CartItemData
     public string ListingId { get; set; } = string.Empty;
     public string GroceryId { get; set; } = string.Empty;
     public string GroceryName { get; set; } = string.Empty;
+    public string? GroceryProfilePictureUrl { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
@@ -24,6 +25,7 @@ public class CartGroupData
 {
     public string GroceryId { get; set; } = string.Empty;
     public string GroceryName { get; set; } = string.Empty;
+    public string? GroceryProfilePictureUrl { get; set; }
     public List<CartItemData> Items { get; set; } = new();
     public string? EarliestExpiryDate { get; set; }
     public string? PickupTimeStart { get; set; }

@@ -1,10 +1,7 @@
 package com.clearchain.app.presentation.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -131,26 +128,14 @@ fun ListingCard(
 
                 // Grocery avatar (bottom-left, Browse mode only)
                 if (onGroceryAvatarClick != null) {
-                    Surface(
+                    OverlayAvatar(
+                        imageUrl = listing.groceryProfilePictureUrl,
+                        name     = listing.groceryName,
                         modifier = Modifier
                             .align(Alignment.BottomStart)
-                            .padding(8.dp)
-                            .size(38.dp)
-                            .clickable { onGroceryAvatarClick() },
-                        shape           = CircleShape,
-                        color           = MaterialTheme.colorScheme.primaryContainer,
-                        border          = BorderStroke(2.dp, Color.White),
-                        shadowElevation = 3.dp
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text       = listing.groceryName.take(1).uppercase(),
-                                style      = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color      = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                            .padding(8.dp),
+                        onClick  = onGroceryAvatarClick
+                    )
                 }
             }
 
@@ -314,24 +299,6 @@ private fun FoodImagePlaceholder(modifier: Modifier = Modifier) {
             modifier = Modifier.size(40.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
         )
-    }
-}
-
-@Composable
-private fun QuantityBadge(text: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(50)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Icon(Icons.Default.Scale, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
-            Text(text, style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        }
     }
 }
 

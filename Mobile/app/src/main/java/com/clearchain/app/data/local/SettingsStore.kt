@@ -35,11 +35,6 @@ class SettingsStore @Inject constructor(
     suspend fun setNotifRequestUpdate(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_REQUEST_UPDATE] = enabled }
     suspend fun setNotifExpiry(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_EXPIRY] = enabled }
 
-    /** Synchronous read for use in [android.app.Application.attachBaseContext]. */
-    fun getLanguageSync(): String =
-        context.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
-            .getString("language", "en") ?: "en"
-
     suspend fun setLanguageAndSync(language: String) {
         setLanguage(language)
         context.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)

@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.ngo.listingdetail
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,7 +11,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -76,54 +75,45 @@ fun ListingDetailScreen(
     // ── Dialogs ───────────────────────────────────────────────────────────────
 
     if (state.showReportDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onEvent(ListingDetailEvent.DismissReportDialog) },
-            title = { Text(stringResource(R.string.report_listing_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.report_listing_subtitle), style = MaterialTheme.typography.bodyMedium)
-                    listOf(
-                        stringResource(R.string.report_reason_inaccurate),
-                        stringResource(R.string.report_reason_already_gone),
-                        stringResource(R.string.report_reason_spam),
-                        stringResource(R.string.report_reason_inappropriate),
-                        stringResource(R.string.report_reason_other)
-                    ).forEach { reason ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                                .clickable { viewModel.onEvent(ListingDetailEvent.ReportReasonChanged(reason)) }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            RadioButton(
-                                selected = state.reportReason == reason,
-                                onClick  = { viewModel.onEvent(ListingDetailEvent.ReportReasonChanged(reason)) }
-                            )
-                            Text(reason, style = MaterialTheme.typography.bodyMedium)
-                        }
+        ConfirmDialog(
+            onDismiss = { viewModel.onEvent(ListingDetailEvent.DismissReportDialog) },
+            onConfirm = { viewModel.onEvent(ListingDetailEvent.SubmitReport) },
+            icon = Icons.Default.Flag,
+            title = stringResource(R.string.report_listing_title),
+            message = stringResource(R.string.report_listing_subtitle),
+            confirmLabel = stringResource(R.string.btn_submit),
+            dismissLabel = stringResource(R.string.cancel),
+            confirmEnabled = state.reportReason.isNotBlank(),
+            confirmLoading = state.isSubmittingReport
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    stringResource(R.string.report_reason_inaccurate),
+                    stringResource(R.string.report_reason_already_gone),
+                    stringResource(R.string.report_reason_spam),
+                    stringResource(R.string.report_reason_inappropriate),
+                    stringResource(R.string.report_reason_other)
+                ).forEach { reason ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable { viewModel.onEvent(ListingDetailEvent.ReportReasonChanged(reason)) }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = state.reportReason == reason,
+                            onClick  = { viewModel.onEvent(ListingDetailEvent.ReportReasonChanged(reason)) }
+                        )
+                        Text(reason, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-            },
-            confirmButton = {
-                ClearChainButton(
-                    text = stringResource(R.string.btn_submit),
-                    onClick = { viewModel.onEvent(ListingDetailEvent.SubmitReport) },
-                    enabled = state.reportReason.isNotBlank(),
-                    loading = state.isSubmittingReport,
-                    fillMaxWidth = false
-                )
-            },
-            dismissButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { viewModel.onEvent(ListingDetailEvent.DismissReportDialog) }
-                )
             }
-        )
+        }
     }
 
     if (state.showDeleteConfirm) {
         ConfirmDialog(
+            icon          = Icons.Default.DeleteForever,
             title         = stringResource(R.string.delete),
             message       = stringResource(R.string.msg_delete_listing_confirm, state.listing?.title ?: ""),
             confirmLabel  = stringResource(R.string.delete),
@@ -140,75 +130,53 @@ fun ListingDetailScreen(
         val errInvalid  = stringResource(R.string.error_invalid_number)
         val errPositive = stringResource(R.string.error_must_be_positive)
         val errSame     = stringResource(R.string.error_same_as_current)
-        AlertDialog(
-            onDismissRequest = { showEditQty = false },
-            title = { Text(stringResource(R.string.label_edit_quantity)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        stringResource(R.string.label_current_qty, listing.quantity, listing.unit),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OutlinedTextField(
-                        value           = qty,
-                        onValueChange   = { qty = it; qtyError = null },
-                        label           = { Text(stringResource(R.string.label_new_quantity)) },
-                        suffix          = { Text(listing.unit) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError         = qtyError != null,
-                        supportingText  = qtyError?.let { { Text(it) } }
-                    )
+        ConfirmDialog(
+            onDismiss = { showEditQty = false },
+            icon = Icons.Default.Edit,
+            title = stringResource(R.string.label_edit_quantity),
+            message = stringResource(R.string.label_current_qty, listing.quantity, listing.unit),
+            confirmLabel = stringResource(R.string.action_update),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = {
+                val n = qty.toIntOrNull()
+                when {
+                    n == null             -> qtyError = errInvalid
+                    n <= 0                -> qtyError = errPositive
+                    n == listing.quantity -> qtyError = errSame
+                    else -> { showEditQty = false; viewModel.onEvent(ListingDetailEvent.UpdateQuantity(n)) }
                 }
-            },
-            confirmButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.action_update),
-                    onClick = {
-                    val n = qty.toIntOrNull()
-                    when {
-                        n == null             -> qtyError = errInvalid
-                        n <= 0                -> qtyError = errPositive
-                        n == listing.quantity -> qtyError = errSame
-                        else -> { showEditQty = false; viewModel.onEvent(ListingDetailEvent.UpdateQuantity(n)) }
-                    }
-                })
-            },
-            dismissButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { showEditQty = false }
-                )
             }
-        )
+        ) {
+            OutlinedTextField(
+                value           = qty,
+                onValueChange   = { qty = it; qtyError = null },
+                label           = { Text(stringResource(R.string.label_new_quantity)) },
+                suffix          = { Text(listing.unit) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError         = qtyError != null,
+                supportingText  = qtyError?.let { { Text(it) } }
+            )
+        }
     }
 
     fullscreenImageUrl?.let { url ->
-        AlertDialog(
-            onDismissRequest = { fullscreenImageUrl = null },
-            confirmButton    = {},
-            dismissButton    = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.close),
-                    onClick = { fullscreenImageUrl = null }
-                )
-            },
-            text = {
-                ZoomableImage(
-                    imageUrl           = url,
-                    contentDescription = stringResource(R.string.cd_full_size_image),
-                    modifier           = Modifier.fillMaxWidth().height(400.dp)
-                )
-            }
+        FullPhotoDialog(
+            photoUrl  = url,
+            onDismiss = { fullscreenImageUrl = null }
         )
     }
 
-    // No topBar — back via system gesture
     Scaffold(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.title_listing_details),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
 
@@ -370,35 +338,22 @@ fun ListingDetailScreen(
                             }
 
                             // ── Grocery avatar — bottom-left, inside image (NGO only) ──
-                            if (!isGrocery) Surface(
+                            if (!isGrocery) OverlayAvatar(
+                                imageUrl = listing.groceryProfilePictureUrl,
+                                name     = listing.groceryName,
                                 modifier = Modifier
                                     .align(Alignment.BottomStart)
-                                    .padding(8.dp)
-                                    .size(38.dp)
-                                    .clickable { onNavigateToStoreProfile(listing.groceryId) },
-                                shape           = CircleShape,
-                                color           = MaterialTheme.colorScheme.primaryContainer,
-                                border          = BorderStroke(2.dp, Color.White),
-                                shadowElevation = 3.dp
-                            ) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(
-                                        listing.groceryName.take(1).uppercase(),
-                                        style      = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color      = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
+                                    .padding(8.dp),
+                                onClick  = { onNavigateToStoreProfile(listing.groceryId) }
+                            )
                         } }
-
 
                         // ══════════════════════════════════════════════════════
                         // CONTENT BELOW IMAGE
                         // ══════════════════════════════════════════════════════
                         Column(
-                            modifier            = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier            = Modifier.padding(ScreenPadding),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             // ── Title ──────────────────────────────────────────
                             Row(
@@ -461,8 +416,16 @@ fun ListingDetailScreen(
 
                             // ── About Us card (NGO only) ───────────────────────
                             if (!isGrocery) {
-                                val address = state.groceryProfile?.address
-                                    ?.takeIf { it.isNotBlank() } ?: listing.location
+                                // Street, city, state and zip are stored separately, so the
+                                // street alone reads as a partial address. Same assembly the
+                                // account detail screen uses.
+                                val profile = state.groceryProfile
+                                val address = listOfNotNull(
+                                    profile?.address?.substringBefore(',')?.trim()?.takeIf { it.isNotBlank() },
+                                    profile?.location?.trim()?.takeIf { it.isNotBlank() },
+                                    profile?.state?.trim()?.takeIf { it.isNotBlank() },
+                                    profile?.zipCode?.trim()?.takeIf { it.isNotBlank() }
+                                ).joinToString(", ").takeIf { it.isNotBlank() } ?: listing.location
 
                                 SectionCard(stringResource(R.string.section_about_us)) {
                                     if (address.isNotBlank()) {
@@ -481,8 +444,6 @@ fun ListingDetailScreen(
                                                 style    = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color    = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             ClearChainActionIconButton(
@@ -561,6 +522,7 @@ fun ListingDetailScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -689,20 +651,6 @@ private fun SectionCard(
             content()
         }
     }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Compact section label
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun CompactSectionLabel(text: String) {
-    Text(
-        text       = text,
-        style      = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Bold,
-        color      = MaterialTheme.colorScheme.onSurface
-    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

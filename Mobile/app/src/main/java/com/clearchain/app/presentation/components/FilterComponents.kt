@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.ShapeMedium
@@ -96,6 +97,62 @@ fun SearchBar(
     )
 }
 
+/**
+ * Row 1 of every list-screen header: a full-width [SearchBar] plus optional trailing
+ * action buttons (filter / cart / location / export …). Owns the header's horizontal
+ * gutter and vertical rhythm so screens can't drift apart.
+ */
+@Composable
+fun ListHeaderSearchRow(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    // Disable the 48.dp min-touch-target inflation so the 32.dp search field + 24.dp action
+    // buttons don't add 8.dp of dead space above/below the row — keeps it flush on the
+    // header's 8.dp rhythm.
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SearchBar(
+                query = query,
+                onQueryChange = onQueryChange,
+                placeholder = placeholder,
+                modifier = Modifier.weight(1f)
+            )
+            actions()
+        }
+    }
+}
+
+/**
+ * Stacks a list screen's header rows ([ListHeaderSearchRow], [FilterChipsRow],
+ * [ResultsCountAndSort], …) on the SAME 8.dp vertical rhythm the content [LazyColumn]
+ * uses for its cards (`verticalArrangement = Arrangement.spacedBy(8.dp)`), so the gaps
+ * between header rows match the gaps between cards. No bottom padding — the list's own
+ * `contentPadding` supplies the 8.dp gap to the first card.
+ */
+@Composable
+fun ListScreenHeader(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        content = content
+    )
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // SORT DROPDOWN  (bottom-sheet style)
 // ════════════════════════════════════════════════════════════════════════════════
@@ -112,9 +169,9 @@ fun SortDropdown(
     val context = LocalContext.current
 
     Row(
-        modifier = modifier.padding(horizontal = 2.dp, vertical = 4.dp),
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text  = stringResource(R.string.sort_by) + ": ",
@@ -124,9 +181,9 @@ fun SortDropdown(
         Row(
             modifier = Modifier
                 .clickable { HapticUtils.tick(context); showSheet = true }
-                .padding(horizontal = 2.dp, vertical = 1.dp),
+                .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text       = stringResource(selectedSort.labelResId),
@@ -151,7 +208,7 @@ fun SortDropdown(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)
+                    .padding(bottom = 24.dp)
             ) {
                 Text(
                     text       = stringResource(R.string.sort_by),
@@ -159,8 +216,8 @@ fun SortDropdown(
                     fontWeight = FontWeight.Bold,
                     modifier   = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(top = 4.dp, bottom = 8.dp),
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 8.dp),
                     textAlign  = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 sortOptions.forEach { option ->
@@ -173,7 +230,7 @@ fun SortDropdown(
                                 onSortSelected(option)
                                 showSheet = false
                             }
-                            .padding(horizontal = 20.dp, vertical = 4.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
@@ -208,60 +265,73 @@ fun FilterChipsRow(
     modifier: Modifier = Modifier
 ) {
     LazyRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
         items(filters) { filter ->
             val context = LocalContext.current
-            FilterChip(
+            HeaderChip(
                 selected = selectedFilter == filter.value,
+                label = filter.labelResId?.let { stringResource(it) } ?: filter.label,
                 onClick = {
                     HapticUtils.tick(context)
                     onFilterSelected(if (selectedFilter == filter.value) null else filter.value)
-                },
-                label = { Text(filter.labelResId?.let { stringResource(it) } ?: filter.label, style = MaterialTheme.typography.labelSmall) },
-                shape = RoundedCornerShape(50)
+                }
             )
         }
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// STATUS TAB ROW
-// ════════════════════════════════════════════════════════════════════════════════
-
+/**
+ * Typed variant of [FilterChipsRow] for a fixed tab set whose value is an enum / boolean /
+ * nullable string rather than a [FilterChipData] list. Single-select, no toggle-off.
+ * Same gutter, spacing, chip shape and label style as the [FilterChipData] overload.
+ */
 @Composable
-fun <T> StatusTabRow(
-    tabs: List<Pair<T?, String>>,
-    selectedTab: T?,
-    onTabSelected: (T?) -> Unit,
+fun <T> FilterChipsRow(
+    tabs: List<Pair<T, String>>,
+    selectedTab: T,
+    onTabSelected: (T) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ScrollableTabRow(
-        selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0),
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.primary,
-        edgePadding = 12.dp,
-        divider = {}
+    val context = LocalContext.current
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
-        val context = LocalContext.current
-        tabs.forEach { (status, label) ->
-            Tab(
-                selected = selectedTab == status,
-                onClick = { HapticUtils.tick(context); onTabSelected(status) },
-                text = {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (selectedTab == status) FontWeight.SemiBold else FontWeight.Normal
-                    )
+        items(tabs) { (tab, label) ->
+            HeaderChip(
+                selected = selectedTab == tab,
+                label = label,
+                onClick = {
+                    HapticUtils.tick(context)
+                    onTabSelected(tab)
                 }
             )
         }
+    }
+}
+
+/**
+ * A [FilterChip] rendered at its 32.dp visual pill height, with the 48.dp minimum-touch-target
+ * inflation disabled so header chip rows sit flush on the same 8.dp vertical rhythm as the search
+ * row and the content cards. (The chips are wide, so horizontal touch area stays comfortable.)
+ */
+@Composable
+private fun HeaderChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit
+) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        FilterChip(
+            selected = selected,
+            onClick = onClick,
+            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+            shape = RoundedCornerShape(50)
+        )
     }
 }
 
@@ -305,7 +375,7 @@ fun ResultsCountAndSort(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

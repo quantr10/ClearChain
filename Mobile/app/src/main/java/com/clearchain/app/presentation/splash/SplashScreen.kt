@@ -28,6 +28,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
 import kotlinx.coroutines.delay
 
 @Composable
@@ -67,10 +68,21 @@ fun SplashScreen(
                     return@LaunchedEffect
                 }
 
-                // Deep link handling
+                if (currentUser.requiresVerificationGate()) {
+                    navController.navigate(Screen.PendingReview.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                    return@LaunchedEffect
+                }
+
+                // Deep link handling. Consumed at most once: cleared here regardless of
+                // whether it maps to a route below, so a screen value we don't special-case
+                // (e.g. a verification push's "grocery_dashboard"/"pending_review" — already
+                // fully handled by the checks above) doesn't linger in prefs forever.
                 val prefs = context.getSharedPreferences("deeplink", Context.MODE_PRIVATE)
                 val pendingScreen = prefs.getString("pending_screen", null)
                 if (pendingScreen != null) {
+                    prefs.edit().clear().apply()
                     val route = when (pendingScreen) {
                         "my_requests" -> Screen.MyRequests.route
                         "browse_listings" -> Screen.BrowseListings.route
@@ -78,7 +90,6 @@ fun SplashScreen(
                         else -> null
                     }
                     if (route != null) {
-                        prefs.edit().clear().apply()
                         navController.navigate(route) { popUpTo(Screen.Splash.route) { inclusive = true } }
                         return@LaunchedEffect
                     }
@@ -108,8 +119,8 @@ fun SplashScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.scale(scale)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.scale(scale).padding(ScreenPadding)
         ) {
             // Logo container
             Box(

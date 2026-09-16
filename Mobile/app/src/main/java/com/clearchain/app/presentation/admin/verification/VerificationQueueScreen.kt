@@ -5,11 +5,9 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,8 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.Organization
@@ -129,18 +130,13 @@ fun VerificationQueueScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
+                        ListScreenHeader {
                         // Search + filter
-                        Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.hint_search_organizations)
                         ) {
-                            SearchBar(
-                                query         = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
-                                placeholder   = stringResource(R.string.hint_search_organizations),
-                                modifier      = Modifier.weight(1f)
-                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -155,73 +151,38 @@ fun VerificationQueueScreen(
                         }
 
                         // Status filter tabs (no counts — counts shown below)
-                        val statusOptions = listOf(
-                            null       to stringResource(R.string.filter_all),
-                            "PENDING"  to stringResource(R.string.status_pending),
-                            "APPROVED" to stringResource(R.string.status_approved),
-                            "REJECTED" to stringResource(R.string.status_rejected)
+                        FilterChipsRow(
+                            tabs = listOf(
+                                null       to stringResource(R.string.filter_all),
+                                "PENDING"  to stringResource(R.string.status_pending),
+                                "APPROVED" to stringResource(R.string.status_approved),
+                                "REJECTED" to stringResource(R.string.status_rejected)
+                            ),
+                            selectedTab = state.selectedStatus,
+                            onTabSelected = { viewModel.onEvent(VerificationQueueEvent.StatusFilterChanged(it)) }
                         )
-                        LazyRow(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(statusOptions) { (value, label) ->
-                                FilterChip(
-                                    selected = state.selectedStatus == value,
-                                    onClick  = { viewModel.onEvent(VerificationQueueEvent.StatusFilterChanged(value)) },
-                                    label    = { Text(label) }
-                                )
-                            }
-                        }
 
-                        // Count summary pills below tabs
-                        Row(
-                            modifier              = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            if (state.isBatchMode) {
-                                SelectionCircleButton(
-                                    checked = state.allSelected,
-                                    onCheckedChange = {
-                                        if (state.allSelected) viewModel.onEvent(VerificationQueueEvent.ClearSelection)
-                                        else viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
-                                    }
-                                )
-                                Text(
-                                    text = "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            } else {
-                                listOf(
-                                    state.organizations.size to MaterialTheme.colorScheme.onSurfaceVariant,
-                                    state.pendingOrgs.size   to MaterialTheme.colorScheme.secondary,
-                                    state.approvedOrgs.size  to BrandGreen,
-                                    state.rejectedOrgs.size  to MaterialTheme.colorScheme.error
-                                ).zip(listOf(
-                                    stringResource(R.string.filter_all_count, state.organizations.size),
-                                    stringResource(R.string.filter_pending_count, state.pendingOrgs.size),
-                                    stringResource(R.string.filter_approved_count, state.approvedOrgs.size),
-                                    stringResource(R.string.filter_rejected_count, state.rejectedOrgs.size)
-                                )).forEach { (countColor, label) ->
-                                    Surface(
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = countColor.second.copy(alpha = 0.12f)
-                                    ) {
-                                        Text(
-                                            text     = label,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                            style    = MaterialTheme.typography.labelSmall,
-                                            color    = countColor.second,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                        ResultsCountAndSort(
+                            count          = state.filteredOrgs.size,
+                            itemName       = "organization",
+                            selectedSort   = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(VerificationQueueEvent.SortOptionChanged(it)) },
+                            sortOptions    = state.availableSortOptions,
+                            countText      = if (state.isBatchMode) {
+                                "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected"
+                            } else null,
+                            leadingContent = if (state.isBatchMode) {
+                                {
+                                    SelectionCircleButton(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) viewModel.onEvent(VerificationQueueEvent.ClearSelection)
+                                            else viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
+                                        }
+                                    )
                                 }
-                            }
+                            } else null
+                        )
                         }
 
                         HapticPullToRefreshBox(
@@ -229,7 +190,7 @@ fun VerificationQueueScreen(
                             onRefresh    = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
                         ) {
                             LazyColumn(
-                                contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                contentPadding      = ScreenPadding,
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 if (state.isLoading && state.organizations.isEmpty()) {
@@ -246,7 +207,8 @@ fun VerificationQueueScreen(
                                         EmptyState(
                                             icon     = Icons.Default.Business,
                                             title    = stringResource(R.string.empty_no_organizations),
-                                            subtitle = stringResource(R.string.empty_no_organizations_subtitle)
+                                            subtitle = stringResource(R.string.empty_no_organizations_subtitle),
+                                            modifier = Modifier.fillParentMaxSize()
                                         )
                                     }
                                 } else if (state.filteredOrgs.isEmpty()) {
@@ -254,7 +216,8 @@ fun VerificationQueueScreen(
                                         EmptyState(
                                             icon     = Icons.Default.FilterAlt,
                                             title    = stringResource(R.string.empty_no_org_category),
-                                            subtitle = stringResource(R.string.empty_no_org_category_subtitle)
+                                            subtitle = stringResource(R.string.empty_no_org_category_subtitle),
+                                            modifier = Modifier.fillParentMaxSize()
                                         )
                                     }
                                 } else {
@@ -303,7 +266,7 @@ private fun VerificationFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -344,7 +307,7 @@ private fun VerificationFilterSheet(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun OrganizationCard(
     organization: Organization,
@@ -362,124 +325,174 @@ private fun OrganizationCard(
         FullPhotoDialog(photoUrl = fullPhotoUrl!!, onDismiss = { fullPhotoUrl = null })
     }
     val context = LocalContext.current
-    val cardClickModifier = if (isBatchMode)
-        Modifier.fillMaxWidth().clickable { onToggleSelect() }
-    else
-        Modifier.fillMaxWidth().combinedClickable(onClick = {}, onLongClick = onLongClick)
 
-    Card(
-        modifier  = cardClickModifier,
-        shape     = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp),
-        colors    = if (isSelected)
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-        else CardDefaults.cardColors()
+    // Same container theme as ListingCard (ClearChainCard: surface fill, 12dp corners, 1dp
+    // shadow). A tap opens the profile (or toggles selection in batch mode) with the standard
+    // Material ripple — clipped to the card shape because the click target sits inside the
+    // card. A long-press starts multi-select.
+    ClearChainCard(
+        containerColor = if (isSelected)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        else
+            MaterialTheme.colorScheme.surface,
+        elevation = if (isSelected) 3.dp else 1.dp
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick     = { if (isBatchMode) onToggleSelect() else onViewProfile() },
+                    onLongClick = onLongClick
+                )
+                .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // ── Identity header ────────────────────────────────────────────────
+            // The logo (or a type-tinted monogram) anchors the card on the left; the
+            // name shares its line with the verification status wash, and the org type
+            // sits underneath as a filled-tonal pill — the same soft chip the profile
+            // screens use for a role, so admin/NGO/grocery reads the same everywhere.
+            // The two chips form a deliberate pair: identity = solid tonal, state =
+            // light 15%-alpha wash. City is no longer up here; it moves to the contact
+            // block below, after the phone.
+            val typeAccent = when (organization.type) {
+                OrganizationType.GROCERY -> MaterialTheme.colorScheme.onSecondaryContainer
+                OrganizationType.NGO     -> MaterialTheme.colorScheme.onTertiaryContainer
+                OrganizationType.ADMIN   -> MaterialTheme.colorScheme.onPrimaryContainer
+            }
+            val typeContainer = when (organization.type) {
+                OrganizationType.GROCERY -> MaterialTheme.colorScheme.secondaryContainer
+                OrganizationType.NGO     -> MaterialTheme.colorScheme.tertiaryContainer
+                OrganizationType.ADMIN   -> MaterialTheme.colorScheme.primaryContainer
+            }
+            val roleLabel = when (organization.type) {
+                OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
+                OrganizationType.NGO     -> stringResource(R.string.role_ngo)
+                OrganizationType.ADMIN   -> stringResource(R.string.role_admin)
+            }
+
             Row(
                 modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Top
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment     = Alignment.CenterVertically
             ) {
                 if (isBatchMode) {
                     SelectionCircleButton(
-                        checked   = isSelected,
+                        checked         = isSelected,
                         onCheckedChange = { onToggleSelect() },
-                        modifier  = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(organization.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    StatusBadge(
-                        label = organization.type.name,
-                        backgroundColor = when (organization.type) {
-                            OrganizationType.GROCERY -> MaterialTheme.colorScheme.secondaryContainer
-                            OrganizationType.NGO     -> MaterialTheme.colorScheme.tertiaryContainer
-                            OrganizationType.ADMIN   -> MaterialTheme.colorScheme.primaryContainer
-                        },
-                        contentColor = when (organization.type) {
-                            OrganizationType.GROCERY -> MaterialTheme.colorScheme.onSecondaryContainer
-                            OrganizationType.NGO     -> MaterialTheme.colorScheme.onTertiaryContainer
-                            OrganizationType.ADMIN   -> MaterialTheme.colorScheme.onPrimaryContainer
-                        }
+                        modifier        = Modifier.size(24.dp)
                     )
                 }
 
-                val (statusLabel, statusColor, statusIcon) = when (organization.verificationStatus) {
-                    VerificationStatus.APPROVED -> Triple(stringResource(R.string.status_approved), BrandGreen, Icons.Default.CheckCircle)
-                    VerificationStatus.REJECTED -> Triple(stringResource(R.string.status_rejected), MaterialTheme.colorScheme.error, Icons.Default.Cancel)
-                    VerificationStatus.PENDING  -> Triple(stringResource(R.string.status_pending),  MaterialTheme.colorScheme.secondary, Icons.Default.Schedule)
-                }
-                StatusBadge(label = statusLabel, backgroundColor = statusColor.copy(alpha = 0.15f),
-                    contentColor = statusColor, icon = statusIcon)
-            }
+                AvatarImage(
+                    imageUrl        = organization.profilePictureUrl,
+                    name            = organization.name,
+                    size            = 44,
+                    backgroundColor = typeContainer,
+                    textColor       = typeAccent
+                )
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            InfoRow(Icons.Default.Email, stringResource(R.string.label_email), organization.email)
-            InfoRow(Icons.Default.Phone, stringResource(R.string.label_phone), organization.phone.ifBlank { stringResource(R.string.msg_not_provided) })
-            InfoRow(Icons.Default.Place, stringResource(R.string.label_location), organization.location.ifBlank { stringResource(R.string.msg_not_provided) })
-
-            // Document viewer
-            val docs = listOfNotNull(
-                organization.documentUrl?.let { stringResource(R.string.label_doc_n, 1) to it },
-                organization.documentUrl2?.let { stringResource(R.string.label_doc_n, 2) to it }
-            )
-            if (docs.isNotEmpty()) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier            = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Icon(
-                        Icons.Default.VerifiedUser,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        "Verification Documents",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    docs.forEach { (label, url) ->
-                        val isPdf = url.endsWith(".pdf", ignoreCase = true) ||
-                            organization.documentMimeType?.contains("pdf") == true
-                        ClearChainOutlinedButton(
-                            text = label,
-                            onClick = {
-                                if (isPdf) {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
-                                } else {
-                                    fullPhotoUrl = url
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            icon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Image
+                    val (statusLabel, statusColor, statusIcon) = when (organization.verificationStatus) {
+                        VerificationStatus.APPROVED -> Triple(stringResource(R.string.status_approved), BrandGreen, Icons.Default.CheckCircle)
+                        VerificationStatus.REJECTED -> Triple(stringResource(R.string.status_rejected), MaterialTheme.colorScheme.error, Icons.Default.Cancel)
+                        VerificationStatus.PENDING  -> Triple(stringResource(R.string.status_pending),  MaterialTheme.colorScheme.secondary, Icons.Default.Schedule)
+                    }
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text       = organization.name,
+                            style      = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines   = 1,
+                            overflow   = TextOverflow.Ellipsis,
+                            modifier   = Modifier.weight(1f)
+                        )
+                        StatusBadge(
+                            label           = statusLabel,
+                            backgroundColor = statusColor.copy(alpha = 0.15f),
+                            contentColor    = statusColor,
+                            icon            = statusIcon
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = typeContainer,
+                        contentColor = typeAccent
+                    ) {
+                        Text(
+                            text       = roleLabel,
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
             }
 
-            // View Profile button (always visible)
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.cd_view_profile),
-                onClick  = onViewProfile,
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Person
-            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Action buttons for PENDING orgs
+            // ── Contact block ──────────────────────────────────────────────────
+            // Email, then phone (with the named contact beside it), then the city —
+            // location reads last here because it's the least actionable of the four
+            // and it keeps the header uncluttered.
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                CompactInfoRow(
+                    icon     = Icons.Default.Email,
+                    value    = organization.email,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    CompactInfoRow(
+                        icon  = Icons.Default.Phone,
+                        value = organization.phone.ifBlank { stringResource(R.string.msg_not_provided) }
+                    )
+                    organization.contactPerson?.takeIf { it.isNotBlank() }?.let { person ->
+                        CompactInfoRow(
+                            icon     = Icons.Default.Person,
+                            value    = person,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                CompactInfoRow(
+                    icon     = Icons.Default.Place,
+                    value    = organization.location.ifBlank { stringResource(R.string.msg_not_provided) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // ── Verification document ──────────────────────────────────────────
+            organization.documentUrl?.let { docUrl ->
+                val isPdf = docUrl.endsWith(".pdf", ignoreCase = true) ||
+                    organization.documentMimeType?.contains("pdf") == true
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.label_view_document),
+                    onClick = {
+                        if (isPdf) {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(docUrl))
+                            context.startActivity(intent)
+                        } else {
+                            fullPhotoUrl = docUrl
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = if (isPdf) Icons.Default.PictureAsPdf else Icons.Default.Image
+                )
+            }
+
+            // ── Actions (PENDING only) ─────────────────────────────────────────
             if (organization.verificationStatus == VerificationStatus.PENDING) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -503,6 +516,35 @@ private fun OrganizationCard(
                 }
             }
         }
+    }
+}
+
+// Matches CompactAccountDetailRow in AccountDetailScreen.kt exactly (icon 14dp, 6dp gap,
+// labelSmall/SemiBold value, no separate label — the icon alone reads as Email/Phone/
+// Location, same as that screen's Contact/Location & Hours rows) so this list card reads at
+// the same compact scale as the rest of the app instead of the larger shared InfoRow
+// (icon 18dp, bodyMedium value) meant for full detail-screen layouts.
+@Composable
+private fun CompactInfoRow(icon: ImageVector, value: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier              = modifier,
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint     = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text       = value,
+            style      = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color      = MaterialTheme.colorScheme.onSurface,
+            maxLines   = 1,
+            overflow   = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -553,45 +595,39 @@ private fun ApprovalChecklistDialog(
         stringResource(R.string.verify_check_5),
         stringResource(R.string.verify_check_6)
     )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon  = { Icon(Icons.Default.Checklist, null) },
-        title = { Text(stringResource(R.string.verification_checklist_title)) },
-        text  = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(stringResource(R.string.verification_confirm_items),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(8.dp))
-                checklistItems.forEachIndexed { idx, item ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = idx in checkedItems,
-                            onCheckedChange = { onToggle(idx) }
-                        )
-                        Text(item, style = MaterialTheme.typography.bodySmall)
-                    }
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        icon = Icons.Default.Checklist,
+        title = stringResource(R.string.verification_checklist_title),
+        message = stringResource(R.string.verification_confirm_items),
+        confirmLabel = stringResource(R.string.verification_approve_org),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmEnabled = checklistComplete
+    ) {
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            checklistItems.forEachIndexed { idx, item ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Same shrunk touch target as the "Remember me" checkbox on Login —
+                    // the default Checkbox reserves ~40dp for its touch target, which is
+                    // what made these rows look far apart despite the 4dp Column spacing.
+                    Checkbox(
+                        checked = idx in checkedItems,
+                        onCheckedChange = { onToggle(idx) },
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(item, style = MaterialTheme.typography.bodySmall)
                 }
             }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.verification_approve_org),
-                onClick = onConfirm,
-                enabled = checklistComplete,
-                fillMaxWidth = false
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
-    )
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -614,51 +650,41 @@ private fun RejectOrgDialog(
         stringResource(R.string.reject_template_5),
         stringResource(R.string.reject_template_6)
     )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon  = { Icon(Icons.Default.Cancel, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text(stringResource(R.string.verification_reject_org)) },
-        text  = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(stringResource(R.string.verification_select_reason))
-
-                // Template chips
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    rejectionTemplates.forEach { template ->
-                        SuggestionChip(
-                            onClick = { onSelectTemplate(template) },
-                            label   = { Text(template, style = MaterialTheme.typography.labelSmall) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        icon = Icons.Default.Cancel,
+        title = stringResource(R.string.verification_reject_org),
+        message = stringResource(R.string.verification_select_reason),
+        confirmLabel = stringResource(R.string.reject),
+        dismissLabel = stringResource(R.string.cancel),
+        isDestructive = true,
+        confirmEnabled = reason.isNotBlank()
+    ) {
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Template chips
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                rejectionTemplates.forEach { template ->
+                    SuggestionChip(
+                        onClick = { onSelectTemplate(template) },
+                        label   = { Text(template, style = MaterialTheme.typography.labelSmall) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
-
-                OutlinedTextField(
-                    value         = reason,
-                    onValueChange = onReasonChange,
-                    label         = { Text(stringResource(R.string.label_rejection_reason)) },
-                    placeholder   = { Text(stringResource(R.string.hint_rejection_reason)) },
-                    singleLine    = false,
-                    maxLines      = 4,
-                    modifier      = Modifier.fillMaxWidth()
-                )
             }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.reject),
-                onClick = onConfirm,
-                enabled = reason.isNotBlank(),
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-                fillMaxWidth = false
+
+            OutlinedTextField(
+                value         = reason,
+                onValueChange = onReasonChange,
+                label         = { Text(stringResource(R.string.label_rejection_reason)) },
+                placeholder   = { Text(stringResource(R.string.hint_rejection_reason)) },
+                singleLine    = false,
+                maxLines      = 4,
+                modifier      = Modifier.fillMaxWidth()
             )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
-    )
+    }
 }

@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.ListingApi
-import com.clearchain.app.data.remote.signalr.ConnectionState
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.displayName
@@ -42,8 +41,6 @@ class MyListingsViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
-
         viewModelScope.launch {
             signalRService.listingCreated.collect { loadListings() }
         }
@@ -59,11 +56,6 @@ class MyListingsViewModel @Inject constructor(
         viewModelScope.launch {
             signalRService.pickupRequestCancelled.collect { loadListings() }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: MyListingsEvent) {

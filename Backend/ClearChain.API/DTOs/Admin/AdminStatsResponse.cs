@@ -17,6 +17,7 @@ public class AdminStatsData
     public int TotalListings { get; set; }
     public int ActiveListings { get; set; }
     public int ReservedListings { get; set; }
+    public int ExpiredListings { get; set; }
     
     public int TotalPickupRequests { get; set; }
     public int PendingRequests { get; set; }

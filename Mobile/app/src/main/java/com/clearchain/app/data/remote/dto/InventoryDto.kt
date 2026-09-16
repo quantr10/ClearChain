@@ -36,16 +36,6 @@ data class InventoryItemData(
     val photoUrl: String? = null
 )
 
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class UpdateInventoryItemRequest(
-    val productName: String,
-    val category: String,
-    val quantity: Double,
-    val unit: String,
-    val expiryDate: String
-)
-
 // Extension function to convert DTO to Domain
 fun InventoryItemData.toDomain(): InventoryItem {
     return InventoryItem(

@@ -2,9 +2,10 @@ package com.clearchain.app.presentation.admin.verification
 
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.VerificationStatus
+import com.clearchain.app.presentation.components.CommonSortOptions
+import com.clearchain.app.presentation.components.SortOption
 
 const val VERIFICATION_CHECKLIST_SIZE = 6
-const val REJECTION_TEMPLATES_SIZE = 6
 
 data class VerificationQueueState(
     val organizations: List<Organization> = emptyList(),
@@ -20,6 +21,15 @@ data class VerificationQueueState(
 
     // Status filter
     val selectedStatus: String? = "PENDING", // null = all
+
+    // Sort
+    val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
+    val availableSortOptions: List<SortOption> = listOf(
+        CommonSortOptions.CREATED_DATE_DESC,
+        CommonSortOptions.CREATED_DATE_ASC,
+        CommonSortOptions.NAME_ASC,
+        CommonSortOptions.NAME_DESC,
+    ),
 
     // Checklist for approval
     val showChecklistForId: String? = null,
@@ -59,6 +69,12 @@ data class VerificationQueueState(
                 it.email.lowercase().contains(q) ||
                 it.location.lowercase().contains(q)
             }
+        }
+        result = when (selectedSort.value) {
+            "date_asc"  -> result.sortedBy { it.createdAt }
+            "name_asc"  -> result.sortedBy { it.name.lowercase() }
+            "name_desc" -> result.sortedByDescending { it.name.lowercase() }
+            else        -> result.sortedByDescending { it.createdAt } // "date_desc" and default
         }
         return result
     }

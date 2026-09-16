@@ -7,10 +7,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -65,6 +64,7 @@ fun MyListingsScreen(
 
     if (showBulkDeleteConfirm) {
         ConfirmDialog(
+            icon        = Icons.Default.DeleteForever,
             title       = stringResource(R.string.bulk_delete),
             message     = stringResource(R.string.delete_account_confirm),
             confirmLabel = stringResource(R.string.delete),
@@ -147,7 +147,7 @@ fun MyListingsScreen(
         },
         floatingActionButton = {
             if (!state.isSelectionMode) {
-                FloatingActionButton(
+                SmallFloatingActionButton(
                     onClick        = { navController.navigate(Screen.CreateListing.route) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor   = MaterialTheme.colorScheme.onPrimary
@@ -160,17 +160,12 @@ fun MyListingsScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListScreenHeader {
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(MyListingsEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.search_listings_placeholder)
                         ) {
-                            SearchBar(
-                                query       = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(MyListingsEvent.SearchQueryChanged(it)) },
-                                placeholder = stringResource(R.string.search_listings_placeholder),
-                                modifier    = Modifier.weight(1f)
-                            )
                             BadgedBox(
                                 badge = {
                                     if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -185,27 +180,16 @@ fun MyListingsScreen(
                         }
 
                         // Tab row: Available | Archived | Reserved | Expired
-                        Row(
-                            modifier = Modifier
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val tabs = listOf(
+                        FilterChipsRow(
+                            tabs = listOf(
                                 MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
                                 MyListingsTab.ARCHIVED  to stringResource(R.string.tab_archived),
                                 MyListingsTab.RESERVED  to stringResource(R.string.status_reserved),
                                 MyListingsTab.EXPIRED   to stringResource(R.string.status_expired)
-                            )
-                            tabs.forEach { (tab, label) ->
-                                FilterChip(
-                                    selected = state.activeTab == tab,
-                                    onClick  = { viewModel.onEvent(MyListingsEvent.TabChanged(tab)) },
-                                    label    = { Text(label, style = MaterialTheme.typography.labelMedium) },
-                                    shape    = RoundedCornerShape(50)
-                                )
-                            }
-                        }
+                            ),
+                            selectedTab = state.activeTab,
+                            onTabSelected = { viewModel.onEvent(MyListingsEvent.TabChanged(it)) }
+                        )
 
                         ResultsCountAndSort(
                             count          = state.filteredListings.size,
@@ -228,6 +212,7 @@ fun MyListingsScreen(
                                 }
                             } else null
                         )
+                        }
 
                         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
@@ -259,7 +244,7 @@ fun MyListingsScreen(
                                     onRefresh    = { viewModel.onEvent(MyListingsEvent.RefreshListings) }
                                 ) {
                                     LazyColumn(
-                                        contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        contentPadding      = ScreenPadding,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         items(state.filteredListings, key = { it.id }) { listing ->
@@ -381,7 +366,7 @@ private fun MyListingsFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -494,42 +479,31 @@ private fun EditQuantityDialog(
     val errorMustBePositive = stringResource(R.string.error_must_be_positive)
     val errorSameAsCurrent = stringResource(R.string.error_same_as_current)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.label_edit_quantity)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    stringResource(R.string.label_current_qty, currentQuantity, unit),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                OutlinedTextField(
-                    value         = quantity,
-                    onValueChange = { quantity = it; error = null },
-                    label         = { Text(stringResource(R.string.label_new_quantity)) },
-                    suffix        = { Text(unit) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    isError       = error != null,
-                    supportingText = error?.let { { Text(it) } }
-                )
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.Edit,
+        title = stringResource(R.string.label_edit_quantity),
+        message = stringResource(R.string.label_current_qty, currentQuantity, unit),
+        confirmLabel = stringResource(R.string.action_update),
+        dismissLabel = stringResource(R.string.cancel),
+        onConfirm = {
+            val newQty = quantity.toIntOrNull()
+            when {
+                newQty == null -> error = errorInvalidNumber
+                newQty <= 0   -> error = errorMustBePositive
+                newQty == currentQuantity -> error = errorSameAsCurrent
+                else -> onConfirm(newQty)
             }
-        },
-        confirmButton = {
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.action_update),
-                onClick = {
-                val newQty = quantity.toIntOrNull()
-                when {
-                    newQty == null -> error = errorInvalidNumber
-                    newQty <= 0   -> error = errorMustBePositive
-                    newQty == currentQuantity -> error = errorSameAsCurrent
-                    else -> onConfirm(newQty)
-                }
-            })
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
         }
-    )
+    ) {
+        OutlinedTextField(
+            value         = quantity,
+            onValueChange = { quantity = it; error = null },
+            label         = { Text(stringResource(R.string.label_new_quantity)) },
+            suffix        = { Text(unit) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError       = error != null,
+            supportingText = error?.let { { Text(it) } }
+        )
+    }
 }

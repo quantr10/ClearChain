@@ -12,6 +12,7 @@ data class CartResponse(
 data class CartGroupData(
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val items: List<CartItemData> = emptyList(),
     val earliestExpiryDate: String? = null,
     val pickupTimeStart: String? = null,
@@ -25,6 +26,7 @@ data class CartItemData(
     val listingId: String,
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val title: String,
     val category: String,
     val unit: String,

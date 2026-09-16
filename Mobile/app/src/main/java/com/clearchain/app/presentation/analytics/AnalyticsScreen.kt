@@ -1,35 +1,42 @@
 ﻿package com.clearchain.app.presentation.analytics
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
+import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.data.remote.api.NgoReputationData
 import com.clearchain.app.data.remote.api.OrganizationApi
+import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.DashboardStatsData
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
-import com.clearchain.app.presentation.components.DetailTopBar
+import com.clearchain.app.presentation.components.ActivitySparklineCard
+import com.clearchain.app.presentation.components.BarData
+import com.clearchain.app.presentation.components.ImpactSummaryRow
+import com.clearchain.app.presentation.components.RateContent
+import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.presentation.components.HapticPullToRefreshBox
-import com.clearchain.app.presentation.components.StatItem
+import com.clearchain.app.presentation.components.buildDailyActivityCounts
 import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.presentation.components.ColumnBarChart
+import com.clearchain.app.presentation.components.requestStatusBars
+import com.clearchain.app.data.remote.dto.RequestStatusCounts
+import com.clearchain.app.presentation.components.DonutChart
+import com.clearchain.app.ui.theme.StatusColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -39,6 +46,8 @@ import javax.inject.Inject
 data class AnalyticsState(
     val stats: DashboardStatsData? = null,
     val orgType: OrganizationType = OrganizationType.GROCERY,
+    val activities: List<ActivityItemData> = emptyList(),
+    val ngoReputation: NgoReputationData? = null,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null
@@ -68,11 +77,23 @@ class AnalyticsViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val user = getCurrentUserUseCase().first()
+                val orgType = user?.type ?: OrganizationType.GROCERY
                 val stats = organizationApi.getMyStats()
+
+                // Supplementary sections degrade gracefully: if any of these fail, the core
+                // stats above still render — only the extra section they feed goes missing.
+                // 30 days to match the analytics activity-trend chart below.
+                val activities = runCatching { organizationApi.getMyActivity(days = 30).data }
+                    .getOrDefault(emptyList())
+                val reputation = if (orgType == OrganizationType.NGO && user != null) {
+                    runCatching { organizationApi.getNgoReputation(user.id).data }.getOrNull()
+                } else null
                 _state.update {
                     it.copy(
                         stats = stats.data,
-                        orgType = user?.type ?: OrganizationType.GROCERY,
+                        orgType = orgType,
+                        activities = activities,
+                        ngoReputation = reputation,
                         isLoading = false
                     )
                 }
@@ -93,257 +114,255 @@ fun AnalyticsScreen(
     val state by viewModel.state.collectAsState()
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.stats == null ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
-
-                else -> {
-                    HapticPullToRefreshBox(
-                        isRefreshing = state.isRefreshing,
-                        onRefresh = viewModel::refresh
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.label_analytics),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+            if (state.isLoading && state.stats == null) {
+                CircularProgressIndicator(Modifier.align(Alignment.Center))
+            } else {
+                HapticPullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = viewModel::refresh
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(ScreenPadding),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 20.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp)
-                        ) {
-                            val s = state.stats
-                            if (s != null) {
-                                AccountStatsCard(stats = s, orgType = state.orgType)
-                                Spacer(Modifier.height(12.dp))
-                                if (state.orgType == OrganizationType.GROCERY) {
-                                    GroceryAnalytics(s)
-                                } else {
-                                    NgoAnalytics(s)
-                                }
-                            } else if (state.error != null) {
-                                Text(
-                                    state.error!!,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                        val s = state.stats
+                        if (s != null) {
+                            // Each role orders its own sections, the activity trend
+                            // included, so neither is stuck with the other's layout.
+                            if (state.orgType == OrganizationType.GROCERY) {
+                                GroceryAnalytics(s, state.activities)
+                            } else {
+                                NgoAnalytics(s, state.ngoReputation, state.activities)
                             }
-                            Spacer(Modifier.height(16.dp))
                         }
+                        Spacer(Modifier.height(12.dp))
                     }
                 }
+            }
             }
         }
     }
 }
 
 @Composable
-private fun GroceryAnalytics(s: DashboardStatsData) {
-    SectionTitle(stringResource(R.string.analytics_food_impact))
-    BarChartCard(
-        title = stringResource(R.string.analytics_listings_overview),
-        bars = listOf(
-            BarData(stringResource(R.string.status_active),    s.activeListings, BrandGreen),
-            BarData(stringResource(R.string.status_pending),   s.pendingRequests, MaterialTheme.colorScheme.tertiary),
-            BarData(stringResource(R.string.status_completed), s.completed, MaterialTheme.colorScheme.primary),
-            BarData(stringResource(R.string.analytics_total_label), s.totalListings, MaterialTheme.colorScheme.secondary)
-        )
+private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityItemData>) {
+    AnalyticsImpactSection(
+        kgSaved = s.foodSaved,
+        mealsEstimate = s.mealsEstimate,
+        co2Estimate = s.co2EstimateKg
     )
 
-    SectionTitle(stringResource(R.string.analytics_food_cleared))
-    BigStatCard(
-        icon = Icons.Default.Eco,
-        value = "${s.foodSaved} kg",
-        label = stringResource(R.string.analytics_food_saved_total),
-        color = BrandGreen
-    )
-
-    SectionTitle(stringResource(R.string.analytics_pickup_perf))
-    val total = s.completed + s.pendingRequests
-    val completionRate = if (total > 0) (s.completed.toFloat() / total * 100).toInt() else 0
-    RateCard(
-        label = stringResource(R.string.analytics_pickup_completion_rate),
-        percent = completionRate,
-        description = stringResource(R.string.analytics_completed_of_requests, s.completed, total)
-    )
-}
-
-@Composable
-private fun NgoAnalytics(s: DashboardStatsData) {
-    SectionTitle(stringResource(R.string.analytics_inventory_summary))
-    BarChartCard(
-        title = stringResource(R.string.analytics_inventory_status),
-        bars = listOf(
-            BarData(stringResource(R.string.status_in_stock),    s.inStock, BrandGreen),
-            BarData(stringResource(R.string.status_distributed), s.distributed, MaterialTheme.colorScheme.tertiary),
-            BarData(stringResource(R.string.status_available),   s.availableFood, MaterialTheme.colorScheme.primary)
-        )
-    )
-
-    SectionTitle(stringResource(R.string.analytics_impact))
-    val mealsEstimate = s.distributed * 3
-    val co2Estimate = (s.distributed * 2.5).toInt()
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        BigStatCard(
-            icon = Icons.Default.Restaurant,
-            value = "$mealsEstimate",
-            label = stringResource(R.string.analytics_estimated_meals),
-            color = BrandGreen,
-            modifier = Modifier.weight(1f)
-        )
-        BigStatCard(
-            icon = Icons.Default.EnergySavingsLeaf,
-            value = "${co2Estimate}kg",
-            label = stringResource(R.string.analytics_co2_avoided),
-            color = BrandTeal,
-            modifier = Modifier.weight(1f)
+    // Collected listings are deleted on pickup, so this ring covers what has *not* moved
+    // rather than everything the store ever offered.
+    val listingRing = s.listingStatus
+    AnalyticsSectionCard(stringResource(R.string.analytics_listings_overview)) {
+        DonutChart(
+            slices = listOf(
+                BarData(stringResource(R.string.status_active),  listingRing.open,     StatusColors.Available),
+                BarData(stringResource(R.string.stat_reserved),  listingRing.reserved, StatusColors.Reserved),
+                BarData(stringResource(R.string.status_expired), listingRing.expired,  StatusColors.Expired)
+            ),
+            centerValue = listingRing.total.toString(),
+            centerLabel = stringResource(R.string.stat_total)
         )
     }
 
-    SectionTitle(stringResource(R.string.analytics_request_activity))
-    val total = s.totalCompleted + s.activeRequests
-    val completionRate = if (total > 0) (s.totalCompleted.toFloat() / total * 100).toInt() else 0
-    RateCard(
-        label = stringResource(R.string.analytics_request_success_rate),
-        percent = completionRate,
-        description = stringResource(R.string.analytics_completed_pickups_count, s.totalCompleted)
+    ActivityTrendSection(activities)
+
+    val pickupTotal = s.completed + s.pendingRequests
+    val pickupCompletionRate = if (pickupTotal > 0) (s.completed.toFloat() / pickupTotal * 100).toInt() else 0
+    AnalyticsSectionCard(
+        title = stringResource(R.string.analytics_pickup_completion_rate),
+        action = {
+            Text(
+                "$pickupCompletionRate%",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = if (pickupCompletionRate >= 70) BrandGreen else MaterialTheme.colorScheme.error
+            )
+        },
+        contentSpacing = RATE_CARD_SPACING
+    ) {
+        RateContent(
+            percent = pickupCompletionRate,
+            description = stringResource(R.string.analytics_completed_of_requests, s.completed, pickupTotal),
+            spacing = RATE_CARD_SPACING
+        )
+    }
+
+    RequestStatusSection(s.requestStatus)
+}
+
+/** The 30-day activity sparkline, shared by both roles. */
+@Composable
+private fun ActivityTrendSection(activities: List<ActivityItemData>) {
+    AnalyticsSectionCard(title = "") {
+        ActivitySparklineCard(
+            title = stringResource(R.string.analytics_activity_trend),
+            data = buildDailyActivityCounts(activities, days = 30, labelPattern = "MMM d"),
+            periodLabel = stringResource(R.string.analytics_last_30_days),
+            maxLabels = 6
+        )
+    }
+}
+
+@Composable
+private fun NgoAnalytics(
+    s: DashboardStatsData,
+    reputation: NgoReputationData?,
+    activities: List<ActivityItemData>
+) {
+    AnalyticsImpactSection(
+        kgSaved = s.foodSaved,
+        mealsEstimate = s.mealsEstimate,
+        co2Estimate = s.co2EstimateKg
     )
+
+    // A ring, not bars: these three are parts of one whole, and the old third bar was
+    // not even part of it - "Available" counted every open listing on the platform, which
+    // is a marketplace figure, not something this NGO holds.
+    val inventory = s.inventoryStatus
+    AnalyticsSectionCard(stringResource(R.string.analytics_inventory_status)) {
+        DonutChart(
+            slices = listOf(
+                BarData(stringResource(R.string.status_in_stock),    inventory.active,      StatusColors.Available),
+                BarData(stringResource(R.string.status_distributed), inventory.distributed, StatusColors.Distributed),
+                BarData(stringResource(R.string.status_expired),     inventory.expired,     StatusColors.Expired)
+            ),
+            centerValue = inventory.total.toString(),
+            centerLabel = stringResource(R.string.stat_total)
+        )
+    }
+
+    ActivityTrendSection(activities)
+
+    // Prefer the server-computed, all-time reputation numbers (also shown to groceries
+    // reviewing this NGO); fall back to a local estimate if that call failed.
+    val fallbackTotal = s.totalCompleted + s.activeRequests
+    val fallbackRate = if (fallbackTotal > 0) (s.totalCompleted.toFloat() / fallbackTotal * 100).toInt() else 0
+    val completionRate = reputation?.completionRate?.toInt() ?: fallbackRate
+    val totalRequests = reputation?.totalRequests ?: fallbackTotal
+    val completedRequests = reputation?.completedPickups ?: s.totalCompleted
+
+    AnalyticsSectionCard(
+        title = stringResource(R.string.analytics_pickup_completion_rate),
+        action = {
+            Text(
+                "$completionRate%",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = if (completionRate >= 70) BrandGreen else MaterialTheme.colorScheme.error
+            )
+        },
+        contentSpacing = RATE_CARD_SPACING
+    ) {
+        RateContent(
+            percent = completionRate,
+            description = stringResource(R.string.analytics_completed_of_requests, completedRequests, totalRequests),
+            spacing = RATE_CARD_SPACING
+        )
+    }
+
+    RequestStatusSection(s.requestStatus)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Request status breakdown — the same chart the admin report shows, scoped to the
+// one organization looking at it.
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold
-    )
-}
+private fun RequestStatusSection(status: RequestStatusCounts) {
+    if (status.total == 0) return
 
-private data class BarData(val label: String, val value: Int, val color: Color)
-
-@Composable
-private fun BarChartCard(title: String, bars: List<BarData>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            val maxVal = bars.maxOfOrNull { it.value }?.coerceAtLeast(1) ?: 1
-            bars.forEach { bar ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(bar.label, style = MaterialTheme.typography.bodySmall)
-                        Text(
-                            bar.value.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = bar.color
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(bar.value.toFloat() / maxVal)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(bar.color)
-                        )
-                    }
-                }
-            }
-        }
+    AnalyticsSectionCard(stringResource(R.string.section_request_status_breakdown)) {
+        ColumnBarChart(
+            bars = requestStatusBars(
+                pending   = status.pending,
+                approved  = status.approved,
+                ready     = status.ready,
+                completed = status.completed,
+                cancelled = status.cancelled,
+                rejected  = status.rejected
+            )
+        )
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Impact section — shared by GroceryAnalytics and NgoAnalytics: Food Saved,
+// Meals Saved, and CO₂ Reduced as three ImpactStatCell columns.
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun BigStatCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    value: String,
-    label: String,
-    color: Color,
-    modifier: Modifier = Modifier.fillMaxWidth()
+private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate: Int) {
+    AnalyticsSectionCard(stringResource(R.string.analytics_impact)) {
+        ImpactSummaryRow(
+            kgSaved       = kgSaved,
+            mealsEstimate = mealsEstimate,
+            co2EstimateKg = co2Estimate
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared section card — matches AccountDetailScreen / RequestDetailScreen.
+// Card title uses titleMedium, the same size as the card titles on the home screen.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Matches the rhythm of [WeeklyGoalCard], which the rate cards sit alongside. */
+private val RATE_CARD_SPACING = 12.dp
+
+@Composable
+private fun AnalyticsSectionCard(
+    title: String,
+    action: (@Composable () -> Unit)? = null,
+    contentSpacing: Dp = 6.dp,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f))
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(contentSpacing)
         ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(28.dp))
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = color)
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+            if (title.isNotBlank() || action != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (title.isNotBlank()) {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    action?.invoke()
+                }
+            }
+            content()
         }
     }
 }
 
-@Composable
-private fun AccountStatsCard(stats: com.clearchain.app.data.remote.dto.DashboardStatsData, orgType: OrganizationType) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            if (orgType == OrganizationType.GROCERY) {
-                StatItem(stringResource(R.string.status_active), stats.activeListings.toString(), Icons.Default.Inventory)
-                StatItem(stringResource(R.string.status_pending), stats.pendingRequests.toString(), Icons.Default.Pending)
-                StatItem(stringResource(R.string.status_completed), stats.completed.toString(), Icons.Default.CheckCircle)
-                StatItem(stringResource(R.string.impact_food_saved), "${stats.foodSaved} kg", Icons.Default.Eco)
-            } else {
-                StatItem(stringResource(R.string.label_stat_requests), stats.totalCompleted.toString(), Icons.Default.LocalShipping)
-                StatItem(stringResource(R.string.stat_in_stock), stats.inStock.toString(), Icons.Default.Inventory)
-                StatItem(stringResource(R.string.stat_distributed), stats.distributed.toString(), Icons.Default.VolunteerActivism)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RateCard(label: String, percent: Int, description: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                Text(
-                    "$percent%",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (percent >= 70) BrandGreen else MaterialTheme.colorScheme.error
-                )
-            }
-            LinearProgressIndicator(
-                progress = { percent / 100f },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                color = if (percent >= 70) BrandGreen else MaterialTheme.colorScheme.error,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}

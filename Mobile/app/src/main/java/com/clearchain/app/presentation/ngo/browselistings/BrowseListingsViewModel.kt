@@ -14,7 +14,6 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.displayName
 import com.clearchain.app.domain.usecase.listing.GetAllListingsUseCase
-import com.clearchain.app.presentation.components.SortOption
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -105,7 +104,6 @@ class BrowseListingsViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
         viewModelScope.launch {
             signalRService.listingCreated.collect {
                 refreshBoth()
@@ -115,11 +113,6 @@ class BrowseListingsViewModel @Inject constructor(
         viewModelScope.launch { signalRService.listingUpdated.collect { refreshBoth() } }
         viewModelScope.launch { signalRService.listingDeleted.collect { refreshBoth() } }
         viewModelScope.launch { signalRService.listingQuantityChanged.collect { refreshBoth() } }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: BrowseListingsEvent) {

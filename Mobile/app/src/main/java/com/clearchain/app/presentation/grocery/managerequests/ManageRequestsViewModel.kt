@@ -9,6 +9,7 @@ import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.BulkActionRequest
 import com.clearchain.app.data.remote.dto.BulkRejectRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
@@ -46,8 +47,6 @@ class ManageRequestsViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
-
         viewModelScope.launch {
             signalRService.pickupRequestCreated.collect { request ->
                 loadRequests()
@@ -63,11 +62,6 @@ class ManageRequestsViewModel @Inject constructor(
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled_by, request.ngoName)))
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: ManageRequestsEvent) {
@@ -179,9 +173,7 @@ class ManageRequestsViewModel @Inject constructor(
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { request ->
-                request.listingTitle.lowercase().contains(query) ||
-                request.ngoName.lowercase().contains(query) ||
-                request.notes?.lowercase()?.contains(query) == true
+                request.searchText.contains(query)
             }
         }
 

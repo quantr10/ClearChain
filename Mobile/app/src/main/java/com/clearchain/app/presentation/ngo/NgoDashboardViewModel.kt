@@ -10,9 +10,10 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -26,6 +27,7 @@ data class ImpactMetrics(
 
 data class NgoDashboardState(
     val userName: String = "",
+    val profilePictureUrl: String? = null,
     val stats: DashboardStatsData? = null,
     val todaySummary: TodaySummaryData? = null,
     val activities: List<ActivityItemData> = emptyList(),
@@ -38,11 +40,10 @@ data class NgoDashboardState(
     val nearbyExpiringListings: List<Listing> = emptyList()
 ) {
     val impact: ImpactMetrics get() {
-        val distributed = stats?.distributed ?: 0
         return ImpactMetrics(
-            kgSaved       = distributed * 3,
-            mealsProvided = distributed * 8,
-            co2AvoidedKg  = distributed * 7
+            kgSaved       = stats?.foodSaved ?: 0,
+            mealsProvided = stats?.mealsEstimate ?: 0,
+            co2AvoidedKg  = stats?.co2EstimateKg ?: 0
         )
     }
     val weeklyProgress: Float get() =
@@ -59,74 +60,98 @@ class NgoDashboardViewModel @Inject constructor(
     private val _state = MutableStateFlow(NgoDashboardState())
     val state = _state.asStateFlow()
 
-    // Keep legacy for any existing collectors
-    val userName     = MutableStateFlow("")
-    val stats        = MutableStateFlow<DashboardStatsData?>(null)
-
     init {
-        loadAll()
+        observeUser()
+        viewModelScope.launch { loadAll() }
     }
 
     fun refresh() {
-        _state.value = _state.value.copy(isRefreshing = true)
-        loadAll(onDone = { _state.value = _state.value.copy(isRefreshing = false) })
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true) }
+            loadAll()
+            _state.update { it.copy(isRefreshing = false) }
+        }
     }
 
-    private fun loadAll(onDone: (() -> Unit)? = null) {
-        viewModelScope.launch {
-            getCurrentUserUseCase().first()?.let { user ->
-                _state.value = _state.value.copy(
-                    userName = user.name,
-                    userLatitude = user.latitude,
-                    userLongitude = user.longitude
-                )
-                userName.value = user.name
-            }
-        }
-        viewModelScope.launch {
-            try {
-                val response = organizationApi.getMyStats()
-                val s = response.data
-                val weeklyCompleted = if (s.totalCompleted > 0) minOf(s.totalCompleted % 20, 10) else 0
-                _state.value = _state.value.copy(stats = s, weeklyCompleted = weeklyCompleted)
-                stats.value = s
-            } catch (_: Exception) {}
-        }
-        viewModelScope.launch {
-            try {
-                val summary = organizationApi.getTodaySummary()
-                _state.value = _state.value.copy(todaySummary = summary.data)
-            } catch (_: Exception) {}
-            onDone?.invoke()
-        }
+    /** Reloads every dashboard section concurrently and suspends until all have settled,
+     *  so pull-to-refresh keeps its spinner until the impact tracker, weekly goal, stats,
+     *  activity, and nearby listings are actually up to date.
+     *
+     *  Every section writes through [MutableStateFlow.update]: these loaders run in
+     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
+     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime —
+     *  which is how the freshly loaded user name and coordinates (and with them the nearby
+     *  map) used to blink in and then vanish again. */
+    private suspend fun loadAll(): Unit = coroutineScope {
+        launch { loadStats() }
+        launch { loadTodaySummary() }
+        launch { loadActivity() }
+        launch { loadNearbyListings() }
+    }
+
+    // Collected rather than read once, so a new avatar or a renamed organization
+    // shows up here as soon as the cached user changes.
+    private fun observeUser() {
         viewModelScope.launch {
             try {
-                val response = organizationApi.getMyActivity()
-                _state.value = _state.value.copy(activities = response.data)
-            } catch (_: Exception) {}
-        }
-        viewModelScope.launch {
-            try {
-                val result = listingRepository.getAllListings(status = "open", pageSize = 50)
-                result.onSuccess { listings ->
-                    val today = LocalDate.now()
-                    val cutoff = today.plusDays(3)
-                    val expiring = listings.filter { listing ->
-                        runCatching {
-                            val date = LocalDate.parse(listing.expiryDate.take(10))
-                            !date.isBefore(today) && !date.isAfter(cutoff)
-                        }.getOrDefault(false)
+                getCurrentUserUseCase().collect { user ->
+                    if (user != null) {
+                        _state.update {
+                            it.copy(
+                                userName = user.name,
+                                profilePictureUrl = user.profilePictureUrl,
+                                userLatitude = user.latitude,
+                                userLongitude = user.longitude
+                            )
+                        }
                     }
-                    _state.value = _state.value.copy(
-                        nearbyExpiringListings = expiring,
-                        availableListings = listings
-                    )
                 }
             } catch (_: Exception) {}
         }
     }
 
-    // Legacy functions kept for compatibility
-    fun loadUser() { viewModelScope.launch { getCurrentUserUseCase().first()?.let { userName.value = it.name } } }
-    fun loadStats() { viewModelScope.launch { try { stats.value = organizationApi.getMyStats().data } catch (_: Exception) {} } }
+    private suspend fun loadStats() {
+        try {
+            val s = organizationApi.getMyStats().data
+            // The API counts the last seven days off the hand-over date. This used to be
+            // `totalCompleted % 20`, which moved with the all-time total and told the
+            // reader nothing about their week.
+            _state.update { it.copy(stats = s, weeklyCompleted = s.completedThisWeek) }
+        } catch (_: Exception) {}
+    }
+
+    private suspend fun loadTodaySummary() {
+        try {
+            val summary = organizationApi.getTodaySummary().data
+            _state.update { it.copy(todaySummary = summary) }
+        } catch (_: Exception) {}
+    }
+
+    private suspend fun loadActivity() {
+        try {
+            val activities = organizationApi.getMyActivity().data
+            _state.update { it.copy(activities = activities) }
+        } catch (_: Exception) {}
+    }
+
+    private suspend fun loadNearbyListings() {
+        try {
+            listingRepository.getAllListings(status = "open", pageSize = 50).onSuccess { listings ->
+                val today = LocalDate.now()
+                val cutoff = today.plusDays(3)
+                val expiring = listings.filter { listing ->
+                    runCatching {
+                        val date = LocalDate.parse(listing.expiryDate.take(10))
+                        !date.isBefore(today) && !date.isAfter(cutoff)
+                    }.getOrDefault(false)
+                }
+                _state.update {
+                    it.copy(
+                        nearbyExpiringListings = expiring,
+                        availableListings = listings
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+    }
 }

@@ -1,4 +1,4 @@
-namespace ClearChain.API.DTOs.PickupRequests;
+﻿namespace ClearChain.API.DTOs.PickupRequests;
 
 public class PickupRequestData
 {
@@ -6,8 +6,10 @@ public class PickupRequestData
     public string ListingId { get; set; } = string.Empty;
     public string NgoId { get; set; } = string.Empty;
     public string NgoName { get; set; } = string.Empty;
+    public string? NgoProfilePictureUrl { get; set; }
     public string GroceryId { get; set; } = string.Empty;
     public string GroceryName { get; set; } = string.Empty;
+    public string? GroceryProfilePictureUrl { get; set; }
     public string Status { get; set; } = string.Empty;
     public int RequestedQuantity { get; set; }
     public string PickupDate { get; set; } = string.Empty;
@@ -28,6 +30,9 @@ public class PickupRequestData
     public bool IsFragile { get; set; } = false;
     public bool IsHeavy { get; set; } = false;
     public string? ListingDescription { get; set; }
+    public string? GroceryLocation { get; set; }
+    /// <summary>Grocery to NGO, in km. Null when either side has no coordinates.</summary>
+    public double? DistanceKm { get; set; }
     public List<PickupRequestItemData> Items { get; set; } = new();
 }
 

@@ -64,58 +64,6 @@ public class SavedListingsController : ControllerBase
         return Ok(new { message = "Listing unsaved", saved = false });
     }
 
-    // GET api/savedlistings — Get my saved listings
-    [HttpGet]
-    public async Task<IActionResult> GetSavedListings([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 50);
-
-        var query = _context.SavedListings
-            .Include(s => s.Listing).ThenInclude(l => l!.Grocery)
-            .Where(s => s.NgoId == userId && s.Listing != null && s.Listing.Status != ListingStatus.Archived);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(s => s.SavedAt)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
-            .ToListAsync();
-
-        // Get all saved listing IDs for status response
-        var savedIds = items.Select(s => s.ListingId.ToString()).ToList();
-
-        return Ok(new
-        {
-            message = "Saved listings retrieved",
-            data = items.Select(s => new
-            {
-                savedId = s.Id.ToString(),
-                savedAt = s.SavedAt.ToString("o"),
-                listing = s.Listing == null ? null : new
-                {
-                    id = s.Listing.Id.ToString(),
-                    title = s.Listing.ProductName,
-                    category = s.Listing.Category,
-                    quantity = (int)s.Listing.Quantity,
-                    unit = s.Listing.Unit,
-                    expiryDate = s.Listing.ExpirationDate?.ToString("yyyy-MM-dd"),
-                    status = s.Listing.Status.ToString().ToLower(),
-                    imageUrl = s.Listing.PhotoUrl,
-                    groceryName = s.Listing.Grocery?.Name ?? "",
-                    location = s.Listing.Grocery?.Location ?? "",
-                    createdAt = s.Listing.CreatedAt.ToString("o")
-                }
-            }).ToList(),
-            total,
-            page = clampedPage,
-            pageSize = clampedSize,
-            totalPages = (int)Math.Ceiling((double)total / clampedSize)
-        });
-    }
-
     // GET api/savedlistings/ids — Get list of saved listing IDs (for UI toggle state)
     [HttpGet("ids")]
     public async Task<IActionResult> GetSavedListingIds()

@@ -1,16 +1,12 @@
 package com.clearchain.app.presentation.components
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 
 @Composable
@@ -20,60 +16,24 @@ fun UploadErrorDialog(
     onRetry: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.CloudOff,
-                contentDescription = stringResource(R.string.cd_upload_failed),
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
-            )
-        },
-        title = {
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        onConfirm = onRetry,
+        icon = Icons.Default.CloudOff,
+        title = stringResource(R.string.label_upload_failed),
+        message = errorMessage,
+        confirmLabel = stringResource(R.string.action_retry_upload),
+        confirmIcon = Icons.Default.Refresh,
+        showConfirmButton = canRetry,
+        dismissLabel = if (canRetry) stringResource(R.string.cancel) else stringResource(R.string.close)
+    ) {
+        if (!canRetry) {
             Text(
-                text = stringResource(R.string.label_upload_failed),
-                style = MaterialTheme.typography.titleLarge
-            )
-        },
-        text = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = errorMessage,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                if (!canRetry) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.msg_try_again_later),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (canRetry) {
-                ClearChainButton(
-                    text = stringResource(R.string.action_retry_upload),
-                    onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.Refresh
-                )
-            }
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(
-                text = if (canRetry) stringResource(R.string.cancel) else stringResource(R.string.close),
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
+                text = stringResource(R.string.msg_try_again_later),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    )
+    }
 }

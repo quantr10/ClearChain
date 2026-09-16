@@ -62,8 +62,10 @@ data class PickupRequestData(
     val listingId: String,
     val ngoId: String,
     val ngoName: String,
+    val ngoProfilePictureUrl: String? = null,
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val status: String,
     val requestedQuantity: Int,
     val pickupDate: String,
@@ -82,6 +84,8 @@ data class PickupRequestData(
     val isFragile: Boolean = false,
     val isHeavy: Boolean = false,
     val listingDescription: String? = null,
+    val groceryLocation: String? = null,
+    val distanceKm: Double? = null,
     val items: List<PickupRequestItemData> = emptyList()
 )
 
@@ -107,8 +111,10 @@ fun PickupRequestData.toDomain(): PickupRequest {
         listingId = listingId,
         ngoId = ngoId,
         ngoName = ngoName,
+        ngoProfilePictureUrl = ngoProfilePictureUrl,
         groceryId = groceryId,
         groceryName = groceryName,
+        groceryProfilePictureUrl = groceryProfilePictureUrl,
         status = when (status.lowercase()) {
             "pending"   -> PickupRequestStatus.PENDING
             "approved"  -> PickupRequestStatus.APPROVED
@@ -135,6 +141,8 @@ fun PickupRequestData.toDomain(): PickupRequest {
         isFragile = isFragile,
         isHeavy = isHeavy,
         listingDescription = listingDescription,
+        groceryLocation = groceryLocation,
+        distanceKm = distanceKm,
         items = items.map {
             PickupRequestItem(
                 id = it.id,

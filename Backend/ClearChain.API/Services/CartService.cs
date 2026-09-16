@@ -1,4 +1,4 @@
-using ClearChain.API.DTOs.Cart;
+﻿using ClearChain.API.DTOs.Cart;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
@@ -39,15 +39,18 @@ public class CartService : ICartService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<CartService> _logger;
     private readonly IPickupNotificationService _notificationService;
+    private readonly IPushNotificationService _pushNotificationService;
 
     public CartService(
         ApplicationDbContext context,
         ILogger<CartService> logger,
-        IPickupNotificationService notificationService)
+        IPickupNotificationService notificationService,
+        IPushNotificationService pushNotificationService)
     {
         _context = context;
         _logger = logger;
         _notificationService = notificationService;
+        _pushNotificationService = pushNotificationService;
     }
 
     public async Task<CartServiceResult> GetCartAsync(Guid ngoId)
@@ -188,16 +191,8 @@ public class CartService : ICartService
                 PickupDate = pickupDateUtc,
                 Status = PickupRequestStatus.Pending,
                 RequestedAt = DateTime.UtcNow,
-                RequestedQuantity = cartItems.Sum(i => i.RequestedQuantity),
                 PickupTime = request.PickupTime,
                 Notes = request.Notes,
-                ListingTitle = groceryName,
-                ListingCategory = "Multiple",
-                ListingExpiryDate = cartItems
-                    .Select(i => i.Listing!.ExpirationDate)
-                    .Where(d => d.HasValue)
-                    .Min()?.ToString("yyyy-MM-dd"),
-                ListingUnit = "items",
                 RequiresRefrigeration = request.RequiresRefrigeration,
                 IsFragile = request.IsFragile,
                 IsHeavy = request.IsHeavy
@@ -226,13 +221,19 @@ public class CartService : ICartService
                 });
             }
 
+            PickupRequestSummary.Apply(pickupRequest);
+
             _context.CartItems.RemoveRange(cartItems);
             cart.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
 
             var data = MapPickupRequest(pickupRequest, ngo.Name, groceryName);
+            // Cart checkout is the app's main way of creating a pickup request, so it needs the
+            // same push as the single-listing path — SignalR alone only reaches a grocery that
+            // happens to have the app open.
             await _notificationService.NotifyPickupRequestCreated(data);
+            await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
 
             return new CartServiceResult(true, PickupRequest: data, Cart: await MapCartAsync(cart.Id));
         }
@@ -277,6 +278,7 @@ public class CartService : ICartService
             {
                 GroceryId = g.Key.GroceryId,
                 GroceryName = g.Key.GroceryName,
+                GroceryProfilePictureUrl = g.First().GroceryProfilePictureUrl,
                 Items = g.ToList(),
                 EarliestExpiryDate = g
                     .Select(i => i.ExpiryDate)
@@ -347,6 +349,8 @@ public class CartService : ICartService
                 ListingId = item.ListingId.ToString(),
                 GroceryId = item.GroceryId.ToString(),
                 GroceryName = item.Grocery?.Name ?? listing?.Grocery?.Name ?? "",
+                GroceryProfilePictureUrl = item.Grocery?.ProfilePictureUrl
+                                        ?? listing?.Grocery?.ProfilePictureUrl,
                 Title = listing?.ProductName ?? "",
                 Category = listing?.Category ?? "",
                 Unit = listing?.Unit ?? "",

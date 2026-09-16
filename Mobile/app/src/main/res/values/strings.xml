@@ -3,6 +3,8 @@
 
     <!-- ── General ── -->
     <string name="ok">OK</string>
+    <string name="msg_session_expired">Your session has expired. Please log in again.</string>
+    <string name="realtime_reconnecting">Reconnecting…</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="save">Save</string>
@@ -119,7 +121,7 @@
     <string name="bulk_reject">Reject selected</string>
     <string name="status_pending">Pending</string>
     <string name="status_approved">Approved</string>
-    <string name="status_ready">Ready for pickup</string>
+    <string name="status_ready">Ready</string>
     <string name="status_completed">Completed</string>
     <string name="status_cancelled">Cancelled</string>
     <string name="status_rejected">Rejected</string>
@@ -128,7 +130,6 @@
     <string name="inventory">Inventory</string>
     <string name="add_manual_item">Add item manually</string>
     <string name="distribute">Mark as distributed</string>
-    <string name="beneficiary_count">Number of beneficiaries</string>
     <string name="export_csv">Export CSV</string>
     <string name="category_breakdown">Category breakdown</string>
     <string name="expiring_soon_alert">%1$d items expiring within 48 hours</string>
@@ -158,6 +159,8 @@
     <string name="mark_all_read">Mark all as read</string>
     <string name="no_notifications">No notifications yet</string>
     <string name="unread_count">%1$d unread</string>
+    <string name="cd_open_notifications">Open notifications</string>
+    <string name="no_notifications_subtitle">Anything sent to you in the last %1$d days shows up here.</string>
 
     <!-- ── Settings ── -->
     <string name="settings">Settings</string>
@@ -229,13 +232,13 @@
     <string name="section_quick_actions">Quick Actions</string>
     <string name="section_todays_summary">Today\'s Summary</string>
     <string name="section_recent_activity">Recent Activity</string>
-    <string name="stat_in_stock">In Stock</string>
     <string name="stat_active_requests">Active Requests</string>
-    <string name="stat_distributed">Distributed</string>
     <string name="stat_available_food">Available Food</string>
     <string name="stat_active_listings">Active Listings</string>
     <string name="stat_pending_requests">Pending Requests</string>
-    <string name="stat_completed">Completed</string>
+    <string name="stat_reserved_listings">Reserved Listings</string>
+    <string name="stat_expired_listings">Expired Listings</string>
+    <string name="stat_completed_requests">Completed Requests</string>
     <string name="stat_food_saved_kg">Food Saved (kg)</string>
     <string name="action_browse_food">Browse Food</string>
     <string name="action_browse_food_subtitle">Find available surplus food nearby</string>
@@ -250,15 +253,10 @@
     <string name="action_pickup_requests">Pickup Requests</string>
     <string name="action_pickup_requests_subtitle">Manage pickup requests from NGOs</string>
     <string name="impact_food_saved">Food Saved</string>
-    <string name="impact_meals">Meals</string>
+    <string name="impact_meals">Meals Saved</string>
     <string name="impact_co2">CO₂ Reduced</string>
     <string name="chip_expiring">Expiring</string>
-    <string name="chip_pickups">Pickups</string>
     <string name="chip_cleared">Cleared</string>
-    <string name="chip_listing_created">Listed</string>
-    <string name="chip_requests_received">Requests In</string>
-    <string name="chip_requests_created">Requests Out</string>
-    <string name="chip_distributed">Distributed</string>
     <string name="profile_completeness_cta">Complete your profile to unlock all features</string>
     <string name="weekly_pickups">Weekly Pickups</string>
     <string name="goal_reached">Goal reached! Great work this week.</string>
@@ -288,7 +286,7 @@
     <string name="request_admin_route">%1$s → %2$s</string>
     <string name="label_requested_on">Requested on %1$s</string>
     <string name="label_approved_on">Approved on %1$s at %2$s</string>
-    <string name="label_ready_pickup_by">Ready to pickup by %1$s at %2$s</string>
+    <string name="label_ready_pickup_by">Ready by %1$s at %2$s</string>
     <string name="label_completed_on">Completed on %1$s</string>
     <string name="label_cancelled_on">Cancelled on %1$s</string>
     <string name="label_rejected_on">Rejected on %1$s</string>
@@ -296,18 +294,20 @@
     <string name="label_qty">Qty</string>
     <string name="label_date">Date</string>
     <string name="label_time">Time</string>
+    <string name="label_select_time">Select time</string>
+    <string name="msg_select_time">Choose a time using the clock below.</string>
     <string name="proof_photo">Proof Photo</string>
     <string name="view_full">View full</string>
     <string name="waiting_for_confirm">Waiting for %1$s to confirm</string>
     <string name="note_waiting_grocery_prepare">Waiting for %1$s to prepare your request</string>
-    <string name="mark_ready_for_pickup">Mark Ready for Pickup</string>
+    <string name="mark_ready_for_pickup">Mark Ready</string>
     <string name="confirm_pickup_photo">Confirm Pickup with Photo</string>
     <string name="dialog_approve_title">Approve Request?</string>
     <string name="dialog_approve_message">Approve pickup from %1$s for %2$d items?</string>
     <string name="dialog_reject_title">Reject Request?</string>
     <string name="dialog_reject_message">Reject request from %1$s? Quantity will be restored.</string>
     <string name="dialog_ready_title">Mark Ready?</string>
-    <string name="dialog_ready_message">Mark as ready for pickup? %1$s will be notified.</string>
+    <string name="dialog_ready_message">Mark as ready? %1$s will be notified.</string>
     <string name="dialog_cancel_title">Cancel Request?</string>
     <string name="dialog_cancel_message">Are you sure you want to cancel this pickup request?</string>
 
@@ -491,14 +491,10 @@
     <string name="section_org_types">Organization Types</string>
     <string name="org_type_groceries">Grocery Stores</string>
     <string name="org_type_ngos">NGOs</string>
-    <string name="org_type_unverified">Unverified</string>
     <string name="admin_total_verified">total verified</string>
     <string name="section_alert_feed">Alert Feed</string>
-    <string name="section_new_orgs_30d">New Organizations (30d)</string>
-    <string name="admin_new_orgs_count">%1$d new organizations this month</string>
-    <string name="label_30_days">30 days</string>
-    <string name="section_system_health">System Health</string>
-    <string name="label_database">Database</string>
+    <string name="section_new_orgs_30d">New Organizations</string>
+    <string name="label_30_days">Last 30 days</string>
     <string name="admin_pending_verif">pending verifications</string>
     <string name="admin_unread_notif">unread notifications</string>
 
@@ -513,12 +509,12 @@
     <string name="analytics_inventory_summary">Inventory Summary</string>
     <string name="analytics_inventory_status">Inventory Status</string>
     <string name="analytics_impact">Impact</string>
-    <string name="analytics_estimated_meals">Estimated Meals</string>
-    <string name="analytics_co2_avoided">CO₂ Avoided</string>
     <string name="analytics_request_activity">Request Activity</string>
     <string name="analytics_success_rate">Success Rate</string>
     <string name="analytics_completed_pickups">Completed Pickups</string>
     <string name="status_in_stock">In Stock</string>
+    <string name="analytics_activity_trend">Activity Trend</string>
+    <string name="analytics_last_30_days">Last 30 days</string>
 
     <!-- Email Verification -->
     <string name="email_verify_title">Verify your email</string>
@@ -611,6 +607,7 @@
     <string name="label_pickup_window">Pickup Window</string>
     <string name="label_distance">Distance</string>
     <string name="distance_km_away">%1$.1f km away</string>
+    <string name="label_distance_km">%1$.1fkm</string>
     <string name="section_availability">Availability</string>
     <string name="label_available">Available</string>
     <string name="section_similar_listings">Similar Listings</string>
@@ -654,8 +651,9 @@
     <string name="action_apply_ai">Apply AI</string>
     <string name="action_enter_manually">Enter Manually</string>
     <string name="action_add">Add</string>
-    <string name="label_beneficiaries_count">How many beneficiaries?</string>
     <string name="label_export_transactions">Export Transactions</string>
+    <string name="msg_export_transactions">Review the preview below, then tap Share to open it in another app (Notes, Files, email, etc.).</string>
+    <string name="label_csv_preview_rows">CSV preview (%1$d rows):</string>
     <string name="verification_checklist_title">Verification Checklist</string>
     <string name="verification_confirm_items">Please confirm all items before approving:</string>
     <string name="verification_approve_org">Approve Organization</string>
@@ -670,7 +668,6 @@
     <string name="section_pickup_requests">Pickup Requests</string>
     <string name="section_platform_impact">Platform Impact</string>
     <string name="section_daily_activity">Daily Activity</string>
-    <string name="section_period_comparison">Period Comparison</string>
     <string name="section_category_breakdown">Category Breakdown</string>
     <string name="section_leaderboards">Leaderboards</string>
     <string name="section_geographic_distribution">Geographic Distribution</string>
@@ -686,7 +683,6 @@
     <string name="stat_food_saved">Food Saved</string>
     <string name="stat_meals">Meals</string>
     <string name="stat_co2_avoided">CO₂ Avoided</string>
-    <string name="stat_beneficiaries">Beneficiaries</string>
     <string name="leaderboard_no_data">No leaderboard data</string>
     <string name="leaderboard_no_data_subtitle">Complete pickups will appear here</string>
 
@@ -707,28 +703,23 @@
     <string name="analytics_completed_of_requests">%1$d completed of %2$d total requests</string>
     <string name="analytics_completed_pickups_count">%1$d completed pickups</string>
     <string name="analytics_pickup_completion_rate">Pickup completion rate</string>
-    <string name="analytics_request_success_rate">Request success rate</string>
-    <string name="analytics_total_label">Total</string>
+    <string name="analytics_request_success_rate">Request Success Rate</string>
 
     <!-- Admin Dashboard compound strings -->
     <string name="admin_org_total_verified">Total: %1$d  •  Verified: %2$d</string>
-    <string name="admin_pending_verif_count">%1$d pending</string>
-    <string name="admin_unread_notif_count">%1$d unread</string>
 
     <!-- Date range presets -->
     <string name="preset_all_time">All time</string>
     <string name="preset_this_week">This week</string>
     <string name="preset_this_month">This month</string>
+    <string name="preset_this_quarter">This quarter</string>
     <string name="preset_custom">Custom</string>
     <string name="label_select_start_date">Select start date</string>
     <string name="label_select_end_date">Select end date</string>
 
     <!-- Inventory / distribution -->
-    <string name="action_distribute_confirm">Distribute</string>
     <string name="action_mark_distributed">Mark as Distributed</string>
-    <string name="label_beneficiaries_optional">Record how many people received this food:</string>
-    <string name="label_number_people_optional">Number of people (optional)</string>
-    <string name="mark_distributed_confirm">Confirm that \"%1$s\" has been distributed to beneficiaries?</string>
+    <string name="mark_distributed_confirm">Confirm that \"%1$s\" has been distributed?</string>
 
     <!-- Shared dialog / misc -->
     <string name="action_update">Update</string>
@@ -743,10 +734,9 @@
     <string name="hint_rejection_reason">Explain why the organization is rejected</string>
 
     <!-- Photo picker / proof -->
-    <string name="label_processing_photo">Processing Photo</string>
-    <string name="label_compressing_image">Compressing image…</string>
-    <string name="label_add_proof_photo">Add Proof Photo</string>
-    <string name="label_proof_photo_hint">Take a photo or choose from gallery to confirm pickup</string>
+    <string name="label_add_photo">Add Photo</string>
+    <string name="msg_photo_source">Take a photo or choose one from your gallery.</string>
+    <string name="msg_use_this_photo">Use this photo?</string>
     <string name="action_take_photo_camera">Take Photo</string>
     <string name="action_choose_gallery">Choose from Gallery</string>
     <string name="label_confirm_pickup">Confirm Pickup</string>
@@ -761,6 +751,7 @@
 
     <!-- My Requests review dialog -->
     <string name="label_rate_experience">Rate your experience</string>
+    <string name="msg_rate_experience">Tap a star to rate this pickup. Your feedback helps other organizations.</string>
     <string name="label_comments_optional">Comments (optional)</string>
     <string name="hint_pickup_experience">How was your pickup experience?</string>
     <string name="label_ngo_rating">Rating from NGO</string>
@@ -770,6 +761,7 @@
     <!-- Profile -->
     <string name="label_complete">Complete</string>
     <string name="label_change_password">Change Password</string>
+    <string name="msg_change_password">Enter your current password and choose a new one.</string>
     <string name="label_current_password">Current Password</string>
     <string name="label_new_password">New Password</string>
     <string name="label_confirm_new_password">Confirm New Password</string>
@@ -778,7 +770,7 @@
 
     <!-- Photo preview -->
     <string name="action_retake">Retake</string>
-    <string name="action_confirm_upload">Confirm &amp; Upload</string>
+    <string name="action_confirm_upload">Upload</string>
     <string name="action_retry_upload">Retry Upload</string>
 
     <!-- My Requests -->
@@ -799,9 +791,10 @@
     <string name="action_save">Save</string>
     <string name="action_change">Change</string>
     <string name="msg_delete_account_warning">This action is permanent and cannot be undone. All your data will be deleted.</string>
+    <string name="msg_logout_confirm">Are you sure you want to log out?</string>
 
     <!-- Request Detail -->
-    <string name="action_mark_ready">Mark as Ready for Pickup</string>
+    <string name="action_mark_ready">Mark as Ready</string>
     <string name="action_confirm_pickup_photo">Confirm Pickup with Photo</string>
     <string name="action_file_dispute">File a Dispute</string>
     <string name="advanced_filters">Advanced Filters</string>
@@ -813,8 +806,8 @@
     <string name="role_admin">Admin</string>
 
     <!-- Admin dashboard subtitles -->
-    <string name="admin_pending_approvals">%1$d pending approvals</string>
-    <string name="admin_total_requests">%1$d total requests</string>
+    <string name="admin_review_organizations">Review new organizations</string>
+    <string name="admin_view_transactions">View pickup requests</string>
 
     <!-- Shared empty state -->
     <string name="empty_try_filters">Try adjusting your search or filters</string>
@@ -865,7 +858,7 @@
     <string name="timeline_submitted_desc">NGO submitted pickup request</string>
     <string name="timeline_approved_by_store">Approved by Store</string>
     <string name="timeline_approved_desc">Grocery store approved the request</string>
-    <string name="timeline_ready_for_pickup">Ready for Pickup</string>
+    <string name="timeline_ready_for_pickup">Ready</string>
     <string name="timeline_ready_desc">Items are prepared and waiting</string>
     <string name="timeline_pickup_confirmed">Pickup Confirmed</string>
     <string name="timeline_confirmed_desc">NGO confirmed pickup with photo proof</string>
@@ -878,6 +871,8 @@
     <string name="msg_failed_load_listings">Failed to load listings</string>
     <string name="msg_failed_load_inventory">Failed to load inventory</string>
     <string name="msg_failed_load_request">Failed to load request</string>
+    <string name="msg_failed_load_analytics">Couldn\'t load your analytics</string>
+    <string name="error_session_expired">Your session has expired. Please sign in again.</string>
 
     <!-- Request Pickup form -->
     <string name="hint_max_quantity">Max: %1$s %2$s</string>
@@ -901,7 +896,6 @@
     <string name="label_pickups_done">Pickups done</string>
     <string name="label_pickups_completed">Pickups completed</string>
     <string name="label_contact_location">Contact &amp; Location</string>
-    <string name="label_contact_prefix">Contact: %1$s</string>
     <string name="profile_section_for_ngos">For NGOs</string>
     <string name="profile_section_for_donors">For Donors</string>
     <string name="profile_detail_grocery_role">Surplus food provider</string>
@@ -939,17 +933,18 @@
     <string name="label_contact_badge">Contact</string>
     <string name="label_invite_team_member">Invite Team Member</string>
     <string name="label_coming_soon">Coming soon</string>
-    <string name="msg_org_under_review">Your organization is under review. You\'ll be notified once approved (usually 1–3 business days).</string>
-    <string name="msg_verification_rejected_profile">Verification rejected. Contact support to resolve this and re-submit.</string>
     <string name="msg_profile_pct_complete">Profile %1$d%% complete</string>
     <string name="msg_fields_filled">%1$d of %2$d required fields filled</string>
     <string name="msg_missing_fields">Missing: %1$s</string>
-    <string name="label_stat_requests">Requests</string>
     <string name="label_verified_badge">Verified</string>
     <string name="label_pending_review_badge">Pending Review</string>
     <string name="label_rejected_badge">Rejected</string>
     <string name="label_change_photo">Change photo</string>
     <string name="cd_profile_photo_of">Profile photo of %1$s</string>
+    <string name="label_change_avatar">Change Profile Photo</string>
+    <string name="msg_avatar_source">Take a new photo or choose one from your gallery to use as your profile picture.</string>
+    <string name="msg_use_this_avatar">Use this as your profile photo?</string>
+    <string name="cd_change_avatar">Change profile photo</string>
 
     <!-- Profile edit mode -->
     <string name="section_general">General</string>
@@ -1042,15 +1037,17 @@
     <string name="cd_send">Send</string>
     <string name="label_timeline_submitted">Submitted</string>
     <string name="label_timeline_approved">Approved</string>
-    <string name="label_timeline_ready">Ready for Pickup</string>
+    <string name="label_timeline_ready">Ready</string>
     <string name="label_timeline_completed">Completed</string>
     <string name="label_status_submitted">Your request is submitted.</string>
     <string name="label_status_approved">Your request is approved.</string>
-    <string name="label_status_ready">Your request is ready to pickup.</string>
+    <string name="label_status_ready">Your request is ready.</string>
     <string name="label_status_completed">Your request is completed.</string>
     <string name="label_requested_on_at">Requested on %1$s at %2$s</string>
     <string name="label_completed_on_at">Completed on %1$s at %2$s</string>
     <string name="label_pickup_on_at">Pickup on %1$s at %2$s</string>
+    <string name="label_submitted_on">Submitted on %1$s</string>
+    <string name="label_submitted_on_at">Submitted on %1$s at %2$s</string>
     <string name="checklist_item_1">Quantity matches the requested amount</string>
     <string name="checklist_item_2">Items are correctly packaged / sealed</string>
     <string name="checklist_item_3">All items are within their expiry date</string>
@@ -1066,7 +1063,7 @@
 
     <!-- Snackbar messages (ViewModel) -->
     <string name="snack_request_approved">Request approved</string>
-    <string name="snack_marked_ready">Marked as ready for pickup</string>
+    <string name="snack_marked_ready">Marked as ready</string>
     <string name="snack_request_rejected">Request rejected</string>
     <string name="snack_pickup_confirmed">Pickup confirmed!</string>
     <string name="snack_action_failed">Action failed</string>
@@ -1106,7 +1103,6 @@
     <string name="snack_inventory_refreshed">Inventory refreshed</string>
     <string name="snack_n_items_distributed">%1$d item(s) distributed</string>
     <string name="snack_item_distributed">Item marked as distributed</string>
-    <string name="snack_distributed_to_beneficiaries">Distributed to %1$d beneficiaries</string>
     <string name="snack_item_added">Item added to inventory</string>
     <string name="snack_new_admin_notification">New %1$s: %2$s</string>
     <string name="snack_new_transaction">Transaction: %1$s</string>
@@ -1135,7 +1131,7 @@
     <string name="snack_receipt_title">Pickup Receipt — %1$s</string>
     <string name="label_pickup_receipt">Pickup Receipt</string>
     <string name="snack_your_request_approved">Your request has been approved!</string>
-    <string name="snack_food_ready_pickup">Food is ready for pickup!</string>
+    <string name="snack_food_ready_pickup">Food is ready!</string>
     <string name="snack_pickup_completed">Pickup completed</string>
     <string name="snack_request_rejected_by_grocery">Your request was rejected by the grocery</string>
     <string name="snack_status_updated_to">Status updated to %1$s</string>
@@ -1166,13 +1162,17 @@
     <string name="label_submitted">Submitted</string>
     <string name="label_pickup_short">Pickup</string>
     <string name="label_to">To</string>
-    <string name="label_doc_n">Document %1$d</string>
+    <string name="label_view_document">View Document</string>
     <string name="cd_collapse">Collapse</string>
     <string name="cd_expand">Expand</string>
     <string name="cd_exit_batch_mode">Exit batch mode</string>
     <string name="cd_batch_select">Batch select</string>
     <string name="label_quantity_units">%1$d units</string>
     <string name="label_pickup_at">%1$s at %2$s</string>
+    <string name="label_org_transfer">%1$s → %2$s</string>
+    <string name="label_items_count">%1$d items</string>
+    <string name="label_unknown_item">Unknown item</string>
+    <string name="label_quantity_with_unit">%1$d %2$s</string>
 
     <!-- Verification checklist items -->
     <string name="verify_check_1">Organization name is valid and complete</string>
@@ -1213,7 +1213,6 @@
     <string name="label_kg_saved">Kg Saved</string>
     <string name="label_meals_equivalent">Meals Equivalent</string>
     <string name="label_co2_saved_kg">CO₂ Saved (kg)</string>
-    <string name="label_beneficiaries">Beneficiaries</string>
 
     <!-- Validation errors -->
     <string name="error_email_required">Email is required</string>
@@ -1255,6 +1254,7 @@
     <string name="error_onboarding_save_failed">Failed to save. Please try again.</string>
     <string name="error_phone_invalid">Invalid phone number</string>
     <string name="error_update_profile_failed">Failed to update profile</string>
+    <string name="error_avatar_upload_failed">Failed to upload profile photo</string>
     <string name="error_enter_6_digit_code">Enter the 6-digit code</string>
     <string name="error_verification_failed">Verification failed</string>
     <string name="error_resend_code_failed">Failed to resend code</string>
@@ -1367,7 +1367,6 @@
     <string name="error_pickup_date_after_expiry">Pickup date cannot be after expiry date (%1$s)</string>
     <string name="error_pickup_time_outside_window">Pickup time must be during the store opening time</string>
     <string name="error_invalid_date_format">Invalid date format</string>
-    <string name="uploading_image">Uploading image…</string>
 
     <!-- Vehicle type labels -->
 
@@ -1396,4 +1395,122 @@
     <string name="status_listing_expired">Expired</string>
     <string name="status_listing_archived">Archived</string>
     <string name="status_archived">Archived</string>
+    <string name="error_state_required">State is required</string>
+    <string name="error_zip_code_required">ZIP code is required</string>
+    <string name="error_opening_time_required">Opening time is required</string>
+    <string name="error_closing_time_required">Closing time is required</string>
+
+    <!-- ── Screen titles (in-content back bar) ── -->
+    <string name="title_account_details">Account details</string>
+    <string name="title_request_pickup">Request pickup</string>
+    <string name="title_listing_details">Listing details</string>
+    <string name="title_request_details">Request details</string>
+    <string name="title_organization_profile">Organization Profile</string>
+
+    <!-- ── Onboarding: verification document + submission ── -->
+    <string name="onboarding_doc_uploading">Uploading document…</string>
+    <string name="onboarding_doc_uploaded">Document uploaded</string>
+    <string name="onboarding_view_status">View status</string>
+    <string name="onboarding_submitted_title">Submitted for review</string>
+    <string name="onboarding_submitted_subtitle">Your profile and documents have been sent to the ClearChain team for verification.</string>
+    <string name="onboarding_submitted_step_profile">Profile &amp; documents submitted</string>
+    <string name="onboarding_submitted_step_review">Admin review — usually 1–3 business days</string>
+    <string name="onboarding_submitted_step_notify">You\'ll be notified when your account is approved</string>
+    <string name="error_document_required">Please upload a verification document to continue</string>
+    <string name="error_document_read_failed">Couldn\'t read the selected file</string>
+    <string name="error_document_upload_failed">Document upload failed. Please try again.</string>
+
+    <!-- ── Pending review gate ── -->
+    <string name="pending_review_pending_title">Your organization is under review</string>
+    <string name="pending_review_pending_subtitle">A ClearChain admin is verifying your details. This usually takes 1–3 business days.</string>
+    <string name="pending_review_rejected_title">Verification not approved</string>
+    <string name="pending_review_rejected_subtitle">Review the note below, update your profile or documents, then resubmit.</string>
+    <string name="pending_review_reason_label">Reason</string>
+    <string name="pending_review_step_submitted">Profile &amp; documents submitted</string>
+    <string name="pending_review_step_reviewing">Admin review in progress</string>
+    <string name="pending_review_step_notify">You\'ll get a notification when approved</string>
+    <string name="pending_review_submitted_label">What you submitted</string>
+    <string name="pending_review_doc_attached">Verification document attached</string>
+    <string name="pending_review_doc_missing">No verification document</string>
+    <string name="pending_review_check_status">Check status</string>
+    <string name="pending_review_edit_profile">Edit profile &amp; documents</string>
+    <string name="pending_review_fix_and_resubmit">Update &amp; resubmit</string>
+    <string name="pending_review_logout">Log out</string>
+    <string name="pending_review_approved_snack">Your organization has been approved!</string>
+    <string name="pending_review_still_pending">Still awaiting review. We\'ll notify you when it\'s done.</string>
+    <string name="pending_review_still_rejected">Your verification is still marked as not approved.</string>
+    <string name="pending_review_refresh_failed">Couldn\'t refresh status. Check your connection.</string>
+
+    <!-- ── Admin statistics ── -->
+    <string name="stats_unavailable">No statistics yet</string>
+    <string name="stats_unavailable_subtitle">Numbers appear once organizations start listing and collecting food.</string>
+
+
+
+
+
+    <string name="chart_no_activity">No completed pickups in this period.</string>
+
+
+
+
+    <string name="chart_top_groceries">Stores by pickups completed</string>
+    <string name="chart_top_ngos">NGOs by pickups completed</string>
+
+    <string name="stat_pending_verification">%1$d awaiting verification</string>
+    <string name="stat_pending_verification_aged">%1$d awaiting verification · oldest %2$d days</string>
+    <string name="chart_no_requests">No pickup requests in this period.</string>
+
+    <!-- ── Admin stats & analytics screen ── -->
+    <string name="stats_analytics_title">Stats &amp; Analytics</string>
+    <string name="stats_all_time_subtitle">Everything since the platform opened</string>
+    <string name="stats_period_range">%1$s – %2$s</string>
+    <string name="stats_period_days">Last %1$d days</string>
+    <string name="action_retry">Try again</string>
+
+
+
+
+
+
+
+    <string name="section_timing">Hand-over speed</string>
+    <string name="timing_to_ready">Request → marked ready</string>
+    <string name="timing_to_pickup">Request → collected</string>
+    <string name="timing_to_confirm">Collected → confirmed</string>
+    <string name="timing_p90">Slowest 10%% took over</string>
+    <string name="timing_within_24h">Finished within a day</string>
+    <string name="timing_within_24h_detail">%1$d%% of pickups finished within a day</string>
+    <string name="timing_sample">Medians across %1$d completed pickups</string>
+    <string name="timing_no_data">No pickups completed in this period, so there is nothing to time.</string>
+
+
+    <string name="section_live_backlog">Waiting right now</string>
+    <string name="backlog_note">Live figures. Not affected by the period above.</string>
+    <string name="backlog_open_listings">Open listings</string>
+    <string name="backlog_expiring_24h">Expiring in 24h</string>
+    <string name="backlog_pending_requests">Awaiting reply</string>
+    <string name="backlog_ready_requests">Ready for pickup</string>
+    <string name="backlog_pending_verifications">Verifications</string>
+    <string name="backlog_open_disputes">Open disputes</string>
+    <string name="backlog_pending_reports">Reports</string>
+    <string name="backlog_open_cases">Open cases</string>
+    <string name="backlog_cases_detail">%1$d disputes · %2$d reports</string>
+    <string name="backlog_oldest">oldest %1$s</string>
+    <string name="backlog_oldest_days">oldest %1$d d</string>
+
+
+    <string name="leaderboard_grocery_note">Ranked by pickups completed in this period</string>
+    <string name="leaderboard_ngo_note">Ranked by pickups completed in this period</string>
+
+    <string name="section_quality">Trust &amp; quality</string>
+    <string name="quality_avg_rating">Average rating</string>
+    <string name="quality_reviews">Reviews left</string>
+    <string name="quality_review_coverage_label">Pickups rated</string>
+    <string name="quality_disputes">Disputes opened</string>
+    <string name="quality_reports">Listings reported</string>
+    <string name="quality_dispute_rate">%1$d%% of completed pickups ended in a dispute</string>
+    <string name="quality_no_data">No reviews, disputes or reports in this period.</string>
+
+    <string name="chart_no_organizations">No organizations registered yet.</string>
 </resources>
