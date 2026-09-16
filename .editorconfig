@@ -1,0 +1,70 @@
+; ClearChain — one formatting standard for the whole repository.
+; Honoured by Visual Studio, Rider, Android Studio/IntelliJ and `dotnet format`.
+
+root = true
+
+[*]
+charset = utf-8
+; Git is configured with core.autocrlf=true, so the repository stores LF and
+; Windows checkouts get CRLF; LF here keeps editors agreeing with what is committed.
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 120
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# ── C# ───────────────────────────────────────────────────────────────────────
+[*.cs]
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_prefer_braces = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = false
+dotnet_separate_import_directive_groups = false
+
+# Naming: interfaces are IPascalCase, everything public is PascalCase,
+# private fields are _camelCase — the convention already in use.
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i_style
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefix_i_style.required_prefix = I
+dotnet_naming_style.prefix_i_style.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscored.severity = warning
+dotnet_naming_rule.private_fields_underscored.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_underscored.style = underscore_camel_style
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_style.required_prefix = _
+dotnet_naming_style.underscore_camel_style.capitalization = camel_case
+
+# ── Kotlin ───────────────────────────────────────────────────────────────────
+# Compose pulls dozens of symbols from a handful of packages, and the IDE
+# re-collapses those imports on reformat; star imports are therefore the
+# standard here rather than something to be fought.
+[*.{kt,kts}]
+ij_kotlin_name_count_to_use_star_import = 5
+ij_kotlin_name_count_to_use_star_import_for_members = 5
+ij_kotlin_imports_layout = *
+ij_kotlin_allow_trailing_comma = false
+ij_kotlin_allow_trailing_comma_on_call_site = false
+ij_continuation_indent_size = 4
+
+[*.{xml,gradle}]
+indent_size = 4
