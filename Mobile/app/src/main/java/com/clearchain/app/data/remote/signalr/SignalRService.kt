@@ -6,6 +6,7 @@ import com.clearchain.app.data.remote.dto.InventoryItemData
 import com.clearchain.app.data.remote.dto.ListingData
 import com.clearchain.app.data.remote.dto.NotificationData
 import com.clearchain.app.data.remote.dto.PickupRequestData
+import com.clearchain.app.util.Constants
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
@@ -39,12 +40,14 @@ class SignalRService @Inject constructor(
 ) {
     companion object {
         private const val TAG = "SignalRService"
-        private const val BASE_WS_URL = "http://10.0.2.2:5000"
-        private const val PICKUP_HUB_URL = "$BASE_WS_URL/hubs/pickuprequests"
-        private const val LISTING_HUB_URL = "$BASE_WS_URL/hubs/listings"
-        private const val INVENTORY_HUB_URL = "$BASE_WS_URL/hubs/inventory"
-        private const val ADMIN_HUB_URL = "$BASE_WS_URL/hubs/admin"
-        private const val NOTIFICATION_HUB_URL = "$BASE_WS_URL/hubs/notifications"
+
+        // Derived from the one configured API URL rather than repeated here, so
+        // pointing the app at another server means editing local.properties only.
+        private val PICKUP_HUB_URL = "${Constants.SERVER_ROOT_URL}/hubs/pickuprequests"
+        private val LISTING_HUB_URL = "${Constants.SERVER_ROOT_URL}/hubs/listings"
+        private val INVENTORY_HUB_URL = "${Constants.SERVER_ROOT_URL}/hubs/inventory"
+        private val ADMIN_HUB_URL = "${Constants.SERVER_ROOT_URL}/hubs/admin"
+        private val NOTIFICATION_HUB_URL = "${Constants.SERVER_ROOT_URL}/hubs/notifications"
 
         /** Events are dropped rather than blocking a hub callback when nothing is collecting. */
         private const val EVENT_BUFFER = 64

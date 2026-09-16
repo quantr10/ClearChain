@@ -30,10 +30,10 @@ android {
             localPropertiesFile.inputStream().use { properties.load(it) }
         }
 
-        // Build Config Fields
-        buildConfigField("String", "API_BASE_URL", "\"${properties.getProperty("API_BASE_URL", "http://10.0.2.2:5000/api")}\"")
-        buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL", "")}\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${properties.getProperty("SUPABASE_ANON_KEY", "")}\"")
+        // The one place the server address is configured; Constants derives both the
+        // REST base URL and the SignalR hub root from it. The default is the host
+        // loopback as seen from the emulator.
+        buildConfigField("String", "API_BASE_URL", "\"${properties.getProperty("API_BASE_URL", "http://10.0.2.2:5000/api/")}\"")
 
         manifestPlaceholders["MAPS_API_KEY"] = properties.getProperty("MAPS_API_KEY", "")
     }

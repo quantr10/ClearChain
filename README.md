@@ -93,10 +93,17 @@ REFRESH_TOKEN_EXPIRY_DAYS=7
 
 ```properties
 sdk.dir=your_android_sdk_path
-API_BASE_URL=http://10.0.2.2:5000/api
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
+API_BASE_URL=http://10.0.2.2:5000/api/
+MAPS_API_KEY=your_google_maps_key
 ```
+
+`API_BASE_URL` is the only place the server address is set. `Constants` derives
+the Retrofit base URL from it and, by dropping the `/api` path, the root the
+SignalR hubs are served from — so pointing the app at a device on the LAN or a
+staging server means editing this line and nothing else. A missing trailing
+slash is added automatically.
+
+The app does not talk to Supabase directly; the API handles storage.
 
 ## API surface
 
