@@ -16,7 +16,7 @@ public class SupabaseStorageService : IStorageService
     private readonly string _supabaseUrl;
     private readonly string _supabaseKey;
     private const string PICKUP_PROOFS_BUCKET = "pickup-proofs";
-    private const string FOOD_IMAGES_BUCKET = "food-images";  // ✅ NEW
+    private const string FOOD_IMAGES_BUCKET = "food-images";
 
     public SupabaseStorageService(
         IConfiguration configuration,
@@ -47,7 +47,6 @@ public class SupabaseStorageService : IStorageService
 
             _logger.LogInformation($"Uploading file: {uniqueFileName}, Size: {fileBytes.Length} bytes");
 
-            // ✅ FIX: Use correct Supabase Storage upload method
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);

@@ -16,16 +16,13 @@ namespace ClearChain.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<AdminController> _logger;
     private readonly IPushNotificationService _pushNotificationService;
 
     public AdminController(
         ApplicationDbContext context,
-        ILogger<AdminController> logger,
         IPushNotificationService pushNotificationService)
     {
         _context = context;
-        _logger = logger;
         _pushNotificationService = pushNotificationService;
     }
 
@@ -34,65 +31,57 @@ public class AdminController : ControllerBase
         [FromQuery] string? type = null,
         [FromQuery] bool? verified = null)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-            if (user == null || user.Type.ToLower() != "admin")
-            {
-                return Forbid();
-            }
-
-            var query = _context.Organizations.AsQueryable();
-
-            if (!string.IsNullOrEmpty(type))
-            {
-                query = query.Where(o => o.Type.ToLower() == type.ToLower());
-            }
-
-            if (verified.HasValue)
-            {
-                query = query.Where(o => o.Verified == verified.Value);
-            }
-
-            var organizations = await query
-                .OrderByDescending(o => o.CreatedAt)
-                .ToListAsync();
-
-            var orgData = organizations.Select(o => new OrganizationData
-            {
-                Id = o.Id.ToString(),
-                Name = o.Name,
-                Email = o.Email,
-                Type = o.Type,
-                Phone = o.Phone ?? "",
-                Address = o.Address ?? "",
-                Location = o.Location ?? "",
-                Verified = o.Verified,
-                VerificationStatus = o.VerificationStatus ?? "pending",
-                CreatedAt = o.CreatedAt.ToString("o"),
-                DocumentUrl = o.DocumentUrl,
-                DocumentMimeType = o.DocumentMimeType,
-                Latitude = o.Latitude,
-                Longitude = o.Longitude
-            }).ToList();
-
-            return Ok(new OrganizationListResponse
-            {
-                Message = "Organizations retrieved successfully",
-                Data = orgData
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
+        if (user == null || user.Type.ToLower() != "admin")
         {
-            _logger.LogError(ex, "Error getting organizations");
-            return StatusCode(500, new { message = "An error occurred while retrieving organizations" });
+            return Forbid();
         }
+
+        var query = _context.Organizations.AsQueryable();
+
+        if (!string.IsNullOrEmpty(type))
+        {
+            query = query.Where(o => o.Type.ToLower() == type.ToLower());
+        }
+
+        if (verified.HasValue)
+        {
+            query = query.Where(o => o.Verified == verified.Value);
+        }
+
+        var organizations = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        var orgData = organizations.Select(o => new OrganizationData
+        {
+            Id = o.Id.ToString(),
+            Name = o.Name,
+            Email = o.Email,
+            Type = o.Type,
+            Phone = o.Phone ?? "",
+            Address = o.Address ?? "",
+            Location = o.Location ?? "",
+            Verified = o.Verified,
+            VerificationStatus = o.VerificationStatus ?? "pending",
+            CreatedAt = o.CreatedAt.ToString("o"),
+            DocumentUrl = o.DocumentUrl,
+            DocumentMimeType = o.DocumentMimeType,
+            Latitude = o.Latitude,
+            Longitude = o.Longitude
+        }).ToList();
+
+        return Ok(new OrganizationListResponse
+        {
+            Message = "Organizations retrieved successfully",
+            Data = orgData
+        });
     }
 
     // PUT: api/admin/organizations/{id}/verify  — approve an organization
@@ -126,17 +115,10 @@ public class AdminController : ControllerBase
         organization.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        try
-        {
-            if (approved)
-                await _pushNotificationService.SendVerificationApprovedNotification(organization.Id, organization.Type);
-            else
-                await _pushNotificationService.SendVerificationRejectedNotification(organization.Id, reason);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send verification notification for {OrgId}", organization.Id);
-        }
+        if (approved)
+            await _pushNotificationService.SendVerificationApprovedNotification(organization.Id, organization.Type);
+        else
+            await _pushNotificationService.SendVerificationRejectedNotification(organization.Id, reason);
 
         var orgData = new OrganizationData
         {
@@ -164,192 +146,176 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("statistics/overview")]
-    public async Task<ActionResult<AdminStatsResponse>> GetStatisticsOverview()
+    public async Task<ActionResult<AdminStatsOverviewResponse>> GetStatisticsOverview()
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-            if (user == null || user.Type.ToLower() != "admin")
-            {
-                return Forbid();
-            }
-
-            // Admin accounts live in the same table but are not organizations on the
-            // platform, so they stay out of every count the dashboard charts.
-            var orgs = _context.Organizations.Where(o => !o.IsDeleted && o.Type.ToLower() != "admin");
-
-            var totalOrgs = await orgs.CountAsync();
-            var totalGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery");
-            var totalNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo");
-            var verifiedOrgs = await orgs.CountAsync(o => o.Verified);
-            var unverifiedOrgs = totalOrgs - verifiedOrgs;
-
-            var totalListings = await _context.ClearanceListings.CountAsync();
-            var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
-            var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
-            var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
-
-            var totalRequests = await _context.PickupRequests.CountAsync();
-            var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
-            var approvedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Approved);
-            var readyRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Ready);
-            var rejectedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Rejected);
-            var completedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
-            var cancelledRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Cancelled);
-
-            var totalFoodSaved = await _context.PickupRequests
-                .Where(pr => pr.Status == PickupRequestStatus.Completed)
-                .SumAsync(pr => pr.RequestedQuantity ?? 0);
-
-            var stats = new AdminStatsData
-            {
-                TotalOrganizations = totalOrgs,
-                TotalGroceries = totalGroceries,
-                TotalNgos = totalNgos,
-                VerifiedOrganizations = verifiedOrgs,
-                UnverifiedOrganizations = unverifiedOrgs,
-
-                TotalListings = totalListings,
-                ActiveListings = activeListings,
-                ReservedListings = reservedListings,
-                ExpiredListings = expiredListings,
-
-                TotalPickupRequests = totalRequests,
-                PendingRequests = pendingRequests,
-                ApprovedRequests = approvedRequests,
-                ReadyRequests = readyRequests,
-                RejectedRequests = rejectedRequests,
-                CompletedRequests = completedRequests,
-                CancelledRequests = cancelledRequests,
-
-                TotalFoodSaved = totalFoodSaved
-            };
-
-            return Ok(new AdminStatsResponse
-            {
-                Message = "Statistics retrieved successfully",
-                Data = stats
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
+        if (user == null || user.Type.ToLower() != "admin")
         {
-            _logger.LogError(ex, "Error getting statistics");
-            return StatusCode(500, new { message = "An error occurred while retrieving statistics" });
+            return Forbid();
         }
+
+        // Admin accounts live in the same table but are not organizations on the
+        // platform, so they stay out of every count the dashboard charts.
+        var orgs = _context.Organizations.Where(o => !o.IsDeleted && o.Type.ToLower() != "admin");
+
+        var totalOrgs = await orgs.CountAsync();
+        var totalGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery");
+        var totalNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo");
+        var verifiedOrgs = await orgs.CountAsync(o => o.Verified);
+        var unverifiedOrgs = totalOrgs - verifiedOrgs;
+
+        var totalListings = await _context.ClearanceListings.CountAsync();
+        var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
+        var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
+        var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
+
+        var totalRequests = await _context.PickupRequests.CountAsync();
+        var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
+        var approvedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Approved);
+        var readyRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Ready);
+        var rejectedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Rejected);
+        var completedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
+        var cancelledRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Cancelled);
+
+        var totalFoodSaved = await _context.PickupRequests
+            .Where(pr => pr.Status == PickupRequestStatus.Completed)
+            .SumAsync(pr => pr.RequestedQuantity ?? 0);
+
+        var stats = new AdminStatsOverviewData
+        {
+            TotalOrganizations = totalOrgs,
+            TotalGroceries = totalGroceries,
+            TotalNgos = totalNgos,
+            VerifiedOrganizations = verifiedOrgs,
+            UnverifiedOrganizations = unverifiedOrgs,
+
+            TotalListings = totalListings,
+            ActiveListings = activeListings,
+            ReservedListings = reservedListings,
+            ExpiredListings = expiredListings,
+
+            TotalPickupRequests = totalRequests,
+            PendingRequests = pendingRequests,
+            ApprovedRequests = approvedRequests,
+            ReadyRequests = readyRequests,
+            RejectedRequests = rejectedRequests,
+            CompletedRequests = completedRequests,
+            CancelledRequests = cancelledRequests,
+
+            TotalFoodSaved = totalFoodSaved
+        };
+
+        return Ok(new AdminStatsOverviewResponse
+        {
+            Message = "Statistics retrieved successfully",
+            Data = stats
+        });
     }
 
     [HttpGet("pickuprequests")]
     public async Task<ActionResult<PickupRequestsResponse>> GetAllPickupRequests()
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "User not authenticated" });
+        }
+
+        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
+        if (user == null || user.Type.ToLower() != "admin")
+        {
+            return Forbid();
+        }
+
+        var pickupRequests = await _context.PickupRequests
+            .Include(pr => pr.Ngo)
+            .Include(pr => pr.Grocery)
+            .Include(pr => pr.Items)
+            .OrderByDescending(pr => pr.RequestedAt)
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Requests carry a denormalized listing snapshot (and, for cart requests, their
+        // line items). Only legacy rows written before those fields existed need a lookup.
+        var missingSnapshotIds = pickupRequests
+            .Where(pr => pr.ListingId.HasValue && string.IsNullOrWhiteSpace(pr.ListingTitle))
+            .Select(pr => pr.ListingId!.Value)
+            .Distinct()
+            .ToList();
+
+        var listingsById = await _context.ClearanceListings
+            .Where(l => missingSnapshotIds.Contains(l.Id))
+            .AsNoTracking()
+            .ToDictionaryAsync(l => l.Id);
+
+        var responseData = new List<PickupRequestData>();
+
+        foreach (var pr in pickupRequests)
+        {
+            var listing = pr.ListingId.HasValue && listingsById.TryGetValue(pr.ListingId.Value, out var l)
+                ? l
+                : null;
+            var firstItem = pr.Items.FirstOrDefault();
+
+            responseData.Add(new PickupRequestData
             {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-            if (user == null || user.Type.ToLower() != "admin")
-            {
-                return Forbid();
-            }
-
-            var pickupRequests = await _context.PickupRequests
-                .Include(pr => pr.Ngo)
-                .Include(pr => pr.Grocery)
-                .Include(pr => pr.Items)
-                .OrderByDescending(pr => pr.RequestedAt)
-                .AsNoTracking()
-                .ToListAsync();
-
-            // Requests carry a denormalized listing snapshot (and, for cart requests, their
-            // line items). Only legacy rows written before those fields existed need a lookup.
-            var missingSnapshotIds = pickupRequests
-                .Where(pr => pr.ListingId.HasValue && string.IsNullOrWhiteSpace(pr.ListingTitle))
-                .Select(pr => pr.ListingId!.Value)
-                .Distinct()
-                .ToList();
-
-            var listingsById = await _context.ClearanceListings
-                .Where(l => missingSnapshotIds.Contains(l.Id))
-                .AsNoTracking()
-                .ToDictionaryAsync(l => l.Id);
-
-            var responseData = new List<PickupRequestData>();
-
-            foreach (var pr in pickupRequests)
-            {
-                var listing = pr.ListingId.HasValue && listingsById.TryGetValue(pr.ListingId.Value, out var l)
-                    ? l
-                    : null;
-                var firstItem = pr.Items.FirstOrDefault();
-
-                responseData.Add(new PickupRequestData
+                Id = pr.Id.ToString(),
+                ListingId = pr.ListingId?.ToString() ?? "",
+                NgoId = pr.NgoId.ToString(),
+                NgoName = pr.Ngo?.Name ?? "",
+                GroceryId = pr.GroceryId.ToString(),
+                GroceryName = pr.Grocery?.Name ?? "",
+                Status = pr.Status.ToString().ToLower(),
+                RequestedQuantity = pr.RequestedQuantity ?? 0,
+                PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
+                PickupTime = pr.PickupTime ?? "09:00",
+                Notes = pr.Notes ?? "",
+                ListingTitle = !string.IsNullOrWhiteSpace(pr.ListingTitle)
+                    ? pr.ListingTitle
+                    : listing?.ProductName ?? firstItem?.ListingTitle ?? "Unknown Item",
+                ListingCategory = !string.IsNullOrWhiteSpace(pr.ListingCategory)
+                    ? pr.ListingCategory
+                    : listing?.Category ?? firstItem?.ListingCategory ?? "OTHER",
+                ListingExpiryDate = pr.ListingExpiryDate,
+                ListingUnit = pr.ListingUnit,
+                CreatedAt = pr.RequestedAt.ToString("o"),
+                MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
+                MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
+                ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
+                ProofPhotoUrl = pr.ProofPhotoUrl,
+                RequiresRefrigeration = pr.RequiresRefrigeration,
+                IsFragile = pr.IsFragile,
+                IsHeavy = pr.IsHeavy,
+                Items = pr.Items.Select(i => new PickupRequestItemData
                 {
-                    Id = pr.Id.ToString(),
-                    ListingId = pr.ListingId?.ToString() ?? "",
-                    NgoId = pr.NgoId.ToString(),
-                    NgoName = pr.Ngo?.Name ?? "",
-                    GroceryId = pr.GroceryId.ToString(),
-                    GroceryName = pr.Grocery?.Name ?? "",
-                    Status = pr.Status.ToString().ToLower(),
-                    RequestedQuantity = pr.RequestedQuantity ?? 0,
-                    PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
-                    PickupTime = pr.PickupTime ?? "09:00",
-                    Notes = pr.Notes ?? "",
-                    ListingTitle = !string.IsNullOrWhiteSpace(pr.ListingTitle)
-                        ? pr.ListingTitle
-                        : listing?.ProductName ?? firstItem?.ListingTitle ?? "Unknown Item",
-                    ListingCategory = !string.IsNullOrWhiteSpace(pr.ListingCategory)
-                        ? pr.ListingCategory
-                        : listing?.Category ?? firstItem?.ListingCategory ?? "OTHER",
-                    ListingExpiryDate = pr.ListingExpiryDate,
-                    ListingUnit = pr.ListingUnit,
-                    CreatedAt = pr.RequestedAt.ToString("o"),
-                    MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
-                    MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
-                    ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
-                    ProofPhotoUrl = pr.ProofPhotoUrl,
-                    RequiresRefrigeration = pr.RequiresRefrigeration,
-                    IsFragile = pr.IsFragile,
-                    IsHeavy = pr.IsHeavy,
-                    Items = pr.Items.Select(i => new PickupRequestItemData
-                    {
-                        Id = i.Id.ToString(),
-                        ListingGroupId = i.ListingGroupId?.ToString(),
-                        OriginalListingId = i.OriginalListingId?.ToString(),
-                        ReservedListingId = i.ReservedListingId?.ToString(),
-                        RequestedQuantity = i.RequestedQuantity,
-                        ListingTitle = i.ListingTitle,
-                        ListingCategory = i.ListingCategory,
-                        ListingExpiryDate = i.ListingExpiryDate,
-                        ListingUnit = i.ListingUnit,
-                        ListingPhotoUrl = i.ListingPhotoUrl
-                    }).ToList()
-                });
-            }
-
-            return Ok(new PickupRequestsResponse
-            {
-                Message = "Pickup requests retrieved successfully",
-                Data = responseData
+                    Id = i.Id.ToString(),
+                    ListingGroupId = i.ListingGroupId?.ToString(),
+                    OriginalListingId = i.OriginalListingId?.ToString(),
+                    ReservedListingId = i.ReservedListingId?.ToString(),
+                    RequestedQuantity = i.RequestedQuantity,
+                    ListingTitle = i.ListingTitle,
+                    ListingCategory = i.ListingCategory,
+                    ListingExpiryDate = i.ListingExpiryDate,
+                    ListingUnit = i.ListingUnit,
+                    ListingPhotoUrl = i.ListingPhotoUrl
+                }).ToList()
             });
         }
-        catch (Exception ex)
+
+        return Ok(new PickupRequestsResponse
         {
-            _logger.LogError(ex, "Error getting pickup requests");
-            return StatusCode(500, new { message = "An error occurred while retrieving pickup requests" });
-        }
+            Message = "Pickup requests retrieved successfully",
+            Data = responseData
+        });
     }
 
-    // ── GET api/admin/statistics?from=&to=&preset= ────────────────────────────
+    // ── GET api/admin/statistics?from=&to=&preset= ───────────────────────────
     // Operational analytics for the admin Stats & Analytics screen.
     //
     // Two clocks run here and keeping them apart is what makes the numbers mean
@@ -380,7 +346,7 @@ public class AdminController : ControllerBase
             .Where(pr => !start.HasValue
                       || pr.RequestedAt >= start.Value
                       || (pr.ConfirmedReceivedAt.HasValue && pr.ConfirmedReceivedAt.Value >= start.Value)
-                      || (pr.MarkedPickedUpAt.HasValue   && pr.MarkedPickedUpAt.Value   >= start.Value))
+                      || (pr.MarkedPickedUpAt.HasValue && pr.MarkedPickedUpAt.Value >= start.Value))
             .Where(pr => !end.HasValue || pr.RequestedAt <= end.Value)
             .Select(pr => new RequestRow(
                 pr.Id, pr.Status, pr.RequestedAt, pr.MarkedReadyAt,
@@ -406,20 +372,20 @@ public class AdminController : ControllerBase
             .OrderBy(h => h)
             .ToList();
 
-        var toReady   = Hours(r => r.MarkedReadyAt - r.RequestedAt);
-        var toPickup  = Hours(r => (r.MarkedPickedUpAt ?? r.ConfirmedReceivedAt) - r.RequestedAt);
+        var toReady = Hours(r => r.MarkedReadyAt - r.RequestedAt);
+        var toPickup = Hours(r => (r.MarkedPickedUpAt ?? r.ConfirmedReceivedAt) - r.RequestedAt);
         var toConfirm = Hours(r => r.ConfirmedReceivedAt - r.MarkedPickedUpAt);
 
         var timing = new StatsTimingDto
         {
-            MedianHoursToReady     = Round1(Percentile(toReady, 0.5)),
-            MedianHoursToPickup    = Round1(Percentile(toPickup, 0.5)),
-            MedianHoursToConfirm   = Round1(Percentile(toConfirm, 0.5)),
-            P90HoursToPickup       = Round1(Percentile(toPickup, 0.9)),
+            MedianHoursToReady = Round1(Percentile(toReady, 0.5)),
+            MedianHoursToPickup = Round1(Percentile(toPickup, 0.5)),
+            MedianHoursToConfirm = Round1(Percentile(toConfirm, 0.5)),
+            P90HoursToPickup = Round1(Percentile(toPickup, 0.9)),
             CompletedWithin24hRate = toPickup.Count == 0
                 ? 0
                 : Math.Round((double)toPickup.Count(h => h <= 24) / toPickup.Count, 3),
-            SampleSize             = toPickup.Count
+            SampleSize = toPickup.Count
         };
 
         // ── Leaderboards, ranked by the measure the board actually shows ─────
@@ -461,35 +427,35 @@ public class AdminController : ControllerBase
         var reviews = await _context.Reviews
             .AsNoTracking()
             .Where(r => (!start.HasValue || r.CreatedAt >= start.Value)
-                     && (!end.HasValue   || r.CreatedAt <= end.Value))
+                     && (!end.HasValue || r.CreatedAt <= end.Value))
             .Select(r => r.Rating)
             .ToListAsync();
 
         var disputesOpened = await _context.Disputes
             .CountAsync(d => (!start.HasValue || d.CreatedAt >= start.Value)
-                          && (!end.HasValue   || d.CreatedAt <= end.Value));
+                          && (!end.HasValue || d.CreatedAt <= end.Value));
 
         var reportsFiled = await _context.Reports
             .CountAsync(r => (!start.HasValue || r.CreatedAt >= start.Value)
-                          && (!end.HasValue   || r.CreatedAt <= end.Value));
+                          && (!end.HasValue || r.CreatedAt <= end.Value));
 
         var quality = new StatsQualityDto
         {
-            AverageRating  = reviews.Count == 0 ? null : Math.Round(reviews.Average(), 2),
-            ReviewCount    = reviews.Count,
+            AverageRating = reviews.Count == 0 ? null : Math.Round(reviews.Average(), 2),
+            ReviewCount = reviews.Count,
             ReviewCoverage = completed.Count == 0 ? 0 : Math.Round((double)reviews.Count / completed.Count, 3),
             DisputesOpened = disputesOpened,
-            DisputeRate    = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3),
-            ReportsFiled   = reportsFiled
+            DisputeRate = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3),
+            ReportsFiled = reportsFiled
         };
 
         // ── Backlog: the live queue, deliberately not scoped to the period ───
         var soon = now.AddHours(24);
-        var openListings     = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
+        var openListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
         var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
-        var expiredListings  = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
+        var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
         var archivedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Archived);
-        var expiringSoon     = await _context.ClearanceListings
+        var expiringSoon = await _context.ClearanceListings
             .CountAsync(l => l.Status == ListingStatus.Open
                           && l.ClearanceDeadline > now && l.ClearanceDeadline <= soon);
 
@@ -505,30 +471,30 @@ public class AdminController : ControllerBase
 
         var backlog = new StatsBacklogDto
         {
-            OpenListings              = openListings,
-            ReservedListings          = reservedListings,
-            ExpiredListings           = expiredListings,
-            ArchivedListings          = archivedListings,
-            ExpiringWithin24h         = expiringSoon,
-            PendingRequests           = pendingLive?.Count ?? 0,
-            ApprovedRequests          = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Approved)?.Count ?? 0,
-            ReadyRequests             = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Ready)?.Count ?? 0,
+            OpenListings = openListings,
+            ReservedListings = reservedListings,
+            ExpiredListings = expiredListings,
+            ArchivedListings = archivedListings,
+            ExpiringWithin24h = expiringSoon,
+            PendingRequests = pendingLive?.Count ?? 0,
+            ApprovedRequests = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Approved)?.Count ?? 0,
+            ReadyRequests = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Ready)?.Count ?? 0,
             OldestPendingRequestHours = pendingLive == null ? null : Math.Round((now - pendingLive.Oldest).TotalHours, 1),
-            PendingVerifications      = pendingOrgs.Count,
+            PendingVerifications = pendingOrgs.Count,
             OldestPendingVerificationDays = oldestPendingDays,
             // Both states still sit on an admin's desk, which is what this queue counts.
-            OpenDisputes              = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review"),
-            PendingReports            = await _context.Reports.CountAsync(r => r.Status == "pending")
+            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review"),
+            PendingReports = await _context.Reports.CountAsync(r => r.Status == "pending")
         };
 
         var data = new AdminStatisticsData
         {
             Period = new StatsPeriodDto
             {
-                From      = start?.ToString("o"),
-                To        = end?.ToString("o"),
-                Preset    = preset,
-                Days      = start.HasValue ? Math.Max(1, (int)Math.Ceiling(((end ?? now) - start.Value).TotalDays)) : 0,
+                From = start?.ToString("o"),
+                To = end?.ToString("o"),
+                Preset = preset,
+                Days = start.HasValue ? Math.Max(1, (int)Math.Ceiling(((end ?? now) - start.Value).TotalDays)) : 0,
                 IsAllTime = !start.HasValue
             },
             Headline = new StatsHeadlineDto
@@ -537,47 +503,47 @@ public class AdminController : ControllerBase
             },
             Funnel = new StatsFunnelDto
             {
-                Requests  = raised.Count,
-                Pending   = CountRaised(PickupRequestStatus.Pending),
-                Approved  = CountRaised(PickupRequestStatus.Approved),
-                Ready     = CountRaised(PickupRequestStatus.Ready),
+                Requests = raised.Count,
+                Pending = CountRaised(PickupRequestStatus.Pending),
+                Approved = CountRaised(PickupRequestStatus.Approved),
+                Ready = CountRaised(PickupRequestStatus.Ready),
                 Completed = CountRaised(PickupRequestStatus.Completed),
                 Cancelled = CountRaised(PickupRequestStatus.Cancelled),
-                Rejected  = CountRaised(PickupRequestStatus.Rejected)
+                Rejected = CountRaised(PickupRequestStatus.Rejected)
             },
             Backlog = backlog,
-            Timing  = timing,
+            Timing = timing,
             Quality = quality,
             Leaderboards = new StatsLeaderboardsDto
             {
                 TopGroceries = groceryStats.Select(g => new StatsGroceryLeaderDto
                 {
-                    Id               = g.Id.ToString(),
-                    Name             = leaderNames.GetValueOrDefault(g.Id, ""),
+                    Id = g.Id.ToString(),
+                    Name = leaderNames.GetValueOrDefault(g.Id, ""),
                     CompletedPickups = g.Pickups
                 }).ToList(),
                 TopNgos = ngoStats.Select(n => new StatsNgoLeaderDto
                 {
-                    Id               = n.Id.ToString(),
-                    Name             = leaderNames.GetValueOrDefault(n.Id, ""),
+                    Id = n.Id.ToString(),
+                    Name = leaderNames.GetValueOrDefault(n.Id, ""),
                     CompletedPickups = n.Pickups
                 }).ToList()
             },
             Organizations = new StatsOrganizationsDto
             {
-                Total               = orgs.Count,
-                Groceries           = orgs.Count(o => o.Type.ToLower() == "grocery"),
-                Ngos                = orgs.Count(o => o.Type.ToLower() == "ngo"),
-                Verified            = orgs.Count(o => o.Verified),
+                Total = orgs.Count,
+                Groceries = orgs.Count(o => o.Type.ToLower() == "grocery"),
+                Ngos = orgs.Count(o => o.Type.ToLower() == "ngo"),
+                Verified = orgs.Count(o => o.Verified),
                 PendingVerification = pendingOrgs.Count,
-                OldestPendingDays   = oldestPendingDays
+                OldestPendingDays = oldestPendingDays
             }
         };
 
         return Ok(new AdminStatisticsResponse { Data = data });
     }
 
-    // ── Statistics helpers ────────────────────────────────────────────────────
+    // ── Statistics helpers ───────────────────────────────────────────────────
 
     private sealed record RequestRow(
         Guid Id,
@@ -601,15 +567,14 @@ public class AdminController : ControllerBase
         if (sorted.Count == 1) return sorted[0];
 
         var rank = p * (sorted.Count - 1);
-        var low  = (int)Math.Floor(rank);
+        var low = (int)Math.Floor(rank);
         var high = (int)Math.Ceiling(rank);
         return sorted[low] + (sorted[high] - sorted[low]) * (rank - low);
     }
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
-
-    // ── GET api/admin/disputes ────────────────────────────────────────────────
+    // ── GET api/admin/disputes ───────────────────────────────────────────────
     // Admin alert feed: open disputes + pending reports
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
@@ -661,7 +626,7 @@ public class AdminController : ControllerBase
         return Ok(new { data = feed, total = feed.Count });
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private bool IsAdmin()
     {
@@ -685,15 +650,15 @@ public class AdminController : ControllerBase
 
         return preset switch
         {
-            "today"      => (now.Date, now.Date.AddDays(1).AddSeconds(-1)),
-            "week"       => (weekStart, now),
-            "month"      => (monthStart, now),
-            "quarter"    => (new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, DateTimeKind.Utc), now),
+            "today" => (now.Date, now.Date.AddDays(1).AddSeconds(-1)),
+            "week" => (weekStart, now),
+            "month" => (monthStart, now),
+            "quarter" => (new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, DateTimeKind.Utc), now),
             // The matching previous period, so a comparison compares like with like.
-            "yesterday"  => (now.Date.AddDays(-1), now.Date.AddSeconds(-1)),
-            "last_week"  => (weekStart.AddDays(-7), weekStart.AddSeconds(-1)),
+            "yesterday" => (now.Date.AddDays(-1), now.Date.AddSeconds(-1)),
+            "last_week" => (weekStart.AddDays(-7), weekStart.AddSeconds(-1)),
             "last_month" => (monthStart.AddMonths(-1), monthStart.AddSeconds(-1)),
-            _            => (null, null)  // "all"
+            _ => (null, null)  // "all"
         };
     }
 }

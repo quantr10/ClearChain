@@ -88,7 +88,7 @@ public class OrganizationService : IOrganizationService
         return organization == null ? null : MapToDto(organization);
     }
 
-    // ═══ UPDATED: handles new fields (Part 1) ═══
+    // ── handles new fields ───────────────────────────────────────────────────
     public async Task<(bool Success, string Message)> UpdateProfileAsync(
         Guid userId, UpdateProfileRequest request)
     {
@@ -105,7 +105,6 @@ public class OrganizationService : IOrganizationService
         if (request.ZipCode != null) user.ZipCode = request.ZipCode;
         if (request.Hours != null) user.Hours = request.Hours;
 
-        // ═══ NEW FIELDS (Part 1) ═══
         if (request.Latitude.HasValue) user.Latitude = request.Latitude;
         if (request.Longitude.HasValue) user.Longitude = request.Longitude;
         if (request.ContactPerson != null) user.ContactPerson = request.ContactPerson;
@@ -163,7 +162,7 @@ public class OrganizationService : IOrganizationService
         }
     }
 
-    // ═══ UPDATED: includes new fields (Part 1) ═══
+    // ── includes new fields ──────────────────────────────────────────────────
     private static OrganizationDto MapToDto(Organization org)
     {
         return new OrganizationDto

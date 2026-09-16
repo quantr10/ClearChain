@@ -5,7 +5,6 @@ using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -28,7 +27,7 @@ public class NotificationsController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] bool unreadOnly = false)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var clampedPage = Math.Max(1, page);
         var clampedSize = Math.Clamp(pageSize, 1, 50);
@@ -71,7 +70,7 @@ public class NotificationsController : ControllerBase
     [HttpPut("{id}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var notification = await _context.Notifications
             .FirstOrDefaultAsync(n => n.Id == id && n.RecipientId == userId);
@@ -89,7 +88,7 @@ public class NotificationsController : ControllerBase
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var unread = await _context.Notifications
             .Where(n => n.RecipientId == userId && !n.IsRead)
@@ -110,7 +109,7 @@ public class NotificationsController : ControllerBase
     [HttpDelete]
     public async Task<IActionResult> DeleteAllNotifications()
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var deleted = await _context.Notifications
             .Where(n => n.RecipientId == userId)
@@ -122,12 +121,6 @@ public class NotificationsController : ControllerBase
     // Notifications are written by IPushNotificationService, never directly. Persisting a row
     // on its own would produce an inbox entry that was never pushed or broadcast — visible on
     // next launch, silent at the moment it mattered.
-
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
-    }
 
     private static NotificationDto MapToDto(Notification n) => new()
     {

@@ -1,4 +1,4 @@
-﻿namespace ClearChain.API.DTOs.Cart;
+namespace ClearChain.API.DTOs.Cart;
 
 public class CartItemData
 {

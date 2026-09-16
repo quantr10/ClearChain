@@ -17,16 +17,16 @@ public class ListingHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} connected to ListingHub");
-        
+
         // Join user-specific group
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         // Join "all_listings" group for browse feature
         await Groups.AddToGroupAsync(Context.ConnectionId, "all_listings");
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -34,14 +34,14 @@ public class ListingHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} disconnected from ListingHub");
-        
+
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, "all_listings");
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 

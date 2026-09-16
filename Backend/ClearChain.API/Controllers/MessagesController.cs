@@ -1,9 +1,9 @@
+using ClearChain.API.Common;
 using ClearChain.Domain.Entities;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -23,7 +23,7 @@ public class MessagesController : ControllerBase
     [HttpGet("pickup/{requestId}")]
     public async Task<IActionResult> GetMessages(Guid requestId)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var pickup = await _context.PickupRequests.FindAsync(requestId);
         if (pickup == null) return NotFound(new { message = "Pickup request not found" });
@@ -57,7 +57,7 @@ public class MessagesController : ControllerBase
     [HttpPost("pickup/{requestId}")]
     public async Task<IActionResult> SendMessage(Guid requestId, [FromBody] SendMessageRequest request)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         if (string.IsNullOrWhiteSpace(request.Content))
             return BadRequest(new { message = "Message content cannot be empty" });
@@ -88,12 +88,6 @@ public class MessagesController : ControllerBase
         msg.Sender = await _context.Organizations.FindAsync(userId);
 
         return Ok(new { message = "Message sent", data = MapToDto(msg) });
-    }
-
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
     }
 
     private static object MapToDto(Message m) => new

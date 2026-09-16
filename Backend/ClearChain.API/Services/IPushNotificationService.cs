@@ -15,9 +15,7 @@ namespace ClearChain.API.Services;
 /// </summary>
 public interface IPushNotificationService
 {
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Pickup Request Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Pickup Request Notifications ─────────────────────────────────────────
     Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRejectedNotification(Guid userId, PickupRequestData request);
@@ -26,32 +24,24 @@ public interface IPushNotificationService
     Task SendPickupCompletedNotification(Guid userId, PickupRequestData request);
     Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Listing Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Listing Notifications ────────────────────────────────────────────────
     Task SendNewListingNotificationToAllNGOs(ListingData listing);
     Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing);
     Task SendListingExpiredNotification(Guid groceryId, ListingData listing);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Inventory Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Inventory Notifications ──────────────────────────────────────────────
     Task SendInventoryExpiringSoonNotification(Guid ngoId, InventoryItemData item);
     Task SendInventoryExpiredNotification(Guid ngoId, InventoryItemData item);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // User Onboarding & Admin Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── User Onboarding & Admin Notifications ────────────────────────────────
     Task SendWelcomeNotification(OrganizationData organization);
     Task SendNewRegistrationAlertToAdmins(OrganizationData organization);
     Task SendResubmissionAlertToAdmins(OrganizationData organization);
     Task SendVerificationApprovedNotification(Guid organizationId, string organizationType);
     Task SendVerificationRejectedNotification(Guid organizationId, string? reason);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Generic sender — persists, pushes and broadcasts one notification
-    // ═══════════════════════════════════════════════════════════════════════════
-    Task SendNotification(Guid userId, string title, string body, Dictionary<string, string> data);
+    // ── Generic sender — persists, pushes and broadcasts one notification ────
+    Task SendNotificationAsync(Guid userId, string title, string body, Dictionary<string, string> data);
 
     /// <summary>
     /// Drops one device's token at logout so the next person to use that device doesn't

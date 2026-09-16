@@ -16,7 +16,7 @@ public class AdminNotificationService : IAdminNotificationService
         _logger = logger;
     }
 
-    public async Task NotifyNewOrganizationRegistered(OrganizationRegisteredNotification notification)
+    public async Task NotifyNewOrganizationRegisteredAsync(OrganizationRegisteredNotification notification)
     {
         try
         {
@@ -32,7 +32,7 @@ public class AdminNotificationService : IAdminNotificationService
         }
     }
 
-    public async Task NotifyTransactionCompleted(TransactionCompletedNotification notification)
+    public async Task NotifyTransactionCompletedAsync(TransactionCompletedNotification notification)
     {
         try
         {
@@ -48,7 +48,7 @@ public class AdminNotificationService : IAdminNotificationService
         }
     }
 
-    public async Task NotifyStatsUpdated(PlatformStatsNotification stats)
+    public async Task NotifyStatsUpdatedAsync(PlatformStatsNotification stats)
     {
         try
         {
@@ -64,7 +64,7 @@ public class AdminNotificationService : IAdminNotificationService
         }
     }
 
-    public async Task NotifySystemAlert(SystemAlertNotification alert)
+    public async Task NotifySystemAlertAsync(SystemAlertNotification alert)
     {
         try
         {

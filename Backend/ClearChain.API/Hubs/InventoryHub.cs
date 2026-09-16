@@ -17,13 +17,13 @@ public class InventoryHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} connected to InventoryHub");
-        
+
         // Join user-specific group (for NGO's inventory)
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -31,12 +31,12 @@ public class InventoryHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} disconnected from InventoryHub");
-        
+
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 

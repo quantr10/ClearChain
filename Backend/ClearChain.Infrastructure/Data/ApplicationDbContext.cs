@@ -53,38 +53,38 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Cart>().ToTable("carts");
         modelBuilder.Entity<CartItem>().ToTable("cartitems");
         modelBuilder.Entity<PickupRequestItem>().ToTable("pickuprequestitems");
-        
+
         // Configure ListingGroup - ClearanceListing relationship
         modelBuilder.Entity<ListingGroup>()
             .HasMany(lg => lg.ChildListings)
             .WithOne(cl => cl.Group)
             .HasForeignKey(cl => cl.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         // Configure FCMToken - Organization relationship
         modelBuilder.Entity<FCMToken>()
             .HasOne(f => f.Organization)
             .WithMany()
             .HasForeignKey(f => f.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         modelBuilder.Entity<FCMToken>()
             .HasIndex(f => f.OrganizationId);
-        
-        // ✅ ADD: Configure FoodImageAnalysis - Organization relationship
+
+        // FoodImageAnalysis → Grocery
         modelBuilder.Entity<FoodImageAnalysis>()
             .HasOne(f => f.Grocery)
             .WithMany()
             .HasForeignKey(f => f.GroceryId)
             .OnDelete(DeleteBehavior.Cascade);
-        
-        // ✅ ADD: Indexes for FoodImageAnalysis
+
+        // FoodImageAnalysis indexes
         modelBuilder.Entity<FoodImageAnalysis>()
             .HasIndex(f => f.GroceryId);
-        
+
         modelBuilder.Entity<FoodImageAnalysis>()
             .HasIndex(f => f.AnalyzedAt);
-        
+
         // PickupRequest → Ngo
         modelBuilder.Entity<PickupRequest>()
             .HasOne(pr => pr.Ngo)
@@ -99,13 +99,13 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(pr => pr.GroceryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // ── Notification ──────────────────────────────────────────────────────────
+        // ── Notification ─────────────────────────────────────────────────────
         modelBuilder.Entity<Notification>()
             .HasOne(n => n.Recipient).WithMany().HasForeignKey(n => n.RecipientId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Notification>().HasIndex(n => n.RecipientId);
         modelBuilder.Entity<Notification>().HasIndex(n => n.IsRead);
 
-        // ── Message ───────────────────────────────────────────────────────────────
+        // ── Message ──────────────────────────────────────────────────────────
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Message>()
@@ -114,7 +114,7 @@ public class ApplicationDbContext : DbContext
             .HasOne(m => m.PickupRequest).WithMany().HasForeignKey(m => m.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Message>().HasIndex(m => m.PickupRequestId);
 
-        // ── Review ────────────────────────────────────────────────────────────────
+        // ── Review ───────────────────────────────────────────────────────────
         modelBuilder.Entity<Review>()
             .HasOne(r => r.Reviewer).WithMany().HasForeignKey(r => r.ReviewerId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Review>()
@@ -124,20 +124,20 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Review>().HasIndex(r => r.ReviewedId);
         modelBuilder.Entity<Review>().HasIndex(r => new { r.PickupRequestId, r.ReviewerId }).IsUnique();
 
-        // ── Report ────────────────────────────────────────────────────────────────
+        // ── Report ───────────────────────────────────────────────────────────
         modelBuilder.Entity<Report>()
             .HasOne(r => r.Reporter).WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Report>()
             .HasOne(r => r.Listing).WithMany().HasForeignKey(r => r.ListingId).OnDelete(DeleteBehavior.SetNull);
 
-        // ── Dispute ───────────────────────────────────────────────────────────────
+        // ── Dispute ──────────────────────────────────────────────────────────
         modelBuilder.Entity<Dispute>()
             .HasOne(d => d.Initiator).WithMany().HasForeignKey(d => d.InitiatorId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Dispute>()
             .HasOne(d => d.PickupRequest).WithMany().HasForeignKey(d => d.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Dispute>().HasIndex(d => d.PickupRequestId);
 
-        // ── SavedListing ──────────────────────────────────────────────────────────
+        // ── SavedListing ─────────────────────────────────────────────────────
         modelBuilder.Entity<SavedListing>()
             .HasOne(s => s.Ngo).WithMany().HasForeignKey(s => s.NgoId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SavedListing>()

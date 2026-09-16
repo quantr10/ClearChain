@@ -18,10 +18,10 @@ public static class QuantityUnits
             return (unit ?? string.Empty).Trim().ToLowerInvariant() switch
             {
                 "kg" or "kgs" or "kilogram" or "kilograms" => this with { Kg = Kg + quantity },
-                "g" or "gram" or "grams"                   => this with { Kg = Kg + quantity / 1000.0 },
+                "g" or "gram" or "grams" => this with { Kg = Kg + quantity / 1000.0 },
                 "l" or "litre" or "litres" or "liter" or "liters" => this with { Litres = Litres + quantity },
-                "ml" or "millilitre" or "millilitres"      => this with { Litres = Litres + quantity / 1000.0 },
-                _                                          => this with { Units = Units + quantity }
+                "ml" or "millilitre" or "millilitres" => this with { Litres = Litres + quantity / 1000.0 },
+                _ => this with { Units = Units + quantity }
             };
         }
     }

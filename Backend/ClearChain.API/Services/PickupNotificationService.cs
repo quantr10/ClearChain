@@ -17,7 +17,7 @@ public class PickupNotificationService : IPickupNotificationService
         _logger = logger;
     }
 
-    public async Task NotifyPickupRequestCreated(PickupRequestData request)
+    public async Task NotifyPickupRequestCreatedAsync(PickupRequestData request)
     {
         try
         {
@@ -35,7 +35,7 @@ public class PickupNotificationService : IPickupNotificationService
         }
     }
 
-    public async Task NotifyPickupRequestStatusChanged(PickupRequestData request, string oldStatus)
+    public async Task NotifyPickupRequestStatusChangedAsync(PickupRequestData request, string oldStatus)
     {
         try
         {
@@ -66,7 +66,7 @@ public class PickupNotificationService : IPickupNotificationService
         }
     }
 
-    public async Task NotifyPickupRequestCancelled(PickupRequestData request)
+    public async Task NotifyPickupRequestCancelledAsync(PickupRequestData request)
     {
         try
         {

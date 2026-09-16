@@ -4,8 +4,8 @@ namespace ClearChain.API.Services;
 
 public interface IListingNotificationService
 {
-    Task NotifyListingCreated(ListingData listing);
-    Task NotifyListingUpdated(ListingData listing);
-    Task NotifyListingDeleted(string listingId);
-    Task NotifyListingQuantityChanged(ListingData listing, int oldQuantity, int newQuantity);
+    Task NotifyListingCreatedAsync(ListingData listing);
+    Task NotifyListingUpdatedAsync(ListingData listing);
+    Task NotifyListingDeletedAsync(string listingId);
+    Task NotifyListingQuantityChangedAsync(ListingData listing, int oldQuantity, int newQuantity);
 }

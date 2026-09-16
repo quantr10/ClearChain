@@ -24,9 +24,7 @@ var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Hangfire Configuration (Background Jobs)
-// ═══════════════════════════════════════════════════════════════════════════
+// ── Hangfire Configuration (Background Jobs) ─────────────────────────────────
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -94,12 +92,12 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            
+
             if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
             {
                 context.Token = accessToken;
             }
-            
+
             return Task.CompletedTask;
         }
     };
@@ -112,9 +110,9 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "ClearChain API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "ClearChain API",
         Version = "v1",
         Description = "Surplus food clearance platform API"
     });
@@ -173,10 +171,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Hangfire Dashboard — restricted to admin role
+// ── Hangfire Dashboard — restricted to admin role ────────────────────────────
 // Access: https://your-domain/hangfire
-// ═══════════════════════════════════════════════════════════════════════════
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     AppPath = "/",
@@ -184,9 +180,7 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     Authorization = new[] { new HangfireAuthorizationFilter() }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Scheduled Jobs — staggered 5 min apart to avoid DB contention
-// ═══════════════════════════════════════════════════════════════════════════
+// ── Scheduled Jobs — staggered 5 min apart to avoid DB contention ────────────
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "check-expiring-listings",
     job => job.CheckExpiringListings(),
@@ -217,7 +211,7 @@ RecurringJob.AddOrUpdate<NotificationJobs>(
     "20 0 * * *",  // 00:20 UTC — after the listing sweeps, so released stock lands on fresh rows
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-// ── Housekeeping — separate window from the notification jobs ──────────────
+// ── Housekeeping — separate window from the notification jobs ────────────────
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "cleanup-refresh-tokens",
     job => job.CleanupExpiredRefreshTokens(),
@@ -236,7 +230,7 @@ RecurringJob.AddOrUpdate<NotificationJobs>(
     "20 1 * * 0",  // Sundays 01:20 UTC — slow-moving data, no need for a daily pass
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-// ── Admin dashboard keep-alive ─────────────────────────────────────────────
+// ── Admin dashboard keep-alive ───────────────────────────────────────────────
 RecurringJob.AddOrUpdate<NotificationJobs>(
     "broadcast-platform-stats",
     job => job.BroadcastPlatformStats(),

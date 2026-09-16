@@ -31,10 +31,10 @@ public class OrganizationsController : ControllerBase
         ILogger<OrganizationsController> logger)
     {
         _organizationService = organizationService;
-        _context             = context;
-        _storageService      = storageService;
+        _context = context;
+        _storageService = storageService;
         _pushNotificationService = pushNotificationService;
-        _logger              = logger;
+        _logger = logger;
     }
 
     /// <summary>
@@ -69,9 +69,9 @@ public class OrganizationsController : ControllerBase
 
             var distributedRows = inventory.Where(i => i.Status == InventoryStatus.Distributed).ToList();
             var inventoryStatus = new InventoryStatusCounts(
-                Active:      inventory.Count(i => i.Status == InventoryStatus.Active),
+                Active: inventory.Count(i => i.Status == InventoryStatus.Active),
                 Distributed: distributedRows.Count,
-                Expired:     inventory.Count(i => i.Status == InventoryStatus.Expired));
+                Expired: inventory.Count(i => i.Status == InventoryStatus.Expired));
 
             var availableListings = await _context.ClearanceListings
                 .CountAsync(l => l.Status == ListingStatus.Open);
@@ -84,17 +84,17 @@ public class OrganizationsController : ControllerBase
             {
                 data = new
                 {
-                    inStock           = inventoryStatus.Active,
-                    activeRequests    = byStatus.InFlight,
-                    distributed       = inventoryStatus.Distributed,
-                    availableFood     = availableListings,
+                    inStock = inventoryStatus.Active,
+                    activeRequests = byStatus.InFlight,
+                    distributed = inventoryStatus.Distributed,
+                    availableFood = availableListings,
                     inventoryStatus,
-                    totalCompleted    = byStatus.Completed,
+                    totalCompleted = byStatus.Completed,
                     completedThisWeek,
-                    foodSaved         = (int)Math.Round(ngoRescued.Kg),
-                    mealsEstimate     = (int)Math.Round(ngoRescued.Kg * QuantityUnits.MealsPerKg),
-                    co2EstimateKg     = (int)Math.Round(ngoRescued.Kg * QuantityUnits.Co2PerKg),
-                    requestStatus     = byStatus
+                    foodSaved = (int)Math.Round(ngoRescued.Kg),
+                    mealsEstimate = (int)Math.Round(ngoRescued.Kg * QuantityUnits.MealsPerKg),
+                    co2EstimateKg = (int)Math.Round(ngoRescued.Kg * QuantityUnits.Co2PerKg),
+                    requestStatus = byStatus
                 }
             });
         }
@@ -114,9 +114,9 @@ public class OrganizationsController : ControllerBase
                 listingRows.FirstOrDefault(r => r.Status == status)?.Count ?? 0;
 
             var listingStatus = new ListingStatusCounts(
-                Open:     ListingsWith(ListingStatus.Open),
+                Open: ListingsWith(ListingStatus.Open),
                 Reserved: ListingsWith(ListingStatus.Reserved),
-                Expired:  ListingsWith(ListingStatus.Expired),
+                Expired: ListingsWith(ListingStatus.Expired),
                 Archived: ListingsWith(ListingStatus.Archived));
             // A request's RequestedQuantity is the sum of its items across whatever units
             // they use, so totalling it would add kilograms to boxes. The line items keep
@@ -136,15 +136,15 @@ public class OrganizationsController : ControllerBase
             {
                 data = new
                 {
-                    activeListings  = listingStatus.Open,
+                    activeListings = listingStatus.Open,
                     pendingRequests = byStatus.Pending,
-                    completed       = byStatus.Completed,
+                    completed = byStatus.Completed,
                     completedThisWeek,
-                    foodSaved       = (int)Math.Round(groceryRescued.Kg),
-                    mealsEstimate   = (int)Math.Round(groceryRescued.Kg * QuantityUnits.MealsPerKg),
-                    co2EstimateKg   = (int)Math.Round(groceryRescued.Kg * QuantityUnits.Co2PerKg),
-                    totalListings   = listingStatus.Total,
-                    requestStatus   = byStatus,
+                    foodSaved = (int)Math.Round(groceryRescued.Kg),
+                    mealsEstimate = (int)Math.Round(groceryRescued.Kg * QuantityUnits.MealsPerKg),
+                    co2EstimateKg = (int)Math.Round(groceryRescued.Kg * QuantityUnits.Co2PerKg),
+                    totalListings = listingStatus.Total,
+                    requestStatus = byStatus,
                     listingStatus
                 }
             });
@@ -186,12 +186,12 @@ public class OrganizationsController : ControllerBase
             rows.FirstOrDefault(r => r.Status == status)?.Count ?? 0;
 
         return new RequestStatusCounts(
-            Pending:   Of(PickupRequestStatus.Pending),
-            Approved:  Of(PickupRequestStatus.Approved),
-            Ready:     Of(PickupRequestStatus.Ready),
+            Pending: Of(PickupRequestStatus.Pending),
+            Approved: Of(PickupRequestStatus.Approved),
+            Ready: Of(PickupRequestStatus.Ready),
             Completed: Of(PickupRequestStatus.Completed),
             Cancelled: Of(PickupRequestStatus.Cancelled),
-            Rejected:  Of(PickupRequestStatus.Rejected));
+            Rejected: Of(PickupRequestStatus.Rejected));
     }
 
     /// <summary>
@@ -263,10 +263,10 @@ public class OrganizationsController : ControllerBase
             {
                 activities.Add(new ActivityDto
                 {
-                    Id        = l.Id.ToString(),
-                    Type      = "listing_created",
-                    Title     = l.ProductName,
-                    Subtitle  = $"{l.Quantity} {l.Unit} listed for pickup",
+                    Id = l.Id.ToString(),
+                    Type = "listing_created",
+                    Title = l.ProductName,
+                    Subtitle = $"{l.Quantity} {l.Unit} listed for pickup",
                     Timestamp = l.CreatedAt.ToString("o"),
                     RelatedId = l.Id.ToString()
                 });
@@ -309,10 +309,10 @@ public class OrganizationsController : ControllerBase
 
                 activities.Add(new ActivityDto
                 {
-                    Id        = r.Id.ToString(),
-                    Type      = type,
-                    Title     = title,
-                    Subtitle  = subtitle,
+                    Id = r.Id.ToString(),
+                    Type = type,
+                    Title = title,
+                    Subtitle = subtitle,
                     Timestamp = r.RequestedAt.ToString("o"),
                     RelatedId = r.Id.ToString()
                 });
@@ -357,10 +357,10 @@ public class OrganizationsController : ControllerBase
 
                 activities.Add(new ActivityDto
                 {
-                    Id        = r.Id.ToString(),
-                    Type      = type,
-                    Title     = title,
-                    Subtitle  = subtitle,
+                    Id = r.Id.ToString(),
+                    Type = type,
+                    Title = title,
+                    Subtitle = subtitle,
                     Timestamp = r.RequestedAt.ToString("o"),
                     RelatedId = r.Id.ToString()
                 });
@@ -376,10 +376,10 @@ public class OrganizationsController : ControllerBase
             {
                 activities.Add(new ActivityDto
                 {
-                    Id        = i.Id.ToString(),
-                    Type      = "inventory_received",
-                    Title     = $"{i.ProductName} received",
-                    Subtitle  = $"{i.Quantity} {i.Unit} added to inventory",
+                    Id = i.Id.ToString(),
+                    Type = "inventory_received",
+                    Title = $"{i.ProductName} received",
+                    Subtitle = $"{i.Quantity} {i.Unit} added to inventory",
                     Timestamp = i.ReceivedAt.ToString("o"),
                     RelatedId = i.Id.ToString()
                 });
@@ -468,7 +468,7 @@ public class OrganizationsController : ControllerBase
                 averageRating = avgRating,
                 reviewCount,
                 completedPickups,
-                foodSaved     = (int)Math.Round(rescued.Kg),
+                foodSaved = (int)Math.Round(rescued.Kg),
                 mealsEstimate = (int)Math.Round(rescued.Kg * QuantityUnits.MealsPerKg)
             }
         });
@@ -559,11 +559,11 @@ public class OrganizationsController : ControllerBase
                 .OrderBy(pr => pr.PickupTime)
                 .Select(pr => new
                 {
-                    id           = pr.Id,
+                    id = pr.Id,
                     listingTitle = pr.ListingTitle,
-                    ngoName      = pr.Ngo!.Name,
-                    pickupTime   = pr.PickupTime,
-                    status       = pr.Status.ToString().ToLower()
+                    ngoName = pr.Ngo!.Name,
+                    pickupTime = pr.PickupTime,
+                    status = pr.Status.ToString().ToLower()
                 })
                 .ToListAsync();
 
@@ -572,11 +572,11 @@ public class OrganizationsController : ControllerBase
                 data = new
                 {
                     expiringToday,
-                    pickupsToday          = groceryPickupsToday,
+                    pickupsToday = groceryPickupsToday,
                     clearedToday,
-                    listingsCreatedToday  = groceryListingsCreatedToday,
-                    requestsCreatedToday  = groceryRequestsReceivedToday,
-                    upcomingPickups       = groceryUpcomingPickups
+                    listingsCreatedToday = groceryListingsCreatedToday,
+                    requestsCreatedToday = groceryRequestsReceivedToday,
+                    upcomingPickups = groceryUpcomingPickups
                 }
             });
         }
@@ -642,7 +642,7 @@ public class OrganizationsController : ControllerBase
         var url = await _storageService.UploadFileAsync(stream, avatar.FileName, avatar.ContentType, "avatars");
 
         org.ProfilePictureUrl = url;
-        org.UpdatedAt         = DateTime.UtcNow;
+        org.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Avatar updated", data = new { url } });
@@ -675,7 +675,7 @@ public class OrganizationsController : ControllerBase
         using var stream = document.OpenReadStream();
         var url = await _storageService.UploadFileAsync(stream, document.FileName, document.ContentType, "documents");
 
-        org.DocumentUrl      = url;
+        org.DocumentUrl = url;
         org.DocumentMimeType = document.ContentType;
 
         var resubmitted = OrganizationService.ResubmitIfRejected(org);

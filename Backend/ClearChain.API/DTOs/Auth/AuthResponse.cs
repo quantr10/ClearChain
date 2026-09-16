@@ -27,10 +27,9 @@ public class OrganizationDto
     public string? ProfilePictureUrl { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
 
-    // ═══ Onboarding verification document ═══
+    // ── Onboarding verification document ─────────────────────────────────────
     public string? DocumentUrl { get; set; }
 
-    // ═══ NEW FIELDS (Part 1) ═══
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public string? ContactPerson { get; set; }

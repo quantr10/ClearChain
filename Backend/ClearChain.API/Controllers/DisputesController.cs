@@ -4,7 +4,6 @@ using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using ClearChain.API.Common;
 using ClearChain.API.Services;
 
@@ -31,7 +30,7 @@ public class DisputesController : ControllerBase
         [FromForm] OpenDisputeRequest request,
         IFormFile? photo)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var pickup = await _context.PickupRequests
             .FirstOrDefaultAsync(pr => pr.Id == request.PickupRequestId
@@ -75,12 +74,6 @@ public class DisputesController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Dispute opened successfully", data = MapToDto(dispute) });
-    }
-
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
     }
 
     private static object MapToDto(Dispute d) => new

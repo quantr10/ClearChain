@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
@@ -107,7 +107,7 @@ public class PickupRequestService : IPickupRequestService
 
         // SignalR reaches the grocery only while they have the app open; the push is what
         // gets a new request in front of them when it isn't.
-        await _notificationService.NotifyPickupRequestCreated(data);
+        await _notificationService.NotifyPickupRequestCreatedAsync(data);
         await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -190,12 +190,12 @@ public class PickupRequestService : IPickupRequestService
 
         if (isGroceryRejecting)
         {
-            await _notificationService.NotifyPickupRequestCancelled(data);
+            await _notificationService.NotifyPickupRequestCancelledAsync(data);
             await _pushNotificationService.SendPickupRejectedNotification(pr.NgoId, data);
         }
         else
         {
-            await _notificationService.NotifyPickupRequestCancelled(data);
+            await _notificationService.NotifyPickupRequestCancelledAsync(data);
             await _pushNotificationService.SendPickupRequestCancelledNotification(pr.GroceryId, data);
         }
 
@@ -393,13 +393,13 @@ public class PickupRequestService : IPickupRequestService
         var data = MapToData(pickupRequest, proofPhotoUrl: proofPhotoUrl);
 
         if (inventoryDto != null)
-            await _inventoryNotificationService.NotifyInventoryItemAdded(inventoryDto);
+            await _inventoryNotificationService.NotifyInventoryItemAddedAsync(inventoryDto);
 
-        await _notificationService.NotifyPickupRequestStatusChanged(data, "ready");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "ready");
 
         try
         {
-            await _adminNotificationService.NotifyTransactionCompleted(new TransactionCompletedNotification
+            await _adminNotificationService.NotifyTransactionCompletedAsync(new TransactionCompletedNotification
             {
                 TransactionId = pickupRequest.Id.ToString(),
                 NgoId = pickupRequest.NgoId.ToString(),
@@ -413,14 +413,14 @@ public class PickupRequestService : IPickupRequestService
             });
 
             var today = DateTime.UtcNow.Date;
-            await _adminNotificationService.NotifyStatsUpdated(new PlatformStatsNotification
+            await _adminNotificationService.NotifyStatsUpdatedAsync(new PlatformStatsNotification
             {
-                TotalNGOs       = await _context.Organizations.CountAsync(o => o.Type == "ngo"),
-                TotalGroceries  = await _context.Organizations.CountAsync(o => o.Type == "grocery"),
-                TotalDonations  = await _context.PickupRequests.CountAsync(),
-                ActiveListings  = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open),
+                TotalNGOs = await _context.Organizations.CountAsync(o => o.Type == "ngo"),
+                TotalGroceries = await _context.Organizations.CountAsync(o => o.Type == "grocery"),
+                TotalDonations = await _context.PickupRequests.CountAsync(),
+                ActiveListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open),
                 PendingRequests = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending),
-                CompletedToday  = await _context.PickupRequests.CountAsync(r =>
+                CompletedToday = await _context.PickupRequests.CountAsync(r =>
                     r.Status == PickupRequestStatus.Completed && r.RequestedAt.Date == today),
                 UpdatedAt = DateTime.UtcNow
             });
@@ -563,7 +563,7 @@ public class PickupRequestService : IPickupRequestService
             data.ListingCategory = listing.Category;
         }
 
-        await _notificationService.NotifyPickupRequestStatusChanged(data, "pending");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "pending");
         await _pushNotificationService.SendPickupApprovedNotification(pr.NgoId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -598,13 +598,13 @@ public class PickupRequestService : IPickupRequestService
             data.ListingCategory = listing.Category;
         }
 
-        await _notificationService.NotifyPickupRequestStatusChanged(data, "approved");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "approved");
         await _pushNotificationService.SendPickupReadyNotification(pr.NgoId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
     }
 
-    // ── Private helpers ─────────────────────────────────────────────────────────
+    // ── Private helpers ──────────────────────────────────────────────────────
 
     private static PickupRequestServiceResult Fail(PickupRequestServiceError error, string message) =>
         new(false, error, message);
@@ -764,12 +764,19 @@ public class PickupRequestService : IPickupRequestService
 
             var wholeRequest = new PickupRequest
             {
-                Id = requestId, NgoId = ngoId, GroceryId = sourceListing.GroceryId,
-                ListingId = sourceListing.Id, PickupDate = pickupDate,
-                Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
-                RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
+                Id = requestId,
+                NgoId = ngoId,
+                GroceryId = sourceListing.GroceryId,
+                ListingId = sourceListing.Id,
+                PickupDate = pickupDate,
+                Status = PickupRequestStatus.Pending,
+                RequestedAt = DateTime.UtcNow,
+                RequestedQuantity = requestedQuantity,
+                PickupTime = pickupTime,
+                Notes = notes,
                 RequiresRefrigeration = requiresRefrigeration,
-                IsFragile = isFragile, IsHeavy = isHeavy
+                IsFragile = isFragile,
+                IsHeavy = isHeavy
             };
             wholeRequest.Items.Add(BuildItem(wholeRequest.Id, sourceListing, sourceListing, requestedQuantity));
             PickupRequestSummary.Apply(wholeRequest);
@@ -778,19 +785,28 @@ public class PickupRequestService : IPickupRequestService
 
         var reservedListing = new ClearanceListing
         {
-            Id = Guid.NewGuid(), GroupId = group.Id, GroceryId = sourceListing.GroceryId,
-            ProductName = sourceListing.ProductName, Category = sourceListing.Category,
-            Quantity = requestedQuantity, Unit = sourceListing.Unit,
+            Id = Guid.NewGuid(),
+            GroupId = group.Id,
+            GroceryId = sourceListing.GroceryId,
+            ProductName = sourceListing.ProductName,
+            Category = sourceListing.Category,
+            Quantity = requestedQuantity,
+            Unit = sourceListing.Unit,
             ExpirationDate = sourceListing.ExpirationDate.HasValue
                 ? DateTime.SpecifyKind(sourceListing.ExpirationDate.Value, DateTimeKind.Utc)
                 : (DateTime?)null,
             ClearanceDeadline = DateTime.SpecifyKind(sourceListing.ClearanceDeadline, DateTimeKind.Utc),
-            Notes = sourceListing.Notes, PhotoUrl = sourceListing.PhotoUrl,
-            PickupTimeStart = sourceListing.PickupTimeStart, PickupTimeEnd = sourceListing.PickupTimeEnd,
-            Status = ListingStatus.Reserved, SplitReason = "partial_request",
-            RelatedRequestId = requestId, SplitFromListingId = sourceListing.Id,
+            Notes = sourceListing.Notes,
+            PhotoUrl = sourceListing.PhotoUrl,
+            PickupTimeStart = sourceListing.PickupTimeStart,
+            PickupTimeEnd = sourceListing.PickupTimeEnd,
+            Status = ListingStatus.Reserved,
+            SplitReason = "partial_request",
+            RelatedRequestId = requestId,
+            SplitFromListingId = sourceListing.Id,
             SplitIndex = group.ChildListings?.Count ?? 1,
-            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         sourceListing.Quantity -= requestedQuantity;
@@ -803,12 +819,19 @@ public class PickupRequestService : IPickupRequestService
 
         var partialRequest = new PickupRequest
         {
-            Id = requestId, NgoId = ngoId, GroceryId = sourceListing.GroceryId,
-            ListingId = reservedListing.Id, PickupDate = pickupDate,
-            Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
-            RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
+            Id = requestId,
+            NgoId = ngoId,
+            GroceryId = sourceListing.GroceryId,
+            ListingId = reservedListing.Id,
+            PickupDate = pickupDate,
+            Status = PickupRequestStatus.Pending,
+            RequestedAt = DateTime.UtcNow,
+            RequestedQuantity = requestedQuantity,
+            PickupTime = pickupTime,
+            Notes = notes,
             RequiresRefrigeration = requiresRefrigeration,
-            IsFragile = isFragile, IsHeavy = isHeavy
+            IsFragile = isFragile,
+            IsHeavy = isHeavy
         };
         partialRequest.Items.Add(BuildItem(partialRequest.Id, sourceListing, reservedListing, requestedQuantity));
         PickupRequestSummary.Apply(partialRequest);
