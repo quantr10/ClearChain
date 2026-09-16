@@ -10,7 +10,7 @@ public class PickupRequest
     public Guid? ListingId { get; set; }
     public DateTime PickupDate { get; set; }
     public PickupRequestStatus Status { get; set; } = PickupRequestStatus.Pending;
-    
+
     public DateTime RequestedAt { get; set; }
     public DateTime? MarkedReadyAt { get; set; }
     public DateTime? MarkedPickedUpAt { get; set; }

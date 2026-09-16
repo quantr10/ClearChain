@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ClearChain.API.Hubs;
 
-[Authorize(Roles = "admin")]  // ✅ Lowercase to match database
+// Role is lowercase to match the value stored in the database.
+[Authorize(Roles = "admin")]
 public class AdminHub : Hub
 {
     private readonly ILogger<AdminHub> _logger;
@@ -17,10 +18,10 @@ public class AdminHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"Admin {userId} connected to AdminHub");
-        
+
         // All admins join "admins" group
         await Groups.AddToGroupAsync(Context.ConnectionId, "admins");
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -28,9 +29,9 @@ public class AdminHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"Admin {userId} disconnected from AdminHub");
-        
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, "admins");
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 }

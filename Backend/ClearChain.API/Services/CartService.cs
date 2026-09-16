@@ -1,4 +1,4 @@
-﻿using ClearChain.API.DTOs.Cart;
+using ClearChain.API.DTOs.Cart;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
@@ -232,7 +232,7 @@ public class CartService : ICartService
             // Cart checkout is the app's main way of creating a pickup request, so it needs the
             // same push as the single-listing path — SignalR alone only reaches a grocery that
             // happens to have the app open.
-            await _notificationService.NotifyPickupRequestCreated(data);
+            await _notificationService.NotifyPickupRequestCreatedAsync(data);
             await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
 
             return new CartServiceResult(true, PickupRequest: data, Cart: await MapCartAsync(cart.Id));

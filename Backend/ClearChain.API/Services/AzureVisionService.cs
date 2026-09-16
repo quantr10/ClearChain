@@ -41,7 +41,7 @@ public class AzureVisionService : IImageAnalysisService
         { "lime", ("FRUITS", 100) },
         { "citrus", ("FRUITS", 90) },
         { "fruit", ("FRUITS", 70) },  // General term - lower weight
-        
+
         // VEGETABLES - High specificity
         { "carrot", ("VEGETABLES", 100) },
         { "broccoli", ("VEGETABLES", 100) },
@@ -60,7 +60,7 @@ public class AzureVisionService : IImageAnalysisService
         { "celery", ("VEGETABLES", 100) },
         { "radish", ("VEGETABLES", 100) },
         { "vegetable", ("VEGETABLES", 70) },
-        
+
         // DAIRY - High specificity
         { "milk", ("DAIRY", 100) },
         { "cheese", ("DAIRY", 100) },
@@ -69,7 +69,7 @@ public class AzureVisionService : IImageAnalysisService
         { "cream", ("DAIRY", 100) },
         { "ice cream", ("DAIRY", 95) },
         { "dairy", ("DAIRY", 80) },
-        
+
         // BAKERY - High specificity
         { "bread", ("BAKERY", 100) },
         { "baguette", ("BAKERY", 100) },
@@ -84,7 +84,7 @@ public class AzureVisionService : IImageAnalysisService
         { "muffin", ("BAKERY", 95) },
         { "donut", ("BAKERY", 95) },
         { "bakery", ("BAKERY", 75) },
-        
+
         // MEAT - High specificity
         { "beef", ("MEAT", 100) },
         { "pork", ("MEAT", 100) },
@@ -97,7 +97,7 @@ public class AzureVisionService : IImageAnalysisService
         { "ham", ("MEAT", 95) },
         { "poultry", ("MEAT", 90) },
         { "meat", ("MEAT", 80) },
-        
+
         // SEAFOOD - High specificity
         { "fish", ("SEAFOOD", 100) },
         { "salmon", ("SEAFOOD", 100) },
@@ -108,14 +108,14 @@ public class AzureVisionService : IImageAnalysisService
         { "oyster", ("SEAFOOD", 100) },
         { "mussel", ("SEAFOOD", 100) },
         { "seafood", ("SEAFOOD", 85) },
-        
+
         // PACKAGED (previously CANNED_GOODS)
         { "can", ("PACKAGED", 95) },
         { "canned", ("PACKAGED", 100) },
         { "jar", ("PACKAGED", 90) },
         { "package", ("PACKAGED", 85) },
         { "box", ("PACKAGED", 80) },
-        
+
         // BEVERAGES - High specificity
         { "juice", ("BEVERAGES", 100) },
         { "soda", ("BEVERAGES", 100) },
@@ -164,19 +164,15 @@ public class AzureVisionService : IImageAnalysisService
         _logger = logger;
     }
 
-public async Task<FoodAnalysisData> AnalyzeFoodImageAsync(IFormFile image, Guid groceryId)
-{
-    try
+    public async Task<FoodAnalysisData> AnalyzeFoodImageAsync(IFormFile image, Guid groceryId)
     {
-        _logger.LogInformation($"🔍 Starting ENHANCED AI analysis for grocery {groceryId}");
+        try
+        {
+            _logger.LogInformation($"🔍 Starting ENHANCED AI analysis for grocery {groceryId}");
 
-        // ❌ REMOVED: Upload to Supabase here
-        // var imageUrl = await _storageService.UploadFoodImageAsync(stream, image.FileName, groceryId);
-        
-        // ✅ NEW: Analyze directly from uploaded stream
-        using var stream = image.OpenReadStream();
-        
-        var features = new List<VisualFeatureTypes?>
+            using var stream = image.OpenReadStream();
+
+            var features = new List<VisualFeatureTypes?>
         {
             VisualFeatureTypes.Tags,
             VisualFeatureTypes.Description,
@@ -185,81 +181,80 @@ public async Task<FoodAnalysisData> AnalyzeFoodImageAsync(IFormFile image, Guid 
             VisualFeatureTypes.ImageType
         };
 
-        var analysis = await _visionClient.AnalyzeImageInStreamAsync(stream, features);
-        _logger.LogInformation($"✅ Azure AI complete - {analysis.Tags.Count} tags, {analysis.Objects.Count} objects");
+            var analysis = await _visionClient.AnalyzeImageInStreamAsync(stream, features);
+            _logger.LogInformation($"✅ Azure AI complete - {analysis.Tags.Count} tags, {analysis.Objects.Count} objects");
 
-        // ✅ NEW: Process without imageUrl
-        var result = ProcessAzureResultsEnhanced(analysis, string.Empty, groceryId);
+            var result = ProcessAzureResultsEnhanced(analysis, string.Empty, groceryId);
 
-        _logger.LogInformation($"✅ ENHANCED Analysis: {result.Title} ({result.Category}) - {result.QualityGrade} grade, {result.FreshnessScore}% fresh");
+            _logger.LogInformation($"✅ ENHANCED Analysis: {result.Title} ({result.Category}) - {result.QualityGrade} grade, {result.FreshnessScore}% fresh");
 
-        return result;
+            return result;
+        }
+        catch (ComputerVisionErrorResponseException ex)
+        {
+            _logger.LogError(ex, $"❌ Azure API error: {ex.Response?.Content}");
+            throw new InvalidOperationException($"AI analysis failed: {ex.Response?.Content ?? ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Analysis error");
+            throw;
+        }
     }
-    catch (ComputerVisionErrorResponseException ex)
+    // ====================================================================
+    // 💾 NEW: SAVE ANALYSIS (Called only when listing created)
+    // ====================================================================
+    public async Task SaveAnalysisAsync(FoodAnalysisData data, Guid groceryId)
     {
-        _logger.LogError(ex, $"❌ Azure API error: {ex.Response?.Content}");
-        throw new InvalidOperationException($"AI analysis failed: {ex.Response?.Content ?? ex.Message}", ex);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "❌ Analysis error");
-        throw;
-    }
-}
-// ====================================================================
-// 💾 NEW: SAVE ANALYSIS (Called only when listing created)
-// ====================================================================
-public async Task SaveAnalysisAsync(FoodAnalysisData data, Guid groceryId)
-{
-    try
-    {
-        _logger.LogInformation($"💾 Saving analysis to DB: {data.Title} for grocery {groceryId}");
-        
-        await SaveAnalysisToDatabase(data, groceryId);
-        
-        _logger.LogInformation($"✅ Analysis saved successfully");
-    }
-    catch (Exception ex)
-    {
-        // Don't fail listing creation if analysis save fails
-        _logger.LogError(ex, "⚠️ Failed to save analysis (non-critical)");
-    }
-}
+        try
+        {
+            _logger.LogInformation($"💾 Saving analysis to DB: {data.Title} for grocery {groceryId}");
 
-// ====================================================================
-// Keep private method as-is
-// ====================================================================
-private async Task SaveAnalysisToDatabase(FoodAnalysisData data, Guid groceryId)
-{
-    DateTime? expiryDateUtc = null;
-    if (!string.IsNullOrEmpty(data.ExpiryDate))
-    {
-        var parsedDate = DateTime.Parse(data.ExpiryDate);
-        expiryDateUtc = DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
+            await SaveAnalysisToDatabase(data, groceryId);
+
+            _logger.LogInformation($"✅ Analysis saved successfully");
+        }
+        catch (Exception ex)
+        {
+            // Don't fail listing creation if analysis save fails
+            _logger.LogError(ex, "⚠️ Failed to save analysis (non-critical)");
+        }
     }
 
-    var entity = new FoodImageAnalysis
+    // ====================================================================
+    // Keep private method as-is
+    // ====================================================================
+    private async Task SaveAnalysisToDatabase(FoodAnalysisData data, Guid groceryId)
     {
-        Id = Guid.NewGuid(),
-        GroceryId = groceryId,
-        ImageUrl = data.ImageUrl,
-        DetectedName = data.Title,
-        DetectedCategory = data.Category,
-        EstimatedExpiryDate = expiryDateUtc,
-        Notes = data.Notes,
-        Confidence = data.Confidence,
-        FreshnessScore = data.FreshnessScore,
-        QualityGrade = data.QualityGrade,
-        DetectedItems = System.Text.Json.JsonSerializer.Serialize(data.DetectedItems),
-        AnalyzedAt = DateTime.SpecifyKind(data.AnalyzedAt, DateTimeKind.Utc),
-        CreatedAt = DateTime.UtcNow
-    };
+        DateTime? expiryDateUtc = null;
+        if (!string.IsNullOrEmpty(data.ExpiryDate))
+        {
+            var parsedDate = DateTime.Parse(data.ExpiryDate);
+            expiryDateUtc = DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
+        }
 
-    _context.FoodImageAnalyses.Add(entity);
-    await _context.SaveChangesAsync();
-}
+        var entity = new FoodImageAnalysis
+        {
+            Id = Guid.NewGuid(),
+            GroceryId = groceryId,
+            ImageUrl = data.ImageUrl,
+            DetectedName = data.Title,
+            DetectedCategory = data.Category,
+            EstimatedExpiryDate = expiryDateUtc,
+            Notes = data.Notes,
+            Confidence = data.Confidence,
+            FreshnessScore = data.FreshnessScore,
+            QualityGrade = data.QualityGrade,
+            DetectedItems = System.Text.Json.JsonSerializer.Serialize(data.DetectedItems),
+            AnalyzedAt = DateTime.SpecifyKind(data.AnalyzedAt, DateTimeKind.Utc),
+            CreatedAt = DateTime.UtcNow
+        };
 
-// ... rest of code unchanged ...
+        _context.FoodImageAnalyses.Add(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    // ... rest of code unchanged ...
     // ====================================================================
     // 🚀 ENHANCED PROCESSING - Multi-factor Analysis
     // ====================================================================
@@ -275,7 +270,6 @@ private async Task SaveAnalysisToDatabase(FoodAnalysisData data, Guid groceryId)
         var description = analysis.Description?.Captions?.FirstOrDefault()?.Text ?? "";
 
         // Get objects for specific detection
-        // ✅ ĐÚNG - Convert IList → List
         var objects = analysis.Objects?.ToList() ?? new List<DetectedObject>();
         _logger.LogInformation($"📊 Tags: {tags.Count}, Objects: {objects.Count}, Description: '{description}'");
 
@@ -516,7 +510,7 @@ private async Task SaveAnalysisToDatabase(FoodAnalysisData data, Guid groceryId)
             { "shiny", 8 },
             { "green", 5 },
             { "colorful", 5 },
-            
+
             // Negative indicators
             { "moldy", -40 },
             { "rotten", -45 },

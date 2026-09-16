@@ -1,4 +1,4 @@
-﻿using Hangfire;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using ClearChain.API.Common;
 using ClearChain.Infrastructure.Data;
@@ -56,9 +56,7 @@ public class NotificationJobs
         _logger = logger;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #1 — Listings expiring tomorrow
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #1 — Listings expiring tomorrow ──────────────────────────────────
 
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
@@ -90,9 +88,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #2 — Listings past their expiry date
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #2 — Listings past their expiry date ─────────────────────────────
 
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
@@ -129,7 +125,7 @@ public class NotificationJobs
                 var dto = MapListing(listing, statusOverride: "expired");
 
                 // Anyone browsing sees it drop out of the list without a manual refresh.
-                await _listingNotificationService.NotifyListingUpdated(dto);
+                await _listingNotificationService.NotifyListingUpdatedAsync(dto);
                 await _pushService.SendListingExpiredNotification(listing.GroceryId, dto);
             }
 
@@ -137,9 +133,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #3 — Inventory expiring in two days
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #3 — Inventory expiring in two days ──────────────────────────────
 
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
@@ -167,9 +161,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #4 — Inventory past its expiry date
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #4 — Inventory past its expiry date ──────────────────────────────
 
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
@@ -199,7 +191,7 @@ public class NotificationJobs
             {
                 var dto = MapInventory(item, statusOverride: "expired");
 
-                await _inventoryNotificationService.NotifyInventoryItemExpired(dto);
+                await _inventoryNotificationService.NotifyInventoryItemExpiredAsync(dto);
                 await _pushService.SendInventoryExpiredNotification(item.NgoId, dto);
             }
 
@@ -207,9 +199,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #5 — Pending requests whose pickup date has come and gone
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #5 — Pending requests whose pickup date has come and gone ────────
 
     /// <summary>
     /// A pending request holds a reserved slice of a listing. Left alone after its pickup date
@@ -254,9 +244,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #6 — Daily platform stats for the admin dashboard
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #6 — Daily platform stats for the admin dashboard ────────────────
 
     /// <summary>
     /// Stats are otherwise only pushed when a transaction completes, so an admin watching a
@@ -270,14 +258,14 @@ public class NotificationJobs
         {
             var today = DateTime.UtcNow.Date;
 
-            await _adminNotificationService.NotifyStatsUpdated(new PlatformStatsNotification
+            await _adminNotificationService.NotifyStatsUpdatedAsync(new PlatformStatsNotification
             {
-                TotalNGOs       = await _context.Organizations.CountAsync(o => o.Type == "ngo"),
-                TotalGroceries  = await _context.Organizations.CountAsync(o => o.Type == "grocery"),
-                TotalDonations  = await _context.PickupRequests.CountAsync(),
-                ActiveListings  = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open),
+                TotalNGOs = await _context.Organizations.CountAsync(o => o.Type == "ngo"),
+                TotalGroceries = await _context.Organizations.CountAsync(o => o.Type == "grocery"),
+                TotalDonations = await _context.PickupRequests.CountAsync(),
+                ActiveListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open),
                 PendingRequests = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending),
-                CompletedToday  = await _context.PickupRequests.CountAsync(r =>
+                CompletedToday = await _context.PickupRequests.CountAsync(r =>
                     r.Status == PickupRequestStatus.Completed && r.RequestedAt.Date == today),
                 UpdatedAt = DateTime.UtcNow
             });
@@ -286,9 +274,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #7 — Refresh token sweep
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #7 — Refresh token sweep ─────────────────────────────────────────
 
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
@@ -307,9 +293,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #8 — Stale device token sweep
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #8 — Stale device token sweep ────────────────────────────────────
 
     /// <summary>
     /// FCM reports uninstalled devices only when something is actually sent to them, so a user
@@ -333,9 +317,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Job #9 — Notification inbox sweep
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Job #9 — Notification inbox sweep ────────────────────────────────────
 
     /// <summary>
     /// Every notification the platform sends is now persisted, so this table grows with usage
@@ -360,9 +342,7 @@ public class NotificationJobs
         });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Helpers
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Runs a job body, and on failure raises a system alert to the admin dashboard before
@@ -380,7 +360,7 @@ public class NotificationJobs
 
             try
             {
-                await _adminNotificationService.NotifySystemAlert(new SystemAlertNotification
+                await _adminNotificationService.NotifySystemAlertAsync(new SystemAlertNotification
                 {
                     Level = "error",
                     Message = $"Scheduled job {jobName} failed",

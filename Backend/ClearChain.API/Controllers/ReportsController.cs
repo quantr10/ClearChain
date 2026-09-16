@@ -1,9 +1,9 @@
+using ClearChain.API.Common;
 using ClearChain.Domain.Entities;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -23,7 +23,7 @@ public class ReportsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> SubmitReport([FromBody] SubmitReportRequest request)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var listing = await _context.ClearanceListings.FindAsync(request.ListingId);
         if (listing == null) return NotFound(new { message = "Listing not found" });
@@ -45,11 +45,6 @@ public class ReportsController : ControllerBase
         return Ok(new { message = "Report submitted. Our team will review it.", data = new { id = report.Id.ToString() } });
     }
 
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
-    }
 }
 
 public class SubmitReportRequest

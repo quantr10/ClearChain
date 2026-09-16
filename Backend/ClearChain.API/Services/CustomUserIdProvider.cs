@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;  // ✅ This is correct
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
 namespace ClearChain.API.Services;

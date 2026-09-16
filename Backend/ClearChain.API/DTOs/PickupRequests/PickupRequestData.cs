@@ -1,4 +1,4 @@
-﻿namespace ClearChain.API.DTOs.PickupRequests;
+namespace ClearChain.API.DTOs.PickupRequests;
 
 public class PickupRequestData
 {

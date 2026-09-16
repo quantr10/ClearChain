@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ClearChain.API.Hubs;
 
-[Authorize]  // ✅ KEEP THIS - Production Ready
+[Authorize]
 public class PickupRequestHub : Hub
 {
     private readonly ILogger<PickupRequestHub> _logger;
@@ -17,12 +17,12 @@ public class PickupRequestHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} connected to PickupRequestHub");
-        
+
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         await base.OnConnectedAsync();
     }
 
@@ -30,12 +30,12 @@ public class PickupRequestHub : Hub
     {
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} disconnected from PickupRequestHub");
-        
+
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 

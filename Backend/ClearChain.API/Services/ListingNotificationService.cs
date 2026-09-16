@@ -17,7 +17,7 @@ public class ListingNotificationService : IListingNotificationService
         _logger = logger;
     }
 
-    public async Task NotifyListingCreated(ListingData listing)
+    public async Task NotifyListingCreatedAsync(ListingData listing)
     {
         try
         {
@@ -34,7 +34,7 @@ public class ListingNotificationService : IListingNotificationService
         }
     }
 
-    public async Task NotifyListingUpdated(ListingData listing)
+    public async Task NotifyListingUpdatedAsync(ListingData listing)
     {
         try
         {
@@ -51,7 +51,7 @@ public class ListingNotificationService : IListingNotificationService
         }
     }
 
-    public async Task NotifyListingDeleted(string listingId)
+    public async Task NotifyListingDeletedAsync(string listingId)
     {
         try
         {
@@ -73,7 +73,7 @@ public class ListingNotificationService : IListingNotificationService
         }
     }
 
-    public async Task NotifyListingQuantityChanged(ListingData listing, int oldQuantity, int newQuantity)
+    public async Task NotifyListingQuantityChangedAsync(ListingData listing, int oldQuantity, int newQuantity)
     {
         try
         {

@@ -1,10 +1,10 @@
+using ClearChain.API.Common;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -24,7 +24,7 @@ public class SavedListingsController : ControllerBase
     [HttpPost("{listingId}")]
     public async Task<IActionResult> SaveListing(Guid listingId)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var listing = await _context.ClearanceListings.FindAsync(listingId);
         if (listing == null || listing.Status == ListingStatus.Archived)
@@ -51,7 +51,7 @@ public class SavedListingsController : ControllerBase
     [HttpDelete("{listingId}")]
     public async Task<IActionResult> UnsaveListing(Guid listingId)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var saved = await _context.SavedListings
             .FirstOrDefaultAsync(s => s.NgoId == userId && s.ListingId == listingId);
@@ -68,7 +68,7 @@ public class SavedListingsController : ControllerBase
     [HttpGet("ids")]
     public async Task<IActionResult> GetSavedListingIds()
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var ids = await _context.SavedListings
             .Where(s => s.NgoId == userId && s.Listing != null && s.Listing.Status != ListingStatus.Archived)
@@ -78,9 +78,4 @@ public class SavedListingsController : ControllerBase
         return Ok(new { data = ids });
     }
 
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
-    }
 }

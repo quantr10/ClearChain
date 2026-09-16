@@ -18,7 +18,7 @@ using NotificationRow = ClearChain.Domain.Entities.Notification;
 namespace ClearChain.API.Services;
 
 /// <summary>
-/// Every user-facing notification goes through <see cref="SendNotification"/>, which persists
+/// Every user-facing notification goes through <see cref="SendNotificationAsync"/>, which persists
 /// an inbox row, broadcasts it over SignalR and pushes it to the user's devices.
 ///
 /// The three legs fail independently on purpose: a device with a stale FCM token, or a client
@@ -93,12 +93,10 @@ public class PushNotificationService : IPushNotificationService
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Pickup Request Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Pickup Request Notifications ─────────────────────────────────────────
 
     public Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             groceryId,
             "📝 New Pickup Request",
             $"{request.NgoName} requested {request.RequestedQuantity} of {request.ListingTitle}",
@@ -110,7 +108,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendPickupApprovedNotification(Guid userId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             userId,
             "🎉 Pickup Request Approved!",
             $"Your request for {request.ListingTitle} has been approved by {request.GroceryName}",
@@ -122,7 +120,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendPickupReadyNotification(Guid userId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             userId,
             "✅ Food Ready!",
             $"{request.ListingTitle} is ready at {request.GroceryName}",
@@ -134,7 +132,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendPickupCompletedNotification(Guid userId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             userId,
             "🎊 Pickup Completed!",
             $"Thank you! {request.RequestedQuantity} {request.ListingTitle} marked as received",
@@ -146,7 +144,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendPickupRejectedNotification(Guid userId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             userId,
             "❌ Pickup Request Rejected",
             $"Your request for {request.ListingTitle} was declined by {request.GroceryName}",
@@ -158,7 +156,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request) =>
-        SendNotification(
+        SendNotificationAsync(
             groceryId,
             "❌ Pickup Request Cancelled",
             $"{request.NgoName} cancelled pickup for {request.ListingTitle}",
@@ -170,7 +168,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit) =>
-        SendNotification(
+        SendNotificationAsync(
             userId,
             "📦 New Inventory Added!",
             $"{quantity} {unit} of {productName} added to your inventory",
@@ -180,9 +178,7 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "inventory" }
             });
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Listing Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Listing Notifications ────────────────────────────────────────────────
 
     public Task SendNewListingNotificationToAllNGOs(ListingData listing) =>
         SendToOrganizationType(
@@ -198,7 +194,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing) =>
-        SendNotification(
+        SendNotificationAsync(
             groceryId,
             "⚠️ Listing Expiring Soon",
             $"{listing.Title} expires in {DaysUntil(listing.ExpiryDate)} day(s)! Consider clearance.",
@@ -210,7 +206,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendListingExpiredNotification(Guid groceryId, ListingData listing) =>
-        SendNotification(
+        SendNotificationAsync(
             groceryId,
             "🚨 Listing Expired",
             $"{listing.Title} has expired. Please update or remove this listing.",
@@ -221,12 +217,10 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "my_listings" }
             });
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Inventory Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Inventory Notifications ──────────────────────────────────────────────
 
     public Task SendInventoryExpiringSoonNotification(Guid ngoId, InventoryItemData item) =>
-        SendNotification(
+        SendNotificationAsync(
             ngoId,
             "⚠️ Food Expiring Soon",
             $"{item.ProductName} ({item.Quantity} {item.Unit}) expires in {DaysUntil(item.ExpiryDate)} day(s)!",
@@ -238,7 +232,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendInventoryExpiredNotification(Guid ngoId, InventoryItemData item) =>
-        SendNotification(
+        SendNotificationAsync(
             ngoId,
             "🚨 Expired Food Alert",
             $"{item.ProductName} has expired. Please remove from inventory.",
@@ -249,9 +243,7 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "inventory" }
             });
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // User Onboarding & Admin Notifications
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── User Onboarding & Admin Notifications ────────────────────────────────
 
     public Task SendWelcomeNotification(OrganizationData organization)
     {
@@ -265,7 +257,7 @@ public class PushNotificationService : IPushNotificationService
             ? "Start browsing available food items!"
             : "Start posting surplus food items!";
 
-        return SendNotification(
+        return SendNotificationAsync(
             organizationId,
             "👋 Welcome to ClearChain!",
             $"Hi {organization.Name}! Thank you for joining ClearChain. {actionText}",
@@ -304,7 +296,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendVerificationApprovedNotification(Guid organizationId, string organizationType) =>
-        SendNotification(
+        SendNotificationAsync(
             organizationId,
             "✅ Your organization has been approved!",
             "Welcome aboard — your ClearChain account is now fully active.",
@@ -316,7 +308,7 @@ public class PushNotificationService : IPushNotificationService
             });
 
     public Task SendVerificationRejectedNotification(Guid organizationId, string? reason) =>
-        SendNotification(
+        SendNotificationAsync(
             organizationId,
             "⚠️ Verification not approved",
             string.IsNullOrWhiteSpace(reason)
@@ -328,11 +320,9 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "pending_review" }
             });
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // The funnel
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── The funnel ───────────────────────────────────────────────────────────
 
-    public async Task SendNotification(
+    public async Task SendNotificationAsync(
         Guid userId,
         string title,
         string body,
@@ -597,9 +587,7 @@ public class PushNotificationService : IPushNotificationService
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Helpers
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static NotificationDto MapToDto(NotificationRow n) => new()
     {

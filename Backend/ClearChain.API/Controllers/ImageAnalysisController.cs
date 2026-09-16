@@ -15,7 +15,7 @@ namespace ClearChain.API.Controllers;
 public class ImageAnalysisController : ControllerBase
 {
     private readonly IImageAnalysisService _analysisService;
-    private readonly IStorageService _storageService; // ✅ ADD THIS
+    private readonly IStorageService _storageService;
     private readonly ILogger<ImageAnalysisController> _logger;
 
     // Formats accepted by /analyze specifically — this is what's sent to Azure Computer
@@ -42,16 +42,16 @@ public class ImageAnalysisController : ControllerBase
     /// </summary>
     /// <remarks>
     /// POST /api/imageanalysis/analyze
-    /// 
+    ///
     /// Upload image from camera or album
     /// Returns: Title, Category, ExpiryDate, Notes, ImageUrl
-    /// 
+    ///
     /// Flow:
     /// 1. Upload to Supabase storage
     /// 2. Analyze with Azure Computer Vision
     /// 3. Return auto-fill data
     /// 4. Save analysis to database
-    /// 
+    ///
     /// Example Response:
     /// {
     ///   "success": true,
@@ -143,15 +143,6 @@ public class ImageAnalysisController : ControllerBase
                 Message = ex.Message
             });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Unexpected error during image analysis");
-            return StatusCode(500, new AnalyzeImageResponse
-            {
-                Success = false,
-                Message = "An error occurred while analyzing the image. Please try again."
-            });
-        }
     }
 
     /// <summary>
@@ -164,54 +155,40 @@ public class ImageAnalysisController : ControllerBase
     [ProducesResponseType(401)]
     public async Task<IActionResult> SaveAnalysis([FromBody] FoodAnalysisData analysisData)
     {
-        try
+        // Get grocery ID from JWT
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
         {
-            // Get grocery ID from JWT
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
-            {
-                return Unauthorized(new { success = false, message = "User not authenticated" });
-            }
-
-            // Validate data
-            if (analysisData == null || string.IsNullOrEmpty(analysisData.ImageUrl))
-            {
-                return BadRequest(new { success = false, message = "Invalid analysis data" });
-            }
-
-            _logger.LogInformation($"💾 Saving AI analysis for grocery {groceryId}: {analysisData.Title}");
-
-            // Save to database
-            await _analysisService.SaveAnalysisAsync(analysisData, groceryId);
-
-            return Ok(new
-            {
-                success = true,
-                message = "Analysis saved successfully"
-            });
+            return Unauthorized(new { success = false, message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        // Validate data
+        if (analysisData == null || string.IsNullOrEmpty(analysisData.ImageUrl))
         {
-            _logger.LogError(ex, "❌ Error saving analysis");
-            return StatusCode(500, new
-            {
-                success = false,
-                message = "Failed to save analysis"
-            });
+            return BadRequest(new { success = false, message = "Invalid analysis data" });
         }
+
+        _logger.LogInformation($"💾 Saving AI analysis for grocery {groceryId}: {analysisData.Title}");
+
+        // Save to database
+        await _analysisService.SaveAnalysisAsync(analysisData, groceryId);
+
+        return Ok(new
+        {
+            success = true,
+            message = "Analysis saved successfully"
+        });
     }
 
     /// <summary>
-/// Upload food image to Supabase storage (called before creating listing)
-/// </summary>
-[HttpPost("upload")]
-[Authorize]
-[ProducesResponseType(typeof(UploadImageResponse), 200)]
-[ProducesResponseType(400)]
-[ProducesResponseType(401)]
-public async Task<ActionResult<UploadImageResponse>> UploadImage(IFormFile image)
-{
-    try
+    /// Upload food image to Supabase storage (called before creating listing)
+    /// </summary>
+    [HttpPost("upload")]
+    [Authorize]
+    [ProducesResponseType(typeof(UploadImageResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    public async Task<ActionResult<UploadImageResponse>> UploadImage(IFormFile image)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
@@ -265,14 +242,4 @@ public async Task<ActionResult<UploadImageResponse>> UploadImage(IFormFile image
             ImageUrl = imageUrl
         });
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "❌ Image upload failed");
-        return StatusCode(500, new UploadImageResponse
-        {
-            Success = false,
-            Message = "Failed to upload image"
-        });
-    }
-}
 }

@@ -20,7 +20,6 @@ public class UpdateProfileRequest
 
     public string? Hours { get; set; }
 
-    // ═══ NEW FIELDS (Part 1) ═══
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public string? ContactPerson { get; set; }        // NGO only

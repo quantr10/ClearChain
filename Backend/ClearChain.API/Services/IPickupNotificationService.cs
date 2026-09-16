@@ -4,7 +4,7 @@ namespace ClearChain.API.Services;
 
 public interface IPickupNotificationService
 {
-    Task NotifyPickupRequestCreated(PickupRequestData request);
-    Task NotifyPickupRequestStatusChanged(PickupRequestData request, string oldStatus);
-    Task NotifyPickupRequestCancelled(PickupRequestData request);
+    Task NotifyPickupRequestCreatedAsync(PickupRequestData request);
+    Task NotifyPickupRequestStatusChangedAsync(PickupRequestData request, string oldStatus);
+    Task NotifyPickupRequestCancelledAsync(PickupRequestData request);
 }

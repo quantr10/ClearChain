@@ -16,18 +16,15 @@ namespace ClearChain.API.Controllers;
 public class ListingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<ListingsController> _logger;
     private readonly IListingNotificationService _listingNotificationService;
     private readonly IPushNotificationService _pushNotificationService;
 
     public ListingsController(
         ApplicationDbContext context,
-        ILogger<ListingsController> logger,
         IListingNotificationService listingNotificationService,
         IPushNotificationService pushNotificationService)
     {
         _context = context;
-        _logger = logger;
         _listingNotificationService = listingNotificationService;
         _pushNotificationService = pushNotificationService;
     }
@@ -62,9 +59,9 @@ public class ListingsController : ControllerBase
                 : listing.PhotoUrl.StartsWith("[")
                     ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(listing.PhotoUrl) ?? new List<string>()
                     : new List<string> { listing.PhotoUrl },
-            GroceryLatitude  = listing.Grocery?.Latitude,
+            GroceryLatitude = listing.Grocery?.Latitude,
             GroceryLongitude = listing.Grocery?.Longitude,
-            GroceryHours     = listing.Grocery?.Hours
+            GroceryHours = listing.Grocery?.Hours
         };
 
         if (group != null)
@@ -83,9 +80,7 @@ public class ListingsController : ControllerBase
         return dto;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // UPDATED: GetAllListings with geospatial filter (Part 2)
-    // ═══════════════════════════════════════════════════════════════════
+    // ── GetAllListings with geospatial filter ────────────────────────────────
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<ListingsResponse>> GetAllListings(
@@ -98,108 +93,100 @@ public class ListingsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        try
+        var query = _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .Where(l => l.Status != ListingStatus.Archived)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<ListingStatus>(status, ignoreCase: true, out var statusEnum))
         {
-            var query = _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .Where(l => l.Status != ListingStatus.Archived)
-                .AsQueryable();
+            query = query.Where(l => l.Status == statusEnum);
+        }
 
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ListingStatus>(status, ignoreCase: true, out var statusEnum))
+        if (!string.IsNullOrEmpty(category))
+        {
+            query = query.Where(l => l.Category.ToUpper() == category.ToUpper());
+        }
+
+        if (!string.IsNullOrEmpty(groceryId) && Guid.TryParse(groceryId, out var groceryGuid))
+        {
+            query = query.Where(l => l.GroceryId == groceryGuid);
+        }
+
+        // Bounding box pre-filter: eliminates distant rows before Haversine in memory
+        if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+        {
+            var deltaLat = radiusKm.Value / 111.0;
+            var deltaLng = radiusKm.Value / (111.0 * Math.Cos(lat.Value * Math.PI / 180.0));
+            var minLat = lat.Value - deltaLat;
+            var maxLat = lat.Value + deltaLat;
+            var minLng = lng.Value - deltaLng;
+            var maxLng = lng.Value + deltaLng;
+
+            query = query.Where(l =>
+                l.Grocery != null &&
+                l.Grocery.Latitude != null && l.Grocery.Longitude != null &&
+                l.Grocery.Latitude >= minLat && l.Grocery.Latitude <= maxLat &&
+                l.Grocery.Longitude >= minLng && l.Grocery.Longitude <= maxLng);
+        }
+
+        var listings = await query
+            .OrderByDescending(l => l.CreatedAt)
+            .ToListAsync();
+
+        // Map to DTOs and calculate distance if location provided
+        var listingDtos = listings.Select(l =>
+        {
+            var dto = MapListingToDto(l, l.Group);
+
+            if (lat.HasValue && lng.HasValue &&
+                l.Grocery?.Latitude != null && l.Grocery?.Longitude != null)
             {
-                query = query.Where(l => l.Status == statusEnum);
+                dto.DistanceKm = CalculateHaversineDistance(
+                    lat.Value, lng.Value,
+                    l.Grocery.Latitude.Value, l.Grocery.Longitude.Value
+                );
             }
 
-            if (!string.IsNullOrEmpty(category))
-            {
-                query = query.Where(l => l.Category.ToUpper() == category.ToUpper());
-            }
+            return dto;
+        }).ToList();
 
-            if (!string.IsNullOrEmpty(groceryId) && Guid.TryParse(groceryId, out var groceryGuid))
-            {
-                query = query.Where(l => l.GroceryId == groceryGuid);
-            }
-
-            // Bounding box pre-filter: eliminates distant rows before Haversine in memory
-            if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
-            {
-                var deltaLat = radiusKm.Value / 111.0;
-                var deltaLng = radiusKm.Value / (111.0 * Math.Cos(lat.Value * Math.PI / 180.0));
-                var minLat = lat.Value - deltaLat;
-                var maxLat = lat.Value + deltaLat;
-                var minLng = lng.Value - deltaLng;
-                var maxLng = lng.Value + deltaLng;
-
-                query = query.Where(l =>
-                    l.Grocery != null &&
-                    l.Grocery.Latitude != null && l.Grocery.Longitude != null &&
-                    l.Grocery.Latitude >= minLat && l.Grocery.Latitude <= maxLat &&
-                    l.Grocery.Longitude >= minLng && l.Grocery.Longitude <= maxLng);
-            }
-
-            var listings = await query
-                .OrderByDescending(l => l.CreatedAt)
-                .ToListAsync();
-
-            // Map to DTOs and calculate distance if location provided
-            var listingDtos = listings.Select(l =>
-            {
-                var dto = MapListingToDto(l, l.Group);
-
-                if (lat.HasValue && lng.HasValue &&
-                    l.Grocery?.Latitude != null && l.Grocery?.Longitude != null)
-                {
-                    dto.DistanceKm = CalculateHaversineDistance(
-                        lat.Value, lng.Value,
-                        l.Grocery.Latitude.Value, l.Grocery.Longitude.Value
-                    );
-                }
-
-                return dto;
-            }).ToList();
-
-            // Filter by radius if specified
-            if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
-            {
-                var withinRadius = listingDtos
-                    .Where(l => l.DistanceKm.HasValue && l.DistanceKm.Value <= radiusKm.Value)
-                    .OrderBy(l => l.DistanceKm)
-                    .ToList();
-
-                var noCoordinates = listingDtos
-                    .Where(l => !l.DistanceKm.HasValue)
-                    .ToList();
-
-                listingDtos = withinRadius.Concat(noCoordinates).ToList();
-            }
-
-            var clampedPage = Math.Max(1, page);
-            var clampedPageSize = Math.Clamp(pageSize, 1, 100);
-            var total = listingDtos.Count;
-            var paged = listingDtos
-                .Skip((clampedPage - 1) * clampedPageSize)
-                .Take(clampedPageSize)
+        // Filter by radius if specified
+        if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+        {
+            var withinRadius = listingDtos
+                .Where(l => l.DistanceKm.HasValue && l.DistanceKm.Value <= radiusKm.Value)
+                .OrderBy(l => l.DistanceKm)
                 .ToList();
 
-            return Ok(new ListingsResponse
-            {
-                Message = "Listings retrieved successfully",
-                Data = paged,
-                Total = total,
-                Page = clampedPage,
-                PageSize = clampedPageSize,
-                TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
-            });
+            var noCoordinates = listingDtos
+                .Where(l => !l.DistanceKm.HasValue)
+                .ToList();
+
+            listingDtos = withinRadius.Concat(noCoordinates).ToList();
         }
-        catch (Exception ex)
+
+        var clampedPage = Math.Max(1, page);
+        var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+        var total = listingDtos.Count;
+        var paged = listingDtos
+            .Skip((clampedPage - 1) * clampedPageSize)
+            .Take(clampedPageSize)
+            .ToList();
+
+        return Ok(new ListingsResponse
         {
-            _logger.LogError(ex, "Error getting listings");
-            return StatusCode(500, new { message = "An error occurred while retrieving listings" });
-        }
+            Message = "Listings retrieved successfully",
+            Data = paged,
+            Total = total,
+            Page = clampedPage,
+            PageSize = clampedPageSize,
+            TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
+        });
     }
 
-    // ═══ NEW: Haversine distance calculation (Part 2) ═══
+    // ── Haversine distance calculation ───────────────────────────────────────
     private static double CalculateHaversineDistance(
         double lat1, double lon1, double lat2, double lon2)
     {
@@ -215,69 +202,57 @@ public class ListingsController : ControllerBase
 
     private static double ToRadians(double degrees) => degrees * Math.PI / 180;
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Remaining endpoints — UNCHANGED from original
-    // ═══════════════════════════════════════════════════════════════════
-
     [HttpGet("grocery/my")]
     [Authorize]
     public async Task<ActionResult<ListingsResponse>> GetMyListings(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var clampedPage = Math.Max(1, page);
-            var clampedPageSize = Math.Clamp(pageSize, 1, 100);
-
-            var baseQuery = _context.ClearanceListings
-                .Where(l => l.GroceryId.ToString() == userId);
-
-            var total = await baseQuery.CountAsync();
-
-            var listings = await baseQuery
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .OrderByDescending(l => l.CreatedAt)
-                .Skip((clampedPage - 1) * clampedPageSize)
-                .Take(clampedPageSize)
-                .ToListAsync();
-
-            var listingIds = listings.Select(l => (Guid?)l.Id).ToList();
-            var requestCounts = await _context.PickupRequests
-                .Where(r => r.ListingId != null && listingIds.Contains(r.ListingId))
-                .GroupBy(r => r.ListingId!.Value)
-                .Select(g => new { ListingId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.ListingId, x => x.Count);
-
-            var listingDtos = listings.Select(l =>
-            {
-                var dto = MapListingToDto(l, l.Group);
-                dto.RequestCount = requestCounts.GetValueOrDefault(l.Id, 0);
-                return dto;
-            }).ToList();
-
-            return Ok(new ListingsResponse
-            {
-                Message = "Your listings retrieved successfully",
-                Data = listingDtos,
-                Total = total,
-                Page = clampedPage,
-                PageSize = clampedPageSize,
-                TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var clampedPage = Math.Max(1, page);
+        var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+
+        var baseQuery = _context.ClearanceListings
+            .Where(l => l.GroceryId.ToString() == userId);
+
+        var total = await baseQuery.CountAsync();
+
+        var listings = await baseQuery
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .OrderByDescending(l => l.CreatedAt)
+            .Skip((clampedPage - 1) * clampedPageSize)
+            .Take(clampedPageSize)
+            .ToListAsync();
+
+        var listingIds = listings.Select(l => (Guid?)l.Id).ToList();
+        var requestCounts = await _context.PickupRequests
+            .Where(r => r.ListingId != null && listingIds.Contains(r.ListingId))
+            .GroupBy(r => r.ListingId!.Value)
+            .Select(g => new { ListingId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.ListingId, x => x.Count);
+
+        var listingDtos = listings.Select(l =>
         {
-            _logger.LogError(ex, "Error getting user listings");
-            return StatusCode(500, new { message = "An error occurred while retrieving your listings" });
-        }
+            var dto = MapListingToDto(l, l.Group);
+            dto.RequestCount = requestCounts.GetValueOrDefault(l.Id, 0);
+            return dto;
+        }).ToList();
+
+        return Ok(new ListingsResponse
+        {
+            Message = "Your listings retrieved successfully",
+            Data = listingDtos,
+            Total = total,
+            Page = clampedPage,
+            PageSize = clampedPageSize,
+            TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
+        });
     }
 
     [HttpPost]
@@ -286,363 +261,323 @@ public class ListingsController : ControllerBase
     public async Task<ActionResult<ListingResponse>> CreateListing(
         [FromBody] CreateListingRequest request)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var grocery = await _context.Organizations
-                .FirstOrDefaultAsync(o => o.Id.ToString() == userId);
-
-            if (grocery == null)
-            {
-                return NotFound(new { message = "Grocery store not found" });
-            }
-
-            if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
-                return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
-
-            var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
-            var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
-
-            var profilePickupWindow = ParseHoursWindow(grocery.Hours);
-            TimeSpan? pickupTimeStart = profilePickupWindow?.Start;
-            TimeSpan? pickupTimeEnd = profilePickupWindow?.End;
-
-            if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
-                TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
-            {
-                pickupTimeStart = startTime;
-            }
-
-            if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
-                TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
-            {
-                pickupTimeEnd = endTime;
-            }
-
-            var groupId = Guid.NewGuid();
-            var listingId = Guid.NewGuid();
-
-            var listingGroup = new ListingGroup
-            {
-                Id = groupId,
-                OriginalListingId = listingId,
-                GroceryId = Guid.Parse(userId),
-                ProductName = request.Title,
-                Category = request.Category.ToUpper(),
-                Unit = request.Unit,
-                Notes = request.Description,
-                PhotoUrl = request.ImageUrl,
-                ExpirationDate = expiryDateUtc,
-                ClearanceDeadline = clearanceDeadlineUtc,
-                PickupTimeStart = pickupTimeStart,
-                PickupTimeEnd = pickupTimeEnd,
-                OriginalQuantity = request.Quantity,
-                TotalAvailable = request.Quantity,
-                TotalReserved = 0,
-                TotalCompleted = 0,
-                TotalRemoved = 0,
-                IsFullyConsumed = false,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl
-            string? resolvedPhotoUrl = null;
-            if (request.ImageUrls != null && request.ImageUrls.Count > 0)
-                resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
-            else if (!string.IsNullOrEmpty(request.ImageUrl))
-                resolvedPhotoUrl = request.ImageUrl;
-
-            var listing = new ClearanceListing
-            {
-                Id = listingId,
-                GroupId = groupId,
-                GroceryId = Guid.Parse(userId),
-                ProductName = request.Title,
-                Category = request.Category.ToUpper(),
-                Quantity = request.Quantity,
-                Unit = request.Unit,
-                ExpirationDate = expiryDateUtc,
-                ClearanceDeadline = clearanceDeadlineUtc,
-                Notes = request.Description,
-                Status = ListingStatus.Open,
-                PhotoUrl = resolvedPhotoUrl,
-                PickupTimeStart = pickupTimeStart,
-                PickupTimeEnd = pickupTimeEnd,
-                SplitReason = "new_listing",
-                SplitIndex = 0,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.ListingGroups.Add(listingGroup);
-            _context.ClearanceListings.Add(listing);
-            
-            await _context.SaveChangesAsync();
-
-            listing.Grocery = grocery;
-            var listingDto = MapListingToDto(listing, listingGroup);
-
-            await _listingNotificationService.NotifyListingCreated(listingDto);
-            await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
-
-            return CreatedAtAction(
-                nameof(GetListingById),
-                new { id = listing.Id },
-                new ListingResponse
-                {
-                    Message = "Listing created successfully",
-                    Data = listingDto
-                });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var grocery = await _context.Organizations
+            .FirstOrDefaultAsync(o => o.Id.ToString() == userId);
+
+        if (grocery == null)
         {
-            _logger.LogError(ex, "Error creating listing");
-            return StatusCode(500, new { message = "An error occurred while creating the listing" });
+            return NotFound(new { message = "Grocery store not found" });
         }
+
+        if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
+            return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
+
+        var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
+        var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
+
+        var profilePickupWindow = ParseHoursWindow(grocery.Hours);
+        TimeSpan? pickupTimeStart = profilePickupWindow?.Start;
+        TimeSpan? pickupTimeEnd = profilePickupWindow?.End;
+
+        if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
+            TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
+        {
+            pickupTimeStart = startTime;
+        }
+
+        if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
+            TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
+        {
+            pickupTimeEnd = endTime;
+        }
+
+        var groupId = Guid.NewGuid();
+        var listingId = Guid.NewGuid();
+
+        var listingGroup = new ListingGroup
+        {
+            Id = groupId,
+            OriginalListingId = listingId,
+            GroceryId = Guid.Parse(userId),
+            ProductName = request.Title,
+            Category = request.Category.ToUpper(),
+            Unit = request.Unit,
+            Notes = request.Description,
+            PhotoUrl = request.ImageUrl,
+            ExpirationDate = expiryDateUtc,
+            ClearanceDeadline = clearanceDeadlineUtc,
+            PickupTimeStart = pickupTimeStart,
+            PickupTimeEnd = pickupTimeEnd,
+            OriginalQuantity = request.Quantity,
+            TotalAvailable = request.Quantity,
+            TotalReserved = 0,
+            TotalCompleted = 0,
+            TotalRemoved = 0,
+            IsFullyConsumed = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl
+        string? resolvedPhotoUrl = null;
+        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+            resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
+        else if (!string.IsNullOrEmpty(request.ImageUrl))
+            resolvedPhotoUrl = request.ImageUrl;
+
+        var listing = new ClearanceListing
+        {
+            Id = listingId,
+            GroupId = groupId,
+            GroceryId = Guid.Parse(userId),
+            ProductName = request.Title,
+            Category = request.Category.ToUpper(),
+            Quantity = request.Quantity,
+            Unit = request.Unit,
+            ExpirationDate = expiryDateUtc,
+            ClearanceDeadline = clearanceDeadlineUtc,
+            Notes = request.Description,
+            Status = ListingStatus.Open,
+            PhotoUrl = resolvedPhotoUrl,
+            PickupTimeStart = pickupTimeStart,
+            PickupTimeEnd = pickupTimeEnd,
+            SplitReason = "new_listing",
+            SplitIndex = 0,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.ListingGroups.Add(listingGroup);
+        _context.ClearanceListings.Add(listing);
+
+        await _context.SaveChangesAsync();
+
+        listing.Grocery = grocery;
+        var listingDto = MapListingToDto(listing, listingGroup);
+
+        await _listingNotificationService.NotifyListingCreatedAsync(listingDto);
+        await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
+
+        return CreatedAtAction(
+            nameof(GetListingById),
+            new { id = listing.Id },
+            new ListingResponse
+            {
+                Message = "Listing created successfully",
+                Data = listingDto
+            });
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ListingResponse>> GetListingById(Guid id)
     {
-        try
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id);
+
+        if (listing == null)
         {
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found" });
-            }
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (listing.Status == ListingStatus.Archived && listing.GroceryId.ToString() != userId)
-            {
-                return NotFound(new { message = "Listing not found" });
-            }
-
-            var listingDto = MapListingToDto(listing, listing.Group);
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing retrieved successfully",
-                Data = listingDto
-            });
+            return NotFound(new { message = "Listing not found" });
         }
-        catch (Exception ex)
+
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (listing.Status == ListingStatus.Archived && listing.GroceryId.ToString() != userId)
         {
-            _logger.LogError(ex, "Error getting listing by id");
-            return StatusCode(500, new { message = "An error occurred while retrieving the listing" });
+            return NotFound(new { message = "Listing not found" });
         }
+
+        var listingDto = MapListingToDto(listing, listing.Group);
+
+        return Ok(new ListingResponse
+        {
+            Message = "Listing retrieved successfully",
+            Data = listingDto
+        });
     }
 
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> DeleteListing(Guid id)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
-            }
-
-            if (listing.Status != ListingStatus.Open && listing.Status != ListingStatus.Archived)
-            {
-                return BadRequest(new { message = "Can only delete available or archived listings" });
-            }
-
-            var deletedListingId = listing.Id.ToString();
-            var wasAvailable = listing.Status == ListingStatus.Open;
-
-            var sourceReferences = await _context.PickupRequestItems
-                .Where(i => i.OriginalListingId == listing.Id)
-                .ToListAsync();
-            foreach (var item in sourceReferences)
-            {
-                item.OriginalListingId = null;
-            }
-
-            var splitChildren = await _context.ClearanceListings
-                .Where(l => l.SplitFromListingId == listing.Id)
-                .ToListAsync();
-            foreach (var child in splitChildren)
-            {
-                child.SplitFromListingId = null;
-            }
-
-            if (listing.GroupId.HasValue && listing.Group != null)
-            {
-                if (wasAvailable)
-                {
-                    listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
-                }
-                listing.Group.TotalRemoved += listing.Quantity;
-                listing.Group.IsFullyConsumed =
-                    listing.Group.TotalCompleted + listing.Group.TotalRemoved >= listing.Group.OriginalQuantity;
-                if (listing.Group.OriginalListingId == listing.Id)
-                {
-                    listing.Group.OriginalListingId = null;
-                }
-                listing.Group.UpdatedAt = DateTime.UtcNow;
-
-                var remainingChildren = await _context.ClearanceListings
-                    .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
-                    .CountAsync();
-
-                var hasPickupHistory = await _context.PickupRequestItems
-                    .AnyAsync(i => i.ListingGroupId == listing.Group.Id);
-
-                if (remainingChildren == 0 && !hasPickupHistory)
-                {
-                    _context.ListingGroups.Remove(listing.Group);
-                }
-            }
-
-            _context.ClearanceListings.Remove(listing);
-            await _context.SaveChangesAsync();
-
-            await _listingNotificationService.NotifyListingDeleted(deletedListingId);
-
-            var listingData = MapListingToDto(listing, listing.Group);
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing deleted successfully",
-                Data = listingData
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+        if (listing == null)
         {
-            _logger.LogError(ex, "Error deleting listing");
-            return StatusCode(500, new { message = "An error occurred while deleting the listing" });
+            return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
         }
+
+        if (listing.Status != ListingStatus.Open && listing.Status != ListingStatus.Archived)
+        {
+            return BadRequest(new { message = "Can only delete available or archived listings" });
+        }
+
+        var deletedListingId = listing.Id.ToString();
+        var wasAvailable = listing.Status == ListingStatus.Open;
+
+        var sourceReferences = await _context.PickupRequestItems
+            .Where(i => i.OriginalListingId == listing.Id)
+            .ToListAsync();
+        foreach (var item in sourceReferences)
+        {
+            item.OriginalListingId = null;
+        }
+
+        var splitChildren = await _context.ClearanceListings
+            .Where(l => l.SplitFromListingId == listing.Id)
+            .ToListAsync();
+        foreach (var child in splitChildren)
+        {
+            child.SplitFromListingId = null;
+        }
+
+        if (listing.GroupId.HasValue && listing.Group != null)
+        {
+            if (wasAvailable)
+            {
+                listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
+            }
+            listing.Group.TotalRemoved += listing.Quantity;
+            listing.Group.IsFullyConsumed =
+                listing.Group.TotalCompleted + listing.Group.TotalRemoved >= listing.Group.OriginalQuantity;
+            if (listing.Group.OriginalListingId == listing.Id)
+            {
+                listing.Group.OriginalListingId = null;
+            }
+            listing.Group.UpdatedAt = DateTime.UtcNow;
+
+            var remainingChildren = await _context.ClearanceListings
+                .Where(l => l.GroupId == listing.GroupId && l.Id != listing.Id)
+                .CountAsync();
+
+            var hasPickupHistory = await _context.PickupRequestItems
+                .AnyAsync(i => i.ListingGroupId == listing.Group.Id);
+
+            if (remainingChildren == 0 && !hasPickupHistory)
+            {
+                _context.ListingGroups.Remove(listing.Group);
+            }
+        }
+
+        _context.ClearanceListings.Remove(listing);
+        await _context.SaveChangesAsync();
+
+        await _listingNotificationService.NotifyListingDeletedAsync(deletedListingId);
+
+        var listingData = MapListingToDto(listing, listing.Group);
+
+        return Ok(new ListingResponse
+        {
+            Message = "Listing deleted successfully",
+            Data = listingData
+        });
     }
 
     [HttpPut("{id}/archive")]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> ArchiveListing(Guid id)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found or you don't have permission to archive it" });
-            }
-
-            if (listing.Status != ListingStatus.Open)
-            {
-                return BadRequest(new { message = "Can only archive available listings" });
-            }
-
-            listing.Status = ListingStatus.Archived;
-            listing.UpdatedAt = DateTime.UtcNow;
-
-            if (listing.Group != null)
-            {
-                listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
-                listing.Group.UpdatedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-
-            var listingDto = MapListingToDto(listing, listing.Group);
-            await _listingNotificationService.NotifyListingUpdated(listingDto);
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing archived successfully",
-                Data = listingDto
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+        if (listing == null)
         {
-            _logger.LogError(ex, "Error archiving listing {ListingId}", id);
-            return StatusCode(500, new { message = "An error occurred while archiving the listing" });
+            return NotFound(new { message = "Listing not found or you don't have permission to archive it" });
         }
+
+        if (listing.Status != ListingStatus.Open)
+        {
+            return BadRequest(new { message = "Can only archive available listings" });
+        }
+
+        listing.Status = ListingStatus.Archived;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        if (listing.Group != null)
+        {
+            listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
+            listing.Group.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var listingDto = MapListingToDto(listing, listing.Group);
+        await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
+
+        return Ok(new ListingResponse
+        {
+            Message = "Listing archived successfully",
+            Data = listingDto
+        });
     }
 
     [HttpPut("{id}/restore")]
     [Authorize]
     public async Task<ActionResult<ListingResponse>> RestoreListing(Guid id)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found or you don't have permission to restore it" });
-            }
-
-            if (listing.Status != ListingStatus.Archived)
-            {
-                return BadRequest(new { message = "Can only restore archived listings" });
-            }
-
-            listing.Status = ListingStatus.Open;
-            listing.UpdatedAt = DateTime.UtcNow;
-
-            if (listing.Group != null)
-            {
-                listing.Group.TotalAvailable += listing.Quantity;
-                listing.Group.UpdatedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-
-            var listingDto = MapListingToDto(listing, listing.Group);
-            await _listingNotificationService.NotifyListingUpdated(listingDto);
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing restored successfully",
-                Data = listingDto
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+        if (listing == null)
         {
-            _logger.LogError(ex, "Error restoring listing {ListingId}", id);
-            return StatusCode(500, new { message = "An error occurred while restoring the listing" });
+            return NotFound(new { message = "Listing not found or you don't have permission to restore it" });
         }
+
+        if (listing.Status != ListingStatus.Archived)
+        {
+            return BadRequest(new { message = "Can only restore archived listings" });
+        }
+
+        listing.Status = ListingStatus.Open;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        if (listing.Group != null)
+        {
+            listing.Group.TotalAvailable += listing.Quantity;
+            listing.Group.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var listingDto = MapListingToDto(listing, listing.Group);
+        await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
+
+        return Ok(new ListingResponse
+        {
+            Message = "Listing restored successfully",
+            Data = listingDto
+        });
     }
 
     private static (TimeSpan Start, TimeSpan End)? ParseHoursWindow(string? hours)
@@ -668,108 +603,100 @@ public class ListingsController : ControllerBase
         Guid id,
         [FromBody] CreateListingRequest request)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
-            }
-
-            if (listing.Status != ListingStatus.Open)
-            {
-                return BadRequest(new { message = "Can only edit available listings" });
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Title))
-            {
-                return BadRequest(new { message = "Title is required" });
-            }
-
-            if (request.Quantity <= 0)
-            {
-                return BadRequest(new { message = "Quantity must be greater than 0" });
-            }
-
-            if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
-            {
-                return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
-            }
-
-            var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
-            var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
-
-            var pickupTimeStart = listing.PickupTimeStart;
-            var pickupTimeEnd = listing.PickupTimeEnd;
-
-            if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
-                TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
-            {
-                pickupTimeStart = startTime;
-            }
-
-            if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
-                TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
-            {
-                pickupTimeEnd = endTime;
-            }
-
-            // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl,
-            // fall back to whatever the listing already had if neither was sent.
-            string? resolvedPhotoUrl = listing.PhotoUrl;
-            if (request.ImageUrls != null && request.ImageUrls.Count > 0)
-                resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
-            else if (!string.IsNullOrEmpty(request.ImageUrl))
-                resolvedPhotoUrl = request.ImageUrl;
-
-            var oldQuantity = (int)listing.Quantity;
-            var quantityDifference = request.Quantity - oldQuantity;
-
-            listing.ProductName = request.Title;
-            listing.Category = request.Category.ToUpper();
-            listing.Quantity = request.Quantity;
-            listing.Unit = request.Unit;
-            listing.ExpirationDate = expiryDateUtc;
-            listing.ClearanceDeadline = clearanceDeadlineUtc;
-            listing.Notes = request.Description;
-            listing.PhotoUrl = resolvedPhotoUrl;
-            listing.PickupTimeStart = pickupTimeStart;
-            listing.PickupTimeEnd = pickupTimeEnd;
-            listing.UpdatedAt = DateTime.UtcNow;
-
-            if (listing.GroupId.HasValue && listing.Group != null && quantityDifference != 0)
-            {
-                listing.Group.TotalAvailable += quantityDifference;
-                listing.Group.UpdatedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-
-            var listingDto = MapListingToDto(listing, listing.Group);
-
-            await _listingNotificationService.NotifyListingUpdated(listingDto);
-
-            return Ok(new ListingResponse
-            {
-                Message = "Listing updated successfully",
-                Data = listingDto
-            });
+            return Unauthorized(new { message = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+        if (listing == null)
         {
-            _logger.LogError(ex, "Error updating listing");
-            return StatusCode(500, new { message = "An error occurred while updating the listing" });
+            return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
         }
+
+        if (listing.Status != ListingStatus.Open)
+        {
+            return BadRequest(new { message = "Can only edit available listings" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            return BadRequest(new { message = "Title is required" });
+        }
+
+        if (request.Quantity <= 0)
+        {
+            return BadRequest(new { message = "Quantity must be greater than 0" });
+        }
+
+        if (!DateTime.TryParse(request.ExpiryDate, out var expiryDate))
+        {
+            return BadRequest(new { message = "Invalid expiry date format. Use yyyy-MM-dd." });
+        }
+
+        var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
+        var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
+
+        var pickupTimeStart = listing.PickupTimeStart;
+        var pickupTimeEnd = listing.PickupTimeEnd;
+
+        if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
+            TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
+        {
+            pickupTimeStart = startTime;
+        }
+
+        if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
+            TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
+        {
+            pickupTimeEnd = endTime;
+        }
+
+        // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl,
+        // fall back to whatever the listing already had if neither was sent.
+        string? resolvedPhotoUrl = listing.PhotoUrl;
+        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
+            resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
+        else if (!string.IsNullOrEmpty(request.ImageUrl))
+            resolvedPhotoUrl = request.ImageUrl;
+
+        var oldQuantity = (int)listing.Quantity;
+        var quantityDifference = request.Quantity - oldQuantity;
+
+        listing.ProductName = request.Title;
+        listing.Category = request.Category.ToUpper();
+        listing.Quantity = request.Quantity;
+        listing.Unit = request.Unit;
+        listing.ExpirationDate = expiryDateUtc;
+        listing.ClearanceDeadline = clearanceDeadlineUtc;
+        listing.Notes = request.Description;
+        listing.PhotoUrl = resolvedPhotoUrl;
+        listing.PickupTimeStart = pickupTimeStart;
+        listing.PickupTimeEnd = pickupTimeEnd;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        if (listing.GroupId.HasValue && listing.Group != null && quantityDifference != 0)
+        {
+            listing.Group.TotalAvailable += quantityDifference;
+            listing.Group.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var listingDto = MapListingToDto(listing, listing.Group);
+
+        await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
+
+        return Ok(new ListingResponse
+        {
+            Message = "Listing updated successfully",
+            Data = listingDto
+        });
     }
 
     [HttpPut("{id}/quantity")]
@@ -778,75 +705,64 @@ public class ListingsController : ControllerBase
         Guid id,
         [FromBody] UpdateListingQuantityRequest request)
     {
-        try
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "User not authenticated" });
+        }
+
+        var listing = await _context.ClearanceListings
+            .Include(l => l.Grocery)
+            .Include(l => l.Group)
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+
+        if (listing == null)
+        {
+            return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
+        }
+
+        if (listing.Status != ListingStatus.Open)
+        {
+            return BadRequest(new
             {
-                return Unauthorized(new { message = "User not authenticated" });
-            }
-
-            var listing = await _context.ClearanceListings
-                .Include(l => l.Grocery)
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
-
-            if (listing == null)
-            {
-                return NotFound(new { message = "Listing not found or you don't have permission to edit it" });
-            }
-
-            if (listing.Status != ListingStatus.Open)
-            {
-                return BadRequest(new
-                {
-                    message = "Can only update quantity of available listings"
-                });
-            }
-
-            if (request.NewQuantity <= 0)
-            {
-                return BadRequest(new
-                {
-                    message = "Quantity must be greater than 0"
-                });
-            }
-
-            var oldQuantity = (int)listing.Quantity;
-            var difference = request.NewQuantity - oldQuantity;
-
-            listing.Quantity = request.NewQuantity;
-            listing.UpdatedAt = DateTime.UtcNow;
-
-            if (listing.GroupId.HasValue && listing.Group != null)
-            {
-                listing.Group.TotalAvailable += difference;
-                listing.Group.UpdatedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-
-            var listingDto = MapListingToDto(listing, listing.Group);
-
-            await _listingNotificationService.NotifyListingQuantityChanged(
-                listingDto,
-                oldQuantity,
-                request.NewQuantity
-            );
-
-            return Ok(new ListingResponse
-            {
-                Message = "Quantity updated successfully",
-                Data = listingDto
+                message = "Can only update quantity of available listings"
             });
         }
-        catch (Exception ex)
+
+        if (request.NewQuantity <= 0)
         {
-            _logger.LogError(ex, "Error updating listing quantity");
-            return StatusCode(500, new
+            return BadRequest(new
             {
-                message = "An error occurred while updating the quantity"
+                message = "Quantity must be greater than 0"
             });
         }
+
+        var oldQuantity = (int)listing.Quantity;
+        var difference = request.NewQuantity - oldQuantity;
+
+        listing.Quantity = request.NewQuantity;
+        listing.UpdatedAt = DateTime.UtcNow;
+
+        if (listing.GroupId.HasValue && listing.Group != null)
+        {
+            listing.Group.TotalAvailable += difference;
+            listing.Group.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var listingDto = MapListingToDto(listing, listing.Group);
+
+        await _listingNotificationService.NotifyListingQuantityChangedAsync(
+            listingDto,
+            oldQuantity,
+            request.NewQuantity
+        );
+
+        return Ok(new ListingResponse
+        {
+            Message = "Quantity updated successfully",
+            Data = listingDto
+        });
     }
 }

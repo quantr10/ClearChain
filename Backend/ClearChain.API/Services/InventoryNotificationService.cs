@@ -17,7 +17,7 @@ public class InventoryNotificationService : IInventoryNotificationService
         _logger = logger;
     }
 
-    public async Task NotifyInventoryItemAdded(InventoryItemData item)
+    public async Task NotifyInventoryItemAddedAsync(InventoryItemData item)
     {
         try
         {
@@ -34,7 +34,7 @@ public class InventoryNotificationService : IInventoryNotificationService
         }
     }
 
-    public async Task NotifyInventoryItemDistributed(string itemId, Guid ngoId)
+    public async Task NotifyInventoryItemDistributedAsync(string itemId, Guid ngoId)
     {
         try
         {
@@ -56,7 +56,7 @@ public class InventoryNotificationService : IInventoryNotificationService
         }
     }
 
-    public async Task NotifyInventoryItemExpired(InventoryItemData item)
+    public async Task NotifyInventoryItemExpiredAsync(InventoryItemData item)
     {
         try
         {
@@ -72,7 +72,7 @@ public class InventoryNotificationService : IInventoryNotificationService
         }
     }
 
-    public async Task NotifyInventoryUpdated(InventoryItemData item)
+    public async Task NotifyInventoryUpdatedAsync(InventoryItemData item)
     {
         try
         {

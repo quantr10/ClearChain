@@ -1,10 +1,10 @@
+using ClearChain.API.Common;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -24,7 +24,7 @@ public class ReviewsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> SubmitReview([FromBody] SubmitReviewRequest request)
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var pickup = await _context.PickupRequests
             .FirstOrDefaultAsync(pr => pr.Id == request.PickupRequestId
@@ -102,7 +102,7 @@ public class ReviewsController : ControllerBase
     [HttpGet("my")]
     public async Task<IActionResult> GetMyReviews()
     {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var reviews = await _context.Reviews
             .Include(r => r.Reviewed)
@@ -111,12 +111,6 @@ public class ReviewsController : ControllerBase
             .ToListAsync();
 
         return Ok(new { message = "Your reviews retrieved", data = reviews.Select(MapToDto).ToList() });
-    }
-
-    private bool TryGetUserId(out Guid userId)
-    {
-        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.TryParse(value, out userId);
     }
 
     private static object MapToDto(Review r) => new

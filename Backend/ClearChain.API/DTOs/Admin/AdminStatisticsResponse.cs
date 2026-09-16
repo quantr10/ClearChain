@@ -1,6 +1,5 @@
 namespace ClearChain.API.DTOs.Admin;
 
-// ═════════════════════════════════════════════════════════════════════════════
 // Payload for the admin Stats & Analytics screen.
 //
 // Two kinds of number live here and they must not be mixed up:
@@ -9,7 +8,6 @@ namespace ClearChain.API.DTOs.Admin;
 //   * live figures   - the state of the platform right now, independent of the
 //                      range (Backlog, and the Organizations register totals).
 // Everything here is measured from the database; nothing is modelled or estimated.
-// ═════════════════════════════════════════════════════════════════════════════
 
 public class AdminStatisticsResponse
 {

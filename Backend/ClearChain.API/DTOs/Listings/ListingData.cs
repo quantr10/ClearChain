@@ -1,4 +1,4 @@
-﻿namespace ClearChain.API.DTOs.Listings;
+namespace ClearChain.API.DTOs.Listings;
 
 public class ListingData
 {
@@ -19,27 +19,27 @@ public class ListingData
     public string? ImageUrl { get; set; }
     public string Location { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
-    
+
     // ListingGroup tracking fields
     public string? GroupId { get; set; }
     public string SplitReason { get; set; } = "new_listing";
     public string? RelatedRequestId { get; set; }
     public int SplitIndex { get; set; } = 0;
-    
-    // OPTIONAL: Include group summary (for UI context)
+
+    // Present only when the listing belongs to a split group.
     public ListingGroupSummary? GroupSummary { get; set; }
 
-    // ═══ NEW (Part 2): Distance from NGO's search location ═══
+    // ── Distance from NGO's search location ──────────────────────────────────
     public double? DistanceKm { get; set; }
 
-    // ═══ Analytics ═══
+    // ── Analytics ────────────────────────────────────────────────────────────
     public int ViewCount { get; set; }
     public int RequestCount { get; set; }
 
-    // ═══ Multi-image ═══
+    // ── Multi-image ──────────────────────────────────────────────────────────
     public List<string> ImageUrls { get; set; } = new();
 
-    // ═══ Grocery coordinates (for map pins) ═══
+    // ── Grocery coordinates (for map pins) ───────────────────────────────────
     public double? GroceryLatitude { get; set; }
     public double? GroceryLongitude { get; set; }
 }

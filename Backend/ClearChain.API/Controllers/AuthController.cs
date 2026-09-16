@@ -69,34 +69,34 @@ public class AuthController : ControllerBase
                     await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
                 await _pushNotificationService.SendWelcomeNotification(orgData);
 
-                await _adminNotificationService.NotifyNewOrganizationRegistered(new OrganizationRegisteredNotification
+                await _adminNotificationService.NotifyNewOrganizationRegisteredAsync(new OrganizationRegisteredNotification
                 {
                     OrganizationId = newOrg.Id.ToString(),
-                    Name           = newOrg.Name,
-                    Type           = newOrg.Type,
-                    Email          = newOrg.Email,
-                    Location       = newOrg.Location ?? newOrg.Address ?? "",
-                    RegisteredAt   = newOrg.CreatedAt
+                    Name = newOrg.Name,
+                    Type = newOrg.Type,
+                    Email = newOrg.Email,
+                    Location = newOrg.Location ?? newOrg.Address ?? "",
+                    RegisteredAt = newOrg.CreatedAt
                 });
 
-                var totalNgos      = await _context.Organizations.CountAsync(o => o.Type == "ngo");
+                var totalNgos = await _context.Organizations.CountAsync(o => o.Type == "ngo");
                 var totalGroceries = await _context.Organizations.CountAsync(o => o.Type == "grocery");
                 var totalDonations = await _context.PickupRequests.CountAsync();
                 var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
-                var pendingReqs    = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending);
-                var today          = DateTime.UtcNow.Date;
+                var pendingReqs = await _context.PickupRequests.CountAsync(r => r.Status == PickupRequestStatus.Pending);
+                var today = DateTime.UtcNow.Date;
                 var completedToday = await _context.PickupRequests.CountAsync(r =>
                     r.Status == PickupRequestStatus.Completed && r.RequestedAt.Date == today);
 
-                await _adminNotificationService.NotifyStatsUpdated(new PlatformStatsNotification
+                await _adminNotificationService.NotifyStatsUpdatedAsync(new PlatformStatsNotification
                 {
-                    TotalNGOs       = totalNgos,
-                    TotalGroceries  = totalGroceries,
-                    TotalDonations  = totalDonations,
-                    ActiveListings  = activeListings,
+                    TotalNGOs = totalNgos,
+                    TotalGroceries = totalGroceries,
+                    TotalDonations = totalDonations,
+                    ActiveListings = activeListings,
                     PendingRequests = pendingReqs,
-                    CompletedToday  = completedToday,
-                    UpdatedAt       = DateTime.UtcNow
+                    CompletedToday = completedToday,
+                    UpdatedAt = DateTime.UtcNow
                 });
             }
             catch (Exception ex)
@@ -176,7 +176,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
-    // ═══ UPDATED: /me now includes new fields (Part 1) ═══
+    // ── GET api/auth/me ──────────────────────────────────────────────────────
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
@@ -278,47 +278,40 @@ public class AuthController : ControllerBase
         if (userId == null || !Guid.TryParse(userId, out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
-        try
+        // A token identifies a device install, so the same token arriving for a different
+        // user means the device changed hands — drop the old owner's claim on it. The
+        // user's *other* tokens are their other devices and must survive, otherwise
+        // signing in on a phone silently stops notifications on their tablet.
+        var claimedElsewhere = await _context.FCMTokens
+            .Where(t => t.Token == request.FcmToken && t.OrganizationId != userGuid)
+            .ToListAsync();
+        if (claimedElsewhere.Any())
+            _context.FCMTokens.RemoveRange(claimedElsewhere);
+
+        var existing = await _context.FCMTokens
+            .FirstOrDefaultAsync(t => t.Token == request.FcmToken && t.OrganizationId == userGuid);
+
+        if (existing != null)
         {
-            // A token identifies a device install, so the same token arriving for a different
-            // user means the device changed hands — drop the old owner's claim on it. The
-            // user's *other* tokens are their other devices and must survive, otherwise
-            // signing in on a phone silently stops notifications on their tablet.
-            var claimedElsewhere = await _context.FCMTokens
-                .Where(t => t.Token == request.FcmToken && t.OrganizationId != userGuid)
-                .ToListAsync();
-            if (claimedElsewhere.Any())
-                _context.FCMTokens.RemoveRange(claimedElsewhere);
-
-            var existing = await _context.FCMTokens
-                .FirstOrDefaultAsync(t => t.Token == request.FcmToken && t.OrganizationId == userGuid);
-
-            if (existing != null)
-            {
-                // Refreshing UpdatedAt is what keeps an active device out of the stale-token
-                // sweep in NotificationJobs.PruneStaleFcmTokens.
-                existing.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                _context.FCMTokens.Add(new FCMToken
-                {
-                    Id = Guid.NewGuid(),
-                    OrganizationId = userGuid,
-                    Token = request.FcmToken,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "FCM token registered successfully" });
+            // Refreshing UpdatedAt is what keeps an active device out of the stale-token
+            // sweep in NotificationJobs.PruneStaleFcmTokens.
+            existing.UpdatedAt = DateTime.UtcNow;
         }
-        catch (Exception ex)
+        else
         {
-            return StatusCode(500, new { message = "Failed to register FCM token", error = ex.Message });
+            _context.FCMTokens.Add(new FCMToken
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = userGuid,
+                Token = request.FcmToken,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
         }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "FCM token registered successfully" });
     }
 
 }

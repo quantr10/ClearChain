@@ -2,10 +2,10 @@ namespace ClearChain.API.Services;
 
 public interface IAdminNotificationService
 {
-    Task NotifyNewOrganizationRegistered(OrganizationRegisteredNotification notification);
-    Task NotifyTransactionCompleted(TransactionCompletedNotification notification);
-    Task NotifyStatsUpdated(PlatformStatsNotification stats);
-    Task NotifySystemAlert(SystemAlertNotification alert);
+    Task NotifyNewOrganizationRegisteredAsync(OrganizationRegisteredNotification notification);
+    Task NotifyTransactionCompletedAsync(TransactionCompletedNotification notification);
+    Task NotifyStatsUpdatedAsync(PlatformStatsNotification stats);
+    Task NotifySystemAlertAsync(SystemAlertNotification alert);
 }
 
 // Notification DTOs

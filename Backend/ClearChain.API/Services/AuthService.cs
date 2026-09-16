@@ -326,7 +326,7 @@ public class AuthService : IAuthService
         return (true, "Account deleted successfully");
     }
 
-    // ═══ UPDATED: includes new fields (Part 1) ═══
+    // ── includes new fields ──────────────────────────────────────────────────
     private static OrganizationDto MapToDto(Organization org)
     {
         return new OrganizationDto
