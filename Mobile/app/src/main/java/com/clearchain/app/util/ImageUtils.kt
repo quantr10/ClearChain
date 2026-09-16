@@ -12,7 +12,7 @@ object ImageUtils {
 
     private const val MAX_WIDTH = 1280
     private const val MAX_HEIGHT = 1280
-    private const val QUALITY = 80  // JPEG quality %
+    private const val QUALITY = 80 // JPEG quality %
 
     /**
      * Compress an image from a Uri to a temporary File.

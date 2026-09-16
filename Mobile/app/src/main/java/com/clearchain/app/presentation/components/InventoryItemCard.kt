@@ -128,7 +128,10 @@ fun InventoryItemCard(
             title = stringResource(R.string.action_mark_distributed),
             message = stringResource(R.string.mark_distributed_confirm, item.productName),
             confirmLabel = stringResource(R.string.ok),
-            onConfirm = { onDistribute?.invoke(item.id); showDistributeDialog = false },
+            onConfirm = {
+                onDistribute?.invoke(item.id)
+                showDistributeDialog = false
+            },
             onDismiss = { showDistributeDialog = false }
         )
     }

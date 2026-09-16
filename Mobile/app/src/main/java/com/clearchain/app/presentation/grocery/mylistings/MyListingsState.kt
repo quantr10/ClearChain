@@ -23,7 +23,7 @@ data class MyListingsState(
         CommonSortOptions.EXPIRY_ASC,
         CommonSortOptions.EXPIRY_DESC,
         CommonSortOptions.NAME_ASC,
-        CommonSortOptions.NAME_DESC,
+        CommonSortOptions.NAME_DESC
     ),
 
     val activeTab: MyListingsTab = MyListingsTab.AVAILABLE,
@@ -54,6 +54,6 @@ data class MyListingsState(
     val allSelected: Boolean get() = filteredListings.isNotEmpty() && selectedIds.containsAll(filteredListings.map { it.id })
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
-        (if (filterExpiryWithinDays != null) 1 else 0) +
-        (if (filterHasRequests) 1 else 0)
+            (if (filterExpiryWithinDays != null) 1 else 0) +
+            (if (filterHasRequests) 1 else 0)
 }

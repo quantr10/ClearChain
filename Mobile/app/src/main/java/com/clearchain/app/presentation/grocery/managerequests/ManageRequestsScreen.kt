@@ -44,106 +44,112 @@ fun ManageRequestsScreen(
 
     if (state.showFilterSheet) {
         ManageRequestsFilterSheet(
-            state     = state,
-            onEvent   = viewModel::onEvent,
+            state = state,
+            onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(ManageRequestsEvent.HideFilterSheet) }
         )
     }
 
     Scaffold(
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                        ListScreenHeader {
-                        ListHeaderSearchRow(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.hint_search_by_item_ngo)
+                ListScreenHeader {
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(ManageRequestsEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.hint_search_by_item_ngo)
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            }
                         ) {
-                            BadgedBox(
-                                badge = {
-                                    if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            ClearChainActionIconButton(
+                                icon = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.advanced_filters),
+                                onClick = { viewModel.onEvent(ManageRequestsEvent.ShowFilterSheet) }
+                            )
+                        }
+                    }
+
+                    FilterChipsRow(
+                        filters = state.availableStatusFilters,
+                        selectedFilter = state.selectedStatus,
+                        onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) }
+                    )
+
+                    ResultsCountAndSort(
+                        count = state.filteredRequests.size,
+                        itemName = "request",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when {
+                        state.isLoading && state.allRequests.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
+
+                        state.error != null && state.allRequests.isEmpty() -> {
+                            EmptyState(
+                                icon = Icons.Default.ErrorOutline,
+                                title = stringResource(R.string.error_generic),
+                                subtitle = state.error,
+                                actionLabel = stringResource(R.string.retry),
+                                onAction = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
+                            )
+                        }
+
+                        state.filteredRequests.isEmpty() -> {
+                            EmptyState(
+                                icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
+                                title = if (state.allRequests.isEmpty()) {
+                                    stringResource(R.string.empty_no_pickup_requests)
+                                } else {
+                                    stringResource(R.string.empty_no_requests_filter)
+                                },
+                                subtitle = if (state.allRequests.isEmpty()) {
+                                    stringResource(R.string.empty_requests_grocery_subtitle)
+                                } else {
+                                    stringResource(R.string.empty_try_filters)
                                 }
+                            )
+                        }
+
+                        else -> {
+                            HapticPullToRefreshBox(
+                                isRefreshing = state.isRefreshing,
+                                onRefresh = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
                             ) {
-                                ClearChainActionIconButton(
-                                    icon               = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.advanced_filters),
-                                    onClick            = { viewModel.onEvent(ManageRequestsEvent.ShowFilterSheet) }
-                                )
-                            }
-                        }
-
-                        FilterChipsRow(
-                            filters        = state.availableStatusFilters,
-                            selectedFilter = state.selectedStatus,
-                            onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) }
-                        )
-
-                        ResultsCountAndSort(
-                            count          = state.filteredRequests.size,
-                            itemName       = "request",
-                            selectedSort   = state.selectedSort,
-                            onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
-                            sortOptions    = state.availableSortOptions
-                        )
-                        }
-
-                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        when {
-                            state.isLoading && state.allRequests.isEmpty() -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
-
-                            state.error != null && state.allRequests.isEmpty() -> {
-                                EmptyState(
-                                    icon        = Icons.Default.ErrorOutline,
-                                    title       = stringResource(R.string.error_generic),
-                                    subtitle    = state.error,
-                                    actionLabel = stringResource(R.string.retry),
-                                    onAction    = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
-                                )
-                            }
-
-                            state.filteredRequests.isEmpty() -> {
-                                EmptyState(
-                                    icon     = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
-                                    title    = if (state.allRequests.isEmpty()) stringResource(R.string.empty_no_pickup_requests)
-                                               else stringResource(R.string.empty_no_requests_filter),
-                                    subtitle = if (state.allRequests.isEmpty()) stringResource(R.string.empty_requests_grocery_subtitle)
-                                               else stringResource(R.string.empty_try_filters)
-                                )
-                            }
-
-                            else -> {
-                                HapticPullToRefreshBox(
-                                    isRefreshing = state.isRefreshing,
-                                    onRefresh    = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
+                                LazyColumn(
+                                    contentPadding = ScreenPadding,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    LazyColumn(
-                                        contentPadding      = ScreenPadding,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(state.filteredRequests, key = { it.id }) { request ->
-                                            Box {
-                                                RequestCard(
-                                                    request  = request,
-                                                    modifier = Modifier.clickable { onNavigateToRequestDetail(request.id) },
-                                                    viewMode = RequestViewMode.GROCERY,
-                                                    onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
-                                                    onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
-                                                    onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
-                                                )
-                                            }
+                                    items(state.filteredRequests, key = { it.id }) { request ->
+                                        Box {
+                                            RequestCard(
+                                                request = request,
+                                                modifier = Modifier.clickable { onNavigateToRequestDetail(request.id) },
+                                                viewMode = RequestViewMode.GROCERY,
+                                                onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
+                                                onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
+                                                onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
+                                            )
                                         }
-
-                                        item { Spacer(Modifier.height(16.dp)) }
                                     }
+
+                                    item { Spacer(Modifier.height(16.dp)) }
                                 }
                             }
                         }
-                        }
+                    }
+                }
             }
         }
     }
@@ -173,8 +179,11 @@ private fun ManageRequestsFilterSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.advanced_filters),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.advanced_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 if (state.activeFilterCount > 0) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.action_clear_all),
@@ -189,14 +198,14 @@ private fun ManageRequestsFilterSheet(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = state.filterCategory == null,
-                        onClick  = { onEvent(ManageRequestsEvent.FilterCategoryChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
+                        onClick = { onEvent(ManageRequestsEvent.FilterCategoryChanged(null)) },
+                        label = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { cat ->
                         FilterChip(
                             selected = state.filterCategory == cat.name,
-                            onClick  = { onEvent(ManageRequestsEvent.FilterCategoryChanged(if (state.filterCategory == cat.name) null else cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
+                            onClick = { onEvent(ManageRequestsEvent.FilterCategoryChanged(if (state.filterCategory == cat.name) null else cat.name)) },
+                            label = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -210,8 +219,8 @@ private fun ManageRequestsFilterSheet(
                         .forEach { (preset, label) ->
                             FilterChip(
                                 selected = state.filterPickupDatePreset == preset,
-                                onClick  = { onEvent(ManageRequestsEvent.FilterPickupDatePresetChanged(preset)) },
-                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                onClick = { onEvent(ManageRequestsEvent.FilterPickupDatePresetChanged(preset)) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }

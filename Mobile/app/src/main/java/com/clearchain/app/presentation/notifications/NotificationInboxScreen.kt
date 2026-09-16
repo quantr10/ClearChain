@@ -73,17 +73,17 @@ fun NotificationInboxScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = ScreenPadding
                 ) {
-                items(state.notifications, key = { it.id }) { notification ->
-                    NotificationItem(
-                        notification = notification,
-                        onClick = {
-                            if (!notification.isRead) viewModel.markAsRead(notification.id)
-                            val id = notification.relatedId
-                            if (id != null) onNavigateToDetail(notification.type, id)
-                        }
-                    )
-                    HorizontalDivider()
-                }
+                    items(state.notifications, key = { it.id }) { notification ->
+                        NotificationItem(
+                            notification = notification,
+                            onClick = {
+                                if (!notification.isRead) viewModel.markAsRead(notification.id)
+                                val id = notification.relatedId
+                                if (id != null) onNavigateToDetail(notification.type, id)
+                            }
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
         }
@@ -99,10 +99,11 @@ private fun NotificationItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (!notification.isRead)
+                if (!notification.isRead) {
                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                else
+                } else {
                     MaterialTheme.colorScheme.surface
+                }
             )
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),

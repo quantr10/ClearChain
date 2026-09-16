@@ -21,7 +21,7 @@ data class InventoryState(
         CommonSortOptions.NAME_ASC,
         CommonSortOptions.NAME_DESC,
         CommonSortOptions.EXPIRY_ASC,
-        CommonSortOptions.EXPIRY_DESC,
+        CommonSortOptions.EXPIRY_DESC
     ),
 
     val selectedStatusTab: InventoryStatus? = InventoryStatus.ACTIVE,
@@ -56,7 +56,7 @@ data class InventoryState(
     val manualQuantity: String = "",
     val manualUnit: String = "kg",
     val manualExpiryDate: String = "",
-    val isSubmittingManual: Boolean = false,
+    val isSubmittingManual: Boolean = false
 
 ) {
     val selectedCount: Int get() = selectedIds.size
@@ -64,9 +64,9 @@ data class InventoryState(
     val allSelected: Boolean get() = filteredItems.isNotEmpty() && selectedIds.containsAll(filteredItems.map { it.id })
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
-        (if (filterExpiryWithinDays != null) 1 else 0) +
-        (if (filterMinQty > 0.0) 1 else 0) +
-        (if (filterMaxQty != null) 1 else 0)
+            (if (filterExpiryWithinDays != null) 1 else 0) +
+            (if (filterMinQty > 0.0) 1 else 0) +
+            (if (filterMaxQty != null) 1 else 0)
 
     val categoryBreakdown: List<Pair<String, Int>> get() =
         allItems.filter { it.status == InventoryStatus.ACTIVE }
@@ -74,5 +74,4 @@ data class InventoryState(
             .map { (cat, items) -> cat to items.size }
             .sortedByDescending { it.second }
             .take(5)
-
 }

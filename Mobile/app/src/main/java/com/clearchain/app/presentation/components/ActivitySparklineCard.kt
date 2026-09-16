@@ -87,11 +87,21 @@ fun ActivitySparklineCard(
 ) {
     val lineColor = MaterialTheme.colorScheme.primary
     val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-    val dotColor  = MaterialTheme.colorScheme.primary
+    val dotColor = MaterialTheme.colorScheme.primary
     val hasData = data.isNotEmpty() && data.any { it.second > 0 }
-    val chartData = if (data.isNotEmpty()) data else listOf(
-        "Sun" to 0, "Mon" to 0, "Tue" to 0, "Wed" to 0, "Thu" to 0, "Fri" to 0, "Sat" to 0
-    )
+    val chartData = if (data.isNotEmpty()) {
+        data
+    } else {
+        listOf(
+            "Sun" to 0,
+            "Mon" to 0,
+            "Tue" to 0,
+            "Wed" to 0,
+            "Thu" to 0,
+            "Fri" to 0,
+            "Sat" to 0
+        )
+    }
     val maxVal = chartData.maxOf { it.second }.coerceAtLeast(1).toFloat()
 
     Column(
@@ -101,17 +111,17 @@ fun ActivitySparklineCard(
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text       = title,
-                style      = MaterialTheme.typography.titleSmall,
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                fontSize   = 14.sp,
-                color      = MaterialTheme.colorScheme.onSurface
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text  = periodLabel,
+                text = periodLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
@@ -204,9 +214,9 @@ fun ActivitySparklineCard(
         ) {
             visibleLabels.forEach { label ->
                 Text(
-                    text     = label,
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     maxLines = 1,
                     softWrap = false
                 )

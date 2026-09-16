@@ -82,7 +82,7 @@ fun RequestCard(
             // Where the food is, and how far the NGO has to go for it.
             if (viewMode == RequestViewMode.NGO) {
                 GroceryLocationRow(
-                    location   = request.groceryLocation,
+                    location = request.groceryLocation,
                     distanceKm = request.distanceKm
                 )
             }
@@ -114,14 +114,14 @@ fun RequestCard(
             // Handling flags + optional user note
             val handlingParts = buildList {
                 if (request.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
-                if (request.isFragile)             add(stringResource(R.string.note_fragile_items))
-                if (request.isHeavy)               add(stringResource(R.string.note_heavy_load))
+                if (request.isFragile) add(stringResource(R.string.note_fragile_items))
+                if (request.isHeavy) add(stringResource(R.string.note_heavy_load))
                 request.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
             }
             if (handlingParts.isNotEmpty()) {
                 RequestDetailRow(
-                    icon      = Icons.Default.StickyNote2,
-                    text      = handlingParts.joinToString(" \u00B7 "),
+                    icon = Icons.Default.StickyNote2,
+                    text = handlingParts.joinToString(" \u00B7 "),
                     textColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -129,14 +129,14 @@ fun RequestCard(
             // Actions
             when (viewMode) {
                 RequestViewMode.GROCERY -> GroceryRequestActions(
-                    request     = request,
-                    onApprove   = { onApprove?.invoke(request.id) },
-                    onReject    = { showConfirmDialog = "reject" },
+                    request = request,
+                    onApprove = { onApprove?.invoke(request.id) },
+                    onReject = { showConfirmDialog = "reject" },
                     onMarkReady = { onMarkReady?.invoke(request.id) }
                 )
                 RequestViewMode.NGO -> NgoRequestActions(
-                    request         = request,
-                    onCancel        = { showConfirmDialog = "cancel" },
+                    request = request,
+                    onCancel = { showConfirmDialog = "cancel" },
                     onConfirmPickup = { onConfirmPickup?.invoke(request.id) }
                 )
                 RequestViewMode.ADMIN -> {}
@@ -147,43 +147,43 @@ fun RequestCard(
     // Confirmation dialogs
     showConfirmDialog?.let { action ->
         val approveTitle = stringResource(R.string.dialog_approve_title)
-        val approveMsg   = stringResource(R.string.dialog_approve_message, request.ngoName, request.requestedQuantity)
-        val rejectTitle  = stringResource(R.string.dialog_reject_title)
-        val rejectMsg    = stringResource(R.string.dialog_reject_message, request.ngoName)
-        val readyTitle   = stringResource(R.string.dialog_ready_title)
-        val readyMsg     = stringResource(R.string.dialog_ready_message, request.ngoName)
-        val cancelTitle  = stringResource(R.string.dialog_cancel_title)
-        val cancelMsg    = stringResource(R.string.dialog_cancel_message)
+        val approveMsg = stringResource(R.string.dialog_approve_message, request.ngoName, request.requestedQuantity)
+        val rejectTitle = stringResource(R.string.dialog_reject_title)
+        val rejectMsg = stringResource(R.string.dialog_reject_message, request.ngoName)
+        val readyTitle = stringResource(R.string.dialog_ready_title)
+        val readyMsg = stringResource(R.string.dialog_ready_message, request.ngoName)
+        val cancelTitle = stringResource(R.string.dialog_cancel_title)
+        val cancelMsg = stringResource(R.string.dialog_cancel_message)
         val approveLabel = stringResource(R.string.approve)
-        val rejectLabel  = stringResource(R.string.reject)
-        val readyLabel   = stringResource(R.string.status_ready)
-        val cancelLabel  = stringResource(R.string.cancel_request)
+        val rejectLabel = stringResource(R.string.reject)
+        val readyLabel = stringResource(R.string.status_ready)
+        val cancelLabel = stringResource(R.string.cancel_request)
         val (title, message, label, destructive) = when (action) {
             "approve" -> listOf(approveTitle, approveMsg, approveLabel, "false")
-            "reject"  -> listOf(rejectTitle,  rejectMsg,  rejectLabel,  "true")
-            "ready"   -> listOf(readyTitle,   readyMsg,   readyLabel,   "false")
-            "cancel"  -> listOf(cancelTitle,  cancelMsg,  cancelLabel,  "true")
+            "reject" -> listOf(rejectTitle, rejectMsg, rejectLabel, "true")
+            "ready" -> listOf(readyTitle, readyMsg, readyLabel, "false")
+            "cancel" -> listOf(cancelTitle, cancelMsg, cancelLabel, "true")
             else -> return@let
         }
         val dialogIcon = when (action) {
             "approve" -> Icons.Default.CheckCircle
-            "reject"  -> Icons.Default.Cancel
-            "ready"   -> Icons.Default.Inventory2
-            "cancel"  -> Icons.Default.Cancel
-            else      -> Icons.Default.HelpOutline
+            "reject" -> Icons.Default.Cancel
+            "ready" -> Icons.Default.Inventory2
+            "cancel" -> Icons.Default.Cancel
+            else -> Icons.Default.HelpOutline
         }
         ConfirmDialog(
-            icon          = dialogIcon,
-            title         = title,
-            message       = message,
-            confirmLabel  = label,
+            icon = dialogIcon,
+            title = title,
+            message = message,
+            confirmLabel = label,
             isDestructive = destructive == "true",
             onConfirm = {
                 when (action) {
                     "approve" -> onApprove?.invoke(request.id)
-                    "reject"  -> onReject?.invoke(request.id)
-                    "ready"   -> onMarkReady?.invoke(request.id)
-                    "cancel"  -> onCancel?.invoke(request.id)
+                    "reject" -> onReject?.invoke(request.id)
+                    "ready" -> onMarkReady?.invoke(request.id)
+                    "cancel" -> onCancel?.invoke(request.id)
                 }
                 showConfirmDialog = null
             },
@@ -206,20 +206,24 @@ fun ExpiryDetailRow(expiryDate: String?) {
         try {
             val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(expiry)!!
             val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
             }.time
             TimeUnit.MILLISECONDS.toDays(date.time - today.time)
-        } catch (_: Exception) { Long.MAX_VALUE }
+        } catch (_: Exception) {
+            Long.MAX_VALUE
+        }
     }
 
     RequestDetailRow(
-        icon      = Icons.Default.CalendarToday,
-        text      = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(expiry)),
+        icon = Icons.Default.CalendarToday,
+        text = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(expiry)),
         textColor = when {
             daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
             daysUntilExpiry <= 3L -> Color(0xFFE65100)
-            else                  -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
     )
 }
@@ -230,42 +234,46 @@ private fun GroceryLocationRow(location: String?, distanceKm: Double?) {
     if (place == null && distanceKm == null) return
 
     Row(
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         if (place != null) {
             Icon(
-                Icons.Default.Place, null, Modifier.size(14.dp),
+                Icons.Default.Place,
+                null,
+                Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 place,
-                style      = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis,
-                modifier   = Modifier.weight(1f, fill = false)
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
         }
         distanceKm?.let { km ->
             if (place != null) {
                 Text(
                     "·",
-                    style      = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color      = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
-                Icons.Default.NearMe, null, Modifier.size(12.dp),
+                Icons.Default.NearMe,
+                null,
+                Modifier.size(12.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
             Text(
                 stringResource(R.string.label_distance_km, km),
-                style      = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color      = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -309,19 +317,19 @@ fun RequestItemsPreview(request: PickupRequest) {
 
 @Composable
 fun RequestDetailRow(
-    icon:      ImageVector,
-    text:      String,
+    icon: ImageVector,
+    text: String,
     textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Row(
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
-            text       = text,
-            style      = MaterialTheme.typography.labelSmall,
-            color      = textColor,
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
             fontWeight = FontWeight.SemiBold
         )
     }
@@ -331,9 +339,9 @@ fun RequestDetailRow(
 
 @Composable
 private fun GroceryRequestActions(
-    request:    PickupRequest,
-    onApprove:  () -> Unit,
-    onReject:   () -> Unit,
+    request: PickupRequest,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
     onMarkReady: () -> Unit
 ) {
     when (request.status) {
@@ -341,7 +349,7 @@ private fun GroceryRequestActions(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ClearChainButton(
                     text = stringResource(R.string.approve),
-                    onClick  = onApprove,
+                    onClick = onApprove,
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.Check
                 )
@@ -357,7 +365,7 @@ private fun GroceryRequestActions(
         PickupRequestStatus.APPROVED -> {
             ClearChainButton(
                 text = stringResource(R.string.action_mark_ready),
-                onClick  = onMarkReady,
+                onClick = onMarkReady,
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Default.Check
             )
@@ -371,16 +379,17 @@ private fun GroceryRequestActions(
                     .height(ClearChainButtonDefaults.Height)
             ) {
                 Row(
-                    modifier              = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight()
                         .padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.HourglassTop, null,
-                        tint     = MaterialTheme.colorScheme.onPrimaryContainer,
+                        Icons.Default.HourglassTop,
+                        null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(ClearChainButtonDefaults.IconSize)
                     )
                     Text(
@@ -399,8 +408,8 @@ private fun GroceryRequestActions(
 
 @Composable
 private fun NgoRequestActions(
-    request:         PickupRequest,
-    onCancel:        () -> Unit,
+    request: PickupRequest,
+    onCancel: () -> Unit,
     onConfirmPickup: () -> Unit
 ) {
     when (request.status) {
@@ -423,16 +432,17 @@ private fun NgoRequestActions(
                     .height(ClearChainButtonDefaults.Height)
             ) {
                 Row(
-                    modifier              = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight()
                         .padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.HourglassTop, null,
-                        tint     = MaterialTheme.colorScheme.onSecondaryContainer,
+                        Icons.Default.HourglassTop,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(ClearChainButtonDefaults.IconSize)
                     )
                     Text(
@@ -446,7 +456,7 @@ private fun NgoRequestActions(
         PickupRequestStatus.READY -> {
             ClearChainButton(
                 text = stringResource(R.string.confirm_pickup_photo),
-                onClick  = onConfirmPickup,
+                onClick = onConfirmPickup,
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Default.CameraAlt
             )

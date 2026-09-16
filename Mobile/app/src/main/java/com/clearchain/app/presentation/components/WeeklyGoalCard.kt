@@ -34,29 +34,29 @@ fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
-            modifier              = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                verticalAlignment    = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = null,
-                    tint   = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text  = stringResource(R.string.weekly_pickups),
+                    text = stringResource(R.string.weekly_pickups),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
             }
             Text(
-                text  = "$completed / $goal",
+                text = "$completed / $goal",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
@@ -64,18 +64,21 @@ fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
             )
         }
         LinearProgressIndicator(
-            progress          = { progress },
-            modifier          = Modifier
+            progress = { progress },
+            modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp)),
-            trackColor        = MaterialTheme.colorScheme.surfaceVariant,
-            color             = if (progress >= 1f) BrandGreen else MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            color = if (progress >= 1f) BrandGreen else MaterialTheme.colorScheme.primary,
             drawStopIndicator = {}
         )
         Text(
-            text  = if (progress >= 1f) stringResource(R.string.goal_reached)
-                    else stringResource(R.string.goal_remaining, goal - completed),
+            text = if (progress >= 1f) {
+                stringResource(R.string.goal_reached)
+            } else {
+                stringResource(R.string.goal_remaining, goal - completed)
+            },
             style = MaterialTheme.typography.bodySmall,
             color = if (progress >= 1f) BrandGreen else MaterialTheme.colorScheme.onSurfaceVariant
         )

@@ -116,13 +116,13 @@ fun PickupRequestData.toDomain(): PickupRequest {
         groceryName = groceryName,
         groceryProfilePictureUrl = groceryProfilePictureUrl,
         status = when (status.lowercase()) {
-            "pending"   -> PickupRequestStatus.PENDING
-            "approved"  -> PickupRequestStatus.APPROVED
-            "ready"     -> PickupRequestStatus.READY
+            "pending" -> PickupRequestStatus.PENDING
+            "approved" -> PickupRequestStatus.APPROVED
+            "ready" -> PickupRequestStatus.READY
             "completed" -> PickupRequestStatus.COMPLETED
             "cancelled" -> PickupRequestStatus.CANCELLED
-            "rejected"  -> PickupRequestStatus.REJECTED
-            else        -> PickupRequestStatus.PENDING
+            "rejected" -> PickupRequestStatus.REJECTED
+            else -> PickupRequestStatus.PENDING
         },
         requestedQuantity = requestedQuantity,
         pickupDate = pickupDate,

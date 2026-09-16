@@ -69,7 +69,9 @@ class PublicProfileViewModel @Inject constructor(
     private val _state = MutableStateFlow(PublicProfileState())
     val state: StateFlow<PublicProfileState> = _state.asStateFlow()
 
-    init { load() }
+    init {
+        load()
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -127,64 +129,65 @@ fun PublicProfileScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
-            when {
-                state.isLoading && state.profile == null ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                when {
+                    state.isLoading && state.profile == null ->
+                        CircularProgressIndicator(Modifier.align(Alignment.Center))
 
-                state.error != null && state.profile == null ->
-                    EmptyState(
-                        icon = Icons.Default.ErrorOutline,
-                        title = stringResource(R.string.error_generic),
-                        subtitle = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction = { viewModel.refresh() }
-                    )
+                    state.error != null && state.profile == null ->
+                        EmptyState(
+                            icon = Icons.Default.ErrorOutline,
+                            title = stringResource(R.string.error_generic),
+                            subtitle = state.error,
+                            actionLabel = stringResource(R.string.retry),
+                            onAction = { viewModel.refresh() }
+                        )
 
-                state.profile != null -> {
-                    val profile = state.profile!!
-                    HapticPullToRefreshBox(
-                        isRefreshing = state.isRefreshing,
-                        onRefresh = viewModel::refresh
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                    state.profile != null -> {
+                        val profile = state.profile!!
+                        HapticPullToRefreshBox(
+                            isRefreshing = state.isRefreshing,
+                            onRefresh = viewModel::refresh
                         ) {
                             Column(
-                                modifier = Modifier.padding(ScreenPadding),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
                             ) {
-                                // ── Header ───────────────────────────────────
-                                PublicProfileHeader(profile)
-
-                                // ── Description ──────────────────────────────
-                                if (!profile.description.isNullOrBlank()) {
-                                    ProfileSectionCard(stringResource(R.string.about)) {
-                                        Text(
-                                            profile.description,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                ProfileStatsGrid(profile)
-
-                                // ── Contact / Location & Hours ───────────────
-                                ContactInformationSection(profile)
-
-                                if (profile.type.equals("grocery", ignoreCase = true) &&
-                                    state.moreFromStore.isNotEmpty()
+                                Column(
+                                    modifier = Modifier.padding(ScreenPadding),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    ProfileSectionCard(stringResource(R.string.label_more_from_store)) {
-                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            items(state.moreFromStore, key = { it.id }) { listing ->
-                                                ListingCard(
-                                                    listing = listing,
-                                                    onClick = { onNavigateToListingDetail(listing.id) },
-                                                    modifier = Modifier.width(220.dp)
-                                                )
+                                    // ── Header ───────────────────────────────────
+                                    PublicProfileHeader(profile)
+
+                                    // ── Description ──────────────────────────────
+                                    if (!profile.description.isNullOrBlank()) {
+                                        ProfileSectionCard(stringResource(R.string.about)) {
+                                            Text(
+                                                profile.description,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    ProfileStatsGrid(profile)
+
+                                    // ── Contact / Location & Hours ───────────────
+                                    ContactInformationSection(profile)
+
+                                    if (profile.type.equals("grocery", ignoreCase = true) &&
+                                        state.moreFromStore.isNotEmpty()
+                                    ) {
+                                        ProfileSectionCard(stringResource(R.string.label_more_from_store)) {
+                                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                items(state.moreFromStore, key = { it.id }) { listing ->
+                                                    ListingCard(
+                                                        listing = listing,
+                                                        onClick = { onNavigateToListingDetail(listing.id) },
+                                                        modifier = Modifier.width(220.dp)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -193,7 +196,6 @@ fun PublicProfileScreen(
                         }
                     }
                 }
-            }
             }
         }
     }

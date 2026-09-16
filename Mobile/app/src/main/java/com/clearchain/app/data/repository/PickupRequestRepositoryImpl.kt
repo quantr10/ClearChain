@@ -67,9 +67,14 @@ class PickupRequestRepositoryImpl @Inject constructor(
             val currentUser = userDao.getCurrentUser()
             if (currentUser != null) {
                 val cached = pickupRequestDao.observeByNgo(currentUser.id).first()
-                if (cached.isNotEmpty()) Result.success(cached.map { it.toDomain() })
-                else Result.failure(e)
-            } else Result.failure(e)
+                if (cached.isNotEmpty()) {
+                    Result.success(cached.map { it.toDomain() })
+                } else {
+                    Result.failure(e)
+                }
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
@@ -83,9 +88,14 @@ class PickupRequestRepositoryImpl @Inject constructor(
             val currentUser = userDao.getCurrentUser()
             if (currentUser != null) {
                 val cached = pickupRequestDao.observeByGrocery(currentUser.id).first()
-                if (cached.isNotEmpty()) Result.success(cached.map { it.toDomain() })
-                else Result.failure(e)
-            } else Result.failure(e)
+                if (cached.isNotEmpty()) {
+                    Result.success(cached.map { it.toDomain() })
+                } else {
+                    Result.failure(e)
+                }
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
@@ -97,8 +107,11 @@ class PickupRequestRepositoryImpl @Inject constructor(
             Result.success(domain)
         } catch (e: Exception) {
             val cached = pickupRequestDao.getById(id)
-            if (cached != null) Result.success(cached.toDomain())
-            else Result.failure(e)
+            if (cached != null) {
+                Result.success(cached.toDomain())
+            } else {
+                Result.failure(e)
+            }
         }
     }
 

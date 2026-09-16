@@ -102,10 +102,11 @@ class MyListingsViewModel @Inject constructor(
                 _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
             is MyListingsEvent.ToggleItemSelection ->
                 _state.update {
-                    val updated = if (event.listingId in it.selectedIds)
+                    val updated = if (event.listingId in it.selectedIds) {
                         it.selectedIds - event.listingId
-                    else
+                    } else {
                         it.selectedIds + event.listingId
+                    }
                     it.copy(selectedIds = updated, isSelectionMode = updated.isNotEmpty())
                 }
             MyListingsEvent.SelectAll ->
@@ -224,18 +225,18 @@ class MyListingsViewModel @Inject constructor(
 
         filtered = when (current.activeTab) {
             MyListingsTab.AVAILABLE -> filtered.filter { it.status == ListingStatus.AVAILABLE }
-            MyListingsTab.ARCHIVED  -> filtered.filter { it.status == ListingStatus.ARCHIVED }
-            MyListingsTab.RESERVED  -> filtered.filter { it.status == ListingStatus.RESERVED }
-            MyListingsTab.EXPIRED   -> filtered.filter { it.status == ListingStatus.EXPIRED }
+            MyListingsTab.ARCHIVED -> filtered.filter { it.status == ListingStatus.ARCHIVED }
+            MyListingsTab.RESERVED -> filtered.filter { it.status == ListingStatus.RESERVED }
+            MyListingsTab.EXPIRED -> filtered.filter { it.status == ListingStatus.EXPIRED }
         }
 
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { listing ->
                 listing.title.lowercase().contains(query) ||
-                listing.description.lowercase().contains(query) ||
-                listing.location.lowercase().contains(query) ||
-                listing.category.displayName().lowercase().contains(query)
+                    listing.description.lowercase().contains(query) ||
+                    listing.location.lowercase().contains(query) ||
+                    listing.category.displayName().lowercase().contains(query)
             }
         }
 
@@ -257,15 +258,15 @@ class MyListingsViewModel @Inject constructor(
         }
 
         filtered = when (current.selectedSort.value) {
-            "date_desc"     -> filtered.sortedByDescending { it.createdAt }
-            "date_asc"      -> filtered.sortedBy { it.createdAt }
-            "name_asc"      -> filtered.sortedBy { it.title }
-            "name_desc"     -> filtered.sortedByDescending { it.title }
+            "date_desc" -> filtered.sortedByDescending { it.createdAt }
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            "name_asc" -> filtered.sortedBy { it.title }
+            "name_desc" -> filtered.sortedByDescending { it.title }
             "quantity_desc" -> filtered.sortedByDescending { it.quantity }
-            "quantity_asc"  -> filtered.sortedBy { it.quantity }
-            "expiry_asc"    -> filtered.sortedBy { it.expiryDate }
-            "expiry_desc"   -> filtered.sortedByDescending { it.expiryDate }
-            else            -> filtered
+            "quantity_asc" -> filtered.sortedBy { it.quantity }
+            "expiry_asc" -> filtered.sortedBy { it.expiryDate }
+            "expiry_desc" -> filtered.sortedByDescending { it.expiryDate }
+            else -> filtered
         }
 
         _state.update { it.copy(filteredListings = filtered) }

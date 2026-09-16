@@ -28,11 +28,11 @@ class SettingsViewModel @Inject constructor(
                 settingsStore.notifExpiry
             ) { values ->
                 SettingsState(
-                    theme            = values[0] as String,
-                    language         = values[1] as String,
-                    notifNewListing  = values[2] as Boolean,
+                    theme = values[0] as String,
+                    language = values[1] as String,
+                    notifNewListing = values[2] as Boolean,
                     notifRequestUpdate = values[3] as Boolean,
-                    notifExpiry      = values[4] as Boolean
+                    notifExpiry = values[4] as Boolean
                 )
             }.collect { _state.value = it }
         }
@@ -41,7 +41,7 @@ class SettingsViewModel @Inject constructor(
     fun onEvent(event: SettingsEvent) {
         viewModelScope.launch {
             when (event) {
-                is SettingsEvent.ThemeChanged    -> settingsStore.setTheme(event.theme)
+                is SettingsEvent.ThemeChanged -> settingsStore.setTheme(event.theme)
                 is SettingsEvent.LanguageChanged -> {
                     settingsStore.setLanguageAndSync(event.language)
                     // Immediately apply — triggers Activity recreation on Android 12 and below;
@@ -50,9 +50,9 @@ class SettingsViewModel @Inject constructor(
                         LocaleListCompat.forLanguageTags(event.language)
                     )
                 }
-                is SettingsEvent.NotifNewListingChanged    -> settingsStore.setNotifNewListing(event.enabled)
+                is SettingsEvent.NotifNewListingChanged -> settingsStore.setNotifNewListing(event.enabled)
                 is SettingsEvent.NotifRequestUpdateChanged -> settingsStore.setNotifRequestUpdate(event.enabled)
-                is SettingsEvent.NotifExpiryChanged        -> settingsStore.setNotifExpiry(event.enabled)
+                is SettingsEvent.NotifExpiryChanged -> settingsStore.setNotifExpiry(event.enabled)
             }
         }
     }

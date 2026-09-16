@@ -132,8 +132,8 @@ data class AdminAlertFeedResponse(
 
 @Serializable
 data class AdminAlertItem(
-    val type: String,        // "dispute" | "report"
-    val severity: String,    // "high" | "medium"
+    val type: String, // "dispute" | "report"
+    val severity: String, // "high" | "medium"
     val id: String,
     val title: String,
     val body: String,

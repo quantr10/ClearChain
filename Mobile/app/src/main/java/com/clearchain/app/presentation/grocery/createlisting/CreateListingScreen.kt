@@ -39,14 +39,14 @@ fun CreateListingScreen(
     navController: NavController,
     viewModel: CreateListingViewModel = hiltViewModel()
 ) {
-    val state             by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(true) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                is UiEvent.NavigateUp   -> navController.navigateUp()
+                is UiEvent.NavigateUp -> navController.navigateUp()
                 else -> Unit
             }
         }
@@ -59,17 +59,19 @@ fun CreateListingScreen(
         floatingActionButton = {
             SmallFloatingActionButton(
                 onClick = { viewModel.onEvent(CreateListingEvent.TogglePreview) },
-                containerColor = if (state.isPreviewMode)
+                containerColor = if (state.isPreviewMode) {
                     MaterialTheme.colorScheme.secondaryContainer
-                else
+                } else {
                     MaterialTheme.colorScheme.primaryContainer
+                }
             ) {
                 Icon(
                     if (state.isPreviewMode) Icons.Default.Edit else Icons.Default.Visibility,
-                    contentDescription = if (state.isPreviewMode)
+                    contentDescription = if (state.isPreviewMode) {
                         stringResource(R.string.cd_edit)
-                    else
+                    } else {
                         stringResource(R.string.cd_preview)
+                    }
                 )
             }
         },
@@ -91,39 +93,39 @@ fun CreateListingScreen(
                     state.selectedImages, state.imageUrl, state.groceryHours
                 ) {
                     Listing(
-                        id              = "",
-                        groceryId       = "",
-                        groceryName     = "",
-                        title           = state.title.ifBlank { "—" },
-                        description     = state.description,
-                        category        = runCatching { FoodCategory.valueOf(state.category) }
+                        id = "",
+                        groceryId = "",
+                        groceryName = "",
+                        title = state.title.ifBlank { "—" },
+                        description = state.description,
+                        category = runCatching { FoodCategory.valueOf(state.category) }
                             .getOrDefault(FoodCategory.OTHER),
-                        quantity        = state.quantity.toIntOrNull() ?: 0,
-                        unit            = state.unit,
-                        expiryDate      = state.expiryDate,
+                        quantity = state.quantity.toIntOrNull() ?: 0,
+                        unit = state.unit,
+                        expiryDate = state.expiryDate,
                         pickupTimeStart = "",
-                        pickupTimeEnd   = "",
-                        status          = ListingStatus.AVAILABLE,
-                        imageUrl        = state.selectedImages.firstOrNull()?.toString()
+                        pickupTimeEnd = "",
+                        status = ListingStatus.AVAILABLE,
+                        imageUrl = state.selectedImages.firstOrNull()?.toString()
                             ?: state.imageUrl.ifBlank { null },
-                        imageUrls       = state.selectedImages.map { it.toString() },
-                        location        = "",
-                        createdAt       = "",
-                        groceryHours    = state.groceryHours
+                        imageUrls = state.selectedImages.map { it.toString() },
+                        location = "",
+                        createdAt = "",
+                        groceryHours = state.groceryHours
                     )
                 }
                 ListingCard(listing = previewListing)
                 ClearChainButton(
-                    text     = stringResource(R.string.btn_create_listing),
-                    onClick  = { viewModel.onEvent(CreateListingEvent.CreateListing) },
-                    loading  = state.isLoading,
-                    enabled  = !state.isLoading && !state.isAnalyzing,
+                    text = stringResource(R.string.btn_create_listing),
+                    onClick = { viewModel.onEvent(CreateListingEvent.CreateListing) },
+                    loading = state.isLoading,
+                    enabled = !state.isLoading && !state.isAnalyzing,
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                val titleInvalid  = state.title.isBlank() || state.title.length < 3
-                val descInvalid   = state.description.isBlank()
-                val qtyInvalid    = (state.quantity.toIntOrNull() ?: 0) <= 0
+                val titleInvalid = state.title.isBlank() || state.title.length < 3
+                val descInvalid = state.description.isBlank()
+                val qtyInvalid = (state.quantity.toIntOrNull() ?: 0) <= 0
                 val expiryInvalid = state.expiryDate.isBlank()
                 val canCreate = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
@@ -133,43 +135,49 @@ fun CreateListingScreen(
                 // ── Title ────────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_title)) {
                     ClearChainTextField(
-                        value         = state.title,
+                        value = state.title,
                         onValueChange = { viewModel.onEvent(CreateListingEvent.TitleChanged(it)) },
-                        placeholder   = stringResource(R.string.label_title_placeholder),
-                        leadingIcon   = Icons.Default.ShoppingCart,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.titleError != null,
-                        errorMessage  = state.titleError,
-                        enabled       = !state.isLoading && !state.isAnalyzing
+                        placeholder = stringResource(R.string.label_title_placeholder),
+                        leadingIcon = Icons.Default.ShoppingCart,
+                        imeAction = ImeAction.Next,
+                        isError = state.titleError != null,
+                        errorMessage = state.titleError,
+                        enabled = !state.isLoading && !state.isAnalyzing
                     )
                 }
 
                 // ── Description ──────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_description)) {
                     ClearChainTextField(
-                        value         = state.description,
+                        value = state.description,
                         onValueChange = { viewModel.onEvent(CreateListingEvent.DescriptionChanged(it)) },
-                        placeholder   = stringResource(R.string.label_description_placeholder),
-                        leadingIcon   = Icons.Default.Description,
-                        imeAction     = ImeAction.Next,
-                        isError       = state.descriptionError != null,
-                        errorMessage  = state.descriptionError,
-                        enabled       = !state.isLoading && !state.isAnalyzing,
-                        singleLine    = false,
-                        minLines      = 2,
-                        maxLines      = 4
+                        placeholder = stringResource(R.string.label_description_placeholder),
+                        leadingIcon = Icons.Default.Description,
+                        imeAction = ImeAction.Next,
+                        isError = state.descriptionError != null,
+                        errorMessage = state.descriptionError,
+                        enabled = !state.isLoading && !state.isAnalyzing,
+                        singleLine = false,
+                        minLines = 2,
+                        maxLines = 4
                     )
                 }
 
                 // ── Category ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_category)) {
-                    val enabled   = !state.isLoading && !state.isAnalyzing
-                    val iconTint  = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    val textColor = if (enabled) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    val enabled = !state.isLoading && !state.isAnalyzing
+                    val iconTint = if (enabled) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                    }
+                    val textColor = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    }
                     ExposedDropdownMenuBox(
-                        expanded        = state.showCategoryDropdown,
+                        expanded = state.showCategoryDropdown,
                         onExpandedChange = { if (enabled) viewModel.onEvent(CreateListingEvent.ToggleCategoryDropdown) }
                     ) {
                         Row(
@@ -179,29 +187,34 @@ fun CreateListingScreen(
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
                                 .menuAnchor()
                                 .padding(horizontal = 8.dp),
-                            verticalAlignment     = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(Icons.Default.Category, null, Modifier.size(CreateListingIconSize), tint = iconTint)
                             Text(
                                 stringResource(FoodCategory.valueOf(state.category).labelResId),
-                                style    = MaterialTheme.typography.labelSmall,
-                                color    = textColor,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = textColor,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(
-                                if (state.showCategoryDropdown) Icons.Default.ArrowDropUp
-                                else Icons.Default.ArrowDropDown,
-                                null, Modifier.size(CreateListingIconSize), tint = iconTint
+                                if (state.showCategoryDropdown) {
+                                    Icons.Default.ArrowDropUp
+                                } else {
+                                    Icons.Default.ArrowDropDown
+                                },
+                                null,
+                                Modifier.size(CreateListingIconSize),
+                                tint = iconTint
                             )
                         }
                         ExposedDropdownMenu(
-                            expanded         = state.showCategoryDropdown,
+                            expanded = state.showCategoryDropdown,
                             onDismissRequest = { viewModel.onEvent(CreateListingEvent.ToggleCategoryDropdown) }
                         ) {
                             FoodCategory.entries.forEach { category ->
                                 DropdownMenuItem(
-                                    text    = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) },
+                                    text = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) },
                                     onClick = { viewModel.onEvent(CreateListingEvent.CategoryChanged(category.name)) }
                                 )
                             }
@@ -211,31 +224,37 @@ fun CreateListingScreen(
 
                 // ── Quantity ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_quantity_short)) {
-                    val enabled   = !state.isLoading && !state.isAnalyzing
-                    val iconTint  = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    val textColor = if (enabled) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    val enabled = !state.isLoading && !state.isAnalyzing
+                    val iconTint = if (enabled) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                    }
+                    val textColor = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    }
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ClearChainTextField(
-                            value         = state.quantity,
+                            value = state.quantity,
                             onValueChange = { viewModel.onEvent(CreateListingEvent.QuantityChanged(it)) },
-                            placeholder   = stringResource(R.string.hint_quantity_number),
-                            leadingIcon   = Icons.Default.Numbers,
-                            keyboardType  = KeyboardType.Number,
-                            imeAction     = ImeAction.Next,
-                            isError       = state.quantityError != null,
-                            errorMessage  = state.quantityError,
-                            enabled       = enabled,
-                            modifier      = Modifier.weight(1f)
+                            placeholder = stringResource(R.string.hint_quantity_number),
+                            leadingIcon = Icons.Default.Numbers,
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next,
+                            isError = state.quantityError != null,
+                            errorMessage = state.quantityError,
+                            enabled = enabled,
+                            modifier = Modifier.weight(1f)
                         )
                         ExposedDropdownMenuBox(
-                            expanded        = state.showUnitDropdown,
+                            expanded = state.showUnitDropdown,
                             onExpandedChange = { if (enabled) viewModel.onEvent(CreateListingEvent.ToggleUnitDropdown) },
-                            modifier        = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -243,34 +262,42 @@ fun CreateListingScreen(
                                     .height(32.dp)
                                     .border(
                                         1.dp,
-                                        if (state.unitError != null) MaterialTheme.colorScheme.error
-                                        else MaterialTheme.colorScheme.outlineVariant,
+                                        if (state.unitError != null) {
+                                            MaterialTheme.colorScheme.error
+                                        } else {
+                                            MaterialTheme.colorScheme.outlineVariant
+                                        },
                                         ShapeMedium
                                     )
                                     .menuAnchor()
                                     .padding(horizontal = 8.dp),
-                                verticalAlignment     = Alignment.CenterVertically,
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
                                     state.unit,
-                                    style    = MaterialTheme.typography.labelSmall,
-                                    color    = textColor,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = textColor,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
-                                    if (state.showUnitDropdown) Icons.Default.ArrowDropUp
-                                    else Icons.Default.ArrowDropDown,
-                                    null, Modifier.size(CreateListingIconSize), tint = iconTint
+                                    if (state.showUnitDropdown) {
+                                        Icons.Default.ArrowDropUp
+                                    } else {
+                                        Icons.Default.ArrowDropDown
+                                    },
+                                    null,
+                                    Modifier.size(CreateListingIconSize),
+                                    tint = iconTint
                                 )
                             }
                             ExposedDropdownMenu(
-                                expanded         = state.showUnitDropdown,
+                                expanded = state.showUnitDropdown,
                                 onDismissRequest = { viewModel.onEvent(CreateListingEvent.ToggleUnitDropdown) }
                             ) {
                                 listOf("kg", "g", "L", "mL", "pieces", "boxes", "bags").forEach { unit ->
                                     DropdownMenuItem(
-                                        text    = { Text(unit, style = MaterialTheme.typography.labelSmall) },
+                                        text = { Text(unit, style = MaterialTheme.typography.labelSmall) },
                                         onClick = { viewModel.onEvent(CreateListingEvent.UnitChanged(unit)) }
                                     )
                                 }
@@ -278,9 +305,12 @@ fun CreateListingScreen(
                         }
                     }
                     if (state.unitError != null) {
-                        Text(state.unitError!!, style = MaterialTheme.typography.labelSmall,
+                        Text(
+                            state.unitError!!,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 4.dp))
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                 }
 
@@ -296,39 +326,39 @@ fun CreateListingScreen(
                 }
                 FieldCard(label = stringResource(R.string.label_expiry_date)) {
                     DatePickerField(
-                        value           = state.expiryDate,
-                        onDateSelected  = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged(it)) },
-                        isError         = state.expiryDateError != null,
-                        errorMessage    = state.expiryDateError,
-                        enabled         = !state.isLoading && !state.isAnalyzing,
+                        value = state.expiryDate,
+                        onDateSelected = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged(it)) },
+                        isError = state.expiryDateError != null,
+                        errorMessage = state.expiryDateError,
+                        enabled = !state.isLoading && !state.isAnalyzing,
                         selectableDates = futureDates,
-                        onClearDate     = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged("")) }
+                        onClearDate = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged("")) }
                     )
                 }
 
                 // ── Pickup Hours ─────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
                     Surface(
-                        color    = MaterialTheme.colorScheme.secondaryContainer,
-                        shape    = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier              = Modifier
+                            modifier = Modifier
                                 .fillMaxWidth()
                                 .height(32.dp)
                                 .padding(horizontal = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment     = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 Icons.Default.Schedule,
                                 contentDescription = null,
-                                tint     = MaterialTheme.colorScheme.onSecondaryContainer,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.size(CreateListingIconSize)
                             )
                             Text(
-                                text  = state.groceryHours
+                                text = state.groceryHours
                                     ?: stringResource(R.string.label_pickup_hours_not_set),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -340,10 +370,10 @@ fun CreateListingScreen(
 
                 // ── Submit ───────────────────────────────────────────────────
                 ClearChainButton(
-                    text     = stringResource(R.string.btn_create_listing),
-                    onClick  = { viewModel.onEvent(CreateListingEvent.CreateListing) },
-                    loading  = state.isLoading,
-                    enabled  = canCreate && !state.isLoading && !state.isAnalyzing,
+                    text = stringResource(R.string.btn_create_listing),
+                    onClick = { viewModel.onEvent(CreateListingEvent.CreateListing) },
+                    loading = state.isLoading,
+                    enabled = canCreate && !state.isLoading && !state.isAnalyzing,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -355,7 +385,7 @@ fun CreateListingScreen(
     if (state.showImagePicker) {
         PhotoPickerDialog(
             onPhotoSelected = { uri -> viewModel.onEvent(CreateListingEvent.AddImage(uri)) },
-            onDismiss       = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) }
+            onDismiss = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) }
         )
     }
 }
@@ -369,20 +399,20 @@ private fun FieldCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier  = modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             OptionalFieldLabel(
-                text       = label.replace("*", "").trim(),
+                text = label.replace("*", "").trim(),
                 isOptional = isOptional,
-                style      = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color      = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
             content()
         }
@@ -393,26 +423,30 @@ private fun FieldCard(
 @Composable
 private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingViewModel) {
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Header
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, null,
-                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(CreateListingIconSize))
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(CreateListingIconSize)
+                    )
                     Text(
                         stringResource(R.string.label_ai_food_analysis),
                         style = MaterialTheme.typography.labelSmall,
@@ -421,11 +455,15 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                 }
                 if (state.selectedImageUri != null) {
                     IconButton(
-                        onClick  = { viewModel.onEvent(CreateListingEvent.ClearImage) },
+                        onClick = { viewModel.onEvent(CreateListingEvent.ClearImage) },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.Close, null, Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Close,
+                            null,
+                            Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -433,9 +471,9 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
             if (state.selectedImageUri != null) {
                 // Image preview
                 AsyncImage(
-                    model              = state.selectedImageUri,
+                    model = state.selectedImageUri,
                     contentDescription = null,
-                    modifier           = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
                         .clip(RoundedCornerShape(10.dp)),
@@ -445,22 +483,26 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                 when {
                     state.isAnalyzing -> {
                         Column(
-                            modifier            = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment     = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.AutoAwesome, null, Modifier.size(CreateListingIconSize),
-                                    tint = MaterialTheme.colorScheme.primary)
-                    Text(
-                        stringResource(R.string.label_analyzing_food),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                                Icon(
+                                    Icons.Default.AutoAwesome,
+                                    null,
+                                    Modifier.size(CreateListingIconSize),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    stringResource(R.string.label_analyzing_food),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -470,36 +512,40 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
 
                         // Detected title
                         Row(
-                            verticalAlignment     = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                null,
+                                Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Text(
                                 result.title,
-                                style      = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
 
                         // Stat chips: Confidence | Quality | Freshness
                         Row(
-                            modifier              = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             AiStatChip(
-                                value    = "${(result.confidence * 100).toInt()}%",
-                                label    = stringResource(R.string.label_stat_confidence),
+                                value = "${(result.confidence * 100).toInt()}%",
+                                label = stringResource(R.string.label_stat_confidence),
                                 modifier = Modifier.weight(1f)
                             )
                             AiStatChip(
-                                value    = result.qualityGrade,
-                                label    = stringResource(R.string.label_stat_quality),
+                                value = result.qualityGrade,
+                                label = stringResource(R.string.label_stat_quality),
                                 modifier = Modifier.weight(1f)
                             )
                             AiStatChip(
-                                value    = "${result.freshnessScore}/100",
-                                label    = stringResource(R.string.label_stat_freshness),
+                                value = "${result.freshnessScore}/100",
+                                label = stringResource(R.string.label_stat_freshness),
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -507,33 +553,39 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                         // Detail rows
-                        AiDetailRow(Icons.Default.Category,
+                        AiDetailRow(
+                            Icons.Default.Category,
                             stringResource(R.string.label_category),
-                            result.category.lowercase().replaceFirstChar { it.titlecase() })
-                        AiDetailRow(Icons.Default.CalendarToday,
+                            result.category.lowercase().replaceFirstChar { it.titlecase() }
+                        )
+                        AiDetailRow(
+                            Icons.Default.CalendarToday,
                             stringResource(R.string.label_expiry_date),
-                            result.expiryDate.take(10))
+                            result.expiryDate.take(10)
+                        )
                         if (result.notes.isNotBlank()) {
-                            AiDetailRow(Icons.Default.Notes,
+                            AiDetailRow(
+                                Icons.Default.Notes,
                                 stringResource(R.string.label_notes),
-                                result.notes)
+                                result.notes
+                            )
                         }
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                         // Two buttons
                         Row(
-                            modifier              = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             ClearChainOutlinedButton(
                                 text = stringResource(R.string.action_enter_manually),
-                                onClick  = { viewModel.onEvent(CreateListingEvent.DismissAnalysis) },
+                                onClick = { viewModel.onEvent(CreateListingEvent.DismissAnalysis) },
                                 modifier = Modifier.weight(1f)
                             )
                             ClearChainButton(
                                 text = stringResource(R.string.action_apply_ai),
-                                onClick  = { viewModel.onEvent(CreateListingEvent.ApplyAISuggestions) },
+                                onClick = { viewModel.onEvent(CreateListingEvent.ApplyAISuggestions) },
                                 modifier = Modifier.weight(1f),
                                 icon = Icons.Default.AutoAwesome
                             )
@@ -545,7 +597,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
             } else {
                 ClearChainOutlinedButton(
                     text = stringResource(R.string.action_take_photo),
-                    onClick  = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) },
+                    onClick = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) },
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.CameraAlt
                 )
@@ -562,40 +614,53 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
 @Composable
 private fun AiStatChip(value: String, label: String, modifier: Modifier = Modifier) {
     Surface(
-        color    = MaterialTheme.colorScheme.surfaceVariant,
-        shape    = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(8.dp),
         modifier = modifier
     ) {
         Column(
-            modifier            = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(value, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
 private fun AiDetailRow(
-    icon:  androidx.compose.ui.graphics.vector.ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String
 ) {
     Row(
-        modifier              = Modifier.fillMaxWidth(),
-        verticalAlignment     = Alignment.Top,
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(icon, null, Modifier.size(CreateListingIconSize).padding(top = 2.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(label, style = MaterialTheme.typography.bodySmall,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(88.dp))
-        Text(value, style = MaterialTheme.typography.bodySmall,
-            color    = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f))
+        Icon(
+            icon,
+            null,
+            Modifier.size(CreateListingIconSize).padding(top = 2.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(88.dp)
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

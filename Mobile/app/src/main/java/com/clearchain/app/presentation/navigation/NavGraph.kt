@@ -141,7 +141,7 @@ fun NavGraph(
         }
 
         composable(
-            route     = Screen.EditListing.route,
+            route = Screen.EditListing.route,
             arguments = listOf(navArgument("listingId") { type = NavType.StringType })
         ) { backStackEntry ->
             LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.GROCERY) }

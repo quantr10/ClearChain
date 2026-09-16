@@ -190,7 +190,9 @@ private fun CartPickupContent(
                                     enabled = !isLoading,
                                     leadingIcon = if (state.pickupTime == slot) {
                                         { Icon(Icons.Default.Check, null, Modifier.size(14.dp)) }
-                                    } else null
+                                    } else {
+                                        null
+                                    }
                                 )
                             }
                         }

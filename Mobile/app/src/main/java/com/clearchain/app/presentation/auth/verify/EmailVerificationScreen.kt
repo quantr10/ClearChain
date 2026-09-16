@@ -45,8 +45,8 @@ fun EmailVerificationScreen(
                     }
                 }
                 is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-                UiEvent.NavigateUp      -> navController.navigateUp()
-                is UiEvent.ShareFile    -> { }
+                UiEvent.NavigateUp -> navController.navigateUp()
+                is UiEvent.ShareFile -> { }
             }
         }
     }

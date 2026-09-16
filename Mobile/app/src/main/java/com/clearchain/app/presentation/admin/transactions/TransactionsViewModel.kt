@@ -79,15 +79,17 @@ class TransactionsViewModel @Inject constructor(
                 val today = LocalDate.now()
                 val (start, end) = when (event.preset) {
                     "TODAY" -> today.toString() to today.toString()
-                    "WEEK"  -> today.minusDays(6).toString() to today.toString()
+                    "WEEK" -> today.minusDays(6).toString() to today.toString()
                     "MONTH" -> today.withDayOfMonth(1).toString() to today.toString()
-                    else    -> null to null
+                    else -> null to null
                 }
-                _state.update { it.copy(
-                    selectedDatePreset = event.preset,
-                    filterStartDate = start,
-                    filterEndDate = end
-                ) }
+                _state.update {
+                    it.copy(
+                        selectedDatePreset = event.preset,
+                        filterStartDate = start,
+                        filterEndDate = end
+                    )
+                }
                 applyFilters()
             }
 
@@ -100,8 +102,11 @@ class TransactionsViewModel @Inject constructor(
             is TransactionsEvent.CustomDateSelected -> {
                 val isStart = _state.value.datePickerForStart
                 _state.update { s ->
-                    if (isStart) s.copy(filterStartDate = event.dateStr, selectedDatePreset = "CUSTOM", showDatePickerDialog = false)
-                    else         s.copy(filterEndDate = event.dateStr, showDatePickerDialog = false)
+                    if (isStart) {
+                        s.copy(filterStartDate = event.dateStr, selectedDatePreset = "CUSTOM", showDatePickerDialog = false)
+                    } else {
+                        s.copy(filterEndDate = event.dateStr, showDatePickerDialog = false)
+                    }
                 }
                 applyFilters()
             }
@@ -222,7 +227,7 @@ class TransactionsViewModel @Inject constructor(
 
         // Filter by date range
         val start = currentState.filterStartDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        val end   = currentState.filterEndDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val end = currentState.filterEndDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         if (start != null || end != null) {
             filtered = filtered.filter { t ->
                 val date = runCatching { LocalDate.parse(t.createdAt.take(10)) }.getOrNull() ?: return@filter true
@@ -240,7 +245,7 @@ class TransactionsViewModel @Inject constructor(
 
         filtered = when (currentState.selectedSort.value) {
             "date_asc" -> filtered.sortedBy { it.createdAt }
-            else       -> filtered.sortedByDescending { it.createdAt } // "date_desc" and default
+            else -> filtered.sortedByDescending { it.createdAt } // "date_desc" and default
         }
 
         _state.update { it.copy(filteredTransactions = filtered) }

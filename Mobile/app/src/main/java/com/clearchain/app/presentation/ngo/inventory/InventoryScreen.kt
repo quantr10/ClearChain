@@ -54,8 +54,8 @@ fun InventoryScreen(
     // Manual add bottom sheet
     if (state.showManualAddSheet) {
         ManualAddSheet(
-            state    = state,
-            onEvent  = { viewModel.onEvent(it) },
+            state = state,
+            onEvent = { viewModel.onEvent(it) },
             onDismiss = { viewModel.onEvent(InventoryEvent.HideManualAddSheet) }
         )
     }
@@ -64,8 +64,8 @@ fun InventoryScreen(
 
     if (state.showFilterSheet) {
         InventoryFilterSheet(
-            state     = state,
-            onEvent   = { viewModel.onEvent(it) },
+            state = state,
+            onEvent = { viewModel.onEvent(it) },
             onDismiss = { viewModel.onEvent(InventoryEvent.HideFilterSheet) }
         )
     }
@@ -81,8 +81,8 @@ fun InventoryScreen(
         bottomBar = {
             AnimatedVisibility(
                 visible = state.isSelectionMode && state.selectedCount > 0,
-                enter   = slideInVertically { it },
-                exit    = slideOutVertically { it }
+                enter = slideInVertically { it },
+                exit = slideOutVertically { it }
             ) {
                 Surface(tonalElevation = 8.dp, shadowElevation = 8.dp) {
                     Row(
@@ -94,160 +94,173 @@ fun InventoryScreen(
                     ) {
                         ClearChainButton(
                             text = stringResource(R.string.action_distribute_count, state.activeSelectedCount),
-                            onClick  = { viewModel.onEvent(InventoryEvent.BulkDistribute) },
+                            onClick = { viewModel.onEvent(InventoryEvent.BulkDistribute) },
                             modifier = Modifier.weight(1f),
-                            enabled  = state.activeSelectedCount > 0,
+                            enabled = state.activeSelectedCount > 0,
                             loading = state.isBulkOperating
                         )
                     }
                 }
             }
         },
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-
-                        ListScreenHeader {
-                        ListHeaderSearchRow(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(InventoryEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.search_inventory_placeholder)
+                ListScreenHeader {
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(InventoryEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.search_inventory_placeholder)
+                    ) {
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.FileDownload,
+                            contentDescription = stringResource(R.string.export_csv),
+                            onClick = { viewModel.onEvent(InventoryEvent.ExportCsv) }
+                        )
+                        BadgedBox(
+                            badge = {
+                                if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            }
                         ) {
                             ClearChainActionIconButton(
-                                icon               = Icons.Default.FileDownload,
-                                contentDescription = stringResource(R.string.export_csv),
-                                onClick            = { viewModel.onEvent(InventoryEvent.ExportCsv) }
+                                icon = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.advanced_filters),
+                                onClick = { viewModel.onEvent(InventoryEvent.ShowFilterSheet) }
                             )
-                            BadgedBox(
-                                badge = {
-                                    if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
-                                }
-                            ) {
-                                ClearChainActionIconButton(
-                                    icon               = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.advanced_filters),
-                                    onClick            = { viewModel.onEvent(InventoryEvent.ShowFilterSheet) }
-                                )
-                            }
                         }
+                    }
 
-                        FilterChipsRow(
-                            filters = statusFilters,
-                            selectedFilter = state.selectedStatusTab?.name,
-                            onFilterSelected = { value ->
-                                val status = value?.let { InventoryStatus.valueOf(it) }
-                                viewModel.onEvent(InventoryEvent.StatusTabChanged(status))
-                            }
-                        )
+                    FilterChipsRow(
+                        filters = statusFilters,
+                        selectedFilter = state.selectedStatusTab?.name,
+                        onFilterSelected = { value ->
+                            val status = value?.let { InventoryStatus.valueOf(it) }
+                            viewModel.onEvent(InventoryEvent.StatusTabChanged(status))
+                        }
+                    )
 
-                        ResultsCountAndSort(
-                            count = state.filteredItems.size,
-                            itemName = "item",
-                            selectedSort = state.selectedSort,
-                            onSortSelected = { viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) },
-                            sortOptions = state.availableSortOptions,
-                            countText = if (state.isSelectionMode) {
-                                "${state.selectedCount} ${if (state.selectedCount == 1) "item" else "items"} selected"
-                            } else null,
-                            leadingContent = if (state.isSelectionMode) {
-                                {
-                                    SelectionCircleButton(
-                                        checked = state.allSelected,
-                                        onCheckedChange = {
-                                            if (state.allSelected) viewModel.onEvent(InventoryEvent.DeselectAll)
-                                            else viewModel.onEvent(InventoryEvent.SelectAll)
+                    ResultsCountAndSort(
+                        count = state.filteredItems.size,
+                        itemName = "item",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions,
+                        countText = if (state.isSelectionMode) {
+                            "${state.selectedCount} ${if (state.selectedCount == 1) "item" else "items"} selected"
+                        } else {
+                            null
+                        },
+                        leadingContent = if (state.isSelectionMode) {
+                            {
+                                SelectionCircleButton(
+                                    checked = state.allSelected,
+                                    onCheckedChange = {
+                                        if (state.allSelected) {
+                                            viewModel.onEvent(InventoryEvent.DeselectAll)
+                                        } else {
+                                            viewModel.onEvent(InventoryEvent.SelectAll)
                                         }
-                                    )
-                                }
-                            } else null
-                        )
+                                    }
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when {
+                        state.isLoading && state.allItems.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
 
-                        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        when {
-                            state.isLoading && state.allItems.isEmpty() -> {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            }
+                        state.error != null && state.allItems.isEmpty() -> {
+                            EmptyState(
+                                icon = Icons.Default.ErrorOutline,
+                                title = stringResource(R.string.error_generic),
+                                subtitle = state.error,
+                                actionLabel = stringResource(R.string.retry),
+                                onAction = { viewModel.onEvent(InventoryEvent.LoadInventory) }
+                            )
+                        }
 
-                            state.error != null && state.allItems.isEmpty() -> {
-                                EmptyState(
-                                    icon = Icons.Default.ErrorOutline,
-                                    title = stringResource(R.string.error_generic),
-                                    subtitle = state.error,
-                                    actionLabel = stringResource(R.string.retry),
-                                    onAction = { viewModel.onEvent(InventoryEvent.LoadInventory) }
-                                )
-                            }
+                        state.filteredItems.isEmpty() -> {
+                            EmptyState(
+                                icon = if (state.allItems.isEmpty()) Icons.Default.Inventory2 else Icons.Default.FilterAlt,
+                                title = if (state.allItems.isEmpty()) {
+                                    stringResource(R.string.empty_no_inventory)
+                                } else {
+                                    stringResource(R.string.empty_no_inventory_filter)
+                                },
+                                subtitle = if (state.allItems.isEmpty()) {
+                                    stringResource(R.string.empty_no_inventory_subtitle)
+                                } else {
+                                    stringResource(R.string.empty_try_filters)
+                                }
+                            )
+                        }
 
-                            state.filteredItems.isEmpty() -> {
-                                EmptyState(
-                                    icon = if (state.allItems.isEmpty()) Icons.Default.Inventory2 else Icons.Default.FilterAlt,
-                                    title = if (state.allItems.isEmpty()) stringResource(R.string.empty_no_inventory)
-                                    else stringResource(R.string.empty_no_inventory_filter),
-                                    subtitle = if (state.allItems.isEmpty())
-                                        stringResource(R.string.empty_no_inventory_subtitle)
-                                    else stringResource(R.string.empty_try_filters)
-                                )
-                            }
-
-                            else -> {
-                                HapticPullToRefreshBox(
-                                    isRefreshing = state.isRefreshing,
-                                    onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
+                        else -> {
+                            HapticPullToRefreshBox(
+                                isRefreshing = state.isRefreshing,
+                                onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
+                            ) {
+                                LazyColumn(
+                                    contentPadding = ScreenPadding,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    LazyColumn(
-                                        contentPadding = ScreenPadding,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        items(state.filteredItems, key = { it.id }) { item ->
-                                            val isSelected = item.id in state.selectedIds
-                                            Box {
-                                                InventoryItemCard(
-                                                    item     = item,
-                                                    onClick  = {
+                                    items(state.filteredItems, key = { it.id }) { item ->
+                                        val isSelected = item.id in state.selectedIds
+                                        Box {
+                                            InventoryItemCard(
+                                                item = item,
+                                                onClick = {
+                                                    if (state.isSelectionMode) {
+                                                        viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
+                                                    } else {
+                                                        onNavigateToItemDetail(item.id)
+                                                    }
+                                                },
+                                                modifier = Modifier.combinedClickable(
+                                                    onClick = {
                                                         if (state.isSelectionMode) {
                                                             viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
                                                         } else {
                                                             onNavigateToItemDetail(item.id)
                                                         }
                                                     },
-                                                    modifier = Modifier.combinedClickable(
-                                                        onClick = {
-                                                            if (state.isSelectionMode) {
-                                                                viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
-                                                            } else {
-                                                                onNavigateToItemDetail(item.id)
-                                                            }
-                                                        },
-                                                        onLongClick = {
-                                                            viewModel.onEvent(InventoryEvent.ToggleSelectionMode)
-                                                            viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
-                                                        }
-                                                    ),
-                                                    onDistribute = if (!state.isSelectionMode && item.status == InventoryStatus.ACTIVE) {
-                                                        { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
-                                                    } else null
-                                                )
-                                                if (state.isSelectionMode) {
-                                                    SelectionCircleButton(
-                                                        checked = isSelected,
-                                                        onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
-                                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                                                    )
+                                                    onLongClick = {
+                                                        viewModel.onEvent(InventoryEvent.ToggleSelectionMode)
+                                                        viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
+                                                    }
+                                                ),
+                                                onDistribute = if (!state.isSelectionMode && item.status == InventoryStatus.ACTIVE) {
+                                                    { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
+                                                } else {
+                                                    null
                                                 }
+                                            )
+                                            if (state.isSelectionMode) {
+                                                SelectionCircleButton(
+                                                    checked = isSelected,
+                                                    onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
+                                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                                                )
                                             }
                                         }
-
-                                        item { Spacer(Modifier.height(80.dp)) }
                                     }
+
+                                    item { Spacer(Modifier.height(80.dp)) }
                                 }
                             }
                         }
-                        }
+                    }
+                }
             }
         }
     }
@@ -304,8 +317,11 @@ private fun InventoryFilterSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.advanced_filters),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.advanced_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 if (state.activeFilterCount > 0) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.action_clear_all),
@@ -323,14 +339,14 @@ private fun InventoryFilterSheet(
                 ) {
                     FilterChip(
                         selected = state.selectedCategory == null,
-                        onClick  = { onEvent(InventoryEvent.CategoryFilterChanged(null)) },
-                        label    = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
+                        onClick = { onEvent(InventoryEvent.CategoryFilterChanged(null)) },
+                        label = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
                     )
                     FoodCategory.entries.forEach { cat ->
                         FilterChip(
                             selected = state.selectedCategory == cat.name,
-                            onClick  = { onEvent(InventoryEvent.CategoryFilterChanged(if (state.selectedCategory == cat.name) null else cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
+                            onClick = { onEvent(InventoryEvent.CategoryFilterChanged(if (state.selectedCategory == cat.name) null else cat.name)) },
+                            label = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -344,8 +360,8 @@ private fun InventoryFilterSheet(
                         .forEach { (days, label) ->
                             FilterChip(
                                 selected = state.filterExpiryWithinDays == days,
-                                onClick  = { onEvent(InventoryEvent.FilterExpiryWithinDaysChanged(days)) },
-                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                onClick = { onEvent(InventoryEvent.FilterExpiryWithinDaysChanged(days)) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -362,12 +378,13 @@ private fun InventoryFilterSheet(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("${stringResource(R.string.filter_quantity_range)}: $qtyLabel", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 RangeSlider(
-                    value         = state.filterMinQty.toFloat()..(state.filterMaxQty?.toFloat() ?: 500f),
+                    value = state.filterMinQty.toFloat()..(state.filterMaxQty?.toFloat() ?: 500f),
                     onValueChange = { range ->
                         onEvent(InventoryEvent.FilterMinQtyChanged(range.start.toDouble()))
                         onEvent(InventoryEvent.FilterMaxQtyChanged(if (range.endInclusive >= 500f) null else range.endInclusive.toDouble()))
                     },
-                    valueRange = 0f..500f, steps = 49
+                    valueRange = 0f..500f,
+                    steps = 49
                 )
             }
 
@@ -387,8 +404,8 @@ private fun InventoryFilterSheet(
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun ManualAddSheet(
-    state:     InventoryState,
-    onEvent:   (InventoryEvent) -> Unit,
+    state: InventoryState,
+    onEvent: (InventoryEvent) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -402,16 +419,18 @@ private fun ManualAddSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(stringResource(R.string.add_item_manually),
+            Text(
+                stringResource(R.string.add_item_manually),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold)
+                fontWeight = FontWeight.Bold
+            )
 
             OutlinedTextField(
-                value         = state.manualProductName,
+                value = state.manualProductName,
                 onValueChange = { onEvent(InventoryEvent.ManualProductNameChanged(it)) },
-                label         = { Text(stringResource(R.string.label_product_name)) },
-                modifier      = Modifier.fillMaxWidth(),
-                singleLine    = true
+                label = { Text(stringResource(R.string.label_product_name)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             // Category selector
@@ -424,8 +443,8 @@ private fun ManualAddSheet(
                     FoodCategory.entries.forEach { cat ->
                         FilterChip(
                             selected = state.manualCategory == cat.name,
-                            onClick  = { onEvent(InventoryEvent.ManualCategoryChanged(cat.name)) },
-                            label    = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
+                            onClick = { onEvent(InventoryEvent.ManualCategoryChanged(cat.name)) },
+                            label = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
                         )
                     }
                 }
@@ -433,34 +452,35 @@ private fun ManualAddSheet(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value         = state.manualQuantity,
+                    value = state.manualQuantity,
                     onValueChange = { onEvent(InventoryEvent.ManualQuantityChanged(it)) },
-                    label         = { Text(stringResource(R.string.label_quantity_required)) },
-                    modifier      = Modifier.weight(1f),
-                    singleLine    = true,
+                    label = { Text(stringResource(R.string.label_quantity_required)) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = KeyboardType.Number)
+                        keyboardType = KeyboardType.Number
+                    )
                 )
                 OutlinedTextField(
-                    value         = state.manualUnit,
+                    value = state.manualUnit,
                     onValueChange = { onEvent(InventoryEvent.ManualUnitChanged(it)) },
-                    label         = { Text(stringResource(R.string.label_unit)) },
-                    modifier      = Modifier.width(80.dp),
-                    singleLine    = true
+                    label = { Text(stringResource(R.string.label_unit)) },
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true
                 )
             }
 
             DatePickerField(
-                value          = state.manualExpiryDate,
+                value = state.manualExpiryDate,
                 onDateSelected = { onEvent(InventoryEvent.ManualExpiryDateChanged(it)) },
-                label          = stringResource(R.string.label_expiry_date_field)
+                label = stringResource(R.string.label_expiry_date_field)
             )
 
             ClearChainButton(
                 text = stringResource(R.string.action_add_to_inventory),
-                onClick  = { onEvent(InventoryEvent.SubmitManualAdd) },
+                onClick = { onEvent(InventoryEvent.SubmitManualAdd) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled  = state.manualProductName.isNotBlank(),
+                enabled = state.manualProductName.isNotBlank(),
                 loading = state.isSubmittingManual
             )
         }

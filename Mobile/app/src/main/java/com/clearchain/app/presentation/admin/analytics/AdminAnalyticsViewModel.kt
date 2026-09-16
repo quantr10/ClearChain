@@ -71,10 +71,10 @@ class AdminAnalyticsViewModel @Inject constructor(
 
     fun onEvent(event: AdminAnalyticsEvent) {
         when (event) {
-            AdminAnalyticsEvent.Load          -> load(isRefresh = false)
-            AdminAnalyticsEvent.Refresh       -> load(isRefresh = true)
-            AdminAnalyticsEvent.ExportPdf     -> exportPdf()
-            AdminAnalyticsEvent.ClearError    -> _state.update { it.copy(error = null) }
+            AdminAnalyticsEvent.Load -> load(isRefresh = false)
+            AdminAnalyticsEvent.Refresh -> load(isRefresh = true)
+            AdminAnalyticsEvent.ExportPdf -> exportPdf()
+            AdminAnalyticsEvent.ClearError -> _state.update { it.copy(error = null) }
             AdminAnalyticsEvent.FocusConsumed -> _state.update { it.copy(focusedSection = null) }
             is AdminAnalyticsEvent.SelectPeriod -> {
                 if (event.period != _state.value.period) {
@@ -93,9 +93,9 @@ class AdminAnalyticsViewModel @Inject constructor(
                     it.copy(
                         // A period switch keeps the old figures on screen rather than blanking
                         // the page; only a cold start gets the spinner.
-                        isLoading    = !isRefresh && it.data == null,
+                        isLoading = !isRefresh && it.data == null,
                         isRefreshing = isRefresh,
-                        error        = null
+                        error = null
                     )
                 }
             }
@@ -109,8 +109,8 @@ class AdminAnalyticsViewModel @Inject constructor(
 
                 _state.update {
                     it.copy(
-                        data         = loaded ?: it.data,
-                        isLoading    = false,
+                        data = loaded ?: it.data,
+                        isLoading = false,
                         isRefreshing = false
                     )
                 }
@@ -120,8 +120,8 @@ class AdminAnalyticsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
-                        error        = e.message ?: string(R.string.error_load_statistics),
-                        isLoading    = false,
+                        error = e.message ?: string(R.string.error_load_statistics),
+                        isLoading = false,
                         isRefreshing = false
                     )
                 }
@@ -177,10 +177,19 @@ class AdminAnalyticsViewModel @Inject constructor(
     private fun writePdf(data: AdminDetailedStatsData, periodLabel: String): Uri? {
         val doc = PdfDocument()
 
-        val titlePaint   = Paint().apply { textSize = 20f; isFakeBoldText = true }
-        val headingPaint = Paint().apply { textSize = 13f; isFakeBoldText = true }
-        val bodyPaint    = Paint().apply { textSize = 11f }
-        val mutedPaint   = Paint().apply { textSize = 9f; color = android.graphics.Color.GRAY }
+        val titlePaint = Paint().apply {
+            textSize = 20f
+            isFakeBoldText = true
+        }
+        val headingPaint = Paint().apply {
+            textSize = 13f
+            isFakeBoldText = true
+        }
+        val bodyPaint = Paint().apply { textSize = 11f }
+        val mutedPaint = Paint().apply {
+            textSize = 9f
+            color = android.graphics.Color.GRAY
+        }
 
         var pageNumber = 1
         var page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
@@ -218,9 +227,9 @@ class AdminAnalyticsViewModel @Inject constructor(
         fun pct(value: Double) = "${(value * 100).roundToInt()}%"
         fun hours(value: Double?) = value?.let {
             when {
-                it < 1  -> "${(it * 60).roundToInt()}m"
+                it < 1 -> "${(it * 60).roundToInt()}m"
                 it < 48 -> "${it.roundToInt()}h"
-                else    -> "${(it / 24).roundToInt()}d"
+                else -> "${(it / 24).roundToInt()}d"
             }
         } ?: "-"
 
@@ -306,7 +315,7 @@ class AdminAnalyticsViewModel @Inject constructor(
 
     private companion object {
         const val SECTION_ARG = "section"
-        const val PAGE_W = 595   // A4 at 72dpi
+        const val PAGE_W = 595 // A4 at 72dpi
         const val PAGE_H = 842
         const val MARGIN = 40f
     }

@@ -72,8 +72,11 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update { it.copy(showChecklistForId = null) }
             is VerificationQueueEvent.ToggleChecklistItem ->
                 _state.update {
-                    val updated = if (event.index in it.checkedItems)
-                        it.checkedItems - event.index else it.checkedItems + event.index
+                    val updated = if (event.index in it.checkedItems) {
+                        it.checkedItems - event.index
+                    } else {
+                        it.checkedItems + event.index
+                    }
                     it.copy(checkedItems = updated)
                 }
             VerificationQueueEvent.ConfirmApprove -> approveOrganization()
@@ -94,8 +97,11 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update { it.copy(isBatchMode = !it.isBatchMode, selectedOrgIds = emptySet()) }
             is VerificationQueueEvent.ToggleOrgSelection -> {
                 _state.update {
-                    val updated = if (event.orgId in it.selectedOrgIds)
-                        it.selectedOrgIds - event.orgId else it.selectedOrgIds + event.orgId
+                    val updated = if (event.orgId in it.selectedOrgIds) {
+                        it.selectedOrgIds - event.orgId
+                    } else {
+                        it.selectedOrgIds + event.orgId
+                    }
                     it.copy(selectedOrgIds = updated, isBatchMode = updated.isNotEmpty())
                 }
             }
@@ -107,7 +113,7 @@ class VerificationQueueViewModel @Inject constructor(
             VerificationQueueEvent.ClearSelection ->
                 _state.update { it.copy(selectedOrgIds = emptySet(), isBatchMode = false) }
             VerificationQueueEvent.BatchApprove -> batchApprove()
-            VerificationQueueEvent.BatchReject  -> batchReject()
+            VerificationQueueEvent.BatchReject -> batchReject()
         }
     }
 
@@ -118,7 +124,10 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isProcessing = true, isBatchMode = false, selectedOrgIds = emptySet()) }
             var successCount = 0
             ids.forEach { orgId ->
-                try { adminApi.verifyOrganization(orgId); successCount++ } catch (_: Exception) {}
+                try {
+                    adminApi.verifyOrganization(orgId)
+                    successCount++
+                } catch (_: Exception) {}
             }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_approved_orgs, successCount, ids.size)))
             loadOrganizations()
@@ -133,7 +142,10 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isProcessing = true, isBatchMode = false, selectedOrgIds = emptySet()) }
             var successCount = 0
             ids.forEach { orgId ->
-                try { adminApi.unverifyOrganization(orgId, RejectOrganizationBody()); successCount++ } catch (_: Exception) {}
+                try {
+                    adminApi.unverifyOrganization(orgId, RejectOrganizationBody())
+                    successCount++
+                } catch (_: Exception) {}
             }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_rejected_orgs, successCount, ids.size)))
             loadOrganizations()

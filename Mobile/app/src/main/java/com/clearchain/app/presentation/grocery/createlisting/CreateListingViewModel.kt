@@ -156,10 +156,10 @@ class CreateListingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         selectedImageUri = null,
-                        selectedImages   = emptyList(),
-                        analysisResult   = null,
-                        analysisError    = null,
-                        imageUrl         = ""
+                        selectedImages = emptyList(),
+                        analysisResult = null,
+                        analysisError = null,
+                        imageUrl = ""
                     )
                 }
             }
@@ -173,11 +173,11 @@ class CreateListingViewModel @Inject constructor(
             is CreateListingEvent.AddImage -> {
                 _state.update {
                     it.copy(
-                        selectedImages   = listOf(event.uri),
+                        selectedImages = listOf(event.uri),
                         selectedImageUri = event.uri,
-                        showImagePicker  = false,
-                        analysisResult   = null,
-                        analysisError    = null
+                        showImagePicker = false,
+                        analysisResult = null,
+                        analysisError = null
                     )
                 }
                 analyzeImage()
@@ -236,86 +236,86 @@ class CreateListingViewModel @Inject constructor(
         }
     }
 
-private fun createListing() {
-    val currentState = _state.value
+    private fun createListing() {
+        val currentState = _state.value
 
-    if (!validateInputs()) {
-        return
-    }
+        if (!validateInputs()) {
+            return
+        }
 
-    viewModelScope.launch {
-        _state.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
 
-        // Upload image first if user selected one
-        var finalImageUrl = currentState.imageUrl
+            // Upload image first if user selected one
+            var finalImageUrl = currentState.imageUrl
 
-        val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
-        if (primaryUri != null && finalImageUrl.isEmpty()) {
-            val uploadResult = listingRepository.uploadFoodImage(primaryUri)
+            val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
+            if (primaryUri != null && finalImageUrl.isEmpty()) {
+                val uploadResult = listingRepository.uploadFoodImage(primaryUri)
 
-            uploadResult.fold(
-                onSuccess = { uploadedUrl ->
-                    finalImageUrl = uploadedUrl
-                    Log.d(TAG, "✅ Image uploaded: $uploadedUrl")
+                uploadResult.fold(
+                    onSuccess = { uploadedUrl ->
+                        finalImageUrl = uploadedUrl
+                        Log.d(TAG, "✅ Image uploaded: $uploadedUrl")
+                    },
+                    onFailure = { error ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = context.getString(R.string.snack_image_upload_failed, error.message ?: "")
+                            )
+                        }
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_image_upload_failed, error.message ?: "")))
+                        return@launch // Stop if upload fails
+                    }
+                )
+            }
+
+            // Create listing with uploaded imageUrl
+            val result = createListingUseCase(
+                title = currentState.title,
+                description = currentState.description,
+                category = currentState.category,
+                quantity = currentState.quantity.toInt(),
+                unit = currentState.unit,
+                expiryDate = currentState.expiryDate,
+                imageUrl = finalImageUrl.ifBlank { null }
+            )
+
+            result.fold(
+                onSuccess = { listing ->
+                    _state.update { it.copy(isLoading = false) }
+
+                    // Save analysis to DB if AI was used
+                    if (currentState.analysisResult != null) {
+                        // imageUrl in analysis before saving
+                        val updatedAnalysis = currentState.analysisResult!!.copy(
+                            imageUrl = finalImageUrl
+                        )
+                        saveAnalysisToDatabase(updatedAnalysis)
+                    }
+
+                    // Clear draft on success
+                    draftStore.clear()
+
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_created)))
+                    _uiEvent.send(UiEvent.NavigateUp)
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = context.getString(R.string.snack_image_upload_failed, error.message ?: "")
+                            error = error.message ?: context.getString(R.string.error_create_listing_failed)
                         )
                     }
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_image_upload_failed, error.message ?: "")))
-                    return@launch // Stop if upload fails
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_create_listing_failed)))
                 }
             )
         }
-
-        // Create listing with uploaded imageUrl
-        val result = createListingUseCase(
-            title = currentState.title,
-            description = currentState.description,
-            category = currentState.category,
-            quantity = currentState.quantity.toInt(),
-            unit = currentState.unit,
-            expiryDate = currentState.expiryDate,
-            imageUrl = finalImageUrl.ifBlank { null }
-        )
-
-        result.fold(
-            onSuccess = { listing ->
-                _state.update { it.copy(isLoading = false) }
-
-                // Save analysis to DB if AI was used
-                if (currentState.analysisResult != null) {
-                    // imageUrl in analysis before saving
-                    val updatedAnalysis = currentState.analysisResult!!.copy(
-                        imageUrl = finalImageUrl
-                    )
-                    saveAnalysisToDatabase(updatedAnalysis)
-                }
-
-                // Clear draft on success
-                draftStore.clear()
-
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_created)))
-                _uiEvent.send(UiEvent.NavigateUp)
-            },
-            onFailure = { error ->
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = error.message ?: context.getString(R.string.error_create_listing_failed)
-                    )
-                }
-                _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_create_listing_failed)))
-            }
-        )
     }
-}
 
 // Save analysis after listing created
-private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
+    private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
         viewModelScope.launch {
             try {
                 listingRepository.saveAnalysis(analysisData)
@@ -390,9 +390,11 @@ private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
                             imageUrl = analysisData.imageUrl
                         )
                     }
-                    _uiEvent.send(UiEvent.ShowSnackbar(
-                        context.getString(R.string.snack_ai_detected, analysisData.title, (analysisData.confidence * 100).toInt())
-                    ))
+                    _uiEvent.send(
+                        UiEvent.ShowSnackbar(
+                            context.getString(R.string.snack_ai_detected, analysisData.title, (analysisData.confidence * 100).toInt())
+                        )
+                    )
                 },
                 onFailure = { error ->
                     _state.update {

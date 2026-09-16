@@ -75,19 +75,19 @@ class ListingDetailViewModel @Inject constructor(
 
     fun onEvent(event: ListingDetailEvent) {
         when (event) {
-            is ListingDetailEvent.LoadListing        -> loadListing(event.listingId)
-            ListingDetailEvent.ShowReportDialog      -> showReportDialog()
-            ListingDetailEvent.DismissReportDialog   -> dismissReportDialog()
+            is ListingDetailEvent.LoadListing -> loadListing(event.listingId)
+            ListingDetailEvent.ShowReportDialog -> showReportDialog()
+            ListingDetailEvent.DismissReportDialog -> dismissReportDialog()
             is ListingDetailEvent.ReportReasonChanged -> onReportReasonChanged(event.reason)
-            ListingDetailEvent.SubmitReport          -> submitReport()
-            ListingDetailEvent.ToggleSave            -> toggleSave()
-            ListingDetailEvent.ShowDeleteConfirm     -> _state.update { it.copy(showDeleteConfirm = true) }
-            ListingDetailEvent.DismissDeleteConfirm  -> _state.update { it.copy(showDeleteConfirm = false) }
-            ListingDetailEvent.DeleteListing         -> deleteListing()
-            is ListingDetailEvent.UpdateQuantity     -> updateQuantity(event.newQuantity)
-            is ListingDetailEvent.AddToCart          -> addToCart(event.listingId)
-            is ListingDetailEvent.IncrementCartItem  -> addToCart(event.listingId)
-            is ListingDetailEvent.DecrementCartItem  -> decrementCartItem(event.listingId)
+            ListingDetailEvent.SubmitReport -> submitReport()
+            ListingDetailEvent.ToggleSave -> toggleSave()
+            ListingDetailEvent.ShowDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = true) }
+            ListingDetailEvent.DismissDeleteConfirm -> _state.update { it.copy(showDeleteConfirm = false) }
+            ListingDetailEvent.DeleteListing -> deleteListing()
+            is ListingDetailEvent.UpdateQuantity -> updateQuantity(event.newQuantity)
+            is ListingDetailEvent.AddToCart -> addToCart(event.listingId)
+            is ListingDetailEvent.IncrementCartItem -> addToCart(event.listingId)
+            is ListingDetailEvent.DecrementCartItem -> decrementCartItem(event.listingId)
         }
     }
 
@@ -283,8 +283,11 @@ class ListingDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isTogglingFave = true) }
             runCatching {
-                if (_state.value.isSaved) savedListingApi.unsaveListing(listing.id)
-                else savedListingApi.saveListing(listing.id)
+                if (_state.value.isSaved) {
+                    savedListingApi.unsaveListing(listing.id)
+                } else {
+                    savedListingApi.saveListing(listing.id)
+                }
             }.onSuccess {
                 _state.update { it.copy(isSaved = !it.isSaved, isTogglingFave = false) }
             }.onFailure {

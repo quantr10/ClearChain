@@ -126,8 +126,11 @@ fun ProfileSummaryCard(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = if (averageRating > 0.0) Color(0xFFFFC107)
-                            else MaterialTheme.colorScheme.outline,
+                            tint = if (averageRating > 0.0) {
+                                Color(0xFFFFC107)
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
                             modifier = Modifier.size(14.dp)
                         )
                         Text(

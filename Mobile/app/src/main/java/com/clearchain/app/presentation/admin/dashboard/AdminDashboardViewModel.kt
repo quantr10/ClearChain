@@ -45,12 +45,12 @@ class AdminDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             signalRService.newOrganizationRegistered.collect { notification ->
                 val activity = AdminActivity(
-                    id          = UUID.randomUUID().toString(),
-                    type        = AdminActivityType.NEW_ORGANIZATION,
-                    title       = context.getString(R.string.activity_title_new_org, notification.type),
+                    id = UUID.randomUUID().toString(),
+                    type = AdminActivityType.NEW_ORGANIZATION,
+                    title = context.getString(R.string.activity_title_new_org, notification.type),
                     description = context.getString(R.string.activity_desc_new_org, notification.name, notification.location),
-                    timestamp   = notification.registeredAt,
-                    icon        = if (notification.type.equals("NGO", ignoreCase = true)) "🏢" else "🏪"
+                    timestamp = notification.registeredAt,
+                    icon = if (notification.type.equals("NGO", ignoreCase = true)) "🏢" else "🏪"
                 )
                 _state.update { it.copy(recentActivities = listOf(activity) + it.recentActivities.take(19)) }
                 loadStats()
@@ -61,12 +61,12 @@ class AdminDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             signalRService.transactionCompleted.collect { notification ->
                 val activity = AdminActivity(
-                    id          = UUID.randomUUID().toString(),
-                    type        = AdminActivityType.TRANSACTION_COMPLETED,
-                    title       = context.getString(R.string.activity_title_transaction),
+                    id = UUID.randomUUID().toString(),
+                    type = AdminActivityType.TRANSACTION_COMPLETED,
+                    title = context.getString(R.string.activity_title_transaction),
                     description = context.getString(R.string.activity_desc_transaction, notification.ngoName, notification.quantity.toString(), notification.unit, notification.groceryName),
-                    timestamp   = notification.completedAt,
-                    icon        = "✅"
+                    timestamp = notification.completedAt,
+                    icon = "✅"
                 )
                 _state.update { it.copy(recentActivities = listOf(activity) + it.recentActivities.take(19)) }
                 loadStats()
@@ -77,35 +77,35 @@ class AdminDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             signalRService.statsUpdated.collect { stats ->
                 val adminStats = AdminStats(
-                    totalOrganizations    = stats.totalNGOs + stats.totalGroceries,
-                    totalGroceries        = stats.totalGroceries,
-                    totalNgos             = stats.totalNGOs,
+                    totalOrganizations = stats.totalNGOs + stats.totalGroceries,
+                    totalGroceries = stats.totalGroceries,
+                    totalNgos = stats.totalNGOs,
                     verifiedOrganizations = 0,
                     unverifiedOrganizations = 0,
-                    totalListings         = stats.activeListings,
-                    activeListings        = stats.activeListings,
-                    reservedListings      = 0,
-                    expiredListings       = 0,
-                    totalPickupRequests   = stats.totalDonations,
-                    pendingRequests       = stats.pendingRequests,
-                    approvedRequests      = 0,
-                    readyRequests         = 0,
-                    rejectedRequests      = 0,
-                    completedRequests     = stats.completedToday,
-                    cancelledRequests     = 0,
-                    totalFoodSaved        = stats.totalDonations.toDouble()
+                    totalListings = stats.activeListings,
+                    activeListings = stats.activeListings,
+                    reservedListings = 0,
+                    expiredListings = 0,
+                    totalPickupRequests = stats.totalDonations,
+                    pendingRequests = stats.pendingRequests,
+                    approvedRequests = 0,
+                    readyRequests = 0,
+                    rejectedRequests = 0,
+                    completedRequests = stats.completedToday,
+                    cancelledRequests = 0,
+                    totalFoodSaved = stats.totalDonations.toDouble()
                 )
                 val activity = AdminActivity(
-                    id          = UUID.randomUUID().toString(),
-                    type        = AdminActivityType.STATS_UPDATED,
-                    title       = context.getString(R.string.activity_title_stats_updated),
+                    id = UUID.randomUUID().toString(),
+                    type = AdminActivityType.STATS_UPDATED,
+                    title = context.getString(R.string.activity_title_stats_updated),
                     description = context.getString(R.string.activity_desc_stats, stats.totalDonations.toString(), stats.completedToday.toString()),
-                    timestamp   = stats.updatedAt,
-                    icon        = "📊"
+                    timestamp = stats.updatedAt,
+                    icon = "📊"
                 )
                 _state.update {
                     it.copy(
-                        stats            = adminStats,
+                        stats = adminStats,
                         recentActivities = listOf(activity) + it.recentActivities.take(19)
                     )
                 }
@@ -115,15 +115,15 @@ class AdminDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             signalRService.systemAlert.collect { alert ->
                 val level = when (alert.level.lowercase()) {
-                    "error"   -> AlertLevel.ERROR
+                    "error" -> AlertLevel.ERROR
                     "warning" -> AlertLevel.WARNING
-                    else      -> AlertLevel.INFO
+                    else -> AlertLevel.INFO
                 }
                 val systemAlert = SystemAlert(
-                    id        = UUID.randomUUID().toString(),
-                    level     = level,
-                    message   = alert.message,
-                    details   = alert.details,
+                    id = UUID.randomUUID().toString(),
+                    level = level,
+                    message = alert.message,
+                    details = alert.details,
                     timestamp = alert.timestamp
                 )
                 _state.update { it.copy(recentAlerts = listOf(systemAlert) + it.recentAlerts.take(9)) }
@@ -134,9 +134,9 @@ class AdminDashboardViewModel @Inject constructor(
 
     fun onEvent(event: AdminDashboardEvent) {
         when (event) {
-            AdminDashboardEvent.LoadStats    -> loadStats()
+            AdminDashboardEvent.LoadStats -> loadStats()
             AdminDashboardEvent.RefreshStats -> refreshStats()
-            AdminDashboardEvent.ClearError   -> _state.update { it.copy(error = null) }
+            AdminDashboardEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 

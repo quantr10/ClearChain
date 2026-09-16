@@ -57,32 +57,32 @@ class MyRequestsViewModel @Inject constructor(
     // Setup SignalR real-time updates
     private fun setupSignalR() {
         // Listen for status changes
-    viewModelScope.launch {
-        signalRService.pickupRequestStatusChanged.collect { notification ->
-            // Auto-refresh list
-            loadRequests()
+        viewModelScope.launch {
+            signalRService.pickupRequestStatusChanged.collect { notification ->
+                // Auto-refresh list
+                loadRequests()
 
-            // Show notification to user
-            val statusMessage = when (notification.newStatus.lowercase()) {
-                "approved" -> context.getString(R.string.snack_your_request_approved)
-                "ready" -> context.getString(R.string.snack_food_ready_pickup)
-                "completed" -> context.getString(R.string.snack_pickup_completed)
-                "rejected" -> context.getString(R.string.snack_request_rejected_by_grocery)
-                else -> context.getString(R.string.snack_status_updated_to, notification.newStatus)
+                // Show notification to user
+                val statusMessage = when (notification.newStatus.lowercase()) {
+                    "approved" -> context.getString(R.string.snack_your_request_approved)
+                    "ready" -> context.getString(R.string.snack_food_ready_pickup)
+                    "completed" -> context.getString(R.string.snack_pickup_completed)
+                    "rejected" -> context.getString(R.string.snack_request_rejected_by_grocery)
+                    else -> context.getString(R.string.snack_status_updated_to, notification.newStatus)
+                }
+
+                _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
             }
+        }
 
-            _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
+        // Listen for cancellations
+        viewModelScope.launch {
+            signalRService.pickupRequestCancelled.collect { request ->
+                loadRequests()
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled)))
+            }
         }
     }
-
-    // Listen for cancellations
-    viewModelScope.launch {
-        signalRService.pickupRequestCancelled.collect { request ->
-            loadRequests()
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled)))
-        }
-    }
-}
 
     fun onEvent(event: MyRequestsEvent) {
         when (event) {
@@ -124,9 +124,11 @@ class MyRequestsViewModel @Inject constructor(
             // Dispute
             is MyRequestsEvent.DisputeRequest -> {
                 viewModelScope.launch {
-                    _uiEvent.send(UiEvent.Navigate(
-                        com.clearchain.app.presentation.navigation.Screen.Dispute.createRoute(event.requestId)
-                    ))
+                    _uiEvent.send(
+                        UiEvent.Navigate(
+                            com.clearchain.app.presentation.navigation.Screen.Dispute.createRoute(event.requestId)
+                        )
+                    )
                 }
             }
 
@@ -242,10 +244,10 @@ class MyRequestsViewModel @Inject constructor(
                     val pickupDate = java.time.LocalDate.parse(request.pickupDate.take(10))
                     when (preset) {
                         "TODAY" -> pickupDate == today
-                        "WEEK"  -> !pickupDate.isBefore(today) && !pickupDate.isAfter(today.plusDays(7))
+                        "WEEK" -> !pickupDate.isBefore(today) && !pickupDate.isAfter(today.plusDays(7))
                         "MONTH" -> !pickupDate.isBefore(today) && !pickupDate.isAfter(today.plusDays(30))
-                        "PAST"  -> pickupDate.isBefore(today)
-                        else    -> true
+                        "PAST" -> pickupDate.isBefore(today)
+                        else -> true
                     }
                 }.getOrDefault(true)
             }
@@ -321,10 +323,10 @@ class MyRequestsViewModel @Inject constructor(
                     }
                     _state.update {
                         it.copy(
-                            isUploading           = false,
-                            uploadError           = uploadError,
+                            isUploading = false,
+                            uploadError = uploadError,
                             failedUploadRequestId = requestId,
-                            failedUploadPhotoUri  = photoUri
+                            failedUploadPhotoUri = photoUri
                         )
                     }
                     _uiEvent.send(UiEvent.ShowSnackbar(errorMessage))
@@ -338,8 +340,8 @@ class MyRequestsViewModel @Inject constructor(
 
         if (currentState.failedUploadRequestId != null &&
             currentState.failedUploadPhotoUri != null &&
-            currentState.uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
-
+            currentState.uploadAttempts < MAX_UPLOAD_ATTEMPTS
+        ) {
             confirmPickupWithPhoto(
                 currentState.failedUploadRequestId,
                 currentState.failedUploadPhotoUri
@@ -379,26 +381,26 @@ class MyRequestsViewModel @Inject constructor(
     }
 
     private fun buildReceiptPdf(request: PickupRequest): Uri {
-        val doc    = PdfDocument()
+        val doc = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4
-        val page   = doc.startPage(pageInfo)
+        val page = doc.startPage(pageInfo)
         val canvas: Canvas = page.canvas
 
         val titlePaint = Paint().apply {
             textSize = 24f
-            color    = Color.BLACK
+            color = Color.BLACK
             isFakeBoldText = true
         }
         val labelPaint = Paint().apply {
             textSize = 14f
-            color    = Color.GRAY
+            color = Color.GRAY
         }
         val valuePaint = Paint().apply {
             textSize = 14f
-            color    = Color.BLACK
+            color = Color.BLACK
         }
         val dividerPaint = Paint().apply {
-            color       = Color.LTGRAY
+            color = Color.LTGRAY
             strokeWidth = 1f
         }
 
@@ -415,20 +417,24 @@ class MyRequestsViewModel @Inject constructor(
         }
 
         row(context.getString(R.string.label_reference_id), request.id.take(16) + "…")
-        row(context.getString(R.string.label_food_item),    request.listingTitle)
-        row(context.getString(R.string.label_category),     request.listingCategory)
-        row(context.getString(R.string.listing_quantity),   "${request.requestedQuantity}")
-        row(context.getString(R.string.label_from),         request.groceryName)
-        row(context.getString(R.string.label_pickup_date),  request.pickupDate)
-        row(context.getString(R.string.label_pickup_time),  request.pickupTime)
-        row(context.getString(R.string.label_status),       request.status.name)
+        row(context.getString(R.string.label_food_item), request.listingTitle)
+        row(context.getString(R.string.label_category), request.listingCategory)
+        row(context.getString(R.string.listing_quantity), "${request.requestedQuantity}")
+        row(context.getString(R.string.label_from), request.groceryName)
+        row(context.getString(R.string.label_pickup_date), request.pickupDate)
+        row(context.getString(R.string.label_pickup_time), request.pickupTime)
+        row(context.getString(R.string.label_status), request.status.name)
         request.notes?.takeIf { it.isNotBlank() }?.let { row(context.getString(R.string.label_notes), it.take(60)) }
 
         y += 12f
         canvas.drawLine(40f, y, 555f, y, dividerPaint)
         y += 20f
-        canvas.drawText(context.getString(R.string.pdf_generated_by), 40f, y,
-            labelPaint.apply { textSize = 10f })
+        canvas.drawText(
+            context.getString(R.string.pdf_generated_by),
+            40f,
+            y,
+            labelPaint.apply { textSize = 10f }
+        )
 
         doc.finishPage(page)
 
@@ -448,8 +454,8 @@ class MyRequestsViewModel @Inject constructor(
                 reviewApi.submitReview(
                     SubmitReviewRequest(
                         pickupRequestId = s.showReviewDialogForId!!,
-                        rating          = s.reviewRating,
-                        comment         = s.reviewComment.ifBlank { null }
+                        rating = s.reviewRating,
+                        comment = s.reviewComment.ifBlank { null }
                     )
                 )
                 _state.update { it.copy(isSubmittingReview = false, showReviewDialogForId = null) }

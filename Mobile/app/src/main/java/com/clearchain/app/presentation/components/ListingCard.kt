@@ -41,19 +41,23 @@ fun ListingCard(
         try {
             val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(listing.expiryDate)!!
             val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
             }.time
             TimeUnit.MILLISECONDS.toDays(date.time - today.time)
-        } catch (_: Exception) { Long.MAX_VALUE }
+        } catch (_: Exception) {
+            Long.MAX_VALUE
+        }
     }
     val expiryColor = when {
         daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
         daysUntilExpiry <= 3L -> Color(0xFFE65100)
-        else                  -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val expiryText = when {
-        daysUntilExpiry < 0   -> stringResource(R.string.listing_expired_label)
+        daysUntilExpiry < 0 -> stringResource(R.string.listing_expired_label)
         daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
         daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
         daysUntilExpiry in 2..3 -> stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
@@ -61,16 +65,16 @@ fun ListingCard(
     }
 
     val urgencyBannerText: String? = when {
-        daysUntilExpiry < 0L  -> stringResource(R.string.listing_expired_label)
+        daysUntilExpiry < 0L -> stringResource(R.string.listing_expired_label)
         daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
         daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
         daysUntilExpiry <= 3L -> stringResource(R.string.listing_expiring_soon)
-        else                  -> null
+        else -> null
     }
     val urgencyBannerColor: Color = when {
         daysUntilExpiry <= 0L -> Color(0xCCB71C1C)
         daysUntilExpiry == 1L -> Color(0xCCE65100)
-        else                  -> Color(0xCCF57F17)
+        else -> Color(0xCCF57F17)
     }
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
@@ -88,7 +92,7 @@ fun ListingCard(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageUrl).crossfade(true).build(),
                         contentDescription = listing.title,
-                        modifier     = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         loading = {
                             Box(
@@ -114,9 +118,9 @@ fun ListingCard(
                     ) {
                         Text(
                             urgencyBannerText.uppercase(),
-                            style      = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color      = Color.White
+                            color = Color.White
                         )
                     }
                 }
@@ -130,11 +134,11 @@ fun ListingCard(
                 if (onGroceryAvatarClick != null) {
                     OverlayAvatar(
                         imageUrl = listing.groceryProfilePictureUrl,
-                        name     = listing.groceryName,
+                        name = listing.groceryName,
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(8.dp),
-                        onClick  = onGroceryAvatarClick
+                        onClick = onGroceryAvatarClick
                     )
                 }
             }
@@ -146,22 +150,22 @@ fun ListingCard(
             ) {
                 // Name + category inline, topRightAction on the right
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.Top
+                    verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(
-                            verticalAlignment     = Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text       = listing.title,
-                                style      = MaterialTheme.typography.titleMedium,
+                                text = listing.title,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                maxLines   = 2,
-                                overflow   = TextOverflow.Ellipsis,
-                                modifier   = Modifier.weight(1f, fill = false)
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                             CategoryBadge(listing.category)
                         }
@@ -173,8 +177,8 @@ fun ListingCard(
                 if (listing.description.isNotBlank()) {
                     Text(
                         listing.description,
-                        style    = MaterialTheme.typography.bodySmall,
-                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -184,11 +188,12 @@ fun ListingCard(
 
                 // Quantity
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        Icons.Default.ShoppingCart, null,
+                        Icons.Default.ShoppingCart,
+                        null,
                         Modifier.size(14.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -202,25 +207,26 @@ fun ListingCard(
 
                 // Expiry date
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = expiryColor)
                     Text(
                         expiryText,
-                        style      = MaterialTheme.typography.labelSmall,
-                        color      = expiryColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = expiryColor,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
 
                 // Pickup time
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        Icons.Default.Schedule, null,
+                        Icons.Default.Schedule,
+                        null,
                         Modifier.size(14.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -240,31 +246,42 @@ fun ListingCard(
                 // Location + distance (browse mode, merged into one row)
                 if (showGroceryInfo && listing.location.isNotBlank()) {
                     Row(
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(Icons.Default.Place, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Place,
+                            null,
+                            Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Text(
                             listing.location,
-                            style    = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         listing.distanceKm?.let { km ->
-                            Text("·", style = MaterialTheme.typography.labelSmall,
+                            Text(
+                                "·",
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Icon(Icons.Default.NearMe, null, Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Icon(
+                                Icons.Default.NearMe,
+                                null,
+                                Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Text(
                                 "${km}km",
-                                style      = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color      = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -276,10 +293,10 @@ fun ListingCard(
                 primaryAction?.invoke()
                 secondaryActions?.let {
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
-                        verticalAlignment     = Alignment.CenterVertically,
-                        content               = it
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = it
                     )
                 }
             }
@@ -314,8 +331,12 @@ private fun DistanceBadge(km: Double) {
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Icon(Icons.Default.NearMe, null, Modifier.size(11.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-            Text("${km}km", style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Text(
+                "${km}km",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }

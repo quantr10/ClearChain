@@ -65,7 +65,7 @@ class BrowseListingsViewModel @Inject constructor(
         // Then: observe ongoing changes (when user returns from LocationPicker with new preference)
         viewModelScope.launch {
             locationPreferenceStore.locationPreference
-                .drop(1)  // Skip the first emission (already handled above)
+                .drop(1) // Skip the first emission (already handled above)
                 .collect { pref ->
                     if (pref != null) {
                         val changed = _state.value.userLat != pref.latitude ||
@@ -170,15 +170,17 @@ class BrowseListingsViewModel @Inject constructor(
                 applyFilters()
             }
             BrowseListingsEvent.ClearAdvancedFilters -> {
-                _state.update { it.copy(
-                    selectedCategory = null,
-                    filterMinQuantity = 0,
-                    filterMaxQuantity = null,
-                    filterMinExpiryDays = 0,
-                    filterMaxExpiryDays = null,
-                    filterMaxDistanceKm = null,
-                    showFavoritesOnly = false
-                ) }
+                _state.update {
+                    it.copy(
+                        selectedCategory = null,
+                        filterMinQuantity = 0,
+                        filterMaxQuantity = null,
+                        filterMinExpiryDays = 0,
+                        filterMaxExpiryDays = null,
+                        filterMaxDistanceKm = null,
+                        showFavoritesOnly = false
+                    )
+                }
                 applyFilters()
             }
 
@@ -265,8 +267,11 @@ class BrowseListingsViewModel @Inject constructor(
         applyFilters()
         viewModelScope.launch {
             try {
-                if (wasSaved) savedListingApi.unsaveListing(listingId)
-                else savedListingApi.saveListing(listingId)
+                if (wasSaved) {
+                    savedListingApi.unsaveListing(listingId)
+                } else {
+                    savedListingApi.saveListing(listingId)
+                }
             } catch (_: Exception) {
                 // Revert on failure
                 _state.update {
@@ -284,7 +289,8 @@ class BrowseListingsViewModel @Inject constructor(
             val s = _state.value
             val result = getAllListingsUseCase(
                 status = "open",
-                lat = s.userLat, lng = s.userLng,
+                lat = s.userLat,
+                lng = s.userLng,
                 radiusKm = if (s.isLocationSet) s.radiusKm else null
             )
             result.fold(
@@ -305,7 +311,8 @@ class BrowseListingsViewModel @Inject constructor(
             val s = _state.value
             val result = getAllListingsUseCase(
                 status = "open",
-                lat = s.userLat, lng = s.userLng,
+                lat = s.userLat,
+                lng = s.userLng,
                 radiusKm = if (s.isLocationSet) s.radiusKm else null
             )
             result.fold(
@@ -341,10 +348,10 @@ class BrowseListingsViewModel @Inject constructor(
             val q = s.searchQuery.lowercase()
             result = result.filter {
                 it.title.lowercase().contains(q) ||
-                it.description.lowercase().contains(q) ||
-                it.groceryName.lowercase().contains(q) ||
-                it.location.lowercase().contains(q) ||
-                it.category.displayName().lowercase().contains(q)
+                    it.description.lowercase().contains(q) ||
+                    it.groceryName.lowercase().contains(q) ||
+                    it.location.lowercase().contains(q) ||
+                    it.category.displayName().lowercase().contains(q)
             }
         }
         s.selectedCategory?.let { cat -> result = result.filter { it.category.name == cat } }
@@ -373,12 +380,12 @@ class BrowseListingsViewModel @Inject constructor(
     }
 
     private fun List<Listing>.applySorting(s: BrowseListingsState): List<Listing> = when (s.selectedSort.value) {
-        "date_desc"  -> sortedByDescending { it.createdAt }
-        "date_asc"   -> sortedBy { it.createdAt }
+        "date_desc" -> sortedByDescending { it.createdAt }
+        "date_asc" -> sortedBy { it.createdAt }
         "expiry_asc" -> sortedBy { it.expiryDate }
-        "expiry_desc"-> sortedByDescending { it.expiryDate }
-        "name_asc"   -> sortedBy { it.title }
-        "name_desc"  -> sortedByDescending { it.title }
-        else         -> this
+        "expiry_desc" -> sortedByDescending { it.expiryDate }
+        "name_asc" -> sortedBy { it.title }
+        "name_desc" -> sortedByDescending { it.title }
+        else -> this
     }
 }

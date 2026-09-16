@@ -52,10 +52,10 @@ fun VerificationQueueScreen(
     // Approval checklist dialog
     state.showChecklistForId?.let {
         ApprovalChecklistDialog(
-            checkedItems    = state.checkedItems,
-            onToggle        = { idx -> viewModel.onEvent(VerificationQueueEvent.ToggleChecklistItem(idx)) },
-            onConfirm       = { viewModel.onEvent(VerificationQueueEvent.ConfirmApprove) },
-            onDismiss       = { viewModel.onEvent(VerificationQueueEvent.DismissChecklist) },
+            checkedItems = state.checkedItems,
+            onToggle = { idx -> viewModel.onEvent(VerificationQueueEvent.ToggleChecklistItem(idx)) },
+            onConfirm = { viewModel.onEvent(VerificationQueueEvent.ConfirmApprove) },
+            onDismiss = { viewModel.onEvent(VerificationQueueEvent.DismissChecklist) },
             checklistComplete = state.checklistComplete
         )
     }
@@ -63,11 +63,11 @@ fun VerificationQueueScreen(
     // Rejection dialog
     state.showRejectDialogForId?.let {
         RejectOrgDialog(
-            reason          = state.rejectionReason,
-            onReasonChange  = { viewModel.onEvent(VerificationQueueEvent.RejectionReasonChanged(it)) },
+            reason = state.rejectionReason,
+            onReasonChange = { viewModel.onEvent(VerificationQueueEvent.RejectionReasonChanged(it)) },
             onSelectTemplate = { viewModel.onEvent(VerificationQueueEvent.SelectRejectionTemplate(it)) },
-            onConfirm       = { viewModel.onEvent(VerificationQueueEvent.ConfirmReject) },
-            onDismiss       = { viewModel.onEvent(VerificationQueueEvent.DismissRejectDialog) }
+            onConfirm = { viewModel.onEvent(VerificationQueueEvent.ConfirmReject) },
+            onDismiss = { viewModel.onEvent(VerificationQueueEvent.DismissRejectDialog) }
         )
     }
 
@@ -75,8 +75,8 @@ fun VerificationQueueScreen(
 
     if (state.showFilterSheet) {
         VerificationFilterSheet(
-            state     = state,
-            onEvent   = viewModel::onEvent,
+            state = state,
+            onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(VerificationQueueEvent.HideFilterSheet) }
         )
     }
@@ -103,8 +103,8 @@ fun VerificationQueueScreen(
                         )
                         ClearChainButton(
                             text = stringResource(R.string.action_reject_all_batch),
-                            onClick  = { viewModel.onEvent(VerificationQueueEvent.BatchReject) },
-                            enabled  = !state.isProcessing,
+                            onClick = { viewModel.onEvent(VerificationQueueEvent.BatchReject) },
+                            enabled = !state.isProcessing,
                             fillMaxWidth = false,
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError,
@@ -112,8 +112,8 @@ fun VerificationQueueScreen(
                         )
                         ClearChainButton(
                             text = stringResource(R.string.action_approve_all_batch),
-                            onClick  = { viewModel.onEvent(VerificationQueueEvent.BatchApprove) },
-                            enabled  = !state.isProcessing,
+                            onClick = { viewModel.onEvent(VerificationQueueEvent.BatchApprove) },
+                            enabled = !state.isProcessing,
                             fillMaxWidth = false,
                             icon = Icons.Default.CheckCircle
                         )
@@ -121,129 +121,136 @@ fun VerificationQueueScreen(
                 }
             }
         },
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                        ListScreenHeader {
-                        // Search + filter
-                        ListHeaderSearchRow(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.hint_search_organizations)
+                ListScreenHeader {
+                    // Search + filter
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.hint_search_organizations)
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            }
                         ) {
-                            BadgedBox(
-                                badge = {
-                                    if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                            ClearChainActionIconButton(
+                                icon = Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.advanced_filters),
+                                onClick = { viewModel.onEvent(VerificationQueueEvent.ShowFilterSheet) }
+                            )
+                        }
+                    }
+
+                    // Status filter tabs (no counts — counts shown below)
+                    FilterChipsRow(
+                        tabs = listOf(
+                            null to stringResource(R.string.filter_all),
+                            "PENDING" to stringResource(R.string.status_pending),
+                            "APPROVED" to stringResource(R.string.status_approved),
+                            "REJECTED" to stringResource(R.string.status_rejected)
+                        ),
+                        selectedTab = state.selectedStatus,
+                        onTabSelected = { viewModel.onEvent(VerificationQueueEvent.StatusFilterChanged(it)) }
+                    )
+
+                    ResultsCountAndSort(
+                        count = state.filteredOrgs.size,
+                        itemName = "organization",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(VerificationQueueEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions,
+                        countText = if (state.isBatchMode) {
+                            "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected"
+                        } else {
+                            null
+                        },
+                        leadingContent = if (state.isBatchMode) {
+                            {
+                                SelectionCircleButton(
+                                    checked = state.allSelected,
+                                    onCheckedChange = {
+                                        if (state.allSelected) {
+                                            viewModel.onEvent(VerificationQueueEvent.ClearSelection)
+                                        } else {
+                                            viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
+                                        }
+                                    }
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+
+                HapticPullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
+                ) {
+                    LazyColumn(
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (state.isLoading && state.organizations.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillParentMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
                                 }
-                            ) {
-                                ClearChainActionIconButton(
-                                    icon               = Icons.Default.Tune,
-                                    contentDescription = stringResource(R.string.advanced_filters),
-                                    onClick            = { viewModel.onEvent(VerificationQueueEvent.ShowFilterSheet) }
+                            }
+                        } else if (state.organizations.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    icon = Icons.Default.Business,
+                                    title = stringResource(R.string.empty_no_organizations),
+                                    subtitle = stringResource(R.string.empty_no_organizations_subtitle),
+                                    modifier = Modifier.fillParentMaxSize()
+                                )
+                            }
+                        } else if (state.filteredOrgs.isEmpty()) {
+                            item {
+                                EmptyState(
+                                    icon = Icons.Default.FilterAlt,
+                                    title = stringResource(R.string.empty_no_org_category),
+                                    subtitle = stringResource(R.string.empty_no_org_category_subtitle),
+                                    modifier = Modifier.fillParentMaxSize()
+                                )
+                            }
+                        } else {
+                            items(state.filteredOrgs, key = { it.id }) { org ->
+                                OrganizationCard(
+                                    organization = org,
+                                    isProcessing = state.isProcessing,
+                                    onApprove = { viewModel.onEvent(VerificationQueueEvent.ShowChecklist(org.id)) },
+                                    onReject = { viewModel.onEvent(VerificationQueueEvent.ShowRejectDialog(org.id)) },
+                                    onViewProfile = { onNavigateToPublicProfile(org.id) },
+                                    isBatchMode = state.isBatchMode,
+                                    isSelected = org.id in state.selectedOrgIds,
+                                    onToggleSelect = { viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id)) },
+                                    onLongClick = {
+                                        if (!state.isBatchMode) {
+                                            viewModel.onEvent(VerificationQueueEvent.ToggleBatchMode)
+                                            viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id))
+                                        }
+                                    }
                                 )
                             }
                         }
 
-                        // Status filter tabs (no counts — counts shown below)
-                        FilterChipsRow(
-                            tabs = listOf(
-                                null       to stringResource(R.string.filter_all),
-                                "PENDING"  to stringResource(R.string.status_pending),
-                                "APPROVED" to stringResource(R.string.status_approved),
-                                "REJECTED" to stringResource(R.string.status_rejected)
-                            ),
-                            selectedTab = state.selectedStatus,
-                            onTabSelected = { viewModel.onEvent(VerificationQueueEvent.StatusFilterChanged(it)) }
-                        )
-
-                        ResultsCountAndSort(
-                            count          = state.filteredOrgs.size,
-                            itemName       = "organization",
-                            selectedSort   = state.selectedSort,
-                            onSortSelected = { viewModel.onEvent(VerificationQueueEvent.SortOptionChanged(it)) },
-                            sortOptions    = state.availableSortOptions,
-                            countText      = if (state.isBatchMode) {
-                                "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected"
-                            } else null,
-                            leadingContent = if (state.isBatchMode) {
-                                {
-                                    SelectionCircleButton(
-                                        checked = state.allSelected,
-                                        onCheckedChange = {
-                                            if (state.allSelected) viewModel.onEvent(VerificationQueueEvent.ClearSelection)
-                                            else viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
-                                        }
-                                    )
-                                }
-                            } else null
-                        )
-                        }
-
-                        HapticPullToRefreshBox(
-                            isRefreshing = state.isRefreshing,
-                            onRefresh    = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
-                        ) {
-                            LazyColumn(
-                                contentPadding      = ScreenPadding,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                if (state.isLoading && state.organizations.isEmpty()) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier.fillParentMaxSize(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator()
-                                        }
-                                    }
-                                } else if (state.organizations.isEmpty()) {
-                                    item {
-                                        EmptyState(
-                                            icon     = Icons.Default.Business,
-                                            title    = stringResource(R.string.empty_no_organizations),
-                                            subtitle = stringResource(R.string.empty_no_organizations_subtitle),
-                                            modifier = Modifier.fillParentMaxSize()
-                                        )
-                                    }
-                                } else if (state.filteredOrgs.isEmpty()) {
-                                    item {
-                                        EmptyState(
-                                            icon     = Icons.Default.FilterAlt,
-                                            title    = stringResource(R.string.empty_no_org_category),
-                                            subtitle = stringResource(R.string.empty_no_org_category_subtitle),
-                                            modifier = Modifier.fillParentMaxSize()
-                                        )
-                                    }
-                                } else {
-                                    items(state.filteredOrgs, key = { it.id }) { org ->
-                                        OrganizationCard(
-                                            organization = org,
-                                            isProcessing = state.isProcessing,
-                                            onApprove    = { viewModel.onEvent(VerificationQueueEvent.ShowChecklist(org.id)) },
-                                            onReject     = { viewModel.onEvent(VerificationQueueEvent.ShowRejectDialog(org.id)) },
-                                            onViewProfile = { onNavigateToPublicProfile(org.id) },
-                                            isBatchMode  = state.isBatchMode,
-                                            isSelected   = org.id in state.selectedOrgIds,
-                                            onToggleSelect = { viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id)) },
-                                            onLongClick  = {
-                                                if (!state.isBatchMode) {
-                                                    viewModel.onEvent(VerificationQueueEvent.ToggleBatchMode)
-                                                    viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id))
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                                item { Spacer(Modifier.height(16.dp)) }
-                            }
-                        }
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
         }
+    }
+}
 // Advanced filter sheet
 // -----------------------------------------------------------------------------
 
@@ -269,8 +276,11 @@ private fun VerificationFilterSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.advanced_filters),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.advanced_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 if (state.activeFilterCount > 0) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.action_clear_all),
@@ -287,8 +297,8 @@ private fun VerificationFilterSheet(
                         .forEach { (type, label) ->
                             FilterChip(
                                 selected = state.filterOrgType == type,
-                                onClick  = { onEvent(VerificationQueueEvent.FilterOrgTypeChanged(type)) },
-                                label    = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                                onClick = { onEvent(VerificationQueueEvent.FilterOrgTypeChanged(type)) },
+                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                 }
@@ -307,14 +317,14 @@ private fun VerificationFilterSheet(
 @Composable
 private fun OrganizationCard(
     organization: Organization,
-    isProcessing:  Boolean,
-    onApprove:     () -> Unit,
-    onReject:      () -> Unit,
+    isProcessing: Boolean,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
     onViewProfile: () -> Unit = {},
-    isBatchMode:   Boolean = false,
-    isSelected:    Boolean = false,
+    isBatchMode: Boolean = false,
+    isSelected: Boolean = false,
     onToggleSelect: () -> Unit = {},
-    onLongClick:   () -> Unit = {}
+    onLongClick: () -> Unit = {}
 ) {
     var fullPhotoUrl by remember { mutableStateOf<String?>(null) }
     if (fullPhotoUrl != null) {
@@ -327,17 +337,18 @@ private fun OrganizationCard(
     // Material ripple — clipped to the card shape because the click target sits inside the
     // card. A long-press starts multi-select.
     ClearChainCard(
-        containerColor = if (isSelected)
+        containerColor = if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        else
-            MaterialTheme.colorScheme.surface,
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
         elevation = if (isSelected) 3.dp else 1.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick     = { if (isBatchMode) onToggleSelect() else onViewProfile() },
+                    onClick = { if (isBatchMode) onToggleSelect() else onViewProfile() },
                     onLongClick = onLongClick
                 )
                 .padding(14.dp),
@@ -353,68 +364,68 @@ private fun OrganizationCard(
             // block below, after the phone.
             val typeAccent = when (organization.type) {
                 OrganizationType.GROCERY -> MaterialTheme.colorScheme.onSecondaryContainer
-                OrganizationType.NGO     -> MaterialTheme.colorScheme.onTertiaryContainer
-                OrganizationType.ADMIN   -> MaterialTheme.colorScheme.onPrimaryContainer
+                OrganizationType.NGO -> MaterialTheme.colorScheme.onTertiaryContainer
+                OrganizationType.ADMIN -> MaterialTheme.colorScheme.onPrimaryContainer
             }
             val typeContainer = when (organization.type) {
                 OrganizationType.GROCERY -> MaterialTheme.colorScheme.secondaryContainer
-                OrganizationType.NGO     -> MaterialTheme.colorScheme.tertiaryContainer
-                OrganizationType.ADMIN   -> MaterialTheme.colorScheme.primaryContainer
+                OrganizationType.NGO -> MaterialTheme.colorScheme.tertiaryContainer
+                OrganizationType.ADMIN -> MaterialTheme.colorScheme.primaryContainer
             }
             val roleLabel = when (organization.type) {
                 OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
-                OrganizationType.NGO     -> stringResource(R.string.role_ngo)
-                OrganizationType.ADMIN   -> stringResource(R.string.role_admin)
+                OrganizationType.NGO -> stringResource(R.string.role_ngo)
+                OrganizationType.ADMIN -> stringResource(R.string.role_admin)
             }
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isBatchMode) {
                     SelectionCircleButton(
-                        checked         = isSelected,
+                        checked = isSelected,
                         onCheckedChange = { onToggleSelect() },
-                        modifier        = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
                 AvatarImage(
-                    imageUrl        = organization.profilePictureUrl,
-                    name            = organization.name,
-                    size            = 44,
+                    imageUrl = organization.profilePictureUrl,
+                    name = organization.name,
+                    size = 44,
                     backgroundColor = typeContainer,
-                    textColor       = typeAccent
+                    textColor = typeAccent
                 )
 
                 Column(
-                    modifier            = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     val (statusLabel, statusColor, statusIcon) = when (organization.verificationStatus) {
                         VerificationStatus.APPROVED -> Triple(stringResource(R.string.status_approved), BrandGreen, Icons.Default.CheckCircle)
                         VerificationStatus.REJECTED -> Triple(stringResource(R.string.status_rejected), MaterialTheme.colorScheme.error, Icons.Default.Cancel)
-                        VerificationStatus.PENDING  -> Triple(stringResource(R.string.status_pending),  MaterialTheme.colorScheme.secondary, Icons.Default.Schedule)
+                        VerificationStatus.PENDING -> Triple(stringResource(R.string.status_pending), MaterialTheme.colorScheme.secondary, Icons.Default.Schedule)
                     }
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment     = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text       = organization.name,
-                            style      = MaterialTheme.typography.titleSmall,
+                            text = organization.name,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            maxLines   = 1,
-                            overflow   = TextOverflow.Ellipsis,
-                            modifier   = Modifier.weight(1f)
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                         StatusBadge(
-                            label           = statusLabel,
+                            label = statusLabel,
                             backgroundColor = statusColor.copy(alpha = 0.15f),
-                            contentColor    = statusColor,
-                            icon            = statusIcon
+                            contentColor = statusColor,
+                            icon = statusIcon
                         )
                     }
 
@@ -424,10 +435,10 @@ private fun OrganizationCard(
                         contentColor = typeAccent
                     ) {
                         Text(
-                            text       = roleLabel,
-                            style      = MaterialTheme.typography.labelSmall,
+                            text = roleLabel,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -441,30 +452,30 @@ private fun OrganizationCard(
             // and it keeps the header uncluttered.
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 CompactInfoRow(
-                    icon     = Icons.Default.Email,
-                    value    = organization.email,
+                    icon = Icons.Default.Email,
+                    value = organization.email,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     CompactInfoRow(
-                        icon  = Icons.Default.Phone,
+                        icon = Icons.Default.Phone,
                         value = organization.phone.ifBlank { stringResource(R.string.msg_not_provided) }
                     )
                     organization.contactPerson?.takeIf { it.isNotBlank() }?.let { person ->
                         CompactInfoRow(
-                            icon     = Icons.Default.Person,
-                            value    = person,
+                            icon = Icons.Default.Person,
+                            value = person,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
                 CompactInfoRow(
-                    icon     = Icons.Default.Place,
-                    value    = organization.location.ifBlank { stringResource(R.string.msg_not_provided) },
+                    icon = Icons.Default.Place,
+                    value = organization.location.ifBlank { stringResource(R.string.msg_not_provided) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -504,9 +515,9 @@ private fun OrganizationCard(
                     )
                     ClearChainButton(
                         text = stringResource(R.string.approve),
-                        onClick  = onApprove,
+                        onClick = onApprove,
                         modifier = Modifier.weight(1f),
-                        enabled  = !isProcessing,
+                        enabled = !isProcessing,
                         icon = Icons.Default.CheckCircle
                     )
                 }
@@ -523,23 +534,23 @@ private fun OrganizationCard(
 @Composable
 private fun CompactInfoRow(icon: ImageVector, value: String, modifier: Modifier = Modifier) {
     Row(
-        modifier              = modifier,
-        verticalAlignment     = Alignment.CenterVertically,
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(
             icon,
             contentDescription = null,
             modifier = Modifier.size(14.dp),
-            tint     = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text       = value,
-            style      = MaterialTheme.typography.labelSmall,
+            text = value,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
-            color      = MaterialTheme.colorScheme.onSurface,
-            maxLines   = 1,
-            overflow   = TextOverflow.Ellipsis
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -577,10 +588,10 @@ private fun SelectionCircleButton(
 
 @Composable
 private fun ApprovalChecklistDialog(
-    checkedItems:      Set<Int>,
-    onToggle:          (Int) -> Unit,
-    onConfirm:         () -> Unit,
-    onDismiss:         () -> Unit,
+    checkedItems: Set<Int>,
+    onToggle: (Int) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
     checklistComplete: Boolean
 ) {
     val checklistItems = listOf(
@@ -632,11 +643,11 @@ private fun ApprovalChecklistDialog(
 
 @Composable
 private fun RejectOrgDialog(
-    reason:          String,
-    onReasonChange:  (String) -> Unit,
+    reason: String,
+    onReasonChange: (String) -> Unit,
     onSelectTemplate: (String) -> Unit,
-    onConfirm:       () -> Unit,
-    onDismiss:       () -> Unit
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val rejectionTemplates = listOf(
         stringResource(R.string.reject_template_1),
@@ -666,20 +677,20 @@ private fun RejectOrgDialog(
                 rejectionTemplates.forEach { template ->
                     SuggestionChip(
                         onClick = { onSelectTemplate(template) },
-                        label   = { Text(template, style = MaterialTheme.typography.labelSmall) },
+                        label = { Text(template, style = MaterialTheme.typography.labelSmall) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
             OutlinedTextField(
-                value         = reason,
+                value = reason,
                 onValueChange = onReasonChange,
-                label         = { Text(stringResource(R.string.label_rejection_reason)) },
-                placeholder   = { Text(stringResource(R.string.hint_rejection_reason)) },
-                singleLine    = false,
-                maxLines      = 4,
-                modifier      = Modifier.fillMaxWidth()
+                label = { Text(stringResource(R.string.label_rejection_reason)) },
+                placeholder = { Text(stringResource(R.string.hint_rejection_reason)) },
+                singleLine = false,
+                maxLines = 4,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

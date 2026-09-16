@@ -103,26 +103,26 @@ class LoginViewModel @Inject constructor(
                         }
                     } else {
                         // Route each error to the appropriate field instead of a banner
-                        val isSystemError = raw.contains("429") || raw.contains("Too Many", ignoreCase = true)
-                            || raw.contains("500") || raw.contains("502") || raw.contains("503")
-                            || raw.contains("Unable to resolve host", ignoreCase = true)
-                            || raw.contains("timeout", ignoreCase = true)
-                            || raw.contains("connect", ignoreCase = true)
+                        val isSystemError = raw.contains("429") || raw.contains("Too Many", ignoreCase = true) ||
+                            raw.contains("500") || raw.contains("502") || raw.contains("503") ||
+                            raw.contains("Unable to resolve host", ignoreCase = true) ||
+                            raw.contains("timeout", ignoreCase = true) ||
+                            raw.contains("connect", ignoreCase = true)
 
                         val systemMsg = when {
                             raw.contains("429") || raw.contains("Too Many", ignoreCase = true) ->
                                 context.getString(R.string.error_too_many_attempts)
                             raw.contains("500") || raw.contains("502") || raw.contains("503") ->
                                 context.getString(R.string.error_server)
-                            raw.contains("Unable to resolve host", ignoreCase = true)
-                                || raw.contains("timeout", ignoreCase = true)
-                                || raw.contains("connect", ignoreCase = true) ->
+                            raw.contains("Unable to resolve host", ignoreCase = true) ||
+                                raw.contains("timeout", ignoreCase = true) ||
+                                raw.contains("connect", ignoreCase = true) ->
                                 context.getString(R.string.error_no_internet)
                             else -> null
                         }
 
                         val (emailErr, passwordErr) = when {
-                            isSystemError -> null to null  // handled via all 3 patterns below
+                            isSystemError -> null to null // handled via all 3 patterns below
                             raw.contains("401") || raw.contains("Unauthorized", ignoreCase = true) ->
                                 "" to context.getString(R.string.error_wrong_credentials)
                             raw.contains("404") || raw.contains("Not Found", ignoreCase = true) ->
@@ -133,11 +133,11 @@ class LoginViewModel @Inject constructor(
 
                         _state.update {
                             it.copy(
-                                isLoading     = false,
-                                error         = null,
-                                emailError    = emailErr,
+                                isLoading = false,
+                                error = null,
+                                emailError = emailErr,
                                 passwordError = passwordErr,
-                                systemError   = systemMsg
+                                systemError = systemMsg
                             )
                         }
 
@@ -160,12 +160,15 @@ class LoginViewModel @Inject constructor(
         val s = _state.value
         var valid = true
         if (s.email.isBlank()) {
-            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_required)) }
+            valid = false
         } else if (!ValidationUtils.isValidEmail(s.email)) {
-            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
+            _state.update { it.copy(emailError = context.getString(R.string.error_email_invalid_format)) }
+            valid = false
         }
         if (s.password.isBlank()) {
-            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }; valid = false
+            _state.update { it.copy(passwordError = context.getString(R.string.error_password_required)) }
+            valid = false
         }
         return valid
     }

@@ -162,9 +162,9 @@ fun OverlayAvatar(
         modifier = modifier
             .size(size)
             .let { if (onClick != null) it.clickable(onClick = onClick) else it },
-        shape           = CircleShape,
-        color           = MaterialTheme.colorScheme.primaryContainer,
-        border          = BorderStroke(2.dp, Color.White),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        border = BorderStroke(2.dp, Color.White),
         shadowElevation = 3.dp
     ) {
         if (!imageUrl.isNullOrBlank()) {
@@ -174,16 +174,16 @@ fun OverlayAvatar(
                     .crossfade(true)
                     .build(),
                 contentDescription = stringResource(R.string.cd_profile_picture_of, name),
-                modifier           = Modifier.fillMaxSize(),
-                contentScale       = ContentScale.Crop
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text       = name.take(1).uppercase(),
-                    style      = MaterialTheme.typography.labelLarge,
+                    text = name.take(1).uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }

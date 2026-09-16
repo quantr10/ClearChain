@@ -64,8 +64,11 @@ fun ConfirmDialog(
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val accent = if (isDestructive) MaterialTheme.colorScheme.error
-                 else MaterialTheme.colorScheme.primary
+    val accent = if (isDestructive) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     val resolvedConfirm = confirmLabel.ifEmpty { stringResource(R.string.btn_confirm) }
     val resolvedDismiss = dismissLabel.ifEmpty { stringResource(R.string.btn_cancel) }
 
@@ -139,8 +142,11 @@ fun ConfirmDialog(
                     icon = confirmIcon,
                     fillMaxWidth = false,
                     containerColor = accent,
-                    contentColor = if (isDestructive) MaterialTheme.colorScheme.onError
-                                   else MaterialTheme.colorScheme.onPrimary
+                    contentColor = if (isDestructive) {
+                        MaterialTheme.colorScheme.onError
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
                 )
             }
         },
@@ -197,8 +203,11 @@ fun PhotoPickerDialog(
             ClearChainButton(
                 text = stringResource(R.string.action_take_photo_camera),
                 onClick = {
-                    if (cameraPermission.status.isGranted) launchCamera()
-                    else cameraPermission.launchPermissionRequest()
+                    if (cameraPermission.status.isGranted) {
+                        launchCamera()
+                    } else {
+                        cameraPermission.launchPermissionRequest()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 icon = Icons.Default.PhotoCamera

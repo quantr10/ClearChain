@@ -62,16 +62,16 @@ enum class PickupRequestStatus(@StringRes val labelResId: Int) {
     READY(R.string.status_ready),
     COMPLETED(R.string.status_completed),
     CANCELLED(R.string.status_cancelled),
-    REJECTED(R.string.status_rejected),
+    REJECTED(R.string.status_rejected)
 }
 
 fun PickupRequestStatus.displayName(): String {
     return when (this) {
-        PickupRequestStatus.PENDING   -> "Pending"
-        PickupRequestStatus.APPROVED  -> "Approved"
-        PickupRequestStatus.READY     -> "Ready"
+        PickupRequestStatus.PENDING -> "Pending"
+        PickupRequestStatus.APPROVED -> "Approved"
+        PickupRequestStatus.READY -> "Ready"
         PickupRequestStatus.COMPLETED -> "Completed"
         PickupRequestStatus.CANCELLED -> "Cancelled"
-        PickupRequestStatus.REJECTED  -> "Rejected"
+        PickupRequestStatus.REJECTED -> "Rejected"
     }
 }

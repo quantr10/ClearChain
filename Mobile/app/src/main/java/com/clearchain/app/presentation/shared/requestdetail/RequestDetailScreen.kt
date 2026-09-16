@@ -101,7 +101,7 @@ data class RequestDetailState(
     val showAutoRatingSheet: Boolean = false,
     val showRatingSheet: Boolean = false,
     val isGeneratingReceipt: Boolean = false,
-    val groceryProfile: PublicProfileData? = null,
+    val groceryProfile: PublicProfileData? = null
 ) {
     val allChecked: Boolean get() = checkedItems.size == PICKUP_CHECKLIST_SIZE
 }
@@ -267,8 +267,8 @@ class RequestDetailViewModel @Inject constructor(
     }
 
     fun dismissAutoRatingSheet() = _state.update { it.copy(showAutoRatingSheet = false) }
-    fun openRatingSheet()       = _state.update { it.copy(showRatingSheet = true) }
-    fun closeRatingSheet()      = _state.update { it.copy(showRatingSheet = false) }
+    fun openRatingSheet() = _state.update { it.copy(showRatingSheet = true) }
+    fun closeRatingSheet() = _state.update { it.copy(showRatingSheet = false) }
 
     fun generateReceipt() {
         val req = _state.value.request ?: return
@@ -286,39 +286,59 @@ class RequestDetailViewModel @Inject constructor(
     }
 
     private fun buildReceiptPdf(request: PickupRequest): Uri {
-        val doc      = PdfDocument()
+        val doc = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
-        val page     = doc.startPage(pageInfo)
+        val page = doc.startPage(pageInfo)
         val canvas: Canvas = page.canvas
 
-        val titlePaint = Paint().apply { textSize = 24f; color = AColor.BLACK; isFakeBoldText = true }
-        val labelPaint = Paint().apply { textSize = 14f; color = AColor.GRAY }
-        val valuePaint = Paint().apply { textSize = 14f; color = AColor.BLACK }
-        val divPaint   = Paint().apply { color = AColor.LTGRAY; strokeWidth = 1f }
+        val titlePaint = Paint().apply {
+            textSize = 24f
+            color = AColor.BLACK
+            isFakeBoldText = true
+        }
+        val labelPaint = Paint().apply {
+            textSize = 14f
+            color = AColor.GRAY
+        }
+        val valuePaint = Paint().apply {
+            textSize = 14f
+            color = AColor.BLACK
+        }
+        val divPaint = Paint().apply {
+            color = AColor.LTGRAY
+            strokeWidth = 1f
+        }
 
         var y = 60f
         canvas.drawText(context.getString(R.string.label_pickup_receipt), 40f, y, titlePaint)
-        y += 8f; canvas.drawLine(40f, y, 555f, y, divPaint); y += 30f
+        y += 8f
+        canvas.drawLine(40f, y, 555f, y, divPaint)
+        y += 30f
 
         fun row(label: String, value: String) {
-            canvas.drawText(label, 40f, y, labelPaint); canvas.drawText(value, 220f, y, valuePaint); y += 24f
+            canvas.drawText(label, 40f, y, labelPaint)
+            canvas.drawText(value, 220f, y, valuePaint)
+            y += 24f
         }
         row(context.getString(R.string.label_reference_id), request.id.take(16) + "ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦")
-        row(context.getString(R.string.label_food_item),    request.listingTitle)
-        row(context.getString(R.string.label_category),     request.listingCategory)
-        row(context.getString(R.string.listing_quantity),   "${request.requestedQuantity}")
-        row(context.getString(R.string.label_from),         request.groceryName)
-        row(context.getString(R.string.label_pickup_date),  request.pickupDate)
-        row(context.getString(R.string.label_pickup_time),  request.pickupTime)
-        row(context.getString(R.string.label_status),       request.status.name)
+        row(context.getString(R.string.label_food_item), request.listingTitle)
+        row(context.getString(R.string.label_category), request.listingCategory)
+        row(context.getString(R.string.listing_quantity), "${request.requestedQuantity}")
+        row(context.getString(R.string.label_from), request.groceryName)
+        row(context.getString(R.string.label_pickup_date), request.pickupDate)
+        row(context.getString(R.string.label_pickup_time), request.pickupTime)
+        row(context.getString(R.string.label_status), request.status.name)
         request.notes?.takeIf { it.isNotBlank() }?.let { row(context.getString(R.string.label_notes), it.take(60)) }
 
-        y += 12f; canvas.drawLine(40f, y, 555f, y, divPaint); y += 20f
+        y += 12f
+        canvas.drawLine(40f, y, 555f, y, divPaint)
+        y += 20f
         canvas.drawText(context.getString(R.string.pdf_generated_by), 40f, y, labelPaint.apply { textSize = 10f })
         doc.finishPage(page)
 
         val file = File(context.cacheDir, "receipt_${request.id.take(8)}.pdf")
-        doc.writeTo(file.outputStream()); doc.close()
+        doc.writeTo(file.outputStream())
+        doc.close()
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
 
@@ -360,7 +380,7 @@ class RequestDetailViewModel @Inject constructor(
         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_pickup_confirmed)))
     }
 
-    fun showRejectDialog()    = _state.update { it.copy(showRejectDialog = true) }
+    fun showRejectDialog() = _state.update { it.copy(showRejectDialog = true) }
     fun dismissRejectDialog() = _state.update { it.copy(showRejectDialog = false) }
 
     fun loadMessages(requestId: String) {
@@ -423,13 +443,13 @@ fun RequestDetailScreen(
     val context = LocalContext.current
     var showChatSheet by remember { mutableStateOf(false) }
 
-    val req        = state.request
-    val isGrocery  = state.currentUserType == OrganizationType.GROCERY
-    val isNgo      = state.currentUserType == OrganizationType.NGO
+    val req = state.request
+    val isGrocery = state.currentUserType == OrganizationType.GROCERY
+    val isNgo = state.currentUserType == OrganizationType.NGO
     val isMyRequest = req != null && when {
         isGrocery -> req.groceryId == state.currentUserId
-        isNgo     -> req.ngoId == state.currentUserId
-        else      -> false
+        isNgo -> req.ngoId == state.currentUserId
+        else -> false
     }
     val isChatVisible = isMyRequest && req != null &&
         req.status != PickupRequestStatus.COMPLETED &&
@@ -437,7 +457,7 @@ fun RequestDetailScreen(
         req.status != PickupRequestStatus.REJECTED
 
     var showChecklistSheet by remember { mutableStateOf(false) }
-    var showPhotoPicker    by remember { mutableStateOf(false) }
+    var showPhotoPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(requestId) { viewModel.loadRequest(requestId) }
     LaunchedEffect(Unit) {
@@ -460,20 +480,20 @@ fun RequestDetailScreen(
     // Auto rating sheet on first view after completion (NGO only)
     if (state.showAutoRatingSheet && req != null && isNgo) {
         RatingSheet(
-            myReview     = state.myReview,
+            myReview = state.myReview,
             isSubmitting = state.isSubmittingReview,
-            onDismiss    = { viewModel.dismissAutoRatingSheet() },
-            onSubmit     = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
+            onDismiss = { viewModel.dismissAutoRatingSheet() },
+            onSubmit = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
         )
     }
 
     // Manual rating sheet from "Show" button (NGO only)
     if (state.showRatingSheet && req != null && isNgo) {
         RatingSheet(
-            myReview     = state.myReview,
+            myReview = state.myReview,
             isSubmitting = state.isSubmittingReview,
-            onDismiss    = { viewModel.closeRatingSheet() },
-            onSubmit     = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
+            onDismiss = { viewModel.closeRatingSheet() },
+            onSubmit = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
         )
     }
 
@@ -481,7 +501,10 @@ fun RequestDetailScreen(
     if (showChecklistSheet) {
         PickupChecklistSheet(
             onDismiss = { showChecklistSheet = false },
-            onNext    = { showChecklistSheet = false; showPhotoPicker = true }
+            onNext = {
+                showChecklistSheet = false
+                showPhotoPicker = true
+            }
         )
     }
 
@@ -522,17 +545,17 @@ fun RequestDetailScreen(
             ) {
                 Text(
                     stringResource(R.string.label_messages_section),
-                    style      = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 ChatSection(
-                    messages       = state.messages,
-                    currentUserId  = state.currentUserId ?: "",
-                    messageInput   = state.messageInput,
-                    isSending      = state.isSendingMessage,
-                    isLoading      = state.isLoadingMessages,
+                    messages = state.messages,
+                    currentUserId = state.currentUserId ?: "",
+                    messageInput = state.messageInput,
+                    isSending = state.isSendingMessage,
+                    isLoading = state.isLoadingMessages,
                     onInputChanged = { viewModel.onMessageInputChanged(it) },
-                    onSend         = { viewModel.sendMessage(requestId) }
+                    onSend = { viewModel.sendMessage(requestId) }
                 )
             }
         }
@@ -542,15 +565,18 @@ fun RequestDetailScreen(
         floatingActionButton = {
             if (isChatVisible) {
                 SmallFloatingActionButton(
-                    onClick            = { showChatSheet = true; viewModel.loadMessages(requestId) },
-                    containerColor     = MaterialTheme.colorScheme.primary,
-                    contentColor       = MaterialTheme.colorScheme.onPrimary
+                    onClick = {
+                        showChatSheet = true
+                        viewModel.loadMessages(requestId)
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = stringResource(R.string.label_messages_section))
                 }
             }
         },
-        snackbarHost   = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -560,36 +586,36 @@ fun RequestDetailScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
-            when {
-                state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                state.error != null -> EmptyState(
-                    icon        = Icons.Default.ErrorOutline,
-                    title       = stringResource(R.string.error_generic),
-                    subtitle    = state.error,
-                    actionLabel = stringResource(R.string.retry),
-                    onAction    = { viewModel.loadRequest(requestId) }
-                )
-                req != null -> RequestDetailContent(
-                    req               = req,
-                    state             = state,
-                    isGrocery         = isGrocery,
-                    isNgo             = isNgo,
-                    isMyRequest       = isMyRequest,
-                    showDisputeButton = isMyRequest &&
-                        req.status != PickupRequestStatus.CANCELLED &&
-                        req.status != PickupRequestStatus.REJECTED,
-                    onApprove         = { viewModel.approve(requestId) },
-                    onReject          = { viewModel.showRejectDialog() },
-                    onMarkReady       = { viewModel.markReady(requestId) },
-                    onCancel          = { viewModel.cancel(requestId) },
-                    onConfirmPickup           = { showChecklistSheet = true },
-                    onNavigateToPublicProfile = onNavigateToPublicProfile,
-                    onNavigateToListing       = onNavigateToListing,
-                    onGenerateReceipt         = { viewModel.generateReceipt() },
-                    onShowRatingSheet         = { viewModel.openRatingSheet() },
-                    groceryProfile            = state.groceryProfile
-                )
-            }
+                when {
+                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    state.error != null -> EmptyState(
+                        icon = Icons.Default.ErrorOutline,
+                        title = stringResource(R.string.error_generic),
+                        subtitle = state.error,
+                        actionLabel = stringResource(R.string.retry),
+                        onAction = { viewModel.loadRequest(requestId) }
+                    )
+                    req != null -> RequestDetailContent(
+                        req = req,
+                        state = state,
+                        isGrocery = isGrocery,
+                        isNgo = isNgo,
+                        isMyRequest = isMyRequest,
+                        showDisputeButton = isMyRequest &&
+                            req.status != PickupRequestStatus.CANCELLED &&
+                            req.status != PickupRequestStatus.REJECTED,
+                        onApprove = { viewModel.approve(requestId) },
+                        onReject = { viewModel.showRejectDialog() },
+                        onMarkReady = { viewModel.markReady(requestId) },
+                        onCancel = { viewModel.cancel(requestId) },
+                        onConfirmPickup = { showChecklistSheet = true },
+                        onNavigateToPublicProfile = onNavigateToPublicProfile,
+                        onNavigateToListing = onNavigateToListing,
+                        onGenerateReceipt = { viewModel.generateReceipt() },
+                        onShowRatingSheet = { viewModel.openRatingSheet() },
+                        groceryProfile = state.groceryProfile
+                    )
+                }
             }
         }
     }
@@ -613,7 +639,7 @@ private fun RequestDetailContent(
     onNavigateToListing: (String) -> Unit,
     onGenerateReceipt: () -> Unit,
     onShowRatingSheet: () -> Unit,
-    groceryProfile: PublicProfileData? = null,
+    groceryProfile: PublicProfileData? = null
 ) {
     val context = LocalContext.current
     var showDisputeSheet by remember { mutableStateOf(false) }
@@ -623,21 +649,27 @@ private fun RequestDetailContent(
         try {
             val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(raw)!!
             val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
             }.time
             TimeUnit.MILLISECONDS.toDays(date.time - today.time)
-        } catch (_: Exception) { null }
+        } catch (_: Exception) {
+            null
+        }
     }
-    val expiryColor = daysUntilExpiry?.let { when {
-        it <= 0L -> MaterialTheme.colorScheme.error
-        it <= 3L -> Color(0xFFE65100)
-        else     -> MaterialTheme.colorScheme.onSurfaceVariant
-    }} ?: MaterialTheme.colorScheme.onSurfaceVariant
+    val expiryColor = daysUntilExpiry?.let {
+        when {
+            it <= 0L -> MaterialTheme.colorScheme.error
+            it <= 3L -> Color(0xFFE65100)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    } ?: MaterialTheme.colorScheme.onSurfaceVariant
 
     val expiryText: String? = daysUntilExpiry?.let {
         when {
-            it < 0  -> stringResource(R.string.listing_expired_label)
+            it < 0 -> stringResource(R.string.listing_expired_label)
             it == 0L -> stringResource(R.string.listing_expires_today)
             it == 1L -> stringResource(R.string.listing_expires_tomorrow)
             it in 2..3 -> stringResource(R.string.listing_expires_in_days, it.toInt())
@@ -654,8 +686,8 @@ private fun RequestDetailContent(
 
     val handlingParts = buildList {
         if (req.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
-        if (req.isFragile)             add(stringResource(R.string.note_fragile_items))
-        if (req.isHeavy)               add(stringResource(R.string.note_heavy_load))
+        if (req.isFragile) add(stringResource(R.string.note_fragile_items))
+        if (req.isHeavy) add(stringResource(R.string.note_heavy_load))
         req.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
     }
 
@@ -666,18 +698,24 @@ private fun RequestDetailContent(
             .padding(ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        //ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Avatar + party name card (with action buttons top-right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Avatar + party name card (with action buttons top-right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         val showReceiptBtn = isMyRequest && req.status == PickupRequestStatus.COMPLETED
         val partyName = if (isGrocery) req.ngoName else req.groceryName
-        val partyType = if (isGrocery) stringResource(R.string.label_ngo_party)
-                        else stringResource(R.string.label_grocery_party)
-        val partyId   = if (isGrocery) req.ngoId else req.groceryId
-        val partyAvatar = if (isGrocery) req.ngoProfilePictureUrl
-                          else req.groceryProfilePictureUrl
+        val partyType = if (isGrocery) {
+            stringResource(R.string.label_ngo_party)
+        } else {
+            stringResource(R.string.label_grocery_party)
+        }
+        val partyId = if (isGrocery) req.ngoId else req.groceryId
+        val partyAvatar = if (isGrocery) {
+            req.ngoProfilePictureUrl
+        } else {
+            req.groceryProfilePictureUrl
+        }
 
         Card(
-            modifier  = Modifier.fillMaxWidth().height(148.dp),
-            colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth().height(148.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Box(
@@ -685,51 +723,51 @@ private fun RequestDetailContent(
             ) {
                 if (showReceiptBtn || showDisputeButton) {
                     Row(
-                        modifier              = Modifier.align(Alignment.TopEnd),
+                        modifier = Modifier.align(Alignment.TopEnd),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
                         if (showReceiptBtn) {
                             ImageActionButton(
-                                icon    = Icons.Default.Receipt,
-                                label   = stringResource(R.string.cd_download_receipt),
+                                icon = Icons.Default.Receipt,
+                                label = stringResource(R.string.cd_download_receipt),
                                 loading = state.isGeneratingReceipt,
                                 onClick = onGenerateReceipt
                             )
                         }
                         if (showDisputeButton) {
                             ImageActionButton(
-                                icon    = Icons.Default.Flag,
-                                label   = stringResource(R.string.action_file_dispute),
+                                icon = Icons.Default.Flag,
+                                label = stringResource(R.string.action_file_dispute),
                                 onClick = { showDisputeSheet = true }
                             )
                         }
                     }
                 }
                 Column(
-                    modifier            = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier.align(Alignment.BottomCenter),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Surface(
-                        onClick  = { onNavigateToPublicProfile(partyId) },
+                        onClick = { onNavigateToPublicProfile(partyId) },
                         modifier = Modifier.size(64.dp),
-                        shape    = CircleShape,
-                        color    = MaterialTheme.colorScheme.primaryContainer
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         if (!partyAvatar.isNullOrBlank()) {
                             AsyncImage(
-                                model              = partyAvatar,
+                                model = partyAvatar,
                                 contentDescription = partyName,
-                                modifier           = Modifier.fillMaxSize(),
-                                contentScale       = ContentScale.Crop
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
                         } else {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     partyName.take(1).uppercase(),
-                                    style      = MaterialTheme.typography.headlineMedium,
+                                    style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color      = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
@@ -753,9 +791,9 @@ private fun RequestDetailContent(
         // Product name
         Text(
             req.listingTitle,
-            style      = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            modifier   = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
 
         // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 4. Description card ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
@@ -799,20 +837,21 @@ private fun RequestDetailContent(
             SectionCard(stringResource(R.string.section_about_us)) {
                 if (address != null) {
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        verticalAlignment     = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            Icons.Default.Place, null,
+                            Icons.Default.Place,
+                            null,
                             Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             address,
-                            style    = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color    = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
@@ -841,14 +880,18 @@ private fun RequestDetailContent(
 
                 groceryProfile.phone?.takeIf { it.isNotBlank() }?.let { phone ->
                     Row(
-                        modifier              = Modifier.clickable {
+                        modifier = Modifier.clickable {
                             context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
                         },
-                        verticalAlignment     = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(Icons.Default.Phone, null, Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Phone,
+                            null,
+                            Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Text(
                             phone,
                             style = MaterialTheme.typography.labelSmall,
@@ -922,14 +965,14 @@ private fun RequestDetailContent(
         if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isNgo) {
             SectionCard(stringResource(R.string.label_rate_experience)) {
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         stringResource(R.string.hint_pickup_experience),
-                        style    = MaterialTheme.typography.bodySmall,
-                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(12.dp))
@@ -949,14 +992,14 @@ private fun RequestDetailContent(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment     = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             repeat(5) { i ->
                                 Icon(
-                                    imageVector        = if (i < review.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                    imageVector = if (i < review.rating) Icons.Default.Star else Icons.Default.StarBorder,
                                     contentDescription = null,
-                                    modifier           = Modifier.size(28.dp),
-                                    tint               = if (i < review.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
+                                    modifier = Modifier.size(28.dp),
+                                    tint = if (i < review.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
                                 )
                             }
                         }
@@ -967,14 +1010,14 @@ private fun RequestDetailContent(
                         )
                         if (!review.comment.isNullOrBlank()) {
                             Surface(
-                                color    = MaterialTheme.colorScheme.surfaceVariant,
-                                shape    = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
                                     "\"${review.comment}\"",
-                                    style    = MaterialTheme.typography.bodyMedium,
-                                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
@@ -983,7 +1026,7 @@ private fun RequestDetailContent(
                 } else {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment     = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.StarBorder, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
@@ -1008,17 +1051,17 @@ private fun RequestDetailContent(
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Circular overlay action button ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ImageActionButton(
-    icon:    ImageVector,
-    label:   String,
-    tint:    Color   = MaterialTheme.colorScheme.onSurfaceVariant,
+    icon: ImageVector,
+    label: String,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     loading: Boolean = false,
     onClick: () -> Unit
 ) {
     Surface(
-        onClick         = onClick,
-        modifier        = Modifier.size(24.dp),
-        shape           = CircleShape,
-        color           = MaterialTheme.colorScheme.surfaceVariant
+        onClick = onClick,
+        modifier = Modifier.size(24.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
@@ -1037,19 +1080,19 @@ private fun SectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 title,
-                style      = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color      = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface
             )
             content()
         }
@@ -1136,20 +1179,20 @@ private fun RequestedItemRow(
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Compact detail row ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun CompactDetailRow(
-    icon:      androidx.compose.ui.graphics.vector.ImageVector,
-    text:      String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
-    bold:      Boolean = true
+    bold: Boolean = true
 ) {
     Row(
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(
             text,
-            style      = MaterialTheme.typography.labelSmall,
-            color      = textColor,
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
             fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
         )
     }
@@ -1158,10 +1201,10 @@ private fun CompactDetailRow(
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Zoomable proof photo ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ZoomablePhoto(url: String) {
-    var scale  by remember { mutableFloatStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     val transformState = rememberTransformableState { zoomChange, panChange, _ ->
-        scale  = (scale * zoomChange).coerceIn(1f, 4f)
+        scale = (scale * zoomChange).coerceIn(1f, 4f)
         offset = if (scale > 1f) offset + panChange else Offset.Zero
     }
     LaunchedEffect(scale) { if (scale <= 1f) offset = Offset.Zero }
@@ -1176,13 +1219,13 @@ private fun ZoomablePhoto(url: String) {
             .transformable(transformState)
     ) {
         AsyncImage(
-            model              = url,
+            model = url,
             contentDescription = stringResource(R.string.cd_proof_of_pickup),
-            modifier           = Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer(
-                    scaleX       = scale,
-                    scaleY       = scale,
+                    scaleX = scale,
+                    scaleY = scale,
                     translationX = offset.x,
                     translationY = offset.y
                 ),
@@ -1202,12 +1245,12 @@ private fun LifecycleTimeline(request: PickupRequest) {
     )
 
     val currentIndex = when (request.status) {
-        PickupRequestStatus.PENDING   -> 0
-        PickupRequestStatus.APPROVED  -> 1
-        PickupRequestStatus.READY     -> 2
+        PickupRequestStatus.PENDING -> 0
+        PickupRequestStatus.APPROVED -> 1
+        PickupRequestStatus.READY -> 2
         PickupRequestStatus.COMPLETED -> 3
         PickupRequestStatus.CANCELLED,
-        PickupRequestStatus.REJECTED  -> -1
+        PickupRequestStatus.REJECTED -> -1
     }
 
     val green = MaterialTheme.colorScheme.primary
@@ -1215,14 +1258,14 @@ private fun LifecycleTimeline(request: PickupRequest) {
 
     // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Current-stage text (only for active statuses) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
     val statusTitle = when (request.status) {
-        PickupRequestStatus.PENDING   -> stringResource(R.string.label_status_submitted)
-        PickupRequestStatus.APPROVED  -> stringResource(R.string.label_status_approved)
-        PickupRequestStatus.READY     -> stringResource(R.string.label_status_ready)
+        PickupRequestStatus.PENDING -> stringResource(R.string.label_status_submitted)
+        PickupRequestStatus.APPROVED -> stringResource(R.string.label_status_approved)
+        PickupRequestStatus.READY -> stringResource(R.string.label_status_ready)
         PickupRequestStatus.COMPLETED -> stringResource(R.string.label_status_completed)
         else -> null
     }
     val statusSub = when (request.status) {
-        PickupRequestStatus.PENDING  -> stringResource(
+        PickupRequestStatus.PENDING -> stringResource(
             R.string.label_requested_on_at,
             DateTimeUtils.formatDate(request.createdAt),
             DateTimeUtils.formatTime(request.createdAt)
@@ -1232,7 +1275,7 @@ private fun LifecycleTimeline(request: PickupRequest) {
             DateTimeUtils.formatDate(request.pickupDate),
             request.pickupTime
         )
-        PickupRequestStatus.READY    -> stringResource(
+        PickupRequestStatus.READY -> stringResource(
             R.string.label_ready_pickup_by,
             DateTimeUtils.formatDate(request.pickupDate),
             request.pickupTime
@@ -1249,11 +1292,11 @@ private fun LifecycleTimeline(request: PickupRequest) {
     }
 
     Card(
-        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(12.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Status sentence block
@@ -1261,9 +1304,9 @@ private fun LifecycleTimeline(request: PickupRequest) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         statusTitle,
-                        style      = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color      = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         statusSub,
@@ -1276,25 +1319,25 @@ private fun LifecycleTimeline(request: PickupRequest) {
 
             // Horizontal icon bar
             Row(
-                modifier          = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 icons.forEachIndexed { index, icon ->
                     val isReached = currentIndex >= 0 && index <= currentIndex
-                    val iconTint  = if (isReached) green else muted
-                    val iconBg    = if (isReached) green.copy(alpha = 0.15f) else muted.copy(alpha = 0.15f)
+                    val iconTint = if (isReached) green else muted
+                    val iconBg = if (isReached) green.copy(alpha = 0.15f) else muted.copy(alpha = 0.15f)
 
                     Surface(
                         modifier = Modifier.size(36.dp),
-                        shape    = CircleShape,
-                        color    = iconBg
+                        shape = CircleShape,
+                        color = iconBg
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector        = icon,
+                                imageVector = icon,
                                 contentDescription = null,
-                                modifier           = Modifier.size(20.dp),
-                                tint               = iconTint
+                                modifier = Modifier.size(20.dp),
+                                tint = iconTint
                             )
                         }
                     }
@@ -1315,21 +1358,22 @@ private fun LifecycleTimeline(request: PickupRequest) {
     // Cancelled / Rejected banner
     if (request.status == PickupRequestStatus.CANCELLED || request.status == PickupRequestStatus.REJECTED) {
         Surface(
-            color    = MaterialTheme.colorScheme.errorContainer,
-            shape    = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(10.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier              = Modifier.padding(12.dp),
+                modifier = Modifier.padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.Cancel, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
                 Text(
-                    if (request.status == PickupRequestStatus.CANCELLED)
+                    if (request.status == PickupRequestStatus.CANCELLED) {
                         stringResource(R.string.label_cancelled_on, DateTimeUtils.formatDateTime(request.createdAt))
-                    else
-                        stringResource(R.string.label_rejected_on, DateTimeUtils.formatDateTime(request.createdAt)),
+                    } else {
+                        stringResource(R.string.label_rejected_on, DateTimeUtils.formatDateTime(request.createdAt))
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -1341,13 +1385,13 @@ private fun LifecycleTimeline(request: PickupRequest) {
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Chat Section ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ChatSection(
-    messages:      List<MessageData>,
+    messages: List<MessageData>,
     currentUserId: String,
-    messageInput:  String,
-    isSending:     Boolean,
-    isLoading:     Boolean,
+    messageInput: String,
+    isSending: Boolean,
+    isLoading: Boolean,
     onInputChanged: (String) -> Unit,
-    onSend:         () -> Unit
+    onSend: () -> Unit
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(messages.size) {
@@ -1355,22 +1399,27 @@ private fun ChatSection(
     }
     val inputInteractionSource = remember { MutableInteractionSource() }
     val inputFocused by inputInteractionSource.collectIsFocusedAsState()
-    val inputBorderColor = if (inputFocused) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.outlineVariant
+    val inputBorderColor = if (inputFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (isLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
 
         if (messages.isEmpty() && !isLoading) {
             Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.msg_no_messages),
+                Text(
+                    stringResource(R.string.msg_no_messages),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         } else {
             LazyColumn(
-                state               = listState,
-                modifier            = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                state = listState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(messages) { msg ->
@@ -1380,9 +1429,9 @@ private fun ChatSection(
         }
 
         Row(
-            modifier              = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment     = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             BasicTextField(
                 value = messageInput,
@@ -1423,8 +1472,11 @@ private fun ChatSection(
                 enabled = messageInput.isNotBlank() && !isSending,
                 modifier = Modifier.size(24.dp),
                 shape = CircleShape,
-                color = if (messageInput.isNotBlank()) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.outlineVariant
+                color = if (messageInput.isNotBlank()) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                }
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (isSending) {
@@ -1446,21 +1498,25 @@ private fun ChatSection(
 @Composable
 private fun ChatBubble(message: MessageData, isMine: Boolean) {
     val bubbleColor = if (isMine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-    val textColor   = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val textColor = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = if (isMine) Alignment.End else Alignment.Start) {
         if (!isMine) {
-            Text(message.senderName, style = MaterialTheme.typography.labelSmall,
+            Text(
+                message.senderName,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp))
+                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+            )
         }
         Surface(
             shape = RoundedCornerShape(
-                topStart    = if (isMine) 16.dp else 4.dp,
-                topEnd      = if (isMine) 4.dp else 16.dp,
-                bottomStart = 16.dp, bottomEnd = 16.dp
+                topStart = if (isMine) 16.dp else 4.dp,
+                topEnd = if (isMine) 4.dp else 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 16.dp
             ),
-            color    = bubbleColor,
+            color = bubbleColor,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Text(
@@ -1484,7 +1540,7 @@ private fun ChatBubble(message: MessageData, isMine: Boolean) {
 @Composable
 private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
     var selectedReason by remember { mutableStateOf("") }
-    var statement      by remember { mutableStateOf("") }
+    var statement by remember { mutableStateOf("") }
 
     val ngoReasons = listOf(
         stringResource(R.string.dispute_reason_poor_condition),
@@ -1517,11 +1573,11 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.open_dispute),
-                    style      = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onDismiss) {
@@ -1531,14 +1587,14 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
 
             // Info banner
             Surface(
-                color  = MaterialTheme.colorScheme.secondaryContainer,
-                shape  = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     Modifier.padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment     = Alignment.Top
+                    verticalAlignment = Alignment.Top
                 ) {
                     Icon(
                         Icons.Default.Info,
@@ -1557,12 +1613,12 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
             // Reason selection
             Text(
                 stringResource(R.string.dispute_reason),
-                style      = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
             reasons.forEach { reason ->
                 Row(
-                    modifier          = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .clickable { selectedReason = reason }
                         .padding(vertical = 2.dp),
@@ -1570,8 +1626,8 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     RadioButton(
-                        selected  = selectedReason == reason,
-                        onClick   = { selectedReason = reason }
+                        selected = selectedReason == reason,
+                        onClick = { selectedReason = reason }
                     )
                     Text(reason, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -1580,17 +1636,17 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
             // Statement field
             Text(
                 stringResource(R.string.dispute_statement_label),
-                style      = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
             OutlinedTextField(
-                value         = statement,
+                value = statement,
                 onValueChange = { statement = it },
-                modifier      = Modifier.fillMaxWidth(),
-                placeholder   = { Text(stringResource(R.string.dispute_statement_hint)) },
-                minLines      = 3,
-                maxLines      = 6,
-                shape         = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(stringResource(R.string.dispute_statement_hint)) },
+                minLines = 3,
+                maxLines = 6,
+                shape = RoundedCornerShape(12.dp)
             )
 
             // Submit
@@ -1611,13 +1667,13 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RatingSheet(
-    myReview:     ReviewData?,
+    myReview: ReviewData?,
     isSubmitting: Boolean,
-    onDismiss:    () -> Unit,
-    onSubmit:     (Int, String?) -> Unit
+    onDismiss: () -> Unit,
+    onSubmit: (Int, String?) -> Unit
 ) {
     var selectedRating by remember { mutableIntStateOf(myReview?.rating ?: 0) }
-    var comment        by remember { mutableStateOf(myReview?.comment ?: "") }
+    var comment by remember { mutableStateOf(myReview?.comment ?: "") }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -1631,11 +1687,11 @@ private fun RatingSheet(
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.label_rate_experience),
-                    style      = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onDismiss) {
@@ -1646,35 +1702,35 @@ private fun RatingSheet(
             if (myReview != null) {
                 // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Read-only: already rated ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
                 Column(
-                    modifier            = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         stringResource(R.string.your_rating),
-                        style      = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         repeat(5) { i ->
                             Icon(
-                                imageVector        = if (i < myReview.rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                imageVector = if (i < myReview.rating) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = stringResource(R.string.cd_star_n, i + 1),
-                                modifier           = Modifier.size(36.dp),
-                                tint               = if (i < myReview.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
+                                modifier = Modifier.size(36.dp),
+                                tint = if (i < myReview.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
                             )
                         }
                     }
                     if (!myReview.comment.isNullOrBlank()) {
                         Surface(
-                            color    = MaterialTheme.colorScheme.surfaceVariant,
-                            shape    = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 myReview.comment,
-                                style    = MaterialTheme.typography.bodyMedium,
-                                color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(12.dp)
                             )
                         }
@@ -1690,44 +1746,44 @@ private fun RatingSheet(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(5) { i ->
                         IconButton(
-                            onClick  = { selectedRating = i + 1 },
+                            onClick = { selectedRating = i + 1 },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
-                                imageVector        = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,
+                                imageVector = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = stringResource(R.string.cd_star_n, i + 1),
-                                modifier           = Modifier.size(36.dp),
-                                tint               = if (i < selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
+                                modifier = Modifier.size(36.dp),
+                                tint = if (i < selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
                             )
                         }
                     }
                 }
                 OutlinedTextField(
-                    value         = comment,
+                    value = comment,
                     onValueChange = { comment = it },
-                    modifier      = Modifier.fillMaxWidth(),
-                    label         = {
+                    modifier = Modifier.fillMaxWidth(),
+                    label = {
                         OptionalFieldLabel(
                             text = stringResource(R.string.label_comments_optional),
                             isOptional = true
                         )
                     },
-                    placeholder   = { Text(stringResource(R.string.hint_pickup_experience)) },
-                    minLines      = 2,
-                    maxLines      = 4,
-                    shape         = RoundedCornerShape(12.dp)
+                    placeholder = { Text(stringResource(R.string.hint_pickup_experience)) },
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(12.dp)
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.cancel),
-                        onClick  = onDismiss,
+                        onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     )
                     ClearChainButton(
                         text = stringResource(R.string.save),
-                        onClick  = { onSubmit(selectedRating, comment.ifBlank { null }) },
+                        onClick = { onSubmit(selectedRating, comment.ifBlank { null }) },
                         modifier = Modifier.weight(1f),
-                        enabled  = selectedRating > 0,
+                        enabled = selectedRating > 0,
                         loading = isSubmitting
                     )
                 }

@@ -28,7 +28,7 @@ data class VerificationQueueState(
         CommonSortOptions.CREATED_DATE_DESC,
         CommonSortOptions.CREATED_DATE_ASC,
         CommonSortOptions.NAME_ASC,
-        CommonSortOptions.NAME_DESC,
+        CommonSortOptions.NAME_DESC
     ),
 
     // Checklist for approval
@@ -56,25 +56,25 @@ data class VerificationQueueState(
 
     val filteredOrgs: List<Organization> get() {
         var result = when (selectedStatus) {
-            "PENDING"  -> pendingOrgs
+            "PENDING" -> pendingOrgs
             "APPROVED" -> approvedOrgs
             "REJECTED" -> rejectedOrgs
-            else       -> organizations
+            else -> organizations
         }
         filterOrgType?.let { type -> result = result.filter { it.type.name == type } }
         if (searchQuery.isNotBlank()) {
             val q = searchQuery.lowercase()
             result = result.filter {
                 it.name.lowercase().contains(q) ||
-                it.email.lowercase().contains(q) ||
-                it.location.lowercase().contains(q)
+                    it.email.lowercase().contains(q) ||
+                    it.location.lowercase().contains(q)
             }
         }
         result = when (selectedSort.value) {
-            "date_asc"  -> result.sortedBy { it.createdAt }
-            "name_asc"  -> result.sortedBy { it.name.lowercase() }
+            "date_asc" -> result.sortedBy { it.createdAt }
+            "name_asc" -> result.sortedBy { it.name.lowercase() }
             "name_desc" -> result.sortedByDescending { it.name.lowercase() }
-            else        -> result.sortedByDescending { it.createdAt } // "date_desc" and default
+            else -> result.sortedByDescending { it.createdAt } // "date_desc" and default
         }
         return result
     }

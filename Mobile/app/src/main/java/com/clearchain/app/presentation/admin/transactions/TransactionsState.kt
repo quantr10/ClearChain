@@ -15,13 +15,13 @@ data class TransactionsState(
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
         CommonSortOptions.CREATED_DATE_DESC,
-        CommonSortOptions.CREATED_DATE_ASC,
+        CommonSortOptions.CREATED_DATE_ASC
     ),
 
     // Date range filter
     val selectedDatePreset: String? = null, // "TODAY" | "WEEK" | "MONTH" | "CUSTOM" | null = all
-    val filterStartDate: String? = null,    // "yyyy-MM-dd"
-    val filterEndDate: String? = null,      // "yyyy-MM-dd"
+    val filterStartDate: String? = null, // "yyyy-MM-dd"
+    val filterEndDate: String? = null, // "yyyy-MM-dd"
     val showDatePickerDialog: Boolean = false,
     val datePickerForStart: Boolean = true,
 

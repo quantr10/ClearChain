@@ -37,11 +37,11 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.label_pickup_verification_checklist),
-                    style      = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -59,18 +59,21 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
                         .clickable {
                             checkedItems = if (checked) checkedItems - index else checkedItems + index
                         },
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         item,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurface,
+                        color = if (checked) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                         modifier = Modifier.weight(1f)
                     )
                     Checkbox(
-                        checked         = checked,
+                        checked = checked,
                         onCheckedChange = {
                             checkedItems = if (checked) checkedItems - index else checkedItems + index
                         },
@@ -80,8 +83,8 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
             }
             ClearChainButton(
                 text = stringResource(R.string.next),
-                onClick  = onNext,
-                enabled  = allChecked,
+                onClick = onNext,
+                enabled = allChecked,
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = MaterialTheme.colorScheme.onTertiary

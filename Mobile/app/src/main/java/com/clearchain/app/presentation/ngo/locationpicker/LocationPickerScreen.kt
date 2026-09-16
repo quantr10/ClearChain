@@ -44,8 +44,10 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
 
 data class PlaceSuggestion(
-    val name: String, val fullAddress: String,
-    val latitude: Double, val longitude: Double
+    val name: String,
+    val fullAddress: String,
+    val latitude: Double,
+    val longitude: Double
 )
 
 data class LocationPickerState(
@@ -60,7 +62,7 @@ data class LocationPickerState(
     val isLoadingGps: Boolean = false,
     val isSavingLocation: Boolean = false,
     val isReverseGeocoding: Boolean = false,
-    val isInitializing: Boolean = true,    // True until first position resolved
+    val isInitializing: Boolean = true, // True until first position resolved
     val needsGpsAutoDetect: Boolean = false, // True if no saved/profile location
     val error: String? = null,
     val profileLat: Double? = null,
@@ -86,7 +88,8 @@ class LocationPickerViewModel @Inject constructor(
             if (user != null && user.latitude != null && user.longitude != null) {
                 _state.update {
                     it.copy(
-                        profileLat = user.latitude, profileLng = user.longitude,
+                        profileLat = user.latitude,
+                        profileLng = user.longitude,
                         profileCity = user.location.ifBlank { user.address },
                         hasProfileLocation = true
                     )
@@ -182,7 +185,7 @@ class LocationPickerViewModel @Inject constructor(
     }
 
     fun onMapCenterChanged(latLng: LatLng, geocoder: Geocoder) {
-        if (_state.value.isInitializing) return  // Ignore until initialized
+        if (_state.value.isInitializing) return // Ignore until initialized
         _state.update { it.copy(latitude = latLng.latitude, longitude = latLng.longitude) }
         viewModelScope.launch {
             _state.update { it.copy(isReverseGeocoding = true) }
@@ -191,7 +194,9 @@ class LocationPickerViewModel @Inject constructor(
         }
     }
 
-    fun onRadiusChanged(radius: Int) { _state.update { it.copy(radiusKm = radius) } }
+    fun onRadiusChanged(radius: Int) {
+        _state.update { it.copy(radiusKm = radius) }
+    }
 
     fun onSearchQueryChanged(query: String, geocoder: Geocoder) {
         _state.update { it.copy(searchQuery = query) }
@@ -202,7 +207,8 @@ class LocationPickerViewModel @Inject constructor(
                 _state.update { it.copy(isSearching = true) }
                 try {
                     val results = withContext(Dispatchers.IO) {
-                        @Suppress("DEPRECATION") geocoder.getFromLocationName(query, 8)
+                        @Suppress("DEPRECATION")
+                        geocoder.getFromLocationName(query, 8)
                     }
                     val suggestions = results?.mapNotNull { addr ->
                         val line = addr.getAddressLine(0) ?: return@mapNotNull null
@@ -212,16 +218,26 @@ class LocationPickerViewModel @Inject constructor(
                         )
                     }?.distinctBy { "%.4f,%.4f".format(it.latitude, it.longitude) } ?: emptyList()
                     _state.update { it.copy(searchSuggestions = suggestions, showSuggestions = suggestions.isNotEmpty(), isSearching = false) }
-                } catch (_: Exception) { _state.update { it.copy(isSearching = false, showSuggestions = false) } }
+                } catch (_: Exception) {
+                    _state.update { it.copy(isSearching = false, showSuggestions = false) }
+                }
             }
-        } else _state.update { it.copy(searchSuggestions = emptyList(), showSuggestions = false) }
+        } else {
+            _state.update { it.copy(searchSuggestions = emptyList(), showSuggestions = false) }
+        }
     }
 
     fun onSuggestionSelected(s: PlaceSuggestion) {
         _state.update {
-            it.copy(latitude = s.latitude, longitude = s.longitude, displayName = s.name,
-                searchQuery = "", searchSuggestions = emptyList(), showSuggestions = false,
-                cameraMoveId = it.cameraMoveId + 1)
+            it.copy(
+                latitude = s.latitude,
+                longitude = s.longitude,
+                displayName = s.name,
+                searchQuery = "",
+                searchSuggestions = emptyList(),
+                showSuggestions = false,
+                cameraMoveId = it.cameraMoveId + 1
+            )
         }
     }
 
@@ -229,9 +245,12 @@ class LocationPickerViewModel @Inject constructor(
         val s = _state.value
         if (s.profileLat != null && s.profileLng != null) {
             _state.update {
-                it.copy(latitude = s.profileLat, longitude = s.profileLng,
+                it.copy(
+                    latitude = s.profileLat,
+                    longitude = s.profileLng,
                     displayName = s.profileCity ?: "Profile Location",
-                    cameraMoveId = it.cameraMoveId + 1)
+                    cameraMoveId = it.cameraMoveId + 1
+                )
             }
         }
     }
@@ -245,12 +264,20 @@ class LocationPickerViewModel @Inject constructor(
                 if (loc != null) {
                     val name = reverseGeocodeSync(loc.latitude, loc.longitude, geocoder)
                     _state.update {
-                        it.copy(latitude = loc.latitude, longitude = loc.longitude,
-                            displayName = name, isLoadingGps = false,
-                            cameraMoveId = it.cameraMoveId + 1)
+                        it.copy(
+                            latitude = loc.latitude,
+                            longitude = loc.longitude,
+                            displayName = name,
+                            isLoadingGps = false,
+                            cameraMoveId = it.cameraMoveId + 1
+                        )
                     }
-                } else _state.update { it.copy(isLoadingGps = false, error = "Could not get location. Enable GPS.") }
-            } catch (e: Exception) { _state.update { it.copy(isLoadingGps = false, error = "Error: ${e.message}") } }
+                } else {
+                    _state.update { it.copy(isLoadingGps = false, error = "Could not get location. Enable GPS.") }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoadingGps = false, error = "Error: ${e.message}") }
+            }
         }
     }
 
@@ -268,9 +295,14 @@ class LocationPickerViewModel @Inject constructor(
     }
 
     private suspend fun reverseGeocodeSync(lat: Double, lng: Double, geocoder: Geocoder): String = try {
-        withContext(Dispatchers.IO) { @Suppress("DEPRECATION") geocoder.getFromLocation(lat, lng, 1) }
+        withContext(Dispatchers.IO) {
+            @Suppress("DEPRECATION")
+            geocoder.getFromLocation(lat, lng, 1)
+        }
             ?.firstOrNull()?.let { it.locality ?: it.subAdminArea ?: it.adminArea ?: "Unknown" } ?: "Unknown"
-    } catch (_: Exception) { "Unknown" }
+    } catch (_: Exception) {
+        "Unknown"
+    }
 }
 
 // ── SCREEN ───────────────────────────────────────────────────────────────────
@@ -320,9 +352,11 @@ fun LocationPickerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(16.dp))
-                    Text(stringResource(R.string.location_detecting),
+                    Text(
+                        stringResource(R.string.location_detecting),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             return@Scaffold
@@ -336,9 +370,12 @@ fun LocationPickerScreen(
 
         // Camera animation trigger
         LaunchedEffect(state.cameraMoveId) {
-            if (state.cameraMoveId > 0) cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(LatLng(state.latitude, state.longitude), getZoomForRadius(state.radiusKm)), 600
-            )
+            if (state.cameraMoveId > 0) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(state.latitude, state.longitude), getZoomForRadius(state.radiusKm)),
+                    600
+                )
+            }
         }
 
         // Map stopped → get center
@@ -352,7 +389,6 @@ fun LocationPickerScreen(
         }
 
         Column(Modifier.fillMaxSize().padding(padding)) {
-
             if (showTopBar) {
                 ScreenTitleRow(
                     title = stringResource(R.string.location_picker_title),
@@ -381,8 +417,11 @@ fun LocationPickerScreen(
                 // Location badge
                 Surface(Modifier.align(Alignment.TopCenter).padding(top = 8.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), shadowElevation = 3.dp) {
                     Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (state.isReverseGeocoding) CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
-                        else Icon(Icons.Default.Place, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        if (state.isReverseGeocoding) {
+                            CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                        } else {
+                            Icon(Icons.Default.Place, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        }
                         Text(state.displayName.ifBlank { stringResource(R.string.location_move_to_select) }, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -424,8 +463,12 @@ fun LocationPickerScreen(
                     ClearChainButton(
                         text = stringResource(R.string.location_current),
                         onClick = {
-                            if (locationPermission.status.isGranted) viewModel.useCurrentLocation(context, geocoder)
-                            else { pendingGps = true; locationPermission.launchPermissionRequest() }
+                            if (locationPermission.status.isGranted) {
+                                viewModel.useCurrentLocation(context, geocoder)
+                            } else {
+                                pendingGps = true
+                                locationPermission.launchPermissionRequest()
+                            }
                         },
                         modifier = Modifier.weight(1f).height(44.dp),
                         enabled = !state.isSavingLocation,
@@ -467,7 +510,8 @@ fun LocationPickerScreen(
                         state.searchSuggestions.forEachIndexed { index, suggestion ->
                             Row(
                                 Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(24.dp)) {
                                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
@@ -509,7 +553,12 @@ fun LocationPickerScreen(
 }
 
 private fun getZoomForRadius(radiusKm: Int): Float = when {
-    radiusKm <= 1 -> 15f; radiusKm <= 3 -> 13.5f; radiusKm <= 5 -> 12.5f
-    radiusKm <= 10 -> 11.5f; radiusKm <= 20 -> 10.5f; radiusKm <= 30 -> 9.5f
-    radiusKm <= 50 -> 9f; else -> 8f
+    radiusKm <= 1 -> 15f
+    radiusKm <= 3 -> 13.5f
+    radiusKm <= 5 -> 12.5f
+    radiusKm <= 10 -> 11.5f
+    radiusKm <= 20 -> 10.5f
+    radiusKm <= 30 -> 9.5f
+    radiusKm <= 50 -> 9f
+    else -> 8f
 }

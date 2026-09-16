@@ -37,15 +37,15 @@ class EditListingViewModel @Inject constructor(
                 onSuccess = { listing ->
                     _state.update {
                         it.copy(
-                            listingId   = listing.id,
-                            title       = listing.title,
+                            listingId = listing.id,
+                            title = listing.title,
                             description = listing.description,
-                            category    = listing.category.name,
-                            quantity    = listing.quantity.toString(),
-                            unit        = listing.unit,
-                            expiryDate  = listing.expiryDate.take(10),
-                            imageUrl    = listing.imageUrl.orEmpty(),
-                            isLoading   = false
+                            category = listing.category.name,
+                            quantity = listing.quantity.toString(),
+                            unit = listing.unit,
+                            expiryDate = listing.expiryDate.take(10),
+                            imageUrl = listing.imageUrl.orEmpty(),
+                            isLoading = false
                         )
                     }
                 },
@@ -60,16 +60,16 @@ class EditListingViewModel @Inject constructor(
 
     fun onEvent(event: EditListingEvent) {
         when (event) {
-            is EditListingEvent.TitleChanged       -> _state.update { it.copy(title = event.title, titleError = null) }
+            is EditListingEvent.TitleChanged -> _state.update { it.copy(title = event.title, titleError = null) }
             is EditListingEvent.DescriptionChanged -> _state.update { it.copy(description = event.description, descriptionError = null) }
-            is EditListingEvent.CategoryChanged    -> _state.update { it.copy(category = event.category, showCategoryDropdown = false) }
-            is EditListingEvent.QuantityChanged    -> _state.update { it.copy(quantity = event.quantity.filter { c -> c.isDigit() }, quantityError = null) }
-            is EditListingEvent.UnitChanged        -> _state.update { it.copy(unit = event.unit, showUnitDropdown = false, unitError = null) }
-            is EditListingEvent.ExpiryDateChanged  -> _state.update { it.copy(expiryDate = event.date, expiryDateError = null) }
+            is EditListingEvent.CategoryChanged -> _state.update { it.copy(category = event.category, showCategoryDropdown = false) }
+            is EditListingEvent.QuantityChanged -> _state.update { it.copy(quantity = event.quantity.filter { c -> c.isDigit() }, quantityError = null) }
+            is EditListingEvent.UnitChanged -> _state.update { it.copy(unit = event.unit, showUnitDropdown = false, unitError = null) }
+            is EditListingEvent.ExpiryDateChanged -> _state.update { it.copy(expiryDate = event.date, expiryDateError = null) }
             is EditListingEvent.ToggleCategoryDropdown -> _state.update { it.copy(showCategoryDropdown = !it.showCategoryDropdown) }
-            is EditListingEvent.ToggleUnitDropdown     -> _state.update { it.copy(showUnitDropdown = !it.showUnitDropdown) }
-            is EditListingEvent.ClearError             -> _state.update { it.copy(error = null) }
-            is EditListingEvent.SaveListing            -> saveListing()
+            is EditListingEvent.ToggleUnitDropdown -> _state.update { it.copy(showUnitDropdown = !it.showUnitDropdown) }
+            is EditListingEvent.ClearError -> _state.update { it.copy(error = null) }
+            is EditListingEvent.SaveListing -> saveListing()
         }
     }
 
@@ -79,14 +79,14 @@ class EditListingViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
             listingRepository.updateListing(
-                id          = s.listingId,
-                title       = s.title,
+                id = s.listingId,
+                title = s.title,
                 description = s.description,
-                category    = s.category,
-                quantity    = s.quantity.toInt(),
-                unit        = s.unit,
-                expiryDate  = s.expiryDate,
-                imageUrl    = s.imageUrl.ifBlank { null }
+                category = s.category,
+                quantity = s.quantity.toInt(),
+                unit = s.unit,
+                expiryDate = s.expiryDate,
+                imageUrl = s.imageUrl.ifBlank { null }
             ).fold(
                 onSuccess = {
                     _state.update { it.copy(isSaving = false) }

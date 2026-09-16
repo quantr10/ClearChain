@@ -52,7 +52,10 @@ fun SplashScreen(
         label = "alpha"
     )
 
-    LaunchedEffect(Unit) { delay(100); visible = true }
+    LaunchedEffect(Unit) {
+        delay(100)
+        visible = true
+    }
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == null) return@LaunchedEffect
@@ -96,9 +99,9 @@ fun SplashScreen(
                 }
 
                 val destination = when (currentUser.type) {
-                    OrganizationType.NGO     -> Screen.NgoDashboard.route
+                    OrganizationType.NGO -> Screen.NgoDashboard.route
                     OrganizationType.GROCERY -> Screen.GroceryDashboard.route
-                    OrganizationType.ADMIN   -> Screen.AdminDashboard.route
+                    OrganizationType.ADMIN -> Screen.AdminDashboard.route
                 }
                 navController.navigate(destination) { popUpTo(Screen.Splash.route) { inclusive = true } }
             } else {
