@@ -146,8 +146,24 @@ Schema changes are applied through EF Core migrations in
 both stacks: 4-space indentation, UTF-8, a 120-column guide, file-scoped C#
 namespaces, and star imports for Kotlin packages contributing five or more symbols.
 
-Run `dotnet format whitespace Backend/ClearChain.sln` before committing backend
-changes; Android Studio applies the Kotlin rules from the same file.
+`.gitattributes` pins line endings to LF so a Windows checkout does not put the
+formatters and the repository at odds.
+
+Format before committing:
+
+```bash
+cd Backend && dotnet format whitespace ClearChain.sln
+cd Mobile  && ./gradlew spotlessApply
+```
+
+`./gradlew spotlessCheck` and `dotnet format whitespace ClearChain.sln
+--verify-no-changes` both pass on a clean tree, so either can gate CI.
+
+Spotless runs ktlint. Four standard rules are switched off where they would
+contradict the conventions above: star imports, PascalCase `@Composable`
+functions, several composables per file, and trailing comments on DTO fields.
+Line length is a guide, not a gate: ktlint can fail a long line but cannot wrap
+one, and a number of Compose argument lists run well past 120 columns.
 
 ## Testing
 
