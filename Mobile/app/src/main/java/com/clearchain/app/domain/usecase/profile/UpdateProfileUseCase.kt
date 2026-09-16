@@ -16,7 +16,6 @@ class UpdateProfileUseCase @Inject constructor(
         state: String = "",
         zipCode: String = "",
         hours: String? = null,
-        // ═══ NEW PARAMS (Part 1) ═══
         latitude: Double? = null,
         longitude: Double? = null,
         contactPerson: String? = null,

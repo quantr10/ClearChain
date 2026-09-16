@@ -1,10 +1,10 @@
 package com.clearchain.app.data.remote.interceptor
 
 import com.clearchain.app.data.local.dao.AuthTokenDao
+import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
-import javax.inject.Inject
 
 class AuthInterceptor @Inject constructor(
     private val tokenDao: AuthTokenDao

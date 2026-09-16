@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// StatusBadge.kt — Unified status badges for all domain types
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── StatusBadge.kt — Unified status badges for all domain types ──────────────
 
 package com.clearchain.app.presentation.components
 

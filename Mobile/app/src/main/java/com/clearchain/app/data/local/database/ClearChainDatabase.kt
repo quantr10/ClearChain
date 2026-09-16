@@ -2,20 +2,8 @@ package com.clearchain.app.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.clearchain.app.data.local.dao.AuthTokenDao
-import com.clearchain.app.data.local.dao.FCMTokenDao
-import com.clearchain.app.data.local.dao.InventoryDao
-import com.clearchain.app.data.local.dao.ListingDao
-import com.clearchain.app.data.local.dao.NotificationDao
-import com.clearchain.app.data.local.dao.PickupRequestDao
-import com.clearchain.app.data.local.dao.UserDao
-import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.FCMTokenEntity
-import com.clearchain.app.data.local.entity.InventoryEntity
-import com.clearchain.app.data.local.entity.ListingEntity
-import com.clearchain.app.data.local.entity.NotificationEntity
-import com.clearchain.app.data.local.entity.PickupRequestEntity
-import com.clearchain.app.data.local.entity.UserEntity
+import com.clearchain.app.data.local.dao.*
+import com.clearchain.app.data.local.entity.*
 
 @Database(
     entities = [

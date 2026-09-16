@@ -5,11 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.local.LocationPreferenceStore
-import com.clearchain.app.data.remote.api.CartApi
-import com.clearchain.app.data.remote.api.ListingApi
-import com.clearchain.app.data.remote.api.OrganizationApi
-import com.clearchain.app.data.remote.api.ReportApi
-import com.clearchain.app.data.remote.api.SavedListingApi
+import com.clearchain.app.data.remote.api.*
 import com.clearchain.app.data.remote.dto.AddCartItemRequest
 import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.data.remote.dto.SubmitReportRequest
@@ -24,17 +20,13 @@ import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import kotlin.math.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
-import kotlin.math.sqrt
-import javax.inject.Inject
 
 @HiltViewModel
 class ListingDetailViewModel @Inject constructor(
@@ -261,7 +253,7 @@ class ListingDetailViewModel @Inject constructor(
         }
     }
 
-    // ── Report ────────────────────────────────────────────────────────────────
+    // ── Report ───────────────────────────────────────────────────────────────
 
     private fun showReportDialog() = _state.update { it.copy(showReportDialog = true, reportReason = "", reportSubmitted = false) }
     private fun dismissReportDialog() = _state.update { it.copy(showReportDialog = false) }
@@ -283,7 +275,7 @@ class ListingDetailViewModel @Inject constructor(
         }
     }
 
-    // ── Save/Favourite ────────────────────────────────────────────────────────
+    // ── Save/Favourite ───────────────────────────────────────────────────────
 
     private fun toggleSave() {
         val listing = _state.value.listing ?: return
@@ -301,7 +293,7 @@ class ListingDetailViewModel @Inject constructor(
         }
     }
 
-    // ── Grocery actions ───────────────────────────────────────────────────────
+    // ── Grocery actions ──────────────────────────────────────────────────────
 
     private fun deleteListing() {
         val listing = _state.value.listing ?: return

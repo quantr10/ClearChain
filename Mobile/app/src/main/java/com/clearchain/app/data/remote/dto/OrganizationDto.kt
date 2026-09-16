@@ -136,7 +136,6 @@ data class UpdateProfileRequest(
     val state: String?,
     val zipCode: String?,
     val hours: String?,
-    // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
     val contactPerson: String? = null,

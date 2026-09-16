@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// Theme.kt — Updated with semantic colors and proper dark theme
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Theme.kt — Updated with semantic colors and proper dark theme ────────────
 
 package com.clearchain.app.ui.theme
 

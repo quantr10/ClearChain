@@ -19,15 +19,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.local.LocationPreferenceStore
-import com.clearchain.app.presentation.components.*
 import com.clearchain.app.domain.model.LocationPreference
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -37,15 +37,11 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.tasks.await
 
 data class PlaceSuggestion(
     val name: String, val fullAddress: String,
@@ -277,9 +273,7 @@ class LocationPickerViewModel @Inject constructor(
     } catch (_: Exception) { "Unknown" }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SCREEN
-// ═══════════════════════════════════════════════════════════════
+// ── SCREEN ───────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -367,7 +361,7 @@ fun LocationPickerScreen(
                 )
             }
 
-            // ═══ MAP ═══
+            // ── MAP ──────────────────────────────────────────────────────────
             Box(Modifier.fillMaxWidth().weight(0.45f)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
@@ -394,7 +388,7 @@ fun LocationPickerScreen(
                 }
             }
 
-            // ═══ CONTROLS ═══
+            // ── CONTROLS ─────────────────────────────────────────────────────
             Column(
                 Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(12.dp)

@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -28,8 +27,8 @@ import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.rememberNavController
 import com.clearchain.app.data.local.SessionManager
 import com.clearchain.app.data.remote.signalr.SignalRService
-import com.clearchain.app.presentation.components.ReconnectingBanner
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.presentation.components.ReconnectingBanner
 import com.clearchain.app.presentation.navigation.BottomNavBar
 import com.clearchain.app.presentation.navigation.NavGraph
 import com.clearchain.app.presentation.navigation.Screen
@@ -50,9 +49,9 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            Log.d("MainActivity", "✅ Notification permission granted")
+            Log.d(TAG, "✅ Notification permission granted")
         } else {
-            Log.d("MainActivity", "⚠️ Notification permission denied")
+            Log.d(TAG, "⚠️ Notification permission denied")
         }
     }
 
@@ -69,12 +68,12 @@ class MainActivity : ComponentActivity() {
 
         // ✅ Handle notification deep link FIRST
         handleNotificationIntent(intent)
-        
+
         enableEdgeToEdge()
-        
+
         // Request notification permission
         requestNotificationPermission()
-        
+
         setContent {
             ClearChainTheme {
                 Surface(
@@ -162,9 +161,9 @@ class MainActivity : ComponentActivity() {
     private fun handleNotificationIntent(intent: Intent) {
         val screen = intent.getStringExtra("screen")
         val requestId = intent.getStringExtra("requestId")
-        
-        Log.d("MainActivity", "📱 Intent received - screen: $screen, requestId: $requestId")
-        
+
+        Log.d(TAG, "📱 Intent received - screen: $screen, requestId: $requestId")
+
         // Store deep link data to be handled after login check
         if (screen != null) {
             getSharedPreferences("deeplink", MODE_PRIVATE)
@@ -176,8 +175,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 .apply()
-            
-            Log.d("MainActivity", "✅ Deep link saved: screen=$screen, requestId=$requestId")
+
+            Log.d(TAG, "✅ Deep link saved: screen=$screen, requestId=$requestId")
         }
     }
 
@@ -188,10 +187,10 @@ class MainActivity : ComponentActivity() {
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
-                    Log.d("MainActivity", "✅ Notification permission already granted")
+                    Log.d(TAG, "✅ Notification permission already granted")
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
-                    Log.d("MainActivity", "⚠️ User previously denied notification permission")
+                    Log.d(TAG, "⚠️ User previously denied notification permission")
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
                 else -> {
@@ -199,7 +198,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } else {
-            Log.d("MainActivity", "✅ Notification permission not required (Android < 13)")
+            Log.d(TAG, "✅ Notification permission not required (Android < 13)")
         }
+    }
+
+    private companion object {
+        const val TAG = "MainActivity"
     }
 }

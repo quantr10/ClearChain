@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.analytics
+package com.clearchain.app.presentation.analytics
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,37 +12,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.unit.sp
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.NgoReputationData
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.DashboardStatsData
+import com.clearchain.app.data.remote.dto.RequestStatusCounts
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
-import com.clearchain.app.presentation.components.ActivitySparklineCard
-import com.clearchain.app.presentation.components.BarData
-import com.clearchain.app.presentation.components.ImpactSummaryRow
-import com.clearchain.app.presentation.components.RateContent
-import com.clearchain.app.presentation.components.ScreenTitleRow
-import com.clearchain.app.presentation.components.HapticPullToRefreshBox
-import com.clearchain.app.presentation.components.buildDailyActivityCounts
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.presentation.components.ColumnBarChart
-import com.clearchain.app.presentation.components.requestStatusBars
-import com.clearchain.app.data.remote.dto.RequestStatusCounts
-import com.clearchain.app.presentation.components.DonutChart
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-// ═══ ViewModel ═══
+// ── ViewModel ────────────────────────────────────────────────────────────────
 data class AnalyticsState(
     val stats: DashboardStatsData? = null,
     val orgType: OrganizationType = OrganizationType.GROCERY,
@@ -104,7 +95,7 @@ class AnalyticsViewModel @Inject constructor(
     }
 }
 
-// ═══ Screen ═══
+// ── Screen ───────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
@@ -280,10 +271,8 @@ private fun NgoAnalytics(
     RequestStatusSection(s.requestStatus)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Request status breakdown — the same chart the admin report shows, scoped to the
 // one organization looking at it.
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun RequestStatusSection(status: RequestStatusCounts) {
@@ -303,10 +292,8 @@ private fun RequestStatusSection(status: RequestStatusCounts) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Impact section — shared by GroceryAnalytics and NgoAnalytics: Food Saved,
 // Meals Saved, and CO₂ Reduced as three ImpactStatCell columns.
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate: Int) {
@@ -319,10 +306,8 @@ private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Shared section card — matches AccountDetailScreen / RequestDetailScreen.
 // Card title uses titleMedium, the same size as the card titles on the home screen.
-// ─────────────────────────────────────────────────────────────────────────────
 
 /** Matches the rhythm of [WeeklyGoalCard], which the rate cards sit alongside. */
 private val RATE_CARD_SPACING = 12.dp
@@ -365,4 +350,3 @@ private fun AnalyticsSectionCard(
         }
     }
 }
-

@@ -1,10 +1,10 @@
 package com.clearchain.app.data.local
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * App-wide signal for "the session just died and there's nothing left to retry" — emitted by

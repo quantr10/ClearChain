@@ -16,13 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.AppNotification
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
-import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.presentation.components.EmptyState
+import com.clearchain.app.presentation.components.ScreenTitleRow
+import com.clearchain.app.ui.theme.ScreenPadding
 import java.text.SimpleDateFormat
 import java.util.*
 

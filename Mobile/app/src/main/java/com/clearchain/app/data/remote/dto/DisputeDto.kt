@@ -23,4 +23,3 @@ data class DisputeResponse(
     val message: String = "",
     val data: DisputeData? = null
 )
-

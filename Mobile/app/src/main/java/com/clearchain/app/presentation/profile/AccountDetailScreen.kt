@@ -17,15 +17,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
@@ -262,7 +262,7 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Email ───────────────────────────────────────────────────────────
+        // ── Email ────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.label_email)) {
             ClearChainTextField(
                 value = state.editEmail,
@@ -277,7 +277,7 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Phone ───────────────────────────────────────────────────────────
+        // ── Phone ────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_phone_label)) {
             ClearChainTextField(
                 value = state.editPhone,
@@ -292,7 +292,7 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Address ─────────────────────────────────────────────────────────
+        // ── Address ──────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_address_label)) {
             AddressSuggestionField(
                 value = state.editAddress,
@@ -312,7 +312,7 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── City ────────────────────────────────────────────────────────────
+        // ── City ─────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_city_label)) {
             ClearChainTextField(
                 value = state.editLocation,
@@ -326,7 +326,7 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── State + ZIP ─────────────────────────────────────────────────────
+        // ── State + ZIP ──────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_state_label)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -358,7 +358,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Opening Hours ───────────────────────────────────────────────────
+        // ── Opening Hours ────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_hours_label)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -387,7 +387,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Pickup Instructions (Grocery only) ──────────────────────────────
+        // ── Pickup Instructions (Grocery only) ───────────────────────────────
         if (state.user?.type == OrganizationType.GROCERY) {
             FieldCard(
                 label = stringResource(R.string.onboarding_pickup_instructions_label),
@@ -407,7 +407,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Contact Person (NGO / Grocery) ─────────────────────────────────
+        // ── Contact Person (NGO / Grocery) ───────────────────────────────────
         if (isNgoOrGrocery) {
             FieldCard(label = stringResource(R.string.label_contact_person)) {
                 ClearChainTextField(
@@ -423,7 +423,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Cancel + Save buttons ───────────────────────────────────────────
+        // ── Cancel + Save buttons ────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)

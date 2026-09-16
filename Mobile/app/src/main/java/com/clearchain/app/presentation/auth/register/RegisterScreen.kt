@@ -3,13 +3,9 @@ package com.clearchain.app.presentation.auth.register
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,9 +24,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.clearchain.app.R
 import com.clearchain.app.presentation.auth.AuthDivider
 import com.clearchain.app.presentation.auth.AuthHeader
 import com.clearchain.app.presentation.components.*
@@ -86,7 +82,7 @@ fun RegisterScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // ── Role picker ────────────────────────────────────────
+                    // ── Role picker ──────────────────────────────────────────
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RoleCard(
                             icon     = Icons.Default.Store,
@@ -110,7 +106,7 @@ fun RegisterScreen(
 
                     HorizontalDivider()
 
-                    // ── Account fields ─────────────────────────────────────
+                    // ── Account fields ───────────────────────────────────────
                     ClearChainTextField(
                         value         = state.name,
                         onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
@@ -123,7 +119,7 @@ fun RegisterScreen(
                         enabled       = !state.isLoading
                     )
 
-                    // ── Email field with availability indicator ────────────
+                    // ── Email field with availability indicator ──────────────
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         ClearChainTextField(
                             value         = state.email,
@@ -154,7 +150,7 @@ fun RegisterScreen(
                         )
                     }
 
-                    // ── Password with strength meter ───────────────────────
+                    // ── Password with strength meter ─────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         ClearChainTextField(
                             value         = state.password,
@@ -189,7 +185,7 @@ fun RegisterScreen(
                         enabled       = !state.isLoading
                     )
 
-                    // ── Terms of Service checkbox ──────────────────────────
+                    // ── Terms of Service checkbox ────────────────────────────
                     val tosAgreePrefix = stringResource(R.string.tos_agree_prefix)
                     val tosTerms = stringResource(R.string.terms_of_service)
                     val tosAnd = stringResource(R.string.tos_agree_and)
@@ -265,7 +261,7 @@ fun RegisterScreen(
     }
 }
 
-// ── Password strength bar ──────────────────────────────────────────────────────
+// ── Password strength bar ────────────────────────────────────────────────────
 
 @Composable
 private fun PasswordStrengthMeter(strength: PasswordStrength) {
@@ -302,7 +298,7 @@ private fun PasswordStrengthMeter(strength: PasswordStrength) {
     }
 }
 
-// ── Role selection card ────────────────────────────────────────────────────────
+// ── Role selection card ──────────────────────────────────────────────────────
 
 @Composable
 private fun RoleCard(

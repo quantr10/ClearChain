@@ -19,7 +19,6 @@ data class Organization(
     val hours: String? = null,
     val profilePictureUrl: String? = null,
     val createdAt: String,
-    // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
     val state: String? = null,
@@ -27,7 +26,7 @@ data class Organization(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ═══ Document fields ═══
+    // ── Document fields ──────────────────────────────────────────────────────
     val documentUrl: String? = null,
     val documentMimeType: String? = null
 ) {

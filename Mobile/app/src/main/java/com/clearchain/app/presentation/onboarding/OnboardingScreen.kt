@@ -18,26 +18,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.delay
-import androidx.compose.material3.SnackbarDuration
 
 /**
  * MIME types the verification-document picker offers. Mirrors the allow-list in
@@ -157,7 +156,7 @@ fun OnboardingScreen(
     }
 }
 
-// ── Gradient header with segment progress ─────────────────────────────────────
+// ── Gradient header with segment progress ────────────────────────────────────
 
 @Composable
 private fun OnboardingHeader(
@@ -230,7 +229,7 @@ private fun OnboardingHeader(
     }
 }
 
-// ── Step 1: Phone + Description + Contact Person ──────────────────────────────
+// ── Step 1: Phone + Description + Contact Person ─────────────────────────────
 
 @Composable
 private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel) {
@@ -285,7 +284,7 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 }
 
-// ── Step 2: Address + City + Hours + Pickup Instructions + Document Upload ────
+// ── Step 2: Address + City + Hours + Pickup Instructions + Document Upload ───
 
 @Composable
 private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel) {
@@ -418,7 +417,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             )
         }
 
-        // ── Verification document upload (required) ──────────────────
+        // ── Verification document upload (required) ──────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OptionalFieldLabel(
                 text       = stringResource(R.string.onboarding_doc_label),
@@ -502,7 +501,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 }
 
-// ── Step 3: Celebration ───────────────────────────────────────────────────────
+// ── Step 3: Celebration ──────────────────────────────────────────────────────
 
 @Composable
 private fun Step3Content(state: OnboardingState) {

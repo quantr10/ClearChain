@@ -4,7 +4,7 @@ import com.clearchain.app.domain.model.InventoryItem
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.PickupRequest
 
-// ═══ State ═══
+// ── State ────────────────────────────────────────────────────────────────────
 data class InventoryDetailState(
     val item: InventoryItem? = null,
     val relatedRequest: PickupRequest? = null,

@@ -3,35 +3,31 @@ package com.clearchain.app.presentation.admin.verification
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -347,7 +343,7 @@ private fun OrganizationCard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // ── Identity header ────────────────────────────────────────────────
+            // ── Identity header ──────────────────────────────────────────────
             // The logo (or a type-tinted monogram) anchors the card on the left; the
             // name shares its line with the verification status wash, and the org type
             // sits underneath as a filled-tonal pill — the same soft chip the profile
@@ -439,7 +435,7 @@ private fun OrganizationCard(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // ── Contact block ──────────────────────────────────────────────────
+            // ── Contact block ────────────────────────────────────────────────
             // Email, then phone (with the named contact beside it), then the city —
             // location reads last here because it's the least actionable of the four
             // and it keeps the header uncluttered.
@@ -473,7 +469,7 @@ private fun OrganizationCard(
                 )
             }
 
-            // ── Verification document ──────────────────────────────────────────
+            // ── Verification document ────────────────────────────────────────
             organization.documentUrl?.let { docUrl ->
                 val isPdf = docUrl.endsWith(".pdf", ignoreCase = true) ||
                     organization.documentMimeType?.contains("pdf") == true
@@ -492,7 +488,7 @@ private fun OrganizationCard(
                 )
             }
 
-            // ── Actions (PENDING only) ─────────────────────────────────────────
+            // ── Actions (PENDING only) ───────────────────────────────────────
             if (organization.verificationStatus == VerificationStatus.PENDING) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

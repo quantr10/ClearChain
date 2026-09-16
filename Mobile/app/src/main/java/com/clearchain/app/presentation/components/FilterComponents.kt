@@ -6,11 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,9 +25,7 @@ import com.clearchain.app.R
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.HapticUtils
 
-// ════════════════════════════════════════════════════════════════════════════════
-// SEARCH BAR
-// ════════════════════════════════════════════════════════════════════════════════
+// ── SEARCH BAR ───────────────────────────────────────────────────────────────
 
 @Composable
 fun SearchBar(
@@ -153,9 +150,7 @@ fun ListScreenHeader(
     )
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// SORT DROPDOWN  (bottom-sheet style)
-// ════════════════════════════════════════════════════════════════════════════════
+// ── SORT DROPDOWN  (bottom-sheet style) ──────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -253,9 +248,7 @@ fun SortDropdown(
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// FILTER CHIPS ROW
-// ════════════════════════════════════════════════════════════════════════════════
+// ── FILTER CHIPS ROW ─────────────────────────────────────────────────────────
 
 @Composable
 fun FilterChipsRow(
@@ -335,9 +328,7 @@ private fun HeaderChip(
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// FILTER SECTION WRAPPER
-// ════════════════════════════════════════════════════════════════════════════════
+// ── FILTER SECTION WRAPPER ───────────────────────────────────────────────────
 
 @Composable
 fun FilterSection(
@@ -357,9 +348,7 @@ fun FilterSection(
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// RESULTS COUNT + SORT ROW
-// ════════════════════════════════════════════════════════════════════════════════
+// ── RESULTS COUNT + SORT ROW ─────────────────────────────────────────────────
 
 @Composable
 fun ResultsCountAndSort(
@@ -400,16 +389,12 @@ fun ResultsCountAndSort(
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// DATA CLASSES
-// ════════════════════════════════════════════════════════════════════════════════
+// ── DATA CLASSES ─────────────────────────────────────────────────────────────
 
 data class SortOption(val value: String, @StringRes val labelResId: Int)
 data class FilterChipData(val value: String?, val label: String = "", @StringRes val labelResId: Int? = null)
 
-// ════════════════════════════════════════════════════════════════════════════════
-// COMMON SORT OPTIONS
-// ════════════════════════════════════════════════════════════════════════════════
+// ── COMMON SORT OPTIONS ──────────────────────────────────────────────────────
 
 object CommonSortOptions {
     val CREATED_DATE_DESC      = SortOption("date_desc",        R.string.sort_newest)

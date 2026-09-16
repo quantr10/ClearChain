@@ -13,11 +13,11 @@ import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.LocalDate
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import javax.inject.Inject
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
@@ -34,7 +34,7 @@ class TransactionsViewModel @Inject constructor(
 
     init {
         loadTransactions()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
     private fun setupSignalR() {

@@ -1,13 +1,11 @@
 package com.clearchain.app.presentation.ngo
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,41 +14,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.clearchain.app.R
+import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.UpcomingPickupData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.presentation.components.buildDailyActivityCounts
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.clearchain.app.data.remote.dto.ActivityItemData
-import androidx.compose.foundation.BorderStroke
+import com.google.maps.android.compose.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -90,7 +79,7 @@ fun NgoDashboardScreen(
                     modifier            = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ── Impact ─────────────────────────────────────────────
+                    // ── Impact ───────────────────────────────────────────────
                     // First card on the page: what the organization has actually achieved
                     // leads, before today's workload.
                     DashboardSection(
@@ -104,7 +93,7 @@ fun NgoDashboardScreen(
                         )
                     }
 
-                    // ── Nearby Listings Mini-Map ───────────────────────────
+                    // ── Nearby Listings Mini-Map ─────────────────────────────
                     val mapListings = state.availableListings.filter {
                         it.groceryLatitude != null && it.groceryLongitude != null
                     }
@@ -122,7 +111,7 @@ fun NgoDashboardScreen(
                         }
                     }
 
-                    // ── Weekly Goal ────────────────────────────────────────
+                    // ── Weekly Goal ──────────────────────────────────────────
                     DashboardSection(title = "") {
                         WeeklyGoalCard(
                             completed = state.weeklyCompleted,
@@ -131,7 +120,7 @@ fun NgoDashboardScreen(
                         )
                     }
 
-                    // ── Upcoming Pickups ───────────────────────────────────
+                    // ── Upcoming Pickups ─────────────────────────────────────
                     val upcoming = state.todaySummary?.upcomingPickups.orEmpty()
                     if (upcoming.isNotEmpty()) {
                         DashboardSection(title = "") {
@@ -142,7 +131,7 @@ fun NgoDashboardScreen(
                         }
                     }
 
-                    // ── Activity Trend + Recent Activity ──────────────────
+                    // ── Activity Trend + Recent Activity ─────────────────────
                     val sparklineData = buildDailyActivityCounts(state.activities)
                     DashboardSection(title = "") {
                         ActivitySparklineCard(
@@ -163,7 +152,7 @@ fun NgoDashboardScreen(
                         }
                     }
 
-                    // ── Quick Actions ──────────────────────────────────────
+                    // ── Quick Actions ────────────────────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
                             icon     = Icons.Default.RestaurantMenu,
@@ -191,7 +180,7 @@ fun NgoDashboardScreen(
         }
     }
 
-    // ── Activity bottom sheet ──────────────────────────────────────────────
+    // ── Activity bottom sheet ────────────────────────────────────────────────
     if (showActivitySheet) {
         ActivityHistorySheet(
             activities = state.activities,
@@ -200,9 +189,7 @@ fun NgoDashboardScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Activity History Bottom Sheet (shared between NGO and Grocery)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Activity History Bottom Sheet (shared between NGO and Grocery) ───────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -258,11 +245,7 @@ internal fun ActivityHistorySheet(
     }
 }
 
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Upcoming Pickups Timeline
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Upcoming Pickups Timeline ────────────────────────────────────────────────
 
 @Composable
 private fun UpcomingPickupsTimeline(
@@ -367,9 +350,7 @@ private fun PickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolean) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Nearby Listings Mini-Map
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Nearby Listings Mini-Map ─────────────────────────────────────────────────
 
 @Composable
 private fun NearbyListingsMiniMap(
@@ -489,9 +470,7 @@ private fun NearbyListingsMiniMap(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Activity Feed Item
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Activity Feed Item ───────────────────────────────────────────────────────
 
 @Composable
 internal fun ActivityFeedItem(item: ActivityItemData) {
@@ -566,9 +545,7 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Grocery Pin Content (for map markers)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Grocery Pin Content (for map markers) ────────────────────────────────────
 
 @Composable
 internal fun ActivityFeedList(

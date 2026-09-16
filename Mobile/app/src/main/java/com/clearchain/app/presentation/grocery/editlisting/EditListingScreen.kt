@@ -18,13 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
 import java.time.Instant
@@ -82,7 +82,7 @@ fun EditListingScreen(
                 val expiryInvalid   = state.expiryDate.isBlank()
                 val canSave = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
-                // ── Photo (read-only) ─────────────────────────────────────────
+                // ── Photo (read-only) ────────────────────────────────────────
                 if (state.imageUrl.isNotBlank()) {
                     Card(
                         modifier  = Modifier.fillMaxWidth(),
@@ -101,7 +101,7 @@ fun EditListingScreen(
                     }
                 }
 
-                // ── Title ─────────────────────────────────────────────────────
+                // ── Title ────────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_title)) {
                     ClearChainTextField(
                         value         = state.title,
@@ -115,7 +115,7 @@ fun EditListingScreen(
                     )
                 }
 
-                // ── Description ───────────────────────────────────────────────
+                // ── Description ──────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_description)) {
                     ClearChainTextField(
                         value         = state.description,
@@ -132,7 +132,7 @@ fun EditListingScreen(
                     )
                 }
 
-                // ── Category ──────────────────────────────────────────────────
+                // ── Category ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_category)) {
                     val iconTint  = if (!busy) MaterialTheme.colorScheme.onSurfaceVariant
                                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -179,7 +179,7 @@ fun EditListingScreen(
                     }
                 }
 
-                // ── Quantity + Unit ───────────────────────────────────────────
+                // ── Quantity + Unit ──────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_quantity_short)) {
                     val iconTint  = if (!busy) MaterialTheme.colorScheme.onSurfaceVariant
                                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -249,7 +249,7 @@ fun EditListingScreen(
                     }
                 }
 
-                // ── Expiry Date ───────────────────────────────────────────────
+                // ── Expiry Date ──────────────────────────────────────────────
                 val futureDates = remember {
                     object : SelectableDates {
                         override fun isSelectableDate(utcTimeMillis: Long): Boolean {
@@ -271,7 +271,7 @@ fun EditListingScreen(
                     )
                 }
 
-                // ── Pickup Hours (read-only from profile) ─────────────────────
+                // ── Pickup Hours (read-only from profile) ────────────────────
                 FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
                     Surface(
                         color    = MaterialTheme.colorScheme.secondaryContainer,
@@ -299,7 +299,7 @@ fun EditListingScreen(
                     }
                 }
 
-                // ── Cancel + Save buttons ─────────────────────────────────────
+                // ── Cancel + Save buttons ────────────────────────────────────
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)

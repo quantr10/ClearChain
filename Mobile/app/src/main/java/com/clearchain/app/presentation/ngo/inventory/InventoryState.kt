@@ -11,7 +11,7 @@ import com.clearchain.app.presentation.components.SortOption
 data class InventoryState(
     val allItems: List<InventoryItem> = emptyList(),
     val filteredItems: List<InventoryItem> = emptyList(),
-    
+
     // Search, Sort, Filter
     val searchQuery: String = "",
     val selectedSort: SortOption = CommonSortOptions.DISTRIBUTED_DATE_DESC,
@@ -23,10 +23,10 @@ data class InventoryState(
         CommonSortOptions.EXPIRY_ASC,
         CommonSortOptions.EXPIRY_DESC,
     ),
-    
+
     val selectedStatusTab: InventoryStatus? = InventoryStatus.ACTIVE,
-    
-    // NEW: Category as CHIPS (food categories)
+
+    // Category as CHIPS (food categories)
     val selectedCategory: String? = null,
     val availableCategoryFilters: List<FilterChipData> = listOf(
         FilterChipData(null, labelResId = R.string.filter_all)

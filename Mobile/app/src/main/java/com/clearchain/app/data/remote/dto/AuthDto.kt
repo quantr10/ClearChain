@@ -1,10 +1,10 @@
 package com.clearchain.app.data.remote.dto
 
 import android.annotation.SuppressLint
+import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
-import com.clearchain.app.domain.model.AuthTokens
 import kotlinx.serialization.Serializable
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -69,7 +69,6 @@ data class OrganizationDto(
     val hours: String? = null,
     val profilePictureUrl: String? = null,
     val createdAt: String,
-    // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
     val state: String? = null,
@@ -77,7 +76,7 @@ data class OrganizationDto(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ═══ Onboarding verification document ═══
+    // ── Onboarding verification document ─────────────────────────────────────
     val documentUrl: String? = null
 )
 
@@ -117,7 +116,7 @@ data class EmailAvailabilityResponse(val available: Boolean, val message: String
 @Serializable
 data class DeleteAccountRequest(val password: String)
 
-// ═══ UPDATED toDomain() includes new fields (Part 1) ═══
+// ── toDomain() includes new fields ───────────────────────────────────────────
 fun OrganizationDto.toDomain(): Organization {
     return Organization(
         id = id, name = name,

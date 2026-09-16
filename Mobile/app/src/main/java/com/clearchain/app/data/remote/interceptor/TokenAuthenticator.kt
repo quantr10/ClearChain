@@ -9,19 +9,15 @@ import com.clearchain.app.data.remote.dto.AuthData
 import com.clearchain.app.data.remote.dto.AuthResponse
 import com.clearchain.app.data.remote.dto.RefreshTokenRequest
 import com.clearchain.app.util.Constants
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import okhttp3.Authenticator
+import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import okhttp3.Route
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 /**
  * Transparently refreshes an expired access token on a 401 and retries the original request
@@ -115,7 +111,7 @@ class TokenAuthenticator @Inject constructor(
                 json.decodeFromString<AuthResponse>(raw).data
             }
         } catch (e: Exception) {
-            Log.e("TokenAuthenticator", "Token refresh failed", e)
+            Log.e(TAG, "Token refresh failed", e)
             null
         }
     }
@@ -129,5 +125,9 @@ class TokenAuthenticator @Inject constructor(
             prior = prior.priorResponse
         }
         return count
+    }
+
+    private companion object {
+        const val TAG = "TokenAuthenticator"
     }
 }

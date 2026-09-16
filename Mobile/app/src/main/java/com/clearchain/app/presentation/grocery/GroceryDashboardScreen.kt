@@ -17,18 +17,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.UpcomingPickupData
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.presentation.components.buildDailyActivityCounts
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.presentation.ngo.ActivityFeedList
 import com.clearchain.app.presentation.ngo.ActivityHistorySheet
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +65,7 @@ fun GroceryDashboardScreen(
                     modifier            = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ── Impact ─────────────────────────────────────────────
+                    // ── Impact ───────────────────────────────────────────────
                     // First card on the page: what the store has actually rescued leads,
                     // before today's workload.
                     state.stats?.let { stats ->
@@ -82,7 +81,7 @@ fun GroceryDashboardScreen(
                         }
                     }
 
-                    // ── Weekly Pickups ─────────────────────────────────────
+                    // ── Weekly Pickups ───────────────────────────────────────
                     // The same card the NGO home shows: both sides of a hand-over count
                     // the same completed pickup.
                     DashboardSection(title = "") {
@@ -93,7 +92,7 @@ fun GroceryDashboardScreen(
                         )
                     }
 
-                    // ── Today's Pickups ────────────────────────────────────
+                    // ── Today's Pickups ──────────────────────────────────────
                     val upcomingPickups = state.todaySummary?.upcomingPickups.orEmpty()
                     if (upcomingPickups.isNotEmpty()) {
                         DashboardSection(title = "") {
@@ -104,7 +103,7 @@ fun GroceryDashboardScreen(
                         }
                     }
 
-                    // ── Activity Trend + Recent Activity ──────────────────
+                    // ── Activity Trend + Recent Activity ─────────────────────
                     val sparklineData = buildDailyActivityCounts(state.activities)
                     DashboardSection(title = "") {
                         ActivitySparklineCard(
@@ -125,7 +124,7 @@ fun GroceryDashboardScreen(
                         }
                     }
 
-                    // ── Quick actions ──────────────────────────────────────
+                    // ── Quick actions ────────────────────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
                             icon     = Icons.Default.AddCircle,
@@ -153,7 +152,7 @@ fun GroceryDashboardScreen(
         }
     }
 
-    // ── Activity bottom sheet ──────────────────────────────────────────────
+    // ── Activity bottom sheet ────────────────────────────────────────────────
     if (showActivitySheet) {
         ActivityHistorySheet(
             activities = state.activities,
@@ -162,7 +161,7 @@ fun GroceryDashboardScreen(
     }
 }
 
-// ── Today's Pickups timeline (Grocery side — shows incoming NGO pickups) ───────
+// ── Today's Pickups timeline (Grocery side — shows incoming NGO pickups) ─────
 
 @Composable
 private fun GroceryUpcomingPickupsTimeline(

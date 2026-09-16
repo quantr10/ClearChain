@@ -6,9 +6,9 @@ import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.auth.RefreshCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
@@ -33,7 +33,7 @@ class SplashViewModel @Inject constructor(
         }
     }
 
-    // ✅ ADD: Method to get current user
+    // Method to get current user
     suspend fun getCurrentUser(): Organization? {
         // Best-effort: pull the latest verification status from the server so an
         // admin approval/rejection is reflected without a full re-login. Falls back

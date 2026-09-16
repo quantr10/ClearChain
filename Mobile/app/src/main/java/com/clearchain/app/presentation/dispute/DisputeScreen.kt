@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.dispute
+package com.clearchain.app.presentation.dispute
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,25 +13,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.DisputeApi
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ScreenTitleRow
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.HapticUtils
 import com.clearchain.app.util.UiEvent
-import okhttp3.RequestBody.Companion.toRequestBody
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import okhttp3.RequestBody.Companion.toRequestBody
 
-// ═══ State ═══
+// ── State ────────────────────────────────────────────────────────────────────
 data class DisputeState(
     val reason: String = "",
     val statement: String = "",
@@ -40,7 +40,7 @@ data class DisputeState(
     val error: String? = null
 )
 
-// ═══ ViewModel ═══
+// ── ViewModel ────────────────────────────────────────────────────────────────
 @HiltViewModel
 class DisputeViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
@@ -83,8 +83,7 @@ class DisputeViewModel @Inject constructor(
     }
 }
 
-
-// ═══ Screen ═══
+// ── Screen ───────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DisputeScreen(

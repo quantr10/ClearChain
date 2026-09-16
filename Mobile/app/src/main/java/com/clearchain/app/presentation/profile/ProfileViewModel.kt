@@ -1,10 +1,10 @@
 package com.clearchain.app.presentation.profile
 
-import android.app.Application
+import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
-import com.clearchain.app.R
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.DeleteAccountRequest
@@ -19,22 +19,23 @@ import com.clearchain.app.util.ImageUtils
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext private val context: Context,
     val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val organizationApi: OrganizationApi,
     private val organizationRepository: OrganizationRepository,
     private val authApi: AuthApi
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -95,7 +96,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // ── Data loading ───────────────────────────────────────────────────────────
+    // ── Data loading ─────────────────────────────────────────────────────────
 
     private fun loadAll() {
         viewModelScope.launch {
@@ -181,7 +182,7 @@ class ProfileViewModel @Inject constructor(
         _state.update { it.copy(activity = items, isLoadingActivity = false) }
     }
 
-    // ── Edit profile ───────────────────────────────────────────────────────────
+    // ── Edit profile ─────────────────────────────────────────────────────────
 
     private fun startEdit() {
         val user = _state.value.user ?: return
@@ -264,10 +265,10 @@ class ProfileViewModel @Inject constructor(
                 onSuccess = {
                     loadProfile()
                     _state.update { it.copy(isSavingProfile = false, isEditing = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_profile_updated)))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_profile_updated)))
                 },
                 onFailure = { e ->
-                    val msg = e.message ?: getApplication<Application>().getString(R.string.error_update_profile_failed)
+                    val msg = e.message ?: context.getString(R.string.error_update_profile_failed)
                     _state.update { it.copy(isSavingProfile = false, error = msg) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
@@ -279,47 +280,47 @@ class ProfileViewModel @Inject constructor(
         val s = _state.value
         var valid = true
         if (s.editName.isBlank()) {
-            _state.update { it.copy(editNameError = getApplication<Application>().getString(R.string.error_name_required)) }; valid = false
+            _state.update { it.copy(editNameError = context.getString(R.string.error_name_required)) }; valid = false
         } else if (s.editName.length < 3) {
-            _state.update { it.copy(editNameError = getApplication<Application>().getString(R.string.error_name_min_chars)) }; valid = false
+            _state.update { it.copy(editNameError = context.getString(R.string.error_name_min_chars)) }; valid = false
         }
         if (s.editEmail.isBlank()) {
-            _state.update { it.copy(editEmailError = getApplication<Application>().getString(R.string.error_email_required)) }; valid = false
+            _state.update { it.copy(editEmailError = context.getString(R.string.error_email_required)) }; valid = false
         } else if (!ValidationUtils.isValidEmail(s.editEmail)) {
-            _state.update { it.copy(editEmailError = getApplication<Application>().getString(R.string.error_email_invalid_format)) }; valid = false
+            _state.update { it.copy(editEmailError = context.getString(R.string.error_email_invalid_format)) }; valid = false
         }
         if (s.editPhone.isBlank()) {
-            _state.update { it.copy(editPhoneError = getApplication<Application>().getString(R.string.error_phone_required)) }; valid = false
+            _state.update { it.copy(editPhoneError = context.getString(R.string.error_phone_required)) }; valid = false
         } else if (!ValidationUtils.isValidPhone(s.editPhone)) {
-            _state.update { it.copy(editPhoneError = getApplication<Application>().getString(R.string.error_phone_invalid)) }; valid = false
+            _state.update { it.copy(editPhoneError = context.getString(R.string.error_phone_invalid)) }; valid = false
         }
         if (s.editAddress.isBlank()) {
-            _state.update { it.copy(editAddressError = getApplication<Application>().getString(R.string.error_address_required)) }; valid = false
+            _state.update { it.copy(editAddressError = context.getString(R.string.error_address_required)) }; valid = false
         }
         if (s.editLocation.isBlank()) {
-            _state.update { it.copy(editLocationError = getApplication<Application>().getString(R.string.error_city_required)) }; valid = false
+            _state.update { it.copy(editLocationError = context.getString(R.string.error_city_required)) }; valid = false
         }
         if (s.editState.isBlank()) {
-            _state.update { it.copy(editStateError = getApplication<Application>().getString(R.string.error_state_required)) }; valid = false
+            _state.update { it.copy(editStateError = context.getString(R.string.error_state_required)) }; valid = false
         }
         if (s.editZipCode.isBlank()) {
-            _state.update { it.copy(editZipCodeError = getApplication<Application>().getString(R.string.error_zip_code_required)) }; valid = false
+            _state.update { it.copy(editZipCodeError = context.getString(R.string.error_zip_code_required)) }; valid = false
         }
         if (s.editOpenTime.isBlank()) {
-            _state.update { it.copy(editOpenTimeError = getApplication<Application>().getString(R.string.error_opening_time_required)) }; valid = false
+            _state.update { it.copy(editOpenTimeError = context.getString(R.string.error_opening_time_required)) }; valid = false
         }
         if (s.editCloseTime.isBlank()) {
-            _state.update { it.copy(editCloseTimeError = getApplication<Application>().getString(R.string.error_closing_time_required)) }; valid = false
+            _state.update { it.copy(editCloseTimeError = context.getString(R.string.error_closing_time_required)) }; valid = false
         }
         if ((s.user?.type == OrganizationType.NGO || s.user?.type == OrganizationType.GROCERY)
             && s.editContactPerson.isBlank()) {
-            _state.update { it.copy(editContactPersonError = getApplication<Application>().getString(R.string.error_contact_person_required)) }
+            _state.update { it.copy(editContactPersonError = context.getString(R.string.error_contact_person_required)) }
             valid = false
         }
         return valid
     }
 
-    // ── Change password ────────────────────────────────────────────────────────
+    // ── Change password ──────────────────────────────────────────────────────
 
     private fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
@@ -327,10 +328,10 @@ class ProfileViewModel @Inject constructor(
             changePasswordUseCase(currentPassword, newPassword).fold(
                 onSuccess = {
                     _state.update { it.copy(isChangingPassword = false) }
-                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_password_changed)))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_password_changed)))
                 },
                 onFailure = { e ->
-                    val msg = e.message ?: getApplication<Application>().getString(R.string.error_change_password_failed)
+                    val msg = e.message ?: context.getString(R.string.error_change_password_failed)
                     _state.update { it.copy(isChangingPassword = false, error = msg) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
@@ -342,7 +343,6 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isUploadingAvatar = true, avatarUploadError = null) }
             try {
-                val context = getApplication<Application>()
                 val bytes = ImageUtils.compressToBytes(context, uri)
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
                 // The repository writes the new URL into the cached user; going
@@ -350,10 +350,10 @@ class ProfileViewModel @Inject constructor(
                 // until the next login refreshed the cache.
                 organizationRepository.uploadAvatar(bytes, fileName, "image/jpeg").getOrThrow()
                 loadProfile()
-                _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_avatar_updated)))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_avatar_updated)))
             } catch (e: Exception) {
                 val msg = e.message
-                    ?: getApplication<Application>().getString(R.string.error_avatar_upload_failed)
+                    ?: context.getString(R.string.error_avatar_upload_failed)
                 _state.update { it.copy(avatarUploadError = msg) }
                 _uiEvent.send(UiEvent.ShowSnackbar(msg))
             } finally {
@@ -368,7 +368,7 @@ class ProfileViewModel @Inject constructor(
             try {
                 authApi.deleteAccount(DeleteAccountRequest(password))
                 _state.update { it.copy(isDeletingAccount = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_account_deleted)))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_account_deleted)))
                 _uiEvent.send(UiEvent.Navigate("logout"))
             } catch (e: Exception) {
                 _state.update { it.copy(isDeletingAccount = false) }
@@ -376,7 +376,7 @@ class ProfileViewModel @Inject constructor(
                     val body = (e as? retrofit2.HttpException)
                         ?.response()?.errorBody()?.string()
                     org.json.JSONObject(body ?: "").optString("message").takeIf { it.isNotBlank() }
-                }.getOrNull() ?: e.message ?: getApplication<Application>().getString(R.string.error_delete_account_failed)
+                }.getOrNull() ?: e.message ?: context.getString(R.string.error_delete_account_failed)
                 _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }

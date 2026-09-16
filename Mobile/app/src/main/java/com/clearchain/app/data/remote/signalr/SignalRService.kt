@@ -10,27 +10,15 @@ import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
 import io.reactivex.rxjava3.core.Single
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.min
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * The app's single live connection to the server's SignalR hubs.
@@ -167,9 +155,7 @@ class SignalRService @Inject constructor(
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Lifecycle
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Lifecycle ────────────────────────────────────────────────────────────
 
     /**
      * Brings every hub up. Safe to call repeatedly — hubs already connected are left alone, so
@@ -319,9 +305,7 @@ class SignalRService @Inject constructor(
             notificationHubConnection
         ).any { it?.connectionState == HubConnectionState.CONNECTED }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Connection plumbing
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Connection plumbing ──────────────────────────────────────────────────
 
     /**
      * Returns a live connection for [url], building one if needed.
@@ -410,9 +394,7 @@ class SignalRService @Inject constructor(
         joinedInventoryRooms.clear()
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Event handlers
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Event handlers ───────────────────────────────────────────────────────
 
     private fun setupPickupEventHandlers(connection: HubConnection) = with(connection) {
         on("PickupRequestCreated", { data: PickupRequestData ->
@@ -509,12 +491,10 @@ class SignalRService @Inject constructor(
         }, NotificationData::class.java)
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
     // Per-entity rooms
     //
     // Joining a room is what makes the server's `pickup_{id}` / `listing_{id}` / `item_{id}`
     // broadcasts reachable at all — those groups have no members until a client asks to join.
-    // ═══════════════════════════════════════════════════════════════════════════
 
     suspend fun joinPickupRequestRoom(requestId: String) =
         joinRoom(pickupHubConnection, joinedPickupRooms, "JoinPickupRequestRoom", requestId)

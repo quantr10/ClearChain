@@ -7,11 +7,11 @@ import com.clearchain.app.data.remote.dto.toEntity
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Backs the header bell's unread badge.

@@ -137,14 +137,14 @@ dependencies {
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
-    
+
     // Accompanist permissions
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-    
+
     implementation("androidx.compose.material3:material3:1.3.1")
-    
+
     implementation("com.google.android.gms:play-services-location:21.1.0")
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")

@@ -16,11 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -149,9 +149,7 @@ fun ManageRequestsScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Advanced filter sheet
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Advanced filter sheet ────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -227,5 +225,3 @@ private fun ManageRequestsFilterSheet(
         }
     }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────

@@ -1,15 +1,15 @@
 package com.clearchain.app.presentation.ngo.inventory
 
-import android.app.Application
 import android.content.ContentValues
-import com.clearchain.app.R
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.domain.usecase.inventory.DistributeItemUseCase
@@ -17,26 +17,27 @@ import com.clearchain.app.domain.usecase.inventory.GetMyInventoryUseCase
 import com.clearchain.app.domain.usecase.inventory.UpdateExpiredItemsUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class InventoryViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext private val context: Context,
     private val getMyInventoryUseCase: GetMyInventoryUseCase,
     private val updateExpiredItemsUseCase: UpdateExpiredItemsUseCase,
     private val distributeInventoryItemUseCase: DistributeItemUseCase,
     private val signalRService: SignalRService
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(InventoryState())
     val state: StateFlow<InventoryState> = _state.asStateFlow()
@@ -46,14 +47,14 @@ class InventoryViewModel @Inject constructor(
 
     init {
         loadInventory()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
     private fun setupSignalR() {
         viewModelScope.launch {
             signalRService.inventoryItemAdded.collect { item ->
                 loadInventory()
-                _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_new_inventory_item, item.productName)))
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_inventory_item, item.productName)))
             }
         }
         viewModelScope.launch { signalRService.inventoryItemDistributed.collect { loadInventory() } }
@@ -66,7 +67,7 @@ class InventoryViewModel @Inject constructor(
             InventoryEvent.LoadInventory -> loadInventory()
             InventoryEvent.RefreshInventory -> refreshInventory()
             InventoryEvent.UpdateExpired -> updateExpiredItems()
-            
+
             // Search & Sort
             is InventoryEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
@@ -76,13 +77,13 @@ class InventoryViewModel @Inject constructor(
                 _state.update { it.copy(selectedSort = event.option) }
                 applyFilters()
             }
-            
+
             // Status Tab — never allow null (All is removed)
             is InventoryEvent.StatusTabChanged -> {
                 _state.update { it.copy(selectedStatusTab = event.status ?: InventoryStatus.ACTIVE) }
                 applyFilters()
             }
-            
+
             // Category Filter
             is InventoryEvent.CategoryFilterChanged -> {
                 _state.update { it.copy(selectedCategory = event.category) }
@@ -141,7 +142,6 @@ class InventoryViewModel @Inject constructor(
             is InventoryEvent.ManualExpiryDateChanged  -> _state.update { it.copy(manualExpiryDate = event.date) }
             InventoryEvent.SubmitManualAdd             -> submitManualAdd()
 
-
             InventoryEvent.ExportCsv -> exportCsv()
         }
     }
@@ -149,7 +149,7 @@ class InventoryViewModel @Inject constructor(
     private fun exportCsv() {
         val items = _state.value.allItems
         if (items.isEmpty()) {
-            viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_no_inventory_export))) }
+            viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_no_inventory_export))) }
             return
         }
         viewModelScope.launch {
@@ -167,7 +167,6 @@ class InventoryViewModel @Inject constructor(
                     }
                     val csv = sb.toString()
                     val fileName = "clearchain_inventory_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
-                    val ctx = getApplication<Application>()
 
                     val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         val values = ContentValues().apply {
@@ -175,8 +174,8 @@ class InventoryViewModel @Inject constructor(
                             put(MediaStore.Downloads.MIME_TYPE, "text/csv")
                             put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                         }
-                        ctx.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
-                            ctx.contentResolver.openOutputStream(u)?.use { it.write(csv.toByteArray()) }
+                        context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
+                            context.contentResolver.openOutputStream(u)?.use { it.write(csv.toByteArray()) }
                         }
                     } else {
                         val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
@@ -192,13 +191,13 @@ class InventoryViewModel @Inject constructor(
                         }
                         val chooser = Intent.createChooser(shareIntent, "Share Inventory CSV")
                         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        ctx.startActivity(chooser)
-                        _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_csv_saved)))
+                        context.startActivity(chooser)
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_saved)))
                     } else {
-                        _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_csv_failed)))
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_failed)))
                     }
                 } catch (e: Exception) {
-                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_export_failed, e.message ?: "")))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_export_failed, e.message ?: "")))
                 }
             }
         }
@@ -208,7 +207,7 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // Update expired items first
+            // expired items first
             updateExpiredItemsUseCase()
 
             val result = getMyInventoryUseCase()
@@ -227,7 +226,7 @@ class InventoryViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: getApplication<Application>().getString(R.string.error_load_inventory)
+                            error = error.message ?: context.getString(R.string.error_load_inventory)
                         )
                     }
                 }
@@ -239,7 +238,7 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
 
-            // Update expired items first
+            // expired items first
             updateExpiredItemsUseCase()
 
             val result = getMyInventoryUseCase()
@@ -253,13 +252,13 @@ class InventoryViewModel @Inject constructor(
                         )
                     }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_inventory_refreshed)))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_inventory_refreshed)))
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
                             isRefreshing = false,
-                            error = error.message ?: getApplication<Application>().getString(R.string.error_refresh_inventory)
+                            error = error.message ?: context.getString(R.string.error_refresh_inventory)
                         )
                     }
                 }
@@ -341,7 +340,7 @@ class InventoryViewModel @Inject constructor(
             val result = distributeInventoryItemUseCase(itemId)
             result.fold(
                 onSuccess = {
-                    val msg = getApplication<Application>().getString(R.string.snack_item_distributed)
+                    val msg = context.getString(R.string.snack_item_distributed)
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                     loadInventory()
                 },
@@ -363,7 +362,7 @@ class InventoryViewModel @Inject constructor(
                 distributeInventoryItemUseCase(id).onSuccess { succeeded++ }
             }
             _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_n_items_distributed, succeeded)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_items_distributed, succeeded)))
             loadInventory()
         }
     }
@@ -377,7 +376,7 @@ class InventoryViewModel @Inject constructor(
             kotlinx.coroutines.delay(500)
             _state.update { it.copy(isSubmittingManual = false, showManualAddSheet = false,
                 manualProductName = "", manualCategory = "", manualQuantity = "", manualExpiryDate = "") }
-            _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_item_added)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
             loadInventory()
         }
     }

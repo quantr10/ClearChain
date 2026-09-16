@@ -19,9 +19,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.clearchain.app.R
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.ScreenPadding

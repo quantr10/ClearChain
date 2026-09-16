@@ -19,15 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
 
@@ -84,7 +84,7 @@ fun CreateListingScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.isPreviewMode) {
-                // ── Preview Mode ───────────────────────────────────────────────
+                // ── Preview Mode ─────────────────────────────────────────────
                 val previewListing = remember(
                     state.title, state.description, state.category,
                     state.quantity, state.unit, state.expiryDate,
@@ -127,10 +127,10 @@ fun CreateListingScreen(
                 val expiryInvalid = state.expiryDate.isBlank()
                 val canCreate = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
-                // ── AI Photo Analysis ──────────────────────────────────────────
+                // ── AI Photo Analysis ────────────────────────────────────────
                 AiAnalysisCard(state = state, viewModel = viewModel)
 
-                // ── Title ─────────────────────────────────────────────────────
+                // ── Title ────────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_title)) {
                     ClearChainTextField(
                         value         = state.title,
@@ -144,7 +144,7 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Description ────────────────────────────────────────────────
+                // ── Description ──────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_description)) {
                     ClearChainTextField(
                         value         = state.description,
@@ -161,7 +161,7 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Category ───────────────────────────────────────────────────
+                // ── Category ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_category)) {
                     val enabled   = !state.isLoading && !state.isAnalyzing
                     val iconTint  = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
@@ -209,7 +209,7 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Quantity ───────────────────────────────────────────────────
+                // ── Quantity ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_quantity_short)) {
                     val enabled   = !state.isLoading && !state.isAnalyzing
                     val iconTint  = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
@@ -284,7 +284,7 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Expiry Date ────────────────────────────────────────────────
+                // ── Expiry Date ──────────────────────────────────────────────
                 val futureDates = remember {
                     object : SelectableDates {
                         override fun isSelectableDate(utcTimeMillis: Long): Boolean {
@@ -306,7 +306,7 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Pickup Hours ───────────────────────────────────────────────
+                // ── Pickup Hours ─────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
                     Surface(
                         color    = MaterialTheme.colorScheme.secondaryContainer,
@@ -338,7 +338,7 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Submit ─────────────────────────────────────────────────────
+                // ── Submit ───────────────────────────────────────────────────
                 ClearChainButton(
                     text     = stringResource(R.string.btn_create_listing),
                     onClick  = { viewModel.onEvent(CreateListingEvent.CreateListing) },
@@ -360,7 +360,7 @@ fun CreateListingScreen(
     }
 }
 
-// ── Individual field card ──────────────────────────────────────────────────────
+// ── Individual field card ────────────────────────────────────────────────────
 @Composable
 private fun FieldCard(
     label: String,
@@ -389,7 +389,7 @@ private fun FieldCard(
     }
 }
 
-// ── AI Analysis Card ───────────────────────────────────────────────────────────
+// ── AI Analysis Card ─────────────────────────────────────────────────────────
 @Composable
 private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingViewModel) {
     Card(

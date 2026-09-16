@@ -14,12 +14,11 @@ import com.clearchain.app.domain.usecase.listing.CreateListingUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-
 
 @HiltViewModel
 class CreateListingViewModel @Inject constructor(
@@ -116,11 +115,11 @@ class CreateListingViewModel @Inject constructor(
             }
 
             is CreateListingEvent.ImageSelected -> {
-                _state.update { 
+                _state.update {
                     it.copy(
                         selectedImageUri = event.uri,
                         showImagePicker = false
-                    ) 
+                    )
                 }
                 analyzeImage()
             }
@@ -144,15 +143,15 @@ class CreateListingViewModel @Inject constructor(
             CreateListingEvent.AnalyzeImage -> {
                 analyzeImage()
             }
-            
+
             CreateListingEvent.ApplyAISuggestions -> {
                 applyAISuggestions()
             }
-            
+
             CreateListingEvent.ToggleImagePicker -> {
                 _state.update { it.copy(showImagePicker = !it.showImagePicker) }
             }
-            
+
             CreateListingEvent.ClearImage -> {
                 _state.update {
                     it.copy(
@@ -247,17 +246,17 @@ private fun createListing() {
     viewModelScope.launch {
         _state.update { it.copy(isLoading = true, error = null) }
 
-        // ✅ NEW: Upload image first if user selected one
+        // Upload image first if user selected one
         var finalImageUrl = currentState.imageUrl
-        
+
         val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
         if (primaryUri != null && finalImageUrl.isEmpty()) {
             val uploadResult = listingRepository.uploadFoodImage(primaryUri)
-            
+
             uploadResult.fold(
                 onSuccess = { uploadedUrl ->
                     finalImageUrl = uploadedUrl
-                    Log.d("CreateListingVM", "✅ Image uploaded: $uploadedUrl")
+                    Log.d(TAG, "✅ Image uploaded: $uploadedUrl")
                 },
                 onFailure = { error ->
                     _state.update {
@@ -286,10 +285,10 @@ private fun createListing() {
         result.fold(
             onSuccess = { listing ->
                 _state.update { it.copy(isLoading = false) }
-                
+
                 // Save analysis to DB if AI was used
                 if (currentState.analysisResult != null) {
-                    // Update imageUrl in analysis before saving
+                    // imageUrl in analysis before saving
                     val updatedAnalysis = currentState.analysisResult!!.copy(
                         imageUrl = finalImageUrl
                     )
@@ -315,15 +314,15 @@ private fun createListing() {
     }
 }
 
-// ✅ NEW: Save analysis after listing created
+// Save analysis after listing created
 private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
         viewModelScope.launch {
             try {
                 listingRepository.saveAnalysis(analysisData)
-                Log.d("CreateListingVM", "✅ Analysis saved to database")
+                Log.d(TAG, "✅ Analysis saved to database")
             } catch (e: Exception) {
                 // Don't fail - analysis save is non-critical
-                Log.e("CreateListingVM", "⚠️ Failed to save analysis (non-critical): ${e.message}")
+                Log.e(TAG, "⚠️ Failed to save analysis (non-critical): ${e.message}")
             }
         }
     }
@@ -376,53 +375,57 @@ private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
 
     private fun analyzeImage() {
         val imageUri = _state.value.selectedImageUri ?: return
-        
+
         viewModelScope.launch {
             _state.update { it.copy(isAnalyzing = true, analysisError = null) }
-            
+
             val result = listingRepository.analyzeImage(imageUri)
-            
+
             result.fold(
                 onSuccess = { analysisData ->
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isAnalyzing = false,
                             analysisResult = analysisData,
                             imageUrl = analysisData.imageUrl
-                        ) 
+                        )
                     }
                     _uiEvent.send(UiEvent.ShowSnackbar(
                         context.getString(R.string.snack_ai_detected, analysisData.title, (analysisData.confidence * 100).toInt())
                     ))
                 },
                 onFailure = { error ->
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isAnalyzing = false,
                             analysisError = error.message ?: context.getString(R.string.error_analysis_failed)
-                        ) 
+                        )
                     }
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_analysis_failed, error.message ?: "")))
                 }
             )
         }
     }
-    
+
     private fun applyAISuggestions() {
         val analysis = _state.value.analysisResult ?: return
-        
-        _state.update { 
+
+        _state.update {
             it.copy(
                 title = analysis.title,
                 description = analysis.notes,
                 category = analysis.category.uppercase(),
                 expiryDate = analysis.expiryDate.substring(0, 10),
                 imageUrl = analysis.imageUrl
-            ) 
+            )
         }
-        
+
         viewModelScope.launch {
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_ai_applied)))
         }
+    }
+
+    private companion object {
+        const val TAG = "CreateListingVM"
     }
 }

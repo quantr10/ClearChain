@@ -29,15 +29,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 import java.text.SimpleDateFormat
@@ -72,7 +72,7 @@ fun ListingDetailScreen(
         }
     }
 
-    // ── Dialogs ───────────────────────────────────────────────────────────────
+    // ── Dialogs ──────────────────────────────────────────────────────────────
 
     if (state.showReportDialog) {
         ConfirmDialog(
@@ -193,7 +193,7 @@ fun ListingDetailScreen(
                     val isGrocery = state.currentUserType == OrganizationType.GROCERY
                     val images    = listOfNotNull(listing.imageUrl?.takeIf { it.isNotBlank() })
 
-                    // ── Expiry logic ───────────────────────────────────────────
+                    // ── Expiry logic ─────────────────────────────────────────
                     val daysUntilExpiry: Long = remember(listing.expiryDate) {
                         try {
                             val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(listing.expiryDate)!!
@@ -233,9 +233,7 @@ fun ListingDetailScreen(
                         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     ) {
 
-                        // ══════════════════════════════════════════════════════
-                        // IMAGE AREA  (200dp)
-                        // ══════════════════════════════════════════════════════
+                        // ── IMAGE AREA  (200dp) ──────────────────────────────
                         Card(
                             modifier  = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 12.dp),
                             colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -262,7 +260,7 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── Status badge — top-left ────────────────────────
+                            // ── Status badge — top-left ──────────────────────
                             Box(modifier = Modifier.align(Alignment.TopStart).padding(8.dp)) {
                                 ListingStatusBadge(listing.status)
                             }
@@ -318,7 +316,7 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── Urgency banner — bottom-center (same as ListingCard) ──
+                            // ── Urgency banner — bottom-center (same as ListingCard) ───
                             if (urgencyText != null) {
                                 Box(
                                     modifier = Modifier
@@ -337,7 +335,7 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── Grocery avatar — bottom-left, inside image (NGO only) ──
+                            // ── Grocery avatar — bottom-left, inside image (NGO only) ───
                             if (!isGrocery) OverlayAvatar(
                                 imageUrl = listing.groceryProfilePictureUrl,
                                 name     = listing.groceryName,
@@ -348,14 +346,12 @@ fun ListingDetailScreen(
                             )
                         } }
 
-                        // ══════════════════════════════════════════════════════
-                        // CONTENT BELOW IMAGE
-                        // ══════════════════════════════════════════════════════
+                        // ── CONTENT BELOW IMAGE ──────────────────────────────
                         Column(
                             modifier            = Modifier.padding(ScreenPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // ── Title ──────────────────────────────────────────
+                            // ── Title ────────────────────────────────────────
                             Row(
                                 modifier              = Modifier.fillMaxWidth(),
                                 verticalAlignment     = Alignment.CenterVertically,
@@ -372,7 +368,7 @@ fun ListingDetailScreen(
                                 CategoryBadge(listing.category)
                             }
 
-                            // ── Description card ───────────────────────────────
+                            // ── Description card ─────────────────────────────
                             if (listing.description.isNotBlank()) {
                                 SectionCard(stringResource(R.string.label_description)) {
                                     Text(
@@ -385,7 +381,7 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── Details card ───────────────────────────────────
+                            // ── Details card ─────────────────────────────────
                             val displayQty = state.availabilityOverride ?: listing.quantity
                             SectionCard(stringResource(R.string.section_details)) {
                                 CompactDetailRow(Icons.Default.ShoppingCart, "${displayQty} ${listing.unit}")
@@ -414,7 +410,7 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── About Us card (NGO only) ───────────────────────
+                            // ── About Us card (NGO only) ─────────────────────
                             if (!isGrocery) {
                                 // Street, city, state and zip are stored separately, so the
                                 // street alone reads as a partial address. Same assembly the
@@ -528,9 +524,7 @@ fun ListingDetailScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Image carousel
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Image carousel ───────────────────────────────────────────────────────────
 
 @androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
@@ -566,9 +560,7 @@ private fun DetailImageCarousel(images: List<String>, title: String, onTap: (Str
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Circular action button overlaid on image — white icon on dark circle
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Circular action button overlaid on image — white icon on dark circle ─────
 
 @Composable
 private fun ListingDetailCartAction(
@@ -624,9 +616,7 @@ private fun ImageActionButton(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section card
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Section card ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun SectionCard(
@@ -653,9 +643,7 @@ private fun SectionCard(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Compact detail row — same visual as ListingCard rows
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Compact detail row — same visual as ListingCard rows ─────────────────────
 
 @Composable
 private fun CompactDetailRow(

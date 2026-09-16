@@ -6,8 +6,8 @@ import com.clearchain.app.data.local.entity.FCMTokenEntity
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.dto.RegisterFCMTokenRequest
 import com.google.firebase.messaging.FirebaseMessaging
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlinx.coroutines.tasks.await
 
 /**
  * Publishes this device's FCM token to the server — the one step that makes push notifications

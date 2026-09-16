@@ -1,13 +1,9 @@
 package com.clearchain.app.presentation.admin.dashboard
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -21,17 +17,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.unit.sp
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.clearchain.app.R
 import com.clearchain.app.presentation.admin.analytics.AnalyticsSection
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.launch
 
@@ -85,7 +81,7 @@ fun AdminDashboardScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // ── Gradient admin header ──────────────────────────────────────
+            // ── Gradient admin header ────────────────────────────────────────
             DashboardWelcomeHeader(
                 userName       = userName,
                 subtitle       = stringResource(R.string.system_health),
@@ -111,7 +107,7 @@ fun AdminDashboardScreen(
                         CircularProgressIndicator()
                     }
                 } else {
-                    // ── Platform stats ─────────────────────────────────────
+                    // ── Platform stats ───────────────────────────────────────
                     state.stats?.let { stats ->
                         // Listing supply only. Request counts live in the status breakdown
                         // and the completion meter below, so they are not repeated here.
@@ -192,7 +188,7 @@ fun AdminDashboardScreen(
                         }
                     }
 
-                    // ── Request Status Bar Chart ───────────────────────────
+                    // ── Request Status Bar Chart ─────────────────────────────
                     state.stats?.let { stats ->
                         val barData = listOf(
                             BarData(stringResource(R.string.status_pending),   stats.pendingRequests,   StatusColors.Pending),
@@ -211,7 +207,7 @@ fun AdminDashboardScreen(
                             }
                         }
 
-                        // ── Org Type Donut Chart ───────────────────────────
+                        // ── Org Type Donut Chart ─────────────────────────────
                         if (stats.totalOrganizations > 0) {
                             DrillDownSection(
                                 title         = stringResource(R.string.section_organizations),
@@ -234,7 +230,7 @@ fun AdminDashboardScreen(
                     }
                 }
 
-                // ── Quick actions ──────────────────────────────────────────
+                // ── Quick actions ────────────────────────────────────────────
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DashboardActionCard(
                         icon     = Icons.Default.VerifiedUser,
@@ -256,7 +252,7 @@ fun AdminDashboardScreen(
                     )
                 }
 
-                // ── Recent activity feed ───────────────────────────────────
+                // ── Recent activity feed ─────────────────────────────────────
                 if (state.recentActivities.isNotEmpty()) {
                     DashboardSection(title = stringResource(R.string.section_recent_activity)) {
                         // Straight onto the section — the tinted Surface that used to wrap
@@ -275,7 +271,7 @@ fun AdminDashboardScreen(
                     }
                 }
 
-                // ── Alert feed ─────────────────────────────────────────────
+                // ── Alert feed ───────────────────────────────────────────────
                 if (state.alertFeedItems.isNotEmpty()) {
                     DashboardSection(title = stringResource(R.string.section_alert_feed)) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -311,9 +307,7 @@ fun AdminDashboardScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Drill-down sections
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Drill-down sections ──────────────────────────────────────────────────────
 
 /**
  * A dashboard card whose figures are a summary of one analytics section, and which opens
@@ -338,13 +332,9 @@ private fun DrillDownSection(
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Request Status Bar Chart (Canvas)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Request Status Bar Chart (Canvas) ────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Overview tiles
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Overview tiles ───────────────────────────────────────────────────────────
 
 /**
  * Listing supply at a glance: what is still open is the number an admin acts on,
