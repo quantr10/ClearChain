@@ -17,9 +17,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.R
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.*
 import com.clearchain.app.util.DateTimeUtils
 import java.text.SimpleDateFormat
@@ -75,7 +75,7 @@ fun ListingCard(
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column {
-            // ── Image ─────────────────────────────────────────────────────
+            // ── Image ────────────────────────────────────────────────────────
             val imageUrl = listing.imageUrl?.takeIf { it.isNotBlank() }
             Box(
                 modifier = Modifier
@@ -139,7 +139,7 @@ fun ListingCard(
                 }
             }
 
-            // ── Content ───────────────────────────────────────────────────
+            // ── Content ──────────────────────────────────────────────────────
             Column(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)

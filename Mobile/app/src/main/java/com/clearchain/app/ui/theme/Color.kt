@@ -1,19 +1,17 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// Color.kt — Unified semantic color palette
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Color.kt — Unified semantic color palette ────────────────────────────────
 
 package com.clearchain.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ── Brand Colors ────────────────────────────────────────────────────────────
+// ── Brand Colors ─────────────────────────────────────────────────────────────
 val BrandGreen      = Color(0xFF16A34A)
 
 val BrandTeal       = Color(0xFF0D9488)
 val BrandTealLight  = Color(0xFFF0FDFA)
 val BrandTealDark   = Color(0xFF0F766E)
 
-// ── Status Colors ───────────────────────────────────────────────────────────
+// ── Status Colors ────────────────────────────────────────────────────────────
 object StatusColors {
     // Available / Open / Active
     val Available           = Color(0xFF16A34A)
@@ -61,7 +59,7 @@ object StatusColors {
     val DistributedOnBg     = Color(0xFF155E75)
 }
 
-// ── Category Colors ─────────────────────────────────────────────────────────
+// ── Category Colors ──────────────────────────────────────────────────────────
 object CategoryColors {
     val Fruits     = Color(0xFFEF4444)
     val Vegetables = Color(0xFF22C55E)
@@ -74,7 +72,7 @@ object CategoryColors {
     val Other      = Color(0xFF6B7280)
 }
 
-// ── Neutral Colors ──────────────────────────────────────────────────────────
+// ── Neutral Colors ───────────────────────────────────────────────────────────
 val Gray50  = Color(0xFFF9FAFB)
 val Gray100 = Color(0xFFF3F4F6)
 val Gray200 = Color(0xFFE5E7EB)
@@ -82,7 +80,7 @@ val Gray300 = Color(0xFFD1D5DB)
 val Gray500 = Color(0xFF6B7280)
 val Gray900 = Color(0xFF111827)
 
-// ── Light Theme Palette ─────────────────────────────────────────────────────
+// ── Light Theme Palette ──────────────────────────────────────────────────────
 val LightPrimary            = BrandTeal
 val LightOnPrimary          = Color.White
 val LightPrimaryContainer   = BrandTealLight
@@ -99,7 +97,7 @@ val LightError              = Color(0xFFDC2626)
 val LightErrorContainer     = Color(0xFFFEE2E2)
 val LightOnErrorContainer   = Color(0xFF991B1B)
 
-// ── Dark Theme Palette ──────────────────────────────────────────────────────
+// ── Dark Theme Palette ───────────────────────────────────────────────────────
 val DarkPrimary             = Color(0xFF2DD4BF)
 val DarkOnPrimary           = Color(0xFF003733)
 val DarkPrimaryContainer    = Color(0xFF0F766E)

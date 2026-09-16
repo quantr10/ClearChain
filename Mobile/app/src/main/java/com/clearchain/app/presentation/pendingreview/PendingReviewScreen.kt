@@ -71,7 +71,7 @@ fun PendingReviewScreen(
                 .padding(ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Status hero ───────────────────────────────────────────
+            // ── Status hero ──────────────────────────────────────────────────
             Column(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,7 +112,7 @@ fun PendingReviewScreen(
                 )
             }
 
-            // ── Rejection reason ──────────────────────────────────────
+            // ── Rejection reason ─────────────────────────────────────────────
             if (rejected && !user?.verificationNotes.isNullOrBlank()) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -137,7 +137,7 @@ fun PendingReviewScreen(
                 }
             }
 
-            // ── What happens next ─────────────────────────────────────
+            // ── What happens next ────────────────────────────────────────────
             if (!rejected) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -155,7 +155,7 @@ fun PendingReviewScreen(
                 }
             }
 
-            // ── Submitted details ─────────────────────────────────────
+            // ── Submitted details ────────────────────────────────────────────
             if (user != null) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -188,7 +188,7 @@ fun PendingReviewScreen(
                 }
             }
 
-            // ── Actions ───────────────────────────────────────────────
+            // ── Actions ──────────────────────────────────────────────────────
             ClearChainButton(
                 text = stringResource(R.string.pending_review_check_status),
                 onClick = { viewModel.refresh() },

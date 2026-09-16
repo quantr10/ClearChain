@@ -31,7 +31,7 @@ fun InventoryItemCard(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // ── Header ────────────────────────────────────────────────────
+            // ── Header ───────────────────────────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -59,7 +59,7 @@ fun InventoryItemCard(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // ── Details grid ─────────────────────────────────────────────
+            // ── Details grid ─────────────────────────────────────────────────
             val expiryColor = if (item.status == InventoryStatus.ACTIVE) {
                 MaterialTheme.colorScheme.error
             } else {
@@ -86,7 +86,7 @@ fun InventoryItemCard(
                 )
             }
 
-            // ── Action / Status notice ────────────────────────────────────
+            // ── Action / Status notice ───────────────────────────────────────
             when (item.status) {
                 InventoryStatus.ACTIVE -> {
                     if (onDistribute != null) {

@@ -20,10 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.R
-import com.clearchain.app.presentation.notifications.NotificationBell
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.clearchain.app.R
+import com.clearchain.app.presentation.notifications.NotificationBell
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 
@@ -189,4 +189,3 @@ fun OverlayAvatar(
         }
     }
 }
-

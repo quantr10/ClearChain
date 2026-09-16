@@ -15,24 +15,22 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.StatusColors
 
-// ═════════════════════════════════════════════════════════════════════════════
 // Chart vocabulary shared by the admin dashboard, the admin statistics screen and
 // the NGO / grocery analytics screen, so a bar means the same thing everywhere.
 //
 // Every chart here pairs its color with a written label: identity never rests on
 // hue alone, which is also what keeps the category palette usable for readers who
 // cannot separate its red from its green.
-// ═════════════════════════════════════════════════════════════════════════════
 
 data class BarData(val label: String, val value: Int, val color: Color)
 

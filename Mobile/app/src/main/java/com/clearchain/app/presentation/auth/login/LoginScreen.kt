@@ -17,9 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.clearchain.app.R
 import com.clearchain.app.presentation.auth.AuthDivider
 import com.clearchain.app.presentation.auth.AuthHeader
 import com.clearchain.app.presentation.components.*
@@ -112,7 +112,7 @@ fun LoginScreen(
                         enabled       = !state.isLoading && !state.isLockedOut
                     )
 
-                    // ── Remember me + Forgot password row ──────────────────
+                    // ── Remember me + Forgot password row ────────────────────
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -139,7 +139,7 @@ fun LoginScreen(
                         )
                     }
 
-                    // ── Lockout / system error banner ──────────────────────
+                    // ── Lockout / system error banner ────────────────────────
                     ClearChainButton(
                         text    = stringResource(R.string.sign_in),
                         onClick = { viewModel.onEvent(LoginEvent.Login) },

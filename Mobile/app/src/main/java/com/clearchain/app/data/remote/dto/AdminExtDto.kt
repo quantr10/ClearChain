@@ -122,7 +122,7 @@ data class StatsOrganizations(
     val oldestPendingDays: Int? = null
 )
 
-// ── Alert feed ────────────────────────────────────────────────────────────────
+// ── Alert feed ───────────────────────────────────────────────────────────────
 
 @Serializable
 data class AdminAlertFeedResponse(
@@ -142,7 +142,7 @@ data class AdminAlertItem(
     val createdAt: String
 )
 
-// ── NGO reputation ────────────────────────────────────────────────────────────
+// ── NGO reputation ───────────────────────────────────────────────────────────
 
 @Serializable
 data class NgoReputationResponse(
@@ -157,10 +157,10 @@ data class NgoReputationData(
     val completionRate: Double = 0.0
 )
 
-// ── Today summary ─────────────────────────────────────────────────────────────
+// ── Today summary ────────────────────────────────────────────────────────────
 // TodaySummaryResponse and TodaySummaryData are defined in OrganizationDto.kt
 
-// ── Report ────────────────────────────────────────────────────────────────────
+// ── Report ───────────────────────────────────────────────────────────────────
 
 @Serializable
 data class SubmitReportRequest(

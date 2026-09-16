@@ -6,11 +6,11 @@ import com.clearchain.app.data.remote.signalr.RealtimeLifecycleObserver
 import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltAndroidApp
 class ClearChainApplication : Application() {
@@ -26,7 +26,7 @@ class ClearChainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Log.d("ClearChainApp", "📱 Application starting...")
+        Log.d(TAG, "📱 Application starting...")
 
         initializeFirebase()
 
@@ -39,16 +39,20 @@ class ClearChainApplication : Application() {
         // token's UpdatedAt so an active device isn't swept by the stale-token job.
         applicationScope.launch {
             registerFCMTokenUseCase()
-                .onFailure { Log.w("ClearChainApp", "FCM registration skipped: ${it.message}") }
+                .onFailure { Log.w(TAG, "FCM registration skipped: ${it.message}") }
         }
     }
 
     private fun initializeFirebase() {
         try {
             FirebaseApp.initializeApp(this)
-            Log.d("ClearChainApp", "🔥 Firebase initialized (project: ${FirebaseApp.getInstance().options.projectId})")
+            Log.d(TAG, "🔥 Firebase initialized (project: ${FirebaseApp.getInstance().options.projectId})")
         } catch (e: Exception) {
-            Log.e("ClearChainApp", "❌ Firebase initialization failed", e)
+            Log.e(TAG, "❌ Firebase initialization failed", e)
         }
+    }
+
+    private companion object {
+        const val TAG = "ClearChainApp"
     }
 }

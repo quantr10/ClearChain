@@ -29,13 +29,12 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.UiEvent
-import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
-// ═════════════════════════════════════════════════════════════════════════════
 // Admin Stats & Analytics.
 //
 // The screen is a fixed ladder of sections, in the order of AnalyticsSection, each
@@ -46,7 +45,6 @@ import kotlin.math.roundToInt
 // Two kinds of figure appear and the cards say which is which: everything above
 // Backlog is counted over the selected period, Backlog is the live queue as it
 // stands right now.
-// ═════════════════════════════════════════════════════════════════════════════
 
 /** Item 0 is the header, so the first section sits one below it. */
 private const val FIRST_SECTION_INDEX = 1
@@ -162,7 +160,7 @@ fun AdminAnalyticsScreen(
     }
 }
 
-// ── Header ──────────────────────────────────────────────────────────────────
+// ── Header ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun AnalyticsHeader(
@@ -218,7 +216,7 @@ private fun periodSubtitle(period: StatsPeriod?): String {
     }
 }
 
-// ── Request status ──────────────────────────────────────────────────────────
+// ── Request status ───────────────────────────────────────────────────────────
 
 @Composable
 private fun RequestStatusCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -241,7 +239,7 @@ private fun RequestStatusCard(data: AdminDetailedStatsData, highlighted: Analyti
     }
 }
 
-// ── Timing ──────────────────────────────────────────────────────────────────
+// ── Timing ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun TimingCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -265,7 +263,7 @@ private fun TimingCard(data: AdminDetailedStatsData, highlighted: AnalyticsSecti
     }
 }
 
-// ── Backlog ─────────────────────────────────────────────────────────────────
+// ── Backlog ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun BacklogCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -341,7 +339,7 @@ private fun BacklogCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
     }
 }
 
-// ── Leaderboards ────────────────────────────────────────────────────────────
+// ── Leaderboards ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun LeaderboardCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -374,7 +372,7 @@ private fun LeaderboardCard(data: AdminDetailedStatsData, highlighted: Analytics
     }
 }
 
-// ── Quality ─────────────────────────────────────────────────────────────────
+// ── Quality ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -427,7 +425,7 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
     }
 }
 
-// ── Organizations ───────────────────────────────────────────────────────────
+// ── Organizations ────────────────────────────────────────────────────────────
 
 @Composable
 private fun OrganizationsCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
@@ -477,7 +475,7 @@ private fun OrganizationsCard(data: AdminDetailedStatsData, highlighted: Analyti
     }
 }
 
-// ── Building blocks ─────────────────────────────────────────────────────────
+// ── Building blocks ──────────────────────────────────────────────────────────
 
 /** A section card that can be marked when the admin home linked straight to it. */
 @Composable
@@ -600,7 +598,7 @@ private fun EmptyChartNote(text: String) {
     )
 }
 
-// ── Formatting ──────────────────────────────────────────────────────────────
+// ── Formatting ───────────────────────────────────────────────────────────────
 
 private fun formatDuration(hours: Double?): String = when {
     hours == null -> "–"

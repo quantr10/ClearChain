@@ -21,7 +21,6 @@ data class UserEntity(
     val hours: String? = null,
     val profilePictureUrl: String? = null,
     val createdAt: String,
-    // ═══ NEW FIELDS (Part 1) ═══
     val latitude: Double? = null,
     val longitude: Double? = null,
     val state: String? = null,
@@ -29,7 +28,7 @@ data class UserEntity(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ═══ Onboarding verification document ═══
+    // ── Onboarding verification document ─────────────────────────────────────
     val documentUrl: String? = null,
     // Deprecated: the app only supports a single verification document. Column kept
     // (always null) so no Room migration is needed; do not read or write it.

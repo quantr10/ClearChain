@@ -4,8 +4,8 @@ import android.content.Context
 import android.net.Uri
 import com.clearchain.app.data.local.dao.ListingDao
 import com.clearchain.app.data.local.dao.UserDao
-import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.local.entity.toDomain
+import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.remote.api.ImageAnalysisApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.dto.CreateListingRequest
@@ -16,11 +16,11 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.util.ImageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import javax.inject.Inject
 
 class ListingRepositoryImpl @Inject constructor(
     private val listingApi: ListingApi,

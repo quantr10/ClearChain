@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// LoadingOverlay.kt — Fullscreen loading overlay with optional message
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── LoadingOverlay.kt — Fullscreen loading overlay with optional message ─────
 
 package com.clearchain.app.presentation.components
 

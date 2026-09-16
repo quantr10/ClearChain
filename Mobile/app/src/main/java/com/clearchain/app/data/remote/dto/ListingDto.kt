@@ -61,19 +61,19 @@ data class ListingData(
     val splitIndex: Int = 0,
     val groupSummary: ListingGroupSummaryDto? = null,
 
-    // ═══ NEW (Part 2): Distance from NGO ═══
+    // ── Distance from NGO ────────────────────────────────────────────────────
     val distanceKm: Double? = null,
 
-    // ═══ Analytics ═══
+    // ── Analytics ────────────────────────────────────────────────────────────
     val viewCount: Int = 0,
     val requestCount: Int = 0,
     val imageUrls: List<String> = emptyList(),
 
-    // ═══ Grocery coordinates (for map pins) ═══
+    // ── Grocery coordinates (for map pins) ───────────────────────────────────
     val groceryLatitude: Double? = null,
     val groceryLongitude: Double? = null,
 
-    // ═══ Grocery operating hours (live from profile) ═══
+    // ── Grocery operating hours (live from profile) ──────────────────────────
     val groceryHours: String? = null
 )
 
@@ -94,7 +94,7 @@ data class UpdateListingQuantityRequest(
     val newQuantity: Int
 )
 
-// Updated mapping function — includes distanceKm
+// mapping function — includes distanceKm
 fun ListingData.toDomain(): Listing {
     return Listing(
         id = id,
@@ -144,7 +144,6 @@ fun ListingData.toDomain(): Listing {
                 childListingsCount = it.childListingsCount
             )
         },
-        // NEW (Part 2)
         distanceKm = distanceKm,
         // Analytics
         viewCount = viewCount,

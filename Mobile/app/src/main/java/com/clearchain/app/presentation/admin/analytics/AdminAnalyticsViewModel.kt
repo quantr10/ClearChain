@@ -1,7 +1,7 @@
 package com.clearchain.app.presentation.admin.analytics
 
-import android.app.Application
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
@@ -9,8 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
@@ -18,16 +18,7 @@ import com.clearchain.app.data.remote.dto.AdminDetailedStatsData
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -35,14 +26,19 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class AdminAnalyticsViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val adminApi: AdminApi,
     private val signalRService: SignalRService
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(
         AdminAnalyticsState(
@@ -134,7 +130,7 @@ class AdminAnalyticsViewModel @Inject constructor(
     }
 
     private fun string(resId: Int, vararg args: Any): String =
-        getApplication<Application>().getString(resId, *args)
+        context.getString(resId, *args)
 
     // ── PDF export ───────────────────────────────────────────────────────────
 
@@ -159,14 +155,13 @@ class AdminAnalyticsViewModel @Inject constructor(
                 return@launch
             }
 
-            val ctx = getApplication<Application>()
             runCatching {
                 val share = Intent(Intent.ACTION_SEND).apply {
                     type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                ctx.startActivity(
+                context.startActivity(
                     Intent.createChooser(share, string(R.string.pdf_stats_title))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 )
@@ -180,7 +175,6 @@ class AdminAnalyticsViewModel @Inject constructor(
      * a section would run off the bottom.
      */
     private fun writePdf(data: AdminDetailedStatsData, periodLabel: String): Uri? {
-        val ctx = getApplication<Application>()
         val doc = PdfDocument()
 
         val titlePaint   = Paint().apply { textSize = 20f; isFakeBoldText = true }
@@ -298,8 +292,8 @@ class AdminAnalyticsViewModel @Inject constructor(
                 put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
                 put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
-            ctx.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
-                ctx.contentResolver.openOutputStream(u)?.use { doc.writeTo(it) }
+            context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
+                context.contentResolver.openOutputStream(u)?.use { doc.writeTo(it) }
             }
         } else {
             val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)

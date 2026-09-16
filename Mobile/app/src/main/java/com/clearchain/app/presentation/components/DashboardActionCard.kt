@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// DashboardActionCard.kt — Quick action item on dashboards
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── DashboardActionCard.kt — Quick action item on dashboards ─────────────────
 
 package com.clearchain.app.presentation.components
 

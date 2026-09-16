@@ -18,7 +18,7 @@ class UpdateListingQuantityUseCase @Inject constructor(
                 IllegalArgumentException("Quantity must be greater than 0")
             )
         }
-        
+
         return repository.updateListingQuantity(listingId, newQuantity)
     }
 }

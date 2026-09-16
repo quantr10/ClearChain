@@ -24,20 +24,20 @@ data class Listing(
     val imageUrl: String? = null,
     val location: String,
     val createdAt: String,
-    
+
     // ListingGroup tracking fields
     val groupId: String? = null,
     val splitReason: String = "new_listing",
     val relatedRequestId: String? = null,
     val splitIndex: Int = 0,
-    
+
     // OPTIONAL: Group summary for UI context
     val groupSummary: ListingGroupSummary? = null,
 
-    // ═══ NEW (Part 2): Distance from NGO location ═══
+    // ── Distance from NGO location ───────────────────────────────────────────
     val distanceKm: Double? = null,
 
-    // ═══ Analytics ═══
+    // ── Analytics ────────────────────────────────────────────────────────────
     val viewCount: Int = 0,
     val requestCount: Int = 0,
     val imageUrls: List<String> = emptyList(),

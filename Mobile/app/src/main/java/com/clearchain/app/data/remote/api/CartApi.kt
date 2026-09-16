@@ -1,10 +1,6 @@
 package com.clearchain.app.data.remote.api
 
-import com.clearchain.app.data.remote.dto.AddCartItemRequest
-import com.clearchain.app.data.remote.dto.CartResponse
-import com.clearchain.app.data.remote.dto.CheckoutCartGroupRequest
-import com.clearchain.app.data.remote.dto.PickupRequestResponse
-import com.clearchain.app.data.remote.dto.UpdateCartItemRequest
+import com.clearchain.app.data.remote.dto.*
 import retrofit2.http.*
 
 interface CartApi {

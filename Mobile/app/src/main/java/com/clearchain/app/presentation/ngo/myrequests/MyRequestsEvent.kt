@@ -13,12 +13,12 @@ sealed class MyRequestsEvent {
     data class StatusFilterChanged(val status: String?) : MyRequestsEvent()
 
     data class CancelRequest(val requestId: String) : MyRequestsEvent()
-    
+
     data class ConfirmPickupWithPhoto(
-        val requestId: String, 
+        val requestId: String,
         val photoUri: Uri
     ) : MyRequestsEvent()
-    
+
     object RetryFailedUpload : MyRequestsEvent()
     object DismissUploadError : MyRequestsEvent()
 

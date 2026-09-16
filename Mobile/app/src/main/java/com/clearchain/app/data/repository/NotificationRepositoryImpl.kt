@@ -9,9 +9,9 @@ import com.clearchain.app.data.remote.dto.toEntity
 import com.clearchain.app.domain.model.AppNotification
 import com.clearchain.app.domain.model.NotificationRetention
 import com.clearchain.app.domain.repository.NotificationRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * The inbox, cached in Room and backed by the server.

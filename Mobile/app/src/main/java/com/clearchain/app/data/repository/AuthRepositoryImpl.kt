@@ -4,22 +4,16 @@ import com.clearchain.app.data.local.dao.AuthTokenDao
 import com.clearchain.app.data.local.dao.NotificationDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.toEntity  // CANONICAL from UserEntity.kt
 import com.clearchain.app.data.local.entity.toDomain   // CANONICAL from UserEntity.kt
+import com.clearchain.app.data.local.entity.toEntity  // CANONICAL from UserEntity.kt
 import com.clearchain.app.data.remote.api.AuthApi
-import com.clearchain.app.data.remote.dto.ChangePasswordRequest
-import com.clearchain.app.data.remote.dto.LoginRequest
-import com.clearchain.app.data.remote.dto.RefreshTokenRequest
-import com.clearchain.app.data.remote.dto.RegisterRequest
-import com.clearchain.app.data.remote.dto.ResendVerificationRequest
-import com.clearchain.app.data.remote.dto.VerifyEmailRequest
-import com.clearchain.app.data.remote.dto.toDomain
+import com.clearchain.app.data.remote.dto.*
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,

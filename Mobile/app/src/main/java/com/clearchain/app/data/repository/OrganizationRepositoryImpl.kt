@@ -4,10 +4,10 @@ import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.UpdateProfileRequest
 import com.clearchain.app.domain.repository.OrganizationRepository
+import javax.inject.Inject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import javax.inject.Inject
 
 class OrganizationRepositoryImpl @Inject constructor(
     private val api: OrganizationApi,
@@ -83,7 +83,7 @@ class OrganizationRepositoryImpl @Inject constructor(
             )
             api.updateProfile(request)
 
-            // Update local cache
+            // local cache
             val currentUser = userDao.getCurrentUser()
             if (currentUser != null) {
                 userDao.insertUser(

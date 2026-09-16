@@ -1,8 +1,8 @@
 package com.clearchain.app.data.remote.interceptor
 
+import javax.inject.Inject
 import okhttp3.Interceptor
 import okhttp3.Response
-import javax.inject.Inject
 
 /**
  * Retries requests on 429 (rate-limited) and 5xx (server error) responses

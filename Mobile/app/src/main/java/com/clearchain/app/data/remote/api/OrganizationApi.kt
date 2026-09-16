@@ -1,13 +1,7 @@
 package com.clearchain.app.data.remote.api
 
 import android.annotation.SuppressLint
-import com.clearchain.app.data.remote.dto.ActivityResponse
-import com.clearchain.app.data.remote.dto.AvatarUploadResponse
-import com.clearchain.app.data.remote.dto.DocumentUploadResponse
-import com.clearchain.app.data.remote.dto.DashboardStatsResponse
-import com.clearchain.app.data.remote.dto.TodaySummaryResponse
-import com.clearchain.app.data.remote.dto.UpdateProfileRequest
-import com.clearchain.app.data.remote.dto.MessageResponse
+import com.clearchain.app.data.remote.dto.*
 import kotlinx.serialization.Serializable
 import okhttp3.MultipartBody
 import retrofit2.http.*

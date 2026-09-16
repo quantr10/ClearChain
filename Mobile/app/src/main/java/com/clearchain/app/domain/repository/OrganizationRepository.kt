@@ -33,7 +33,6 @@ interface OrganizationRepository {
         state: String?,
         zipCode: String?,
         hours: String?,
-        // ═══ NEW PARAMS (Part 1) ═══
         latitude: Double? = null,
         longitude: Double? = null,
         contactPerson: String? = null,

@@ -23,17 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.clearchain.app.R
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -367,9 +367,7 @@ private fun ProfileHero(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Change Password Dialog
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Change Password Dialog ───────────────────────────────────────────────────
 
 @Composable
 private fun ChangePasswordDialog(
@@ -450,13 +448,9 @@ private fun ChangePasswordDialog(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Account stats card
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Account stats card ───────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Team Members Card
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Team Members Card ────────────────────────────────────────────────────────
 
 @Composable
 private fun TeamMembersCard(user: Organization) {
@@ -576,9 +570,7 @@ private fun MemberRow(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Logout dialog
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Logout dialog ────────────────────────────────────────────────────────────
 
 @Composable
 private fun LogoutDialog(
@@ -597,9 +589,7 @@ private fun LogoutDialog(
     )
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Delete Account dialog
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Delete Account dialog ────────────────────────────────────────────────────
 
 @Composable
 private fun DeleteAccountDialog(

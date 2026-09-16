@@ -1,4 +1,4 @@
-﻿package com.clearchain.app.presentation.publicprofile
+package com.clearchain.app.presentation.publicprofile
 
 import android.content.Intent
 import android.net.Uri
@@ -25,34 +25,29 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.api.PublicProfileData
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.Listing
-import com.clearchain.app.presentation.components.ClearChainActionIconButton
-import com.clearchain.app.presentation.components.EmptyState
-import com.clearchain.app.presentation.components.HapticPullToRefreshBox
-import com.clearchain.app.presentation.components.ListingCard
-import com.clearchain.app.presentation.components.ProfileSummaryCard
-import com.clearchain.app.presentation.components.ScreenTitleRow
+import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-// ═══ State ═══
+// ── State ────────────────────────────────────────────────────────────────────
 data class PublicProfileState(
     val profile: PublicProfileData? = null,
     val moreFromStore: List<Listing> = emptyList(),
@@ -61,7 +56,7 @@ data class PublicProfileState(
     val error: String? = null
 )
 
-// ═══ ViewModel ═══
+// ── ViewModel ────────────────────────────────────────────────────────────────
 @HiltViewModel
 class PublicProfileViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -112,7 +107,7 @@ class PublicProfileViewModel @Inject constructor(
     }
 }
 
-// ═══ Screen ═══
+// ── Screen ───────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicProfileScreen(
@@ -160,10 +155,10 @@ fun PublicProfileScreen(
                                 modifier = Modifier.padding(ScreenPadding),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // ── Header ──────────────────────────────────────
+                                // ── Header ───────────────────────────────────
                                 PublicProfileHeader(profile)
 
-                                // ── Description ────────────────────────────
+                                // ── Description ──────────────────────────────
                                 if (!profile.description.isNullOrBlank()) {
                                     ProfileSectionCard(stringResource(R.string.about)) {
                                         Text(
@@ -176,7 +171,7 @@ fun PublicProfileScreen(
 
                                 ProfileStatsGrid(profile)
 
-                                // ── Contact / Location & Hours ─────────────
+                                // ── Contact / Location & Hours ───────────────
                                 ContactInformationSection(profile)
 
                                 if (profile.type.equals("grocery", ignoreCase = true) &&

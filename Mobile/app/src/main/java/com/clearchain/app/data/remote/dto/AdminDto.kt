@@ -7,7 +7,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
 import kotlinx.serialization.Serializable
 
-// ─── Organization DTOs ─────────────────────────────────────────────────────────
+// ── Organization DTOs ────────────────────────────────────────────────────────
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -48,7 +48,7 @@ data class RejectOrganizationBody(
     val reason: String? = null
 )
 
-// ─── Stats DTO ────────────────────────────────────────────────────────────────
+// ── Stats DTO ────────────────────────────────────────────────────────────────
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -86,7 +86,7 @@ data class AdminStatsResponse(
     val data: AdminStatsDto
 )
 
-// ─── Extension: DTO → Domain ──────────────────────────────────────────────────
+// ── Extension: DTO → Domain ──────────────────────────────────────────────────
 
 fun AdminStatsDto.toDomain(): AdminStats {
     return AdminStats(

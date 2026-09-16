@@ -13,11 +13,11 @@ import com.clearchain.app.util.ValidationUtils
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
@@ -114,7 +114,7 @@ class RegisterViewModel @Inject constructor(
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {
-                Log.e("RegisterViewModel", "Failed to get FCM token", e); null
+                Log.e(TAG, "Failed to get FCM token", e); null
             }
 
             val result = registerUseCase(
@@ -187,5 +187,9 @@ class RegisterViewModel @Inject constructor(
             _state.update { it.copy(tosError = true) }; valid = false
         }
         return valid
+    }
+
+    private companion object {
+        const val TAG = "RegisterViewModel"
     }
 }

@@ -2,7 +2,7 @@ package com.clearchain.app.presentation.navigation
 
 sealed class Screen(val route: String) {
 
-    // ── Auth ──────────────────────────────────────────────
+    // ── Auth ─────────────────────────────────────────────────────────────────
     object Splash : Screen("splash")
     object Login : Screen("login")
     object Register : Screen("register")
@@ -12,13 +12,13 @@ sealed class Screen(val route: String) {
         fun createRoute(email: String) = "email_verification/${java.net.URLEncoder.encode(email, "UTF-8")}"
     }
 
-    // ── Grocery ───────────────────────────────────────────
+    // ── Grocery ──────────────────────────────────────────────────────────────
     object GroceryDashboard : Screen("grocery_dashboard")
     object CreateListing : Screen("create_listing")
     object MyListings : Screen("my_listings")
     object PickupRequests : Screen("pickup_requests")
 
-    // ── NGO ───────────────────────────────────────────────
+    // ── NGO ──────────────────────────────────────────────────────────────────
     object NgoDashboard : Screen("ngo_dashboard")
     object BrowseListings : Screen("browse_listings")
     object Cart : Screen("cart")
@@ -29,7 +29,7 @@ sealed class Screen(val route: String) {
     object Inventory : Screen("inventory")
     object LocationPicker : Screen("location_picker")
 
-    // ── Admin ─────────────────────────────────────────────
+    // ── Admin ────────────────────────────────────────────────────────────────
     object AdminDashboard : Screen("admin_dashboard")
     object Verification : Screen("admin/verification")
     object Transactions : Screen("admin/transactions")
@@ -40,7 +40,7 @@ sealed class Screen(val route: String) {
             if (section.isNullOrBlank()) BASE else "$BASE?section=$section"
     }
 
-    // ── Detail screens (parameterized) ────────────────────
+    // ── Detail screens (parameterized) ───────────────────────────────────────
     object ListingDetail : Screen("listing_detail/{listingId}") {
         fun createRoute(listingId: String) = "listing_detail/$listingId"
     }
@@ -54,7 +54,7 @@ sealed class Screen(val route: String) {
         fun createRoute(itemId: String) = "inventory_detail/$itemId"
     }
 
-    // ── Shared ────────────────────────────────────────────
+    // ── Shared ───────────────────────────────────────────────────────────────
     object Profile : Screen("profile")
     object Settings : Screen("settings")
     object NotificationInbox : Screen("notifications")

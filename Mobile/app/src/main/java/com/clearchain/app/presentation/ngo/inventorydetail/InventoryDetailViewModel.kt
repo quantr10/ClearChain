@@ -1,32 +1,33 @@
 package com.clearchain.app.presentation.ngo.inventorydetail
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.InventoryApi
 import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
-import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-// ═══ ViewModel ═══
+// ── ViewModel ────────────────────────────────────────────────────────────────
 @HiltViewModel
 class InventoryDetailViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext private val context: Context,
     private val inventoryApi: InventoryApi,
     private val pickupRequestApi: PickupRequestApi,
     private val listingApi: ListingApi,
     private val signalRService: SignalRService
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _state = MutableStateFlow(InventoryDetailState())
     val state: StateFlow<InventoryDetailState> = _state.asStateFlow()
@@ -84,7 +85,7 @@ class InventoryDetailViewModel @Inject constructor(
                     loadRelatedRequest(requestId)
                 }
             } catch (e: Exception) {
-                val msg = e.message ?: getApplication<Application>().getString(R.string.error_load_item_failed)
+                val msg = e.message ?: context.getString(R.string.error_load_item_failed)
                 _state.update { it.copy(error = msg, isLoading = false) }
                 _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }

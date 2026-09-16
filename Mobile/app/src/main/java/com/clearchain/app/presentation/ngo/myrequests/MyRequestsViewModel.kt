@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.ngo.myrequests
 
 import android.content.Context
-import com.clearchain.app.R
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -10,6 +9,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.ReviewApi
 import com.clearchain.app.data.remote.dto.SubmitReviewRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
@@ -21,13 +21,13 @@ import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCas
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import javax.inject.Inject
 
 @HiltViewModel
 class MyRequestsViewModel @Inject constructor(
@@ -51,17 +51,17 @@ class MyRequestsViewModel @Inject constructor(
 
     init {
         loadRequests()
-        setupSignalR()  // ✅ ADD
+        setupSignalR()
     }
 
-    // ✅ NEW: Setup SignalR real-time updates
+    // Setup SignalR real-time updates
     private fun setupSignalR() {
         // Listen for status changes
     viewModelScope.launch {
         signalRService.pickupRequestStatusChanged.collect { notification ->
             // Auto-refresh list
             loadRequests()
-            
+
             // Show notification to user
             val statusMessage = when (notification.newStatus.lowercase()) {
                 "approved" -> context.getString(R.string.snack_your_request_approved)
@@ -70,7 +70,7 @@ class MyRequestsViewModel @Inject constructor(
                 "rejected" -> context.getString(R.string.snack_request_rejected_by_grocery)
                 else -> context.getString(R.string.snack_status_updated_to, notification.newStatus)
             }
-            
+
             _uiEvent.send(UiEvent.ShowSnackbar(statusMessage))
         }
     }
@@ -103,8 +103,8 @@ class MyRequestsViewModel @Inject constructor(
             }
 
             is MyRequestsEvent.CancelRequest -> cancelRequest(event.requestId)
-            
-            is MyRequestsEvent.ConfirmPickupWithPhoto -> 
+
+            is MyRequestsEvent.ConfirmPickupWithPhoto ->
                 confirmPickupWithPhoto(event.requestId, event.photoUri)
 
             MyRequestsEvent.RetryFailedUpload -> retryFailedUpload()
@@ -288,26 +288,26 @@ class MyRequestsViewModel @Inject constructor(
     private fun confirmPickupWithPhoto(requestId: String, photoUri: Uri) {
         viewModelScope.launch {
             val currentAttempts = _state.value.uploadAttempts + 1
-            
-            _state.update { 
+
+            _state.update {
                 it.copy(
-                    isUploading = true, 
+                    isUploading = true,
                     uploadError = null,
                     uploadAttempts = currentAttempts
-                ) 
+                )
             }
 
             val result = confirmPickupUseCase(requestId, photoUri)
 
             result.fold(
                 onSuccess = {
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             isUploading = false,
                             uploadAttempts = 0,
                             failedUploadRequestId = null,
                             failedUploadPhotoUri = null
-                        ) 
+                        )
                     }
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_pickup_confirmed_photo)))
                     loadRequests()
@@ -335,11 +335,11 @@ class MyRequestsViewModel @Inject constructor(
 
     private fun retryFailedUpload() {
         val currentState = _state.value
-        
-        if (currentState.failedUploadRequestId != null && 
+
+        if (currentState.failedUploadRequestId != null &&
             currentState.failedUploadPhotoUri != null &&
             currentState.uploadAttempts < MAX_UPLOAD_ATTEMPTS) {
-            
+
             confirmPickupWithPhoto(
                 currentState.failedUploadRequestId,
                 currentState.failedUploadPhotoUri

@@ -1,13 +1,13 @@
-﻿package com.clearchain.app.presentation.ngo.myrequests
+package com.clearchain.app.presentation.ngo.myrequests
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,16 +17,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.ui.theme.ScreenPadding
-import com.clearchain.app.domain.model.FoodCategory
-import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.clearchain.app.R
+import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -69,7 +69,6 @@ fun MyRequestsScreen(
             }
         }
     }
-
 
     showFullPhotoUrl?.let { url ->
         FullPhotoDialog(

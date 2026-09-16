@@ -12,7 +12,7 @@ sealed class ProfileEvent {
     data class ChangePassword(val currentPassword: String, val newPassword: String) : ProfileEvent()
     data class DeleteAccount(val password: String) : ProfileEvent()
 
-    // ── Edit mode ──────────────────────────────────────────────────────────
+    // ── Edit mode ────────────────────────────────────────────────────────────
     object StartEdit  : ProfileEvent()
     object CancelEdit : ProfileEvent()
     object SaveProfile : ProfileEvent()

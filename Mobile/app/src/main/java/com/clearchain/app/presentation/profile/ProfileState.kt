@@ -11,19 +11,19 @@ data class ProfileState(
     val averageRating: Double = 0.0,
     val reviewCount: Int = 0,
 
-    // ── Stats ──────────────────────────────────────────────────────────────
+    // ── Stats ────────────────────────────────────────────────────────────────
     val stats: OrgStats? = null,
     val isLoadingStats: Boolean = false,
 
-    // ── Activity feed ──────────────────────────────────────────────────────
+    // ── Activity feed ────────────────────────────────────────────────────────
     val activity: List<ActivityItem> = emptyList(),
     val isLoadingActivity: Boolean = false,
     val activityError: String? = null,
 
-    // ── Password change ────────────────────────────────────────────────────
+    // ── Password change ──────────────────────────────────────────────────────
     val isChangingPassword: Boolean = false,
 
-    // ── Edit mode ──────────────────────────────────────────────────────────
+    // ── Edit mode ────────────────────────────────────────────────────────────
     val isEditing: Boolean = false,
     val editName: String = "",
     val editEmail: String = "",
@@ -40,7 +40,7 @@ data class ProfileState(
     val editLat: Double? = null,
     val editLng: Double? = null,
 
-    // ── Edit validation errors ─────────────────────────────────────────────
+    // ── Edit validation errors ───────────────────────────────────────────────
     val editNameError: String? = null,
     val editEmailError: String? = null,
     val editPhoneError: String? = null,

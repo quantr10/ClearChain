@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// InventoryEvent.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── InventoryEvent.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB ────────────
 
 package com.clearchain.app.presentation.ngo.inventory
 
@@ -11,15 +9,15 @@ sealed class InventoryEvent {
     object LoadInventory : InventoryEvent()
     object RefreshInventory : InventoryEvent()
     object UpdateExpired : InventoryEvent()
-    
+
     // Search & Sort
     data class SearchQueryChanged(val query: String) : InventoryEvent()
     data class SortOptionChanged(val option: SortOption) : InventoryEvent()
-    
-    // NEW: Status as TAB (changed from chip)
+
+    // Status as TAB (changed from chip)
     data class StatusTabChanged(val status: InventoryStatus?) : InventoryEvent()
-    
-    // NEW: Category as CHIP (food categories)
+
+    // Category as CHIP (food categories)
     data class CategoryFilterChanged(val category: String?) : InventoryEvent()
 
     // Advanced filter sheet
@@ -49,7 +47,6 @@ sealed class InventoryEvent {
     data class ManualUnitChanged(val unit: String) : InventoryEvent()
     data class ManualExpiryDateChanged(val date: String) : InventoryEvent()
     object SubmitManualAdd : InventoryEvent()
-
 
     object ExportCsv : InventoryEvent()
 }

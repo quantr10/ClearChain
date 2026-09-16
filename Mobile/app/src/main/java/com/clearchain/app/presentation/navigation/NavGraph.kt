@@ -12,37 +12,37 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
-import com.clearchain.app.presentation.admin.dashboard.AdminDashboardScreen
-import com.clearchain.app.presentation.analytics.AnalyticsScreen
-import com.clearchain.app.presentation.dispute.DisputeScreen
-import com.clearchain.app.presentation.help.HelpScreen
-import com.clearchain.app.presentation.notifications.NotificationInboxScreen
-import com.clearchain.app.presentation.publicprofile.PublicProfileScreen
-import com.clearchain.app.presentation.settings.SettingsScreen
 import com.clearchain.app.presentation.admin.analytics.AdminAnalyticsScreen
+import com.clearchain.app.presentation.admin.dashboard.AdminDashboardScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
+import com.clearchain.app.presentation.analytics.AnalyticsScreen
 import com.clearchain.app.presentation.auth.login.LoginScreen
 import com.clearchain.app.presentation.auth.register.RegisterScreen
 import com.clearchain.app.presentation.auth.verify.EmailVerificationScreen
+import com.clearchain.app.presentation.dispute.DisputeScreen
 import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
 import com.clearchain.app.presentation.grocery.createlisting.CreateListingScreen
 import com.clearchain.app.presentation.grocery.editlisting.EditListingScreen
 import com.clearchain.app.presentation.grocery.managerequests.ManageRequestsScreen
 import com.clearchain.app.presentation.grocery.mylistings.MyListingsScreen
+import com.clearchain.app.presentation.help.HelpScreen
 import com.clearchain.app.presentation.ngo.NgoDashboardScreen
 import com.clearchain.app.presentation.ngo.browselistings.BrowseListingsScreen
 import com.clearchain.app.presentation.ngo.cart.CartPickupScreen
 import com.clearchain.app.presentation.ngo.cart.CartScreen
 import com.clearchain.app.presentation.ngo.inventory.InventoryScreen
-import com.clearchain.app.presentation.ngo.listingdetail.ListingDetailScreen
 import com.clearchain.app.presentation.ngo.inventorydetail.InventoryDetailScreen
-import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
+import com.clearchain.app.presentation.ngo.listingdetail.ListingDetailScreen
 import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
+import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
+import com.clearchain.app.presentation.notifications.NotificationInboxScreen
 import com.clearchain.app.presentation.onboarding.OnboardingScreen
 import com.clearchain.app.presentation.pendingreview.PendingReviewScreen
-import com.clearchain.app.presentation.profile.ProfileScreen
 import com.clearchain.app.presentation.profile.AccountDetailScreen
+import com.clearchain.app.presentation.profile.ProfileScreen
+import com.clearchain.app.presentation.publicprofile.PublicProfileScreen
+import com.clearchain.app.presentation.settings.SettingsScreen
 import com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 import kotlinx.coroutines.flow.first
@@ -77,7 +77,7 @@ fun NavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // ── Auth ──────────────────────────────────────────
+        // ── Auth ─────────────────────────────────────────────────────────────
 
         composable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
@@ -127,7 +127,7 @@ fun NavGraph(
             )
         }
 
-        // ── Grocery ───────────────────────────────────────
+        // ── Grocery ──────────────────────────────────────────────────────────
 
         composable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
@@ -164,7 +164,7 @@ fun NavGraph(
             )
         }
 
-        // ── NGO ───────────────────────────────────────────
+        // ── NGO ──────────────────────────────────────────────────────────────
 
         composable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
@@ -239,7 +239,7 @@ fun NavGraph(
             )
         }
 
-        // ── Detail screens ────────────────────────────────
+        // ── Detail screens ───────────────────────────────────────────────────
 
         composable(
             route = Screen.ListingDetail.route,
@@ -300,7 +300,7 @@ fun NavGraph(
             )
         }
 
-        // ── Admin ─────────────────────────────────────────
+        // ── Admin ────────────────────────────────────────────────────────────
 
         composable(
             route = Screen.AdminDashboard.route,
@@ -350,7 +350,7 @@ fun NavGraph(
             AdminAnalyticsScreen()
         }
 
-        // ── Shared ────────────────────────────────────────
+        // ── Shared ───────────────────────────────────────────────────────────
 
         composable(Screen.Analytics.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
