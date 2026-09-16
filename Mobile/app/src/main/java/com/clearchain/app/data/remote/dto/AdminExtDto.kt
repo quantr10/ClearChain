@@ -2,7 +2,10 @@ package com.clearchain.app.data.remote.dto
 
 import kotlinx.serialization.Serializable
 
-// ── Detailed statistics (date-range) ─────────────────────────────────────────
+// ── Admin statistics ─────────────────────────────────────────────────────────
+// Mirrors AdminStatisticsResponse on the API. Two kinds of number live here:
+// period figures, counted over the selected range, and live figures (backlog,
+// the organization register) that describe the platform right now.
 
 @Serializable
 data class AdminDetailedStatsResponse(
@@ -11,109 +14,112 @@ data class AdminDetailedStatsResponse(
 
 @Serializable
 data class AdminDetailedStatsData(
-    val period: StatsPeriod,
-    val organizations: OrgBreakdown,
-    val listings: ListingBreakdown,
-    val requests: RequestBreakdown,
-    val impact: ImpactBreakdown,
-    val categoryBreakdown: List<CategoryBreakdownItem> = emptyList(),
-    val leaderboards: Leaderboards,
-    val dailyTrend: List<DailyTrendItem> = emptyList()
+    val period: StatsPeriod = StatsPeriod(),
+    val headline: StatsHeadline = StatsHeadline(),
+    val funnel: StatsFunnel = StatsFunnel(),
+    val backlog: StatsBacklog = StatsBacklog(),
+    val timing: StatsTiming = StatsTiming(),
+    val quality: StatsQuality = StatsQuality(),
+    val leaderboards: StatsLeaderboards = StatsLeaderboards(),
+    val organizations: StatsOrganizations = StatsOrganizations()
 )
 
 @Serializable
-data class StatsPeriod(val from: String? = null, val to: String? = null, val preset: String = "all")
-
-@Serializable
-data class OrgBreakdown(
-    val totalOrgs: Int = 0,
-    val totalGroceries: Int = 0,
-    val totalNgos: Int = 0,
-    val verifiedOrgs: Int = 0,
-    val pendingVerif: Int = 0
+data class StatsPeriod(
+    val from: String? = null,
+    val to: String? = null,
+    val preset: String = "all",
+    val days: Int = 0,
+    val isAllTime: Boolean = true
 )
 
 @Serializable
-data class ListingBreakdown(
-    val totalListings: Int = 0,
-    val activeListings: Int = 0
+data class StatsHeadline(
+    /** Pickups handed over in the period, whenever they were requested. */
+    val completedPickups: Int = 0
 )
 
 @Serializable
-data class RequestBreakdown(
-    val totalRequests: Int = 0,
-    val completedReqs: Int = 0,
-    val pendingReqs: Int = 0,
-    val cancelledReqs: Int = 0
+data class StatsFunnel(
+    val requests: Int = 0,
+    val pending: Int = 0,
+    val approved: Int = 0,
+    val ready: Int = 0,
+    val completed: Int = 0,
+    val cancelled: Int = 0,
+    val rejected: Int = 0
 )
 
+/** The live queue. Not scoped to the selected period. */
 @Serializable
-data class ImpactBreakdown(
-    val kgSaved: Double = 0.0,
-    val mealsEquivalent: Int = 0,
-    val co2Saved: Double = 0.0,
-    val totalBeneficiaries: Int = 0
-)
-
-@Serializable
-data class CategoryBreakdownItem(
-    val category: String,
-    val count: Int,
-    val quantity: Int
-)
-
-@Serializable
-data class Leaderboards(
-    val topGroceries: List<LeaderboardEntry> = emptyList(),
-    val topNgos: List<NgoLeaderboardEntry> = emptyList()
-)
-
-@Serializable
-data class LeaderboardEntry(
-    val id: String,
-    val name: String,
-    val completedPickups: Int,
-    val totalKg: Int
-)
-
-@Serializable
-data class NgoLeaderboardEntry(
-    val id: String,
-    val name: String,
-    val completedPickups: Int
-)
-
-@Serializable
-data class DailyTrendItem(
-    val date: String,
-    val count: Int,
-    val quantity: Int
-)
-
-// ── System health ─────────────────────────────────────────────────────────────
-
-@Serializable
-data class AdminHealthResponse(
-    val data: AdminHealthData? = null
-)
-
-@Serializable
-data class AdminHealthData(
-    val status: String = "healthy",
-    val database: DatabaseHealth,
-    val alerts: AlertCounts,
-    val timestamp: String
-)
-
-@Serializable
-data class DatabaseHealth(val ok: Boolean, val latencyMs: Long)
-
-@Serializable
-data class AlertCounts(
+data class StatsBacklog(
+    val openListings: Int = 0,
+    val reservedListings: Int = 0,
+    val expiredListings: Int = 0,
+    val archivedListings: Int = 0,
+    val expiringWithin24h: Int = 0,
+    val pendingRequests: Int = 0,
+    val approvedRequests: Int = 0,
+    val readyRequests: Int = 0,
+    val oldestPendingRequestHours: Double? = null,
     val pendingVerifications: Int = 0,
+    val oldestPendingVerificationDays: Int? = null,
     val openDisputes: Int = 0,
-    val pendingReports: Int = 0,
-    val unreadNotifications: Int = 0
+    val pendingReports: Int = 0
+)
+
+@Serializable
+data class StatsTiming(
+    val medianHoursToReady: Double? = null,
+    val medianHoursToPickup: Double? = null,
+    val medianHoursToConfirm: Double? = null,
+    val p90HoursToPickup: Double? = null,
+    /** Share of completed pickups finished inside a day, 0..1. */
+    val completedWithin24hRate: Double = 0.0,
+    val sampleSize: Int = 0
+)
+
+@Serializable
+data class StatsQuality(
+    val averageRating: Double? = null,
+    val reviewCount: Int = 0,
+    /** Reviews / completed pickups, 0..1. */
+    val reviewCoverage: Double = 0.0,
+    val disputesOpened: Int = 0,
+    /** Disputes / completed pickups, 0..1. */
+    val disputeRate: Double = 0.0,
+    val reportsFiled: Int = 0
+)
+
+@Serializable
+data class StatsLeaderboards(
+    val topGroceries: List<StatsGroceryLeader> = emptyList(),
+    val topNgos: List<StatsNgoLeader> = emptyList()
+)
+
+@Serializable
+data class StatsGroceryLeader(
+    val id: String,
+    val name: String = "",
+    val completedPickups: Int = 0
+)
+
+@Serializable
+data class StatsNgoLeader(
+    val id: String,
+    val name: String = "",
+    val completedPickups: Int = 0
+)
+
+/** Admin accounts are excluded, so groceries + ngos always add up to total. */
+@Serializable
+data class StatsOrganizations(
+    val total: Int = 0,
+    val groceries: Int = 0,
+    val ngos: Int = 0,
+    val verified: Int = 0,
+    val pendingVerification: Int = 0,
+    val oldestPendingDays: Int? = null
 )
 
 // ── Alert feed ────────────────────────────────────────────────────────────────
@@ -136,48 +142,6 @@ data class AdminAlertItem(
     val createdAt: String
 )
 
-// ── User growth chart ─────────────────────────────────────────────────────────
-
-@Serializable
-data class UserGrowthResponse(
-    val data: List<UserGrowthDay> = emptyList()
-)
-
-@Serializable
-data class UserGrowthDay(
-    val date: String,
-    val count: Int
-)
-
-// ── Public org profile ────────────────────────────────────────────────────────
-
-@Serializable
-data class PublicProfileResponse(
-    val data: PublicProfileData? = null
-)
-
-@Serializable
-data class PublicProfileData(
-    val id: String,
-    val name: String,
-    val type: String,
-    val location: String? = null,
-    val address: String? = null,
-    val phone: String? = null,
-    val description: String? = null,
-    val hours: String? = null,
-    val profilePictureUrl: String? = null,
-    val latitude: Double? = null,
-    val longitude: Double? = null,
-    val contactPerson: String? = null,
-    val verified: Boolean = false,
-    val verificationStatus: String = "pending",
-    val createdAt: String,
-    val averageRating: Double = 0.0,
-    val reviewCount: Int = 0,
-    val completedPickups: Int = 0
-)
-
 // ── NGO reputation ────────────────────────────────────────────────────────────
 
 @Serializable
@@ -195,28 +159,6 @@ data class NgoReputationData(
 
 // ── Today summary ─────────────────────────────────────────────────────────────
 // TodaySummaryResponse and TodaySummaryData are defined in OrganizationDto.kt
-
-// ── Inventory stats ───────────────────────────────────────────────────────────
-
-@Serializable
-data class InventoryStatsResponse(
-    val data: InventoryStatsData? = null
-)
-
-@Serializable
-data class InventoryStatsData(
-    val categoryBreakdown: List<InventoryCategoryItem> = emptyList(),
-    val expiringSoonCount: Int = 0,
-    val totalBeneficiariesServed: Int = 0,
-    val totalActiveItems: Int = 0
-)
-
-@Serializable
-data class InventoryCategoryItem(
-    val category: String,
-    val count: Int,
-    val quantity: Double
-)
 
 // ── Report ────────────────────────────────────────────────────────────────────
 

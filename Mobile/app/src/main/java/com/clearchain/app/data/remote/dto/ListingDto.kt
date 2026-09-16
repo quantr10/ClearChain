@@ -40,6 +40,7 @@ data class ListingData(
     val id: String,
     val groceryId: String,
     val groceryName: String,
+    val groceryProfilePictureUrl: String? = null,
     val title: String,
     val description: String,
     val category: String,
@@ -99,6 +100,7 @@ fun ListingData.toDomain(): Listing {
         id = id,
         groceryId = groceryId,
         groceryName = groceryName,
+        groceryProfilePictureUrl = groceryProfilePictureUrl,
         title = title,
         description = description,
         category = when (category.uppercase()) {

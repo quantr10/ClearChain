@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartGroupData
@@ -50,9 +50,11 @@ import com.clearchain.app.presentation.components.ClearChainActionIconButton
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainQuantityStepper
 import com.clearchain.app.presentation.components.EmptyState
+import com.clearchain.app.presentation.components.AvatarImage
 import com.clearchain.app.presentation.components.ProductThumbnail
+import com.clearchain.app.presentation.components.ListHeaderSearchRow
+import com.clearchain.app.presentation.components.ListScreenHeader
 import com.clearchain.app.presentation.components.ResultsCountAndSort
-import com.clearchain.app.presentation.components.SearchBar
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.util.UiEvent
 
@@ -86,18 +88,12 @@ fun CartScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SearchBar(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onEvent(CartEvent.SearchQueryChanged(it)) },
-                            placeholder = stringResource(R.string.hint_search_cart),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    ListScreenHeader {
+                    ListHeaderSearchRow(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onEvent(CartEvent.SearchQueryChanged(it)) },
+                        placeholder = stringResource(R.string.hint_search_cart)
+                    )
 
                     ResultsCountAndSort(
                         count = visibleItemCount,
@@ -106,6 +102,7 @@ fun CartScreen(
                         onSortSelected = { viewModel.onEvent(CartEvent.SortOptionChanged(it)) },
                         sortOptions = state.availableSortOptions
                     )
+                    }
 
                     Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
@@ -129,7 +126,7 @@ fun CartScreen(
                             else -> {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    contentPadding = ScreenPadding,
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     items(visibleGroups, key = { it.groceryId }) { group ->
@@ -164,11 +161,21 @@ private fun CartGroupCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                group.groceryName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AvatarImage(
+                    imageUrl = group.groceryProfilePictureUrl,
+                    name = group.groceryName,
+                    size = 32
+                )
+                Text(
+                    group.groceryName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
             group.items.forEachIndexed { index, item ->
                 CartItemRow(
                     item = item,

@@ -5,14 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
-import com.clearchain.app.data.remote.signalr.ConnectionState
+import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.AdminStats
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -38,16 +40,8 @@ class AdminDashboardViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
-
-        viewModelScope.launch {
-            signalRService.connectionState.collect { connectionState ->
-                if (connectionState is ConnectionState.Error) {
-                    // Silent fail — dashboard works without real-time
-                }
-            }
-        }
-
+        // Connection state is surfaced app-wide by ReconnectingBanner in MainActivity — this
+        // screen only listens for the events themselves.
         viewModelScope.launch {
             signalRService.newOrganizationRegistered.collect { notification ->
                 val activity = AdminActivity(
@@ -91,6 +85,7 @@ class AdminDashboardViewModel @Inject constructor(
                     totalListings         = stats.activeListings,
                     activeListings        = stats.activeListings,
                     reservedListings      = 0,
+                    expiredListings       = 0,
                     totalPickupRequests   = stats.totalDonations,
                     pendingRequests       = stats.pendingRequests,
                     approvedRequests      = 0,
@@ -137,11 +132,6 @@ class AdminDashboardViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { signalRService.disconnect() }
-    }
-
     fun onEvent(event: AdminDashboardEvent) {
         when (event) {
             AdminDashboardEvent.LoadStats    -> loadStats()
@@ -153,92 +143,50 @@ class AdminDashboardViewModel @Inject constructor(
     private fun loadStats() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val statsResponse = adminApi.getStatistics()
-                val stats = statsResponse.data.let {
-                    AdminStats(
-                        totalOrganizations    = it.totalOrganizations,
-                        totalGroceries        = it.totalGroceries,
-                        totalNgos             = it.totalNgos,
-                        verifiedOrganizations = it.verifiedOrganizations,
-                        unverifiedOrganizations = it.unverifiedOrganizations,
-                        totalListings         = it.totalListings,
-                        activeListings        = it.activeListings,
-                        reservedListings      = it.reservedListings,
-                        totalPickupRequests   = it.totalPickupRequests,
-                        pendingRequests       = it.pendingRequests,
-                        approvedRequests      = it.approvedRequests,
-                        readyRequests         = it.readyRequests,
-                        rejectedRequests      = it.rejectedRequests,
-                        completedRequests     = it.completedRequests,
-                        cancelledRequests     = it.cancelledRequests,
-                        totalFoodSaved        = it.totalFoodSaved
-                    )
-                }
-                _state.update { it.copy(stats = stats, isLoading = false) }
-            } catch (e: Exception) {
-                val msg = e.message ?: context.getString(R.string.error_load_statistics)
-                _state.update { it.copy(error = msg, isLoading = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(msg))
-            }
-        }
-        // Load auxiliary data concurrently (silently ignore failures)
-        viewModelScope.launch {
-            try {
-                val health = adminApi.getSystemHealth()
-                _state.update { it.copy(healthData = health.data) }
-            } catch (_: Exception) {}
-        }
-        viewModelScope.launch {
-            try {
-                val alerts = adminApi.getAlertFeed()
-                _state.update { it.copy(alertFeedItems = alerts.data) }
-            } catch (_: Exception) {}
-        }
-        viewModelScope.launch {
-            try {
-                val growth = adminApi.getUserGrowth(days = 30)
-                _state.update { it.copy(userGrowthData = growth.data) }
-            } catch (_: Exception) {}
+            loadAll()
+            _state.update { it.copy(isLoading = false) }
         }
     }
 
     private fun refreshStats() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
-            try {
-                val statsResponse = adminApi.getStatistics()
-                val stats = statsResponse.data.let {
-                    AdminStats(
-                        totalOrganizations    = it.totalOrganizations,
-                        totalGroceries        = it.totalGroceries,
-                        totalNgos             = it.totalNgos,
-                        verifiedOrganizations = it.verifiedOrganizations,
-                        unverifiedOrganizations = it.unverifiedOrganizations,
-                        totalListings         = it.totalListings,
-                        activeListings        = it.activeListings,
-                        reservedListings      = it.reservedListings,
-                        totalPickupRequests   = it.totalPickupRequests,
-                        pendingRequests       = it.pendingRequests,
-                        approvedRequests      = it.approvedRequests,
-                        readyRequests         = it.readyRequests,
-                        rejectedRequests      = it.rejectedRequests,
-                        completedRequests     = it.completedRequests,
-                        cancelledRequests     = it.cancelledRequests,
-                        totalFoodSaved        = it.totalFoodSaved
-                    )
-                }
-                _state.update { it.copy(stats = stats, isRefreshing = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_stats_refreshed)))
-                // Also refresh aux data
-                try { val h = adminApi.getSystemHealth(); _state.update { it.copy(healthData = h.data) } } catch (_: Exception) {}
-                try { val a = adminApi.getAlertFeed(); _state.update { it.copy(alertFeedItems = a.data) } } catch (_: Exception) {}
-                try { val g = adminApi.getUserGrowth(30); _state.update { it.copy(userGrowthData = g.data) } } catch (_: Exception) {}
-            } catch (e: Exception) {
-                val msg = e.message ?: context.getString(R.string.error_refresh_failed)
-                _state.update { it.copy(error = msg, isRefreshing = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(msg))
-            }
+            val ok = loadAll()
+            _state.update { it.copy(isRefreshing = false) }
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_stats_refreshed)))
         }
+    }
+
+    /** Reloads every dashboard section concurrently and suspends until all have settled,
+     *  so pull-to-refresh keeps its spinner until the statistics, alert feed and user
+     *  growth chart are actually up to date. Returns whether the headline statistics
+     *  loaded — the alert feed and growth chart are auxiliary and fail silently.
+     *
+     *  Every section writes through [MutableStateFlow.update]: these loaders run in
+     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
+     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
+    private suspend fun loadAll(): Boolean = coroutineScope {
+        val statsOk = async { loadStatistics() }
+        launch { loadAlertFeed() }
+        statsOk.await()
+    }
+
+    private suspend fun loadStatistics(): Boolean =
+        try {
+            val stats = adminApi.getStatistics().data.toDomain()
+            _state.update { it.copy(stats = stats) }
+            true
+        } catch (e: Exception) {
+            val msg = e.message ?: context.getString(R.string.error_load_statistics)
+            _state.update { it.copy(error = msg) }
+            _uiEvent.send(UiEvent.ShowSnackbar(msg))
+            false
+        }
+
+    private suspend fun loadAlertFeed() {
+        try {
+            val alerts = adminApi.getAlertFeed().data
+            _state.update { it.copy(alertFeedItems = alerts) }
+        } catch (_: Exception) {}
     }
 }

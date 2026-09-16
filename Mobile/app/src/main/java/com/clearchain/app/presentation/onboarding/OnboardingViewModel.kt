@@ -1,25 +1,32 @@
 package com.clearchain.app.presentation.onboarding
 
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
+import com.clearchain.app.domain.usecase.profile.UploadVerificationDocumentUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val uploadVerificationDocumentUseCase: UploadVerificationDocumentUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OnboardingState())
@@ -44,8 +51,15 @@ class OnboardingViewModel @Inject constructor(
                             contactPerson = user.contactPerson ?: "",
                             address = user.address,
                             city = user.location,
+                            state = user.state ?: "",
+                            zipCode = user.zipCode ?: "",
                             openTime = openTime,
-                            closeTime = closeTime
+                            closeTime = closeTime,
+                            hasDocument = user.documentUrl != null,
+                            // A rejected org is here to fix something — always restart at
+                            // step 1 instead of skipping straight to the finished screen,
+                            // even though every field is technically already filled in.
+                            forceRestart = user.verificationStatus == VerificationStatus.REJECTED
                         ),
                         phone = user.phone,
                         description = user.description ?: "",
@@ -58,7 +72,9 @@ class OnboardingViewModel @Inject constructor(
                         zipCode = user.zipCode ?: "",
                         openTime = openTime,
                         closeTime = closeTime,
-                        pickupInstructions = user.pickupInstructions ?: ""
+                        pickupInstructions = user.pickupInstructions ?: "",
+                        uploadedDocumentUrl = user.documentUrl,
+                        verificationDocumentName = user.documentUrl?.substringAfterLast('/')
                     )
                 }
             }
@@ -78,13 +94,13 @@ class OnboardingViewModel @Inject constructor(
             is OnboardingEvent.CityChanged ->
                 _state.update { it.copy(city = event.value, cityError = null) }
             is OnboardingEvent.StateChanged ->
-                _state.update { it.copy(state = event.value) }
+                _state.update { it.copy(state = event.value, stateError = null) }
             is OnboardingEvent.ZipCodeChanged ->
-                _state.update { it.copy(zipCode = event.value) }
+                _state.update { it.copy(zipCode = event.value, zipCodeError = null) }
             is OnboardingEvent.OpenTimeChanged ->
-                _state.update { it.copy(openTime = event.value, error = null) }
+                _state.update { it.copy(openTime = event.value, openTimeError = null, error = null) }
             is OnboardingEvent.CloseTimeChanged ->
-                _state.update { it.copy(closeTime = event.value, error = null) }
+                _state.update { it.copy(closeTime = event.value, closeTimeError = null, error = null) }
             is OnboardingEvent.PickupInstructionsChanged ->
                 _state.update { it.copy(pickupInstructions = event.value) }
             is OnboardingEvent.AddressSelected -> {
@@ -97,11 +113,13 @@ class OnboardingViewModel @Inject constructor(
                         addressLat = event.lat,
                         addressLng = event.lng,
                         addressError = null,
-                        cityError = null
+                        cityError = null,
+                        stateError = null,
+                        zipCodeError = null
                     )
                 }
             }
-            is OnboardingEvent.DocumentSelected ->
+            is OnboardingEvent.DocumentSelected -> {
                 _state.update {
                     it.copy(
                         verificationDocumentUri = event.uri,
@@ -109,15 +127,25 @@ class OnboardingViewModel @Inject constructor(
                         documentUploadError = null
                     )
                 }
+                uploadDocument(event.uri)
+            }
             OnboardingEvent.RemoveDocument ->
                 _state.update {
-                    it.copy(verificationDocumentUri = null, verificationDocumentName = null)
+                    it.copy(
+                        verificationDocumentUri = null,
+                        verificationDocumentName = null,
+                        uploadedDocumentUrl = null,
+                        documentUploadError = null
+                    )
                 }
             OnboardingEvent.NextStep -> handleNextStep()
             OnboardingEvent.PreviousStep -> handlePreviousStep()
             OnboardingEvent.FinishOnboarding -> {
+                // Route string is unused by OnboardingScreen (any Navigate event just calls
+                // onFinished(), which always goes through Splash) — named for what actually
+                // happens next: Splash re-checks verification status and gates accordingly.
                 viewModelScope.launch {
-                    _uiEvent.send(UiEvent.Navigate("dashboard"))
+                    _uiEvent.send(UiEvent.Navigate("splash_recheck"))
                 }
             }
         }
@@ -164,8 +192,29 @@ class OnboardingViewModel @Inject constructor(
                     _state.update { it.copy(cityError = context.getString(R.string.error_city_required)) }
                     valid = false
                 }
-                if (s.openTime.isBlank() || s.closeTime.isBlank()) {
-                    _state.update { it.copy(error = context.getString(R.string.error_fill_required_fields)) }
+                if (s.state.isBlank()) {
+                    _state.update { it.copy(stateError = context.getString(R.string.error_state_required)) }
+                    valid = false
+                }
+                if (s.zipCode.isBlank()) {
+                    _state.update { it.copy(zipCodeError = context.getString(R.string.error_zip_code_required)) }
+                    valid = false
+                }
+                if (s.openTime.isBlank()) {
+                    _state.update { it.copy(openTimeError = context.getString(R.string.error_opening_time_required)) }
+                    valid = false
+                }
+                if (s.closeTime.isBlank()) {
+                    _state.update { it.copy(closeTimeError = context.getString(R.string.error_closing_time_required)) }
+                    valid = false
+                }
+                if (s.isUploadingDocument) {
+                    viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.onboarding_doc_uploading))) }
+                    valid = false
+                } else if (s.uploadedDocumentUrl == null) {
+                    val msg = context.getString(R.string.error_document_required)
+                    _state.update { it.copy(documentUploadError = msg) }
+                    viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(msg)) }
                     valid = false
                 }
                 if (!valid) return
@@ -212,21 +261,79 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    private fun uploadDocument(uri: Uri) {
+        viewModelScope.launch {
+            _state.update { it.copy(isUploadingDocument = true, documentUploadError = null) }
+            try {
+                val resolver = context.contentResolver
+                val mimeType = resolver.getType(uri) ?: "application/octet-stream"
+                val displayName = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) c.getString(0) else null
+                } ?: uri.lastPathSegment ?: "document"
+
+                val bytes = withContext(Dispatchers.IO) {
+                    resolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: throw IllegalStateException(context.getString(R.string.error_document_read_failed))
+
+                uploadVerificationDocumentUseCase(bytes, displayName, mimeType).fold(
+                    onSuccess = { url ->
+                        _state.update {
+                            it.copy(
+                                isUploadingDocument = false,
+                                uploadedDocumentUrl = url,
+                                verificationDocumentName = displayName,
+                                documentUploadError = null
+                            )
+                        }
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.onboarding_doc_uploaded)))
+                    },
+                    onFailure = { e ->
+                        _state.update {
+                            it.copy(
+                                isUploadingDocument = false,
+                                uploadedDocumentUrl = null,
+                                documentUploadError = e.message ?: context.getString(R.string.error_document_upload_failed)
+                            )
+                        }
+                        _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_document_upload_failed)))
+                    }
+                )
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isUploadingDocument = false,
+                        documentUploadError = e.message ?: context.getString(R.string.error_document_upload_failed)
+                    )
+                }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_document_upload_failed)))
+            }
+        }
+    }
+
     private fun startingStepFor(
         type: OrganizationType,
         phone: String,
         contactPerson: String,
         address: String,
         city: String,
+        state: String,
+        zipCode: String,
         openTime: String,
-        closeTime: String
+        closeTime: String,
+        hasDocument: Boolean,
+        forceRestart: Boolean = false
     ): Int {
+        if (forceRestart) return 1
+
         val stepOneComplete = phone.isNotBlank() &&
             (type !in listOf(OrganizationType.NGO, OrganizationType.GROCERY) || contactPerson.isNotBlank())
         val stepTwoComplete = address.isNotBlank() &&
             city.isNotBlank() &&
+            state.isNotBlank() &&
+            zipCode.isNotBlank() &&
             openTime.isNotBlank() &&
-            closeTime.isNotBlank()
+            closeTime.isNotBlank() &&
+            hasDocument
 
         return when {
             !stepOneComplete -> 1

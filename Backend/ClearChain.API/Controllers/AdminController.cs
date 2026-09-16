@@ -77,7 +77,6 @@ public class AdminController : ControllerBase
                 VerificationStatus = o.VerificationStatus ?? "pending",
                 CreatedAt = o.CreatedAt.ToString("o"),
                 DocumentUrl = o.DocumentUrl,
-                DocumentUrl2 = o.DocumentUrl2,
                 DocumentMimeType = o.DocumentMimeType,
                 Latitude = o.Latitude,
                 Longitude = o.Longitude
@@ -94,6 +93,74 @@ public class AdminController : ControllerBase
             _logger.LogError(ex, "Error getting organizations");
             return StatusCode(500, new { message = "An error occurred while retrieving organizations" });
         }
+    }
+
+    // PUT: api/admin/organizations/{id}/verify  — approve an organization
+    [HttpPut("organizations/{id}/verify")]
+    public async Task<ActionResult<OrganizationResponse>> VerifyOrganization(Guid id)
+        => await SetVerification(id, approved: true, reason: null);
+
+    // PUT: api/admin/organizations/{id}/unverify  — reject an organization (optional reason)
+    [HttpPut("organizations/{id}/unverify")]
+    public async Task<ActionResult<OrganizationResponse>> UnverifyOrganization(
+        Guid id, [FromBody] RejectOrganizationRequest? body = null)
+        => await SetVerification(id, approved: false, reason: body?.Reason);
+
+    private async Task<ActionResult<OrganizationResponse>> SetVerification(Guid id, bool approved, string? reason)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "User not authenticated" });
+
+        var admin = await _context.Organizations.FindAsync(Guid.Parse(userId));
+        if (admin == null || admin.Type.ToLower() != "admin")
+            return Forbid();
+
+        var organization = await _context.Organizations.FindAsync(id);
+        if (organization == null)
+            return NotFound(new { message = "Organization not found" });
+
+        organization.Verified = approved;
+        organization.VerificationStatus = approved ? "approved" : "rejected";
+        organization.VerificationNotes = approved ? null : reason;
+        organization.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        try
+        {
+            if (approved)
+                await _pushNotificationService.SendVerificationApprovedNotification(organization.Id, organization.Type);
+            else
+                await _pushNotificationService.SendVerificationRejectedNotification(organization.Id, reason);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send verification notification for {OrgId}", organization.Id);
+        }
+
+        var orgData = new OrganizationData
+        {
+            Id = organization.Id.ToString(),
+            Name = organization.Name,
+            Email = organization.Email,
+            Type = organization.Type,
+            Phone = organization.Phone ?? "",
+            Address = organization.Address ?? "",
+            Location = organization.Location ?? "",
+            Verified = organization.Verified,
+            VerificationStatus = organization.VerificationStatus,
+            CreatedAt = organization.CreatedAt.ToString("o"),
+            DocumentUrl = organization.DocumentUrl,
+            DocumentMimeType = organization.DocumentMimeType,
+            Latitude = organization.Latitude,
+            Longitude = organization.Longitude
+        };
+
+        return Ok(new OrganizationResponse
+        {
+            Message = approved ? "Organization approved successfully" : "Organization rejected",
+            Data = orgData
+        });
     }
 
     [HttpGet("statistics/overview")]
@@ -113,15 +180,20 @@ public class AdminController : ControllerBase
                 return Forbid();
             }
 
-            var totalOrgs = await _context.Organizations.CountAsync();
-            var totalGroceries = await _context.Organizations.CountAsync(o => o.Type.ToLower() == "grocery");
-            var totalNgos = await _context.Organizations.CountAsync(o => o.Type.ToLower() == "ngo");
-            var verifiedOrgs = await _context.Organizations.CountAsync(o => o.Verified);
+            // Admin accounts live in the same table but are not organizations on the
+            // platform, so they stay out of every count the dashboard charts.
+            var orgs = _context.Organizations.Where(o => !o.IsDeleted && o.Type.ToLower() != "admin");
+
+            var totalOrgs = await orgs.CountAsync();
+            var totalGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery");
+            var totalNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo");
+            var verifiedOrgs = await orgs.CountAsync(o => o.Verified);
             var unverifiedOrgs = totalOrgs - verifiedOrgs;
 
             var totalListings = await _context.ClearanceListings.CountAsync();
             var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
             var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
+            var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
 
             var totalRequests = await _context.PickupRequests.CountAsync();
             var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
@@ -146,6 +218,7 @@ public class AdminController : ControllerBase
                 TotalListings = totalListings,
                 ActiveListings = activeListings,
                 ReservedListings = reservedListings,
+                ExpiredListings = expiredListings,
 
                 TotalPickupRequests = totalRequests,
                 PendingRequests = pendingRequests,
@@ -189,35 +262,77 @@ public class AdminController : ControllerBase
             }
 
             var pickupRequests = await _context.PickupRequests
+                .Include(pr => pr.Ngo)
+                .Include(pr => pr.Grocery)
+                .Include(pr => pr.Items)
                 .OrderByDescending(pr => pr.RequestedAt)
+                .AsNoTracking()
                 .ToListAsync();
+
+            // Requests carry a denormalized listing snapshot (and, for cart requests, their
+            // line items). Only legacy rows written before those fields existed need a lookup.
+            var missingSnapshotIds = pickupRequests
+                .Where(pr => pr.ListingId.HasValue && string.IsNullOrWhiteSpace(pr.ListingTitle))
+                .Select(pr => pr.ListingId!.Value)
+                .Distinct()
+                .ToList();
+
+            var listingsById = await _context.ClearanceListings
+                .Where(l => missingSnapshotIds.Contains(l.Id))
+                .AsNoTracking()
+                .ToDictionaryAsync(l => l.Id);
 
             var responseData = new List<PickupRequestData>();
 
             foreach (var pr in pickupRequests)
             {
-                var ngo = await _context.Organizations.FindAsync(pr.NgoId);
-                var grocery = await _context.Organizations.FindAsync(pr.GroceryId);
-                var listing = pr.ListingId.HasValue
-                    ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
+                var listing = pr.ListingId.HasValue && listingsById.TryGetValue(pr.ListingId.Value, out var l)
+                    ? l
                     : null;
+                var firstItem = pr.Items.FirstOrDefault();
 
                 responseData.Add(new PickupRequestData
                 {
                     Id = pr.Id.ToString(),
                     ListingId = pr.ListingId?.ToString() ?? "",
                     NgoId = pr.NgoId.ToString(),
-                    NgoName = ngo?.Name ?? "",
+                    NgoName = pr.Ngo?.Name ?? "",
                     GroceryId = pr.GroceryId.ToString(),
-                    GroceryName = grocery?.Name ?? "",
+                    GroceryName = pr.Grocery?.Name ?? "",
                     Status = pr.Status.ToString().ToLower(),
                     RequestedQuantity = pr.RequestedQuantity ?? 0,
                     PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
                     PickupTime = pr.PickupTime ?? "09:00",
                     Notes = pr.Notes ?? "",
-                    ListingTitle = listing?.ProductName ?? "Unknown Item",
-                    ListingCategory = listing?.Category ?? "OTHER",
-                    CreatedAt = pr.RequestedAt.ToString("o")
+                    ListingTitle = !string.IsNullOrWhiteSpace(pr.ListingTitle)
+                        ? pr.ListingTitle
+                        : listing?.ProductName ?? firstItem?.ListingTitle ?? "Unknown Item",
+                    ListingCategory = !string.IsNullOrWhiteSpace(pr.ListingCategory)
+                        ? pr.ListingCategory
+                        : listing?.Category ?? firstItem?.ListingCategory ?? "OTHER",
+                    ListingExpiryDate = pr.ListingExpiryDate,
+                    ListingUnit = pr.ListingUnit,
+                    CreatedAt = pr.RequestedAt.ToString("o"),
+                    MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
+                    MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
+                    ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
+                    ProofPhotoUrl = pr.ProofPhotoUrl,
+                    RequiresRefrigeration = pr.RequiresRefrigeration,
+                    IsFragile = pr.IsFragile,
+                    IsHeavy = pr.IsHeavy,
+                    Items = pr.Items.Select(i => new PickupRequestItemData
+                    {
+                        Id = i.Id.ToString(),
+                        ListingGroupId = i.ListingGroupId?.ToString(),
+                        OriginalListingId = i.OriginalListingId?.ToString(),
+                        ReservedListingId = i.ReservedListingId?.ToString(),
+                        RequestedQuantity = i.RequestedQuantity,
+                        ListingTitle = i.ListingTitle,
+                        ListingCategory = i.ListingCategory,
+                        ListingExpiryDate = i.ListingExpiryDate,
+                        ListingUnit = i.ListingUnit,
+                        ListingPhotoUrl = i.ListingPhotoUrl
+                    }).ToList()
                 });
             }
 
@@ -234,170 +349,265 @@ public class AdminController : ControllerBase
         }
     }
 
-    // ── GET api/admin/statistics?from=&to= ────────────────────────────────────
-    // Date-range statistics with breakdowns and leaderboards
+    // ── GET api/admin/statistics?from=&to=&preset= ────────────────────────────
+    // Operational analytics for the admin Stats & Analytics screen.
+    //
+    // Two clocks run here and keeping them apart is what makes the numbers mean
+    // something:
+    //   * the funnel is a cohort - requests *created* in the period, and where each
+    //     one stands today. Only that way do the stages add up to the requests.
+    //   * timings and the leaderboards are events - pickups *completed* in the
+    //     period, whenever they happened to be requested.
+    // Backlog is neither: it is the queue as it stands right now.
     [HttpGet("statistics")]
-    public async Task<IActionResult> GetStatistics(
+    public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics(
         [FromQuery] string? from = null,
         [FromQuery] string? to = null,
-        [FromQuery] string preset = "all")  // today, week, month, quarter, all
+        [FromQuery] string preset = "all")
     {
         if (!IsAdmin()) return Forbid();
 
+        var now = DateTime.UtcNow;
         var (start, end) = ResolveRange(from, to, preset);
 
-        var orgsQuery = _context.Organizations.Where(o => !o.IsDeleted);
-        var listingsQuery = _context.ClearanceListings.Where(l =>
-            !start.HasValue || l.CreatedAt >= start.Value);
-        var requestsQuery = _context.PickupRequests.Where(pr =>
-            !start.HasValue || pr.RequestedAt >= start.Value);
-        var inventoryQuery = _context.Inventories.Where(i =>
-            !start.HasValue || i.ReceivedAt >= start.Value);
+        bool InPeriod(DateTime at) => (!start.HasValue || at >= start.Value) && (!end.HasValue || at <= end.Value);
 
-        if (end.HasValue)
+        // ── Requests ─────────────────────────────────────────────────────────
+        // A request completed inside the range may have been raised long before it, so
+        // the lower bound has to admit either timestamp. The upper bound can stay on
+        // RequestedAt alone: nothing is completed before it was requested.
+        var requestRows = await _context.PickupRequests
+            .Where(pr => !start.HasValue
+                      || pr.RequestedAt >= start.Value
+                      || (pr.ConfirmedReceivedAt.HasValue && pr.ConfirmedReceivedAt.Value >= start.Value)
+                      || (pr.MarkedPickedUpAt.HasValue   && pr.MarkedPickedUpAt.Value   >= start.Value))
+            .Where(pr => !end.HasValue || pr.RequestedAt <= end.Value)
+            .Select(pr => new RequestRow(
+                pr.Id, pr.Status, pr.RequestedAt, pr.MarkedReadyAt,
+                pr.MarkedPickedUpAt, pr.ConfirmedReceivedAt, pr.GroceryId, pr.NgoId))
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Cohort: raised in the period. This is what the funnel reports.
+        var raised = requestRows.Where(r => InPeriod(r.RequestedAt)).ToList();
+
+        // Events: handed over in the period. This is what the timings and boards report.
+        var completed = requestRows
+            .Where(r => r.Status == PickupRequestStatus.Completed && InPeriod(r.CompletedAt))
+            .ToList();
+
+        int CountRaised(PickupRequestStatus s) => raised.Count(r => r.Status == s);
+
+        // ── Timing, over the pickups completed in the period ─────────────────
+        List<double> Hours(Func<RequestRow, TimeSpan?> leg) => completed
+            .Select(leg)
+            .Where(d => d.HasValue && d.Value.TotalHours >= 0)
+            .Select(d => d!.Value.TotalHours)
+            .OrderBy(h => h)
+            .ToList();
+
+        var toReady   = Hours(r => r.MarkedReadyAt - r.RequestedAt);
+        var toPickup  = Hours(r => (r.MarkedPickedUpAt ?? r.ConfirmedReceivedAt) - r.RequestedAt);
+        var toConfirm = Hours(r => r.ConfirmedReceivedAt - r.MarkedPickedUpAt);
+
+        var timing = new StatsTimingDto
         {
-            listingsQuery  = listingsQuery.Where(l => l.CreatedAt <= end.Value);
-            requestsQuery  = requestsQuery.Where(pr => pr.RequestedAt <= end.Value);
-            inventoryQuery = inventoryQuery.Where(i => i.ReceivedAt <= end.Value);
-        }
+            MedianHoursToReady     = Round1(Percentile(toReady, 0.5)),
+            MedianHoursToPickup    = Round1(Percentile(toPickup, 0.5)),
+            MedianHoursToConfirm   = Round1(Percentile(toConfirm, 0.5)),
+            P90HoursToPickup       = Round1(Percentile(toPickup, 0.9)),
+            CompletedWithin24hRate = toPickup.Count == 0
+                ? 0
+                : Math.Round((double)toPickup.Count(h => h <= 24) / toPickup.Count, 3),
+            SampleSize             = toPickup.Count
+        };
 
-        var totalOrgs        = await orgsQuery.CountAsync();
-        var totalGroceries   = await orgsQuery.CountAsync(o => o.Type == "grocery");
-        var totalNgos        = await orgsQuery.CountAsync(o => o.Type == "ngo");
-        var verifiedOrgs     = await orgsQuery.CountAsync(o => o.Verified);
-        var pendingVerif     = await orgsQuery.CountAsync(o => o.VerificationStatus == "pending");
+        // ── Leaderboards, ranked by the measure the board actually shows ─────
+        var groceryStats = completed
+            .GroupBy(r => r.GroceryId)
+            .Select(g => new { Id = g.Key, Pickups = g.Count() })
+            .OrderByDescending(g => g.Pickups)
+            .Take(5)
+            .ToList();
 
-        var totalListings    = await listingsQuery.CountAsync();
-        var activeListings   = await listingsQuery.CountAsync(l => l.Status == ListingStatus.Open);
+        var ngoStats = completed
+            .GroupBy(r => r.NgoId)
+            .Select(g => new { Id = g.Key, Pickups = g.Count() })
+            .OrderByDescending(g => g.Pickups)
+            .Take(5)
+            .ToList();
 
-        var totalRequests    = await requestsQuery.CountAsync();
-        var completedReqs    = await requestsQuery.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
-        var pendingReqs      = await requestsQuery.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
-        var cancelledReqs    = await requestsQuery.CountAsync(pr => pr.Status == PickupRequestStatus.Cancelled);
-
-        var kgSaved          = await requestsQuery
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .SumAsync(pr => (double)(pr.RequestedQuantity ?? 0));
-        var mealsEquivalent  = (int)(kgSaved * 2.5);   // ~2.5 meals per kg
-        var co2Saved         = Math.Round(kgSaved * 2.5, 1); // ~2.5 kg CO2 per kg food
-
-        var totalBeneficiaries = await _context.Inventories
-            .Where(i => i.Status == InventoryStatus.Distributed
-                && (!start.HasValue || i.DistributedAt >= start))
-            .SumAsync(i => i.BeneficiaryCount);
-
-        // Category breakdown
-        var categoryBreakdown = await requestsQuery
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .GroupBy(pr => pr.ListingCategory)
-            .Select(g => new { category = g.Key, count = g.Count(), quantity = g.Sum(pr => pr.RequestedQuantity ?? 0) })
-            .OrderByDescending(g => g.count)
-            .ToListAsync();
-
-        // Top grocery leaderboard
-        var topGroceries = await requestsQuery
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .GroupBy(pr => pr.GroceryId)
-            .Select(g => new { groceryId = g.Key, completedCount = g.Count(), totalQuantity = g.Sum(pr => pr.RequestedQuantity ?? 0) })
-            .OrderByDescending(g => g.totalQuantity)
-            .Take(10)
-            .ToListAsync();
-
-        var groceryIds = topGroceries.Select(g => g.groceryId).ToList();
-        var groceryNames = await _context.Organizations
-            .Where(o => groceryIds.Contains(o.Id))
+        var leaderIds = groceryStats.Select(g => g.Id).Concat(ngoStats.Select(n => n.Id)).Distinct().ToList();
+        var leaderNames = await _context.Organizations
+            .Where(o => leaderIds.Contains(o.Id))
             .Select(o => new { o.Id, o.Name })
             .ToDictionaryAsync(o => o.Id, o => o.Name);
 
-        var topGroceriesWithNames = topGroceries.Select(g => new
-        {
-            id = g.groceryId,
-            name = groceryNames.TryGetValue(g.groceryId, out var n) ? n : "",
-            completedPickups = g.completedCount,
-            totalKg = g.totalQuantity
-        }).ToList();
-
-        // Top NGO leaderboard
-        var topNgos = await requestsQuery
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .GroupBy(pr => pr.NgoId)
-            .Select(g => new { ngoId = g.Key, completedCount = g.Count() })
-            .OrderByDescending(g => g.completedCount)
-            .Take(10)
+        // ── The organization register ────────────────────────────────────────
+        // Admin accounts sit in the same table but are staff, not participants: leaving
+        // them in would mean groceries + NGOs never add up to the total.
+        var orgs = await _context.Organizations
+            .Where(o => !o.IsDeleted && o.Type.ToLower() != "admin")
+            .Select(o => new { o.Id, o.Type, o.Verified, o.VerificationStatus, o.CreatedAt })
+            .AsNoTracking()
             .ToListAsync();
 
-        var ngoIds = topNgos.Select(g => g.ngoId).ToList();
-        var ngoNames = await _context.Organizations
-            .Where(o => ngoIds.Contains(o.Id))
-            .Select(o => new { o.Id, o.Name })
-            .ToDictionaryAsync(o => o.Id, o => o.Name);
+        var pendingOrgs = orgs.Where(o => o.VerificationStatus == "pending").ToList();
+        var oldestPendingDays = pendingOrgs.Count == 0
+            ? (int?)null
+            : (int)Math.Floor((now - pendingOrgs.Min(o => o.CreatedAt)).TotalDays);
 
-        var topNgosWithNames = topNgos.Select(g => new
-        {
-            id = g.ngoId,
-            name = ngoNames.TryGetValue(g.ngoId, out var n) ? n : "",
-            completedPickups = g.completedCount
-        }).ToList();
-
-        // Daily trend (last 30 data points within range)
-        var dailyTrend = await requestsQuery
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .GroupBy(pr => pr.RequestedAt.Date)
-            .Select(g => new { date = g.Key, count = g.Count(), quantity = g.Sum(pr => pr.RequestedQuantity ?? 0) })
-            .OrderBy(g => g.date)
-            .Take(30)
+        // ── Quality signals raised in the period ─────────────────────────────
+        var reviews = await _context.Reviews
+            .AsNoTracking()
+            .Where(r => (!start.HasValue || r.CreatedAt >= start.Value)
+                     && (!end.HasValue   || r.CreatedAt <= end.Value))
+            .Select(r => r.Rating)
             .ToListAsync();
 
-        return Ok(new
+        var disputesOpened = await _context.Disputes
+            .CountAsync(d => (!start.HasValue || d.CreatedAt >= start.Value)
+                          && (!end.HasValue   || d.CreatedAt <= end.Value));
+
+        var reportsFiled = await _context.Reports
+            .CountAsync(r => (!start.HasValue || r.CreatedAt >= start.Value)
+                          && (!end.HasValue   || r.CreatedAt <= end.Value));
+
+        var quality = new StatsQualityDto
         {
-            data = new
+            AverageRating  = reviews.Count == 0 ? null : Math.Round(reviews.Average(), 2),
+            ReviewCount    = reviews.Count,
+            ReviewCoverage = completed.Count == 0 ? 0 : Math.Round((double)reviews.Count / completed.Count, 3),
+            DisputesOpened = disputesOpened,
+            DisputeRate    = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3),
+            ReportsFiled   = reportsFiled
+        };
+
+        // ── Backlog: the live queue, deliberately not scoped to the period ───
+        var soon = now.AddHours(24);
+        var openListings     = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
+        var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
+        var expiredListings  = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
+        var archivedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Archived);
+        var expiringSoon     = await _context.ClearanceListings
+            .CountAsync(l => l.Status == ListingStatus.Open
+                          && l.ClearanceDeadline > now && l.ClearanceDeadline <= soon);
+
+        var liveByStatus = await _context.PickupRequests
+            .Where(pr => pr.Status == PickupRequestStatus.Pending
+                      || pr.Status == PickupRequestStatus.Approved
+                      || pr.Status == PickupRequestStatus.Ready)
+            .GroupBy(pr => pr.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count(), Oldest = g.Min(x => x.RequestedAt) })
+            .ToListAsync();
+
+        var pendingLive = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Pending);
+
+        var backlog = new StatsBacklogDto
+        {
+            OpenListings              = openListings,
+            ReservedListings          = reservedListings,
+            ExpiredListings           = expiredListings,
+            ArchivedListings          = archivedListings,
+            ExpiringWithin24h         = expiringSoon,
+            PendingRequests           = pendingLive?.Count ?? 0,
+            ApprovedRequests          = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Approved)?.Count ?? 0,
+            ReadyRequests             = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Ready)?.Count ?? 0,
+            OldestPendingRequestHours = pendingLive == null ? null : Math.Round((now - pendingLive.Oldest).TotalHours, 1),
+            PendingVerifications      = pendingOrgs.Count,
+            OldestPendingVerificationDays = oldestPendingDays,
+            // Both states still sit on an admin's desk, which is what this queue counts.
+            OpenDisputes              = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review"),
+            PendingReports            = await _context.Reports.CountAsync(r => r.Status == "pending")
+        };
+
+        var data = new AdminStatisticsData
+        {
+            Period = new StatsPeriodDto
             {
-                period = new { from = start?.ToString("o"), to = end?.ToString("o"), preset },
-                organizations = new { totalOrgs, totalGroceries, totalNgos, verifiedOrgs, pendingVerif },
-                listings = new { totalListings, activeListings },
-                requests = new { totalRequests, completedReqs, pendingReqs, cancelledReqs },
-                impact = new { kgSaved, mealsEquivalent, co2Saved, totalBeneficiaries },
-                categoryBreakdown,
-                leaderboards = new { topGroceries = topGroceriesWithNames, topNgos = topNgosWithNames },
-                dailyTrend
+                From      = start?.ToString("o"),
+                To        = end?.ToString("o"),
+                Preset    = preset,
+                Days      = start.HasValue ? Math.Max(1, (int)Math.Ceiling(((end ?? now) - start.Value).TotalDays)) : 0,
+                IsAllTime = !start.HasValue
+            },
+            Headline = new StatsHeadlineDto
+            {
+                CompletedPickups = completed.Count
+            },
+            Funnel = new StatsFunnelDto
+            {
+                Requests  = raised.Count,
+                Pending   = CountRaised(PickupRequestStatus.Pending),
+                Approved  = CountRaised(PickupRequestStatus.Approved),
+                Ready     = CountRaised(PickupRequestStatus.Ready),
+                Completed = CountRaised(PickupRequestStatus.Completed),
+                Cancelled = CountRaised(PickupRequestStatus.Cancelled),
+                Rejected  = CountRaised(PickupRequestStatus.Rejected)
+            },
+            Backlog = backlog,
+            Timing  = timing,
+            Quality = quality,
+            Leaderboards = new StatsLeaderboardsDto
+            {
+                TopGroceries = groceryStats.Select(g => new StatsGroceryLeaderDto
+                {
+                    Id               = g.Id.ToString(),
+                    Name             = leaderNames.GetValueOrDefault(g.Id, ""),
+                    CompletedPickups = g.Pickups
+                }).ToList(),
+                TopNgos = ngoStats.Select(n => new StatsNgoLeaderDto
+                {
+                    Id               = n.Id.ToString(),
+                    Name             = leaderNames.GetValueOrDefault(n.Id, ""),
+                    CompletedPickups = n.Pickups
+                }).ToList()
+            },
+            Organizations = new StatsOrganizationsDto
+            {
+                Total               = orgs.Count,
+                Groceries           = orgs.Count(o => o.Type.ToLower() == "grocery"),
+                Ngos                = orgs.Count(o => o.Type.ToLower() == "ngo"),
+                Verified            = orgs.Count(o => o.Verified),
+                PendingVerification = pendingOrgs.Count,
+                OldestPendingDays   = oldestPendingDays
             }
-        });
+        };
+
+        return Ok(new AdminStatisticsResponse { Data = data });
     }
 
-    // ── GET api/admin/health ──────────────────────────────────────────────────
-    [HttpGet("health")]
-    public async Task<IActionResult> SystemHealth()
+    // ── Statistics helpers ────────────────────────────────────────────────────
+
+    private sealed record RequestRow(
+        Guid Id,
+        PickupRequestStatus Status,
+        DateTime RequestedAt,
+        DateTime? MarkedReadyAt,
+        DateTime? MarkedPickedUpAt,
+        DateTime? ConfirmedReceivedAt,
+        Guid GroceryId,
+        Guid NgoId)
     {
-        if (!IsAdmin()) return Forbid();
-
-        var dbOk = true;
-        var dbLatencyMs = 0L;
-        try
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _context.Organizations.CountAsync();
-            sw.Stop();
-            dbLatencyMs = sw.ElapsedMilliseconds;
-        }
-        catch { dbOk = false; }
-
-        var pendingVerifications = await _context.Organizations
-            .CountAsync(o => o.VerificationStatus == "pending" && !o.IsDeleted);
-        var openDisputes = await _context.Disputes.CountAsync(d => d.Status == "open");
-        var pendingReports = await _context.Reports.CountAsync(r => r.Status == "pending");
-        var unreadNotifications = await _context.Notifications.CountAsync(n => !n.IsRead);
-
-        return Ok(new
-        {
-            data = new
-            {
-                status = dbOk ? "healthy" : "degraded",
-                database = new { ok = dbOk, latencyMs = dbLatencyMs },
-                alerts = new { pendingVerifications, openDisputes, pendingReports, unreadNotifications },
-                timestamp = DateTime.UtcNow.ToString("o")
-            }
-        });
+        /// <summary>When the hand-over actually happened, falling back down the chain of
+        /// timestamps an older record may be missing.</summary>
+        public DateTime CompletedAt => ConfirmedReceivedAt ?? MarkedPickedUpAt ?? RequestedAt;
     }
+
+    /// <summary>Linear-interpolated percentile over an already sorted list.</summary>
+    private static double? Percentile(List<double> sorted, double p)
+    {
+        if (sorted.Count == 0) return null;
+        if (sorted.Count == 1) return sorted[0];
+
+        var rank = p * (sorted.Count - 1);
+        var low  = (int)Math.Floor(rank);
+        var high = (int)Math.Ceiling(rank);
+        return sorted[low] + (sorted[high] - sorted[low]) * (rank - low);
+    }
+
+    private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
+
 
     // ── GET api/admin/disputes ────────────────────────────────────────────────
     // Admin alert feed: open disputes + pending reports
@@ -451,68 +661,6 @@ public class AdminController : ControllerBase
         return Ok(new { data = feed, total = feed.Count });
     }
 
-    // ── GET api/admin/sparkline?days=7 ──────────────────────────────────────
-    // Daily listing counts for sparkline preview (grocery dashboard)
-    [HttpGet("sparkline")]
-    [Authorize]
-    public async Task<IActionResult> GetSparkline([FromQuery] int days = 7)
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var orgId))
-            return Unauthorized();
-
-        days = Math.Clamp(days, 3, 30);
-        var since = DateTime.UtcNow.Date.AddDays(-days + 1);
-
-        var raw = await _context.ClearanceListings
-            .Where(l => l.GroceryId == orgId && l.CreatedAt >= since)
-            .GroupBy(l => l.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        var result = Enumerable.Range(0, days).Select(i =>
-        {
-            var date = since.AddDays(i);
-            return new
-            {
-                date = date.ToString("yyyy-MM-dd"),
-                count = raw.FirstOrDefault(r => r.Date == date)?.Count ?? 0
-            };
-        }).ToList();
-
-        return Ok(new { data = result });
-    }
-
-    // ── GET api/admin/user-growth?days=30 ───────────────────────────────────
-    // Daily new org registrations for admin user growth chart
-    [HttpGet("user-growth")]
-    [Authorize]
-    public async Task<IActionResult> GetUserGrowth([FromQuery] int days = 30)
-    {
-        if (!IsAdmin()) return Forbid();
-
-        days = Math.Clamp(days, 7, 90);
-        var since = DateTime.UtcNow.Date.AddDays(-days + 1);
-
-        var raw = await _context.Organizations
-            .Where(o => !o.IsDeleted && o.CreatedAt >= since)
-            .GroupBy(o => o.CreatedAt.Date)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        var result = Enumerable.Range(0, days).Select(i =>
-        {
-            var date = since.AddDays(i);
-            return new
-            {
-                date = date.ToString("yyyy-MM-dd"),
-                count = raw.FirstOrDefault(r => r.Date == date)?.Count ?? 0
-            };
-        }).ToList();
-
-        return Ok(new { data = result });
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private bool IsAdmin()
@@ -532,13 +680,25 @@ public class AdminController : ControllerBase
         }
 
         var now = DateTime.UtcNow;
+        var weekStart = now.Date.AddDays(-(int)now.DayOfWeek);
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
         return preset switch
         {
-            "today"   => (now.Date, now.Date.AddDays(1).AddSeconds(-1)),
-            "week"    => (now.Date.AddDays(-(int)now.DayOfWeek), now),
-            "month"   => (new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc), now),
-            "quarter" => (new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, DateTimeKind.Utc), now),
-            _         => (null, null)  // "all"
+            "today"      => (now.Date, now.Date.AddDays(1).AddSeconds(-1)),
+            "week"       => (weekStart, now),
+            "month"      => (monthStart, now),
+            "quarter"    => (new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, DateTimeKind.Utc), now),
+            // The matching previous period, so a comparison compares like with like.
+            "yesterday"  => (now.Date.AddDays(-1), now.Date.AddSeconds(-1)),
+            "last_week"  => (weekStart.AddDays(-7), weekStart.AddSeconds(-1)),
+            "last_month" => (monthStart.AddMonths(-1), monthStart.AddSeconds(-1)),
+            _            => (null, null)  // "all"
         };
     }
+}
+
+public class RejectOrganizationRequest
+{
+    public string? Reason { get; set; }
 }

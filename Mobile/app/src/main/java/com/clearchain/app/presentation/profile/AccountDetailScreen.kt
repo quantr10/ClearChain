@@ -3,7 +3,7 @@ package com.clearchain.app.presentation.profile
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,21 +13,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.mapsQuery
+import com.clearchain.app.util.openInGoogleMaps
 
 @Composable
 fun AccountDetailScreen(
+    onNavigateBack: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -50,13 +55,21 @@ fun AccountDetailScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        Box(
+        Column(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
+          ScreenTitleRow(
+              title = stringResource(R.string.title_account_details),
+              onBack = {
+                  if (state.isEditing) viewModel.onEvent(ProfileEvent.CancelEdit) else onNavigateBack()
+              },
+              modifier = Modifier.padding(horizontal = 16.dp)
+          )
+          Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 state.isLoading && user == null -> {
                     CircularProgressIndicator(
@@ -83,166 +96,123 @@ fun AccountDetailScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 20.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                                .padding(ScreenPadding),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                IconButton(
-                                    onClick = { viewModel.onEvent(ProfileEvent.StartEdit) }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = stringResource(R.string.cd_edit_profile)
+                            OrganizationSummaryCard(
+                                user = user,
+                                averageRating = state.averageRating,
+                                reviewCount = state.reviewCount,
+                                onEdit = { viewModel.onEvent(ProfileEvent.StartEdit) }
+                            )
+
+                            if (!user.description.isNullOrBlank()) {
+                                AccountSectionCard(stringResource(R.string.about)) {
+                                    Text(
+                                        text = user.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
 
-                            // About
-                            if (!user.description.isNullOrBlank()) {
-                                DashboardSection(
-                                    title = stringResource(R.string.about)
+                            AccountSectionCard(stringResource(R.string.section_contact)) {
+                                CompactAccountDetailRow(
+                                    icon = Icons.Default.Email,
+                                    label = "",
+                                    value = user.email,
+                                    isAction = true
                                 ) {
-                                    InfoCard {
-                                        Text(
-                                            text = user.description,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${user.email}"))
+                                    )
+                                }
+                                CompactAccountDetailRow(
+                                    icon = Icons.Default.Phone,
+                                    label = "",
+                                    value = user.phone.ifBlank { stringResource(R.string.label_not_set) },
+                                    enabled = user.phone.isNotBlank(),
+                                    isAction = true
+                                ) {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
+                                    )
                                 }
                             }
 
-                            // Contact
-                            DashboardSection(
-                                title = stringResource(R.string.section_contact)
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-
-                                    ContactActionRow(
-                                        icon = Icons.Default.Email,
-                                        label = stringResource(R.string.email),
-                                        value = user.email
+                            AccountSectionCard(stringResource(R.string.section_location_hours)) {
+                                val addressParts = listOfNotNull(
+                                    user.address.substringBefore(',').trim().takeIf { it.isNotBlank() },
+                                    user.location.trim().takeIf { it.isNotBlank() },
+                                    user.state?.trim()?.takeIf { it.isNotBlank() },
+                                    user.zipCode?.trim()?.takeIf { it.isNotBlank() }
+                                )
+                                if (addressParts.isNotEmpty()) {
+                                    val fullAddress = addressParts.joinToString(", ")
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        context.startActivity(
-                                            Intent(
-                                                Intent.ACTION_SENDTO,
-                                                Uri.parse("mailto:${user.email}")
-                                            )
-                                        )
-                                    }
-
-                                    ContactActionRow(
-                                        icon = Icons.Default.Phone,
-                                        label = stringResource(R.string.onboarding_phone_label),
-                                        value = user.phone.ifBlank {
-                                            stringResource(R.string.label_not_set)
-                                        },
-                                        enabled = user.phone.isNotBlank()
-                                    ) {
-                                        context.startActivity(
-                                            Intent(
-                                                Intent.ACTION_DIAL,
-                                                Uri.parse("tel:${user.phone}")
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Location & Hours
-                            DashboardSection(
-                                title = stringResource(R.string.section_location_hours)
-                            ) {
-                                InfoCard {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                                    ) {
-                                        InfoRow(
+                                        Icon(
                                             Icons.Default.Home,
-                                            stringResource(R.string.onboarding_address_label),
-                                            user.address.ifBlank {
-                                                stringResource(R.string.label_not_set)
-                                            }
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-
-                                        InfoRow(
-                                            Icons.Default.Place,
-                                            stringResource(R.string.onboarding_city_label),
-                                            user.location.ifBlank {
-                                                stringResource(R.string.label_not_set)
-                                            }
+                                        Text(
+                                            fullAddress,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
                                         )
-
-                                        InfoRow(
-                                            Icons.Default.Map,
-                                            stringResource(R.string.onboarding_state_label),
-                                            user.state?.takeIf { it.isNotBlank() }
-                                                ?: stringResource(R.string.label_not_set)
-                                        )
-
-                                        InfoRow(
-                                            Icons.Default.LocalPostOffice,
-                                            stringResource(R.string.onboarding_zip_label),
-                                            user.zipCode?.takeIf { it.isNotBlank() }
-                                                ?: stringResource(R.string.label_not_set)
-                                        )
-
-                                        InfoRow(
-                                            Icons.Default.Schedule,
-                                            stringResource(R.string.onboarding_hours_label),
-                                            user.hours
-                                                ?: stringResource(R.string.label_not_set)
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Organization details
-                            if (user.type != OrganizationType.ADMIN) {
-                                DashboardSection(
-                                    title = stringResource(R.string.section_org_details)
-                                ) {
-                                    InfoCard {
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                                        ) {
-                                            InfoRow(
-                                                Icons.Default.Person,
-                                                stringResource(R.string.onboarding_contact_label),
-                                                user.contactPerson
-                                                    ?: stringResource(R.string.label_not_set)
-                                            )
-
-                                            if (user.type == OrganizationType.GROCERY) {
-                                                InfoRow(
-                                                    Icons.Default.DirectionsWalk,
-                                                    stringResource(R.string.onboarding_pickup_instructions_label),
-                                                    user.pickupInstructions
-                                                        ?: stringResource(R.string.label_not_set)
+                                        ClearChainActionIconButton(
+                                            icon = Icons.Default.Navigation,
+                                            contentDescription = stringResource(R.string.action_get_directions),
+                                            onClick = {
+                                                openInGoogleMaps(
+                                                    context,
+                                                    mapsQuery(user.latitude, user.longitude, fullAddress)
                                                 )
                                             }
-                                        }
+                                        )
                                     }
+                                } else {
+                                    CompactAccountDetailRow(
+                                        Icons.Default.Home,
+                                        "",
+                                        stringResource(R.string.label_not_set)
+                                    )
+                                }
+                                CompactAccountDetailRow(
+                                    Icons.Default.Schedule,
+                                    "",
+                                    user.hours ?: stringResource(R.string.label_not_set)
+                                )
+                            }
+
+                            if (user.type == OrganizationType.GROCERY) {
+                                AccountSectionCard(
+                                    stringResource(R.string.onboarding_pickup_instructions_label)
+                                ) {
+                                    Text(
+                                        text = user.pickupInstructions
+                                            ?: stringResource(R.string.label_not_set),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
 
-                            // Team Members
-                            DashboardSection(
-                                title = stringResource(R.string.section_team_members)
-                            ) {
-                                TeamMembersCard(user = user)
-                            }
-
-                            Spacer(Modifier.height(24.dp))
+                            TeamMembersCard(user = user)
                         }
                     }
                 }
             }
+          }
         }
     }
 }
@@ -252,191 +222,225 @@ private fun AccountDetailEditContent(
     state: ProfileState,
     onEvent: (ProfileEvent) -> Unit
 ) {
+    val busy = state.isSavingProfile
+    val isNgoOrGrocery = state.user?.type == OrganizationType.NGO ||
+        state.user?.type == OrganizationType.GROCERY
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        SectionHeader(stringResource(R.string.section_general))
-
-        ClearChainTextField(
-            value = state.editName,
-            onValueChange = { onEvent(ProfileEvent.EditNameChanged(it)) },
-            label = stringResource(R.string.org_name_label),
-            leadingIcon = Icons.Default.Business,
-            imeAction = ImeAction.Next,
-            isError = state.editNameError != null,
-            errorMessage = state.editNameError,
-            enabled = !state.isSavingProfile
-        )
-
-        ClearChainTextField(
-            value = state.editDescription,
-            onValueChange = { onEvent(ProfileEvent.EditDescriptionChanged(it)) },
-            label = stringResource(R.string.label_description),
-            isOptional = true,
-            placeholder = stringResource(R.string.hint_org_description),
-            leadingIcon = Icons.Default.Description,
-            imeAction = ImeAction.Next,
-            enabled = !state.isSavingProfile,
-            singleLine = false,
-            minLines = 2,
-            maxLines = 4
-        )
-
-        SectionHeader(stringResource(R.string.section_contact))
-
-        ClearChainTextField(
-            value = state.editPhone,
-            onValueChange = { onEvent(ProfileEvent.EditPhoneChanged(it)) },
-            label = stringResource(R.string.onboarding_phone_label),
-            isOptional = true,
-            placeholder = stringResource(R.string.hint_phone_profile),
-            leadingIcon = Icons.Default.Phone,
-            keyboardType = KeyboardType.Phone,
-            imeAction = ImeAction.Next,
-            isError = state.editPhoneError != null,
-            errorMessage = state.editPhoneError,
-            enabled = !state.isSavingProfile
-        )
-
-        AddressSuggestionField(
-            value = state.editAddress,
-            onValueChange = { onEvent(ProfileEvent.EditAddressChanged(it)) },
-            onAddressSelected = { suggestion ->
-                onEvent(ProfileEvent.EditAddressChanged(suggestion.fullAddress))
-                onEvent(ProfileEvent.EditLocationChanged(suggestion.city))
-                onEvent(ProfileEvent.EditStateChanged(suggestion.state))
-                onEvent(ProfileEvent.EditZipCodeChanged(suggestion.zipCode))
-                onEvent(ProfileEvent.EditLocationCoordsChanged(suggestion.latitude, suggestion.longitude))
-            },
-            label = stringResource(R.string.onboarding_address_label),
-            isOptional = true,
-            placeholder = stringResource(R.string.onboarding_address_placeholder),
-            enabled = !state.isSavingProfile,
-            isError = state.editAddressError != null,
-            errorMessage = state.editAddressError
-        )
-
-        ClearChainTextField(
-            value = state.editLocation,
-            onValueChange = { onEvent(ProfileEvent.EditLocationChanged(it)) },
-            label = stringResource(R.string.label_city_location),
-            isOptional = true,
-            placeholder = stringResource(R.string.onboarding_city_placeholder),
-            leadingIcon = Icons.Default.Place,
-            imeAction = ImeAction.Next,
-            isError = state.editLocationError != null,
-            errorMessage = state.editLocationError,
-            enabled = !state.isSavingProfile
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        // ── Organization Name ────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.org_name_label)) {
             ClearChainTextField(
-                value = state.editState,
-                onValueChange = { onEvent(ProfileEvent.EditStateChanged(it)) },
-                label = stringResource(R.string.onboarding_state_label),
-                isOptional = true,
-                placeholder = stringResource(R.string.onboarding_state_placeholder),
-                leadingIcon = Icons.Default.Map,
+                value = state.editName,
+                onValueChange = { onEvent(ProfileEvent.EditNameChanged(it)) },
+                placeholder = stringResource(R.string.org_name_placeholder),
+                leadingIcon = Icons.Default.Business,
                 imeAction = ImeAction.Next,
-                enabled = !state.isSavingProfile,
-                modifier = Modifier.weight(1f)
-            )
-
-            ClearChainTextField(
-                value = state.editZipCode,
-                onValueChange = { onEvent(ProfileEvent.EditZipCodeChanged(it)) },
-                label = stringResource(R.string.onboarding_zip_label),
-                isOptional = true,
-                placeholder = stringResource(R.string.onboarding_zip_placeholder),
-                leadingIcon = Icons.Default.LocalPostOffice,
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next,
-                enabled = !state.isSavingProfile,
-                modifier = Modifier.weight(1f)
+                isError = state.editNameError != null,
+                errorMessage = state.editNameError,
+                enabled = !busy
             )
         }
 
-        SectionHeader(stringResource(R.string.onboarding_hours_label))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(Modifier.weight(1f)) {
-                TimePickerField(
-                    value = state.editOpenTime,
-                    onTimeSelected = { onEvent(ProfileEvent.EditOpenTimeChanged(it)) },
-                    label = stringResource(R.string.label_opening_time),
-                    isOptional = true,
-                    enabled = !state.isSavingProfile
-                )
-            }
-
-            Box(Modifier.weight(1f)) {
-                TimePickerField(
-                    value = state.editCloseTime,
-                    onTimeSelected = { onEvent(ProfileEvent.EditCloseTimeChanged(it)) },
-                    label = stringResource(R.string.label_closing_time),
-                    isOptional = true,
-                    enabled = !state.isSavingProfile
-                )
-            }
-        }
-
-        if (state.user?.type == OrganizationType.NGO || state.user?.type == OrganizationType.GROCERY) {
-            SectionHeader(stringResource(R.string.section_org_details))
-
+        // ── Description ──────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_description), isOptional = true) {
             ClearChainTextField(
-                value = state.editContactPerson,
-                onValueChange = { onEvent(ProfileEvent.EditContactPersonChanged(it)) },
-                label = stringResource(R.string.label_contact_person_star),
-                placeholder = stringResource(R.string.hint_contact_person),
-                leadingIcon = Icons.Default.Person,
+                value = state.editDescription,
+                onValueChange = { onEvent(ProfileEvent.EditDescriptionChanged(it)) },
+                placeholder = stringResource(R.string.hint_org_description),
+                leadingIcon = Icons.Default.Description,
                 imeAction = ImeAction.Next,
-                isError = state.editContactPersonError != null,
-                errorMessage = state.editContactPersonError,
-                enabled = !state.isSavingProfile
-            )
-        }
-
-        if (state.user?.type == OrganizationType.GROCERY) {
-            ClearChainTextField(
-                value = state.editPickupInstructions,
-                onValueChange = { onEvent(ProfileEvent.EditPickupInstructionsChanged(it)) },
-                label = stringResource(R.string.onboarding_pickup_instructions_label),
-                isOptional = true,
-                placeholder = stringResource(R.string.hint_pickup_instructions_long),
-                leadingIcon = Icons.Default.DirectionsWalk,
-                imeAction = ImeAction.Done,
-                enabled = !state.isSavingProfile,
+                enabled = !busy,
                 singleLine = false,
                 minLines = 2,
-                maxLines = 3
+                maxLines = 4
             )
         }
 
+        // ── Email ───────────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.label_email)) {
+            ClearChainTextField(
+                value = state.editEmail,
+                onValueChange = { onEvent(ProfileEvent.EditEmailChanged(it)) },
+                placeholder = stringResource(R.string.hint_email_org),
+                leadingIcon = Icons.Default.Email,
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+                isError = state.editEmailError != null,
+                errorMessage = state.editEmailError,
+                enabled = !busy
+            )
+        }
+
+        // ── Phone ───────────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.onboarding_phone_label)) {
+            ClearChainTextField(
+                value = state.editPhone,
+                onValueChange = { onEvent(ProfileEvent.EditPhoneChanged(it)) },
+                placeholder = stringResource(R.string.hint_phone_profile),
+                leadingIcon = Icons.Default.Phone,
+                keyboardType = KeyboardType.Phone,
+                imeAction = ImeAction.Next,
+                isError = state.editPhoneError != null,
+                errorMessage = state.editPhoneError,
+                enabled = !busy
+            )
+        }
+
+        // ── Address ─────────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.onboarding_address_label)) {
+            AddressSuggestionField(
+                value = state.editAddress,
+                onValueChange = { onEvent(ProfileEvent.EditAddressChanged(it)) },
+                onAddressSelected = { suggestion ->
+                    onEvent(ProfileEvent.EditAddressChanged(suggestion.streetAddress))
+                    onEvent(ProfileEvent.EditLocationChanged(suggestion.city))
+                    onEvent(ProfileEvent.EditStateChanged(suggestion.state))
+                    onEvent(ProfileEvent.EditZipCodeChanged(suggestion.zipCode))
+                    onEvent(ProfileEvent.EditLocationCoordsChanged(suggestion.latitude, suggestion.longitude))
+                },
+                showLabel = false,
+                placeholder = stringResource(R.string.onboarding_address_placeholder),
+                enabled = !busy,
+                isError = state.editAddressError != null,
+                errorMessage = state.editAddressError
+            )
+        }
+
+        // ── City ────────────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.onboarding_city_label)) {
+            ClearChainTextField(
+                value = state.editLocation,
+                onValueChange = { onEvent(ProfileEvent.EditLocationChanged(it)) },
+                placeholder = stringResource(R.string.onboarding_city_placeholder),
+                leadingIcon = Icons.Default.Place,
+                imeAction = ImeAction.Next,
+                isError = state.editLocationError != null,
+                errorMessage = state.editLocationError,
+                enabled = !busy
+            )
+        }
+
+        // ── State + ZIP ─────────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.onboarding_state_label)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ClearChainTextField(
+                    value = state.editState,
+                    onValueChange = { onEvent(ProfileEvent.EditStateChanged(it)) },
+                    placeholder = stringResource(R.string.onboarding_state_placeholder),
+                    leadingIcon = Icons.Default.Map,
+                    imeAction = ImeAction.Next,
+                    isError = state.editStateError != null,
+                    errorMessage = state.editStateError,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
+                )
+                ClearChainTextField(
+                    value = state.editZipCode,
+                    onValueChange = { onEvent(ProfileEvent.EditZipCodeChanged(it)) },
+                    placeholder = stringResource(R.string.onboarding_zip_placeholder),
+                    leadingIcon = Icons.Default.LocalPostOffice,
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next,
+                    isError = state.editZipCodeError != null,
+                    errorMessage = state.editZipCodeError,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // ── Opening Hours ───────────────────────────────────────────────────
+        FieldCard(label = stringResource(R.string.onboarding_hours_label)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(Modifier.weight(1f)) {
+                    TimePickerField(
+                        value = state.editOpenTime,
+                        onTimeSelected = { onEvent(ProfileEvent.EditOpenTimeChanged(it)) },
+                        label = "",
+                        isError = state.editOpenTimeError != null,
+                        errorMessage = state.editOpenTimeError,
+                        enabled = !busy
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    TimePickerField(
+                        value = state.editCloseTime,
+                        onTimeSelected = { onEvent(ProfileEvent.EditCloseTimeChanged(it)) },
+                        label = "",
+                        isError = state.editCloseTimeError != null,
+                        errorMessage = state.editCloseTimeError,
+                        enabled = !busy
+                    )
+                }
+            }
+        }
+
+        // ── Pickup Instructions (Grocery only) ──────────────────────────────
+        if (state.user?.type == OrganizationType.GROCERY) {
+            FieldCard(
+                label = stringResource(R.string.onboarding_pickup_instructions_label),
+                isOptional = true
+            ) {
+                ClearChainTextField(
+                    value = state.editPickupInstructions,
+                    onValueChange = { onEvent(ProfileEvent.EditPickupInstructionsChanged(it)) },
+                    placeholder = stringResource(R.string.hint_pickup_instructions_long),
+                    leadingIcon = Icons.Default.DirectionsWalk,
+                    imeAction = ImeAction.Done,
+                    enabled = !busy,
+                    singleLine = false,
+                    minLines = 2,
+                    maxLines = 3
+                )
+            }
+        }
+
+        // ── Contact Person (NGO / Grocery) ─────────────────────────────────
+        if (isNgoOrGrocery) {
+            FieldCard(label = stringResource(R.string.label_contact_person)) {
+                ClearChainTextField(
+                    value = state.editContactPerson,
+                    onValueChange = { onEvent(ProfileEvent.EditContactPersonChanged(it)) },
+                    placeholder = stringResource(R.string.hint_contact_person),
+                    leadingIcon = Icons.Default.Person,
+                    imeAction = ImeAction.Done,
+                    isError = state.editContactPersonError != null,
+                    errorMessage = state.editContactPersonError,
+                    enabled = !busy
+                )
+            }
+        }
+
+        // ── Cancel + Save buttons ───────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ClearChainOutlinedButton(
                 text = stringResource(R.string.cancel),
                 onClick = { onEvent(ProfileEvent.CancelEdit) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !busy
             )
             ClearChainButton(
-                text = stringResource(R.string.action_save_changes),
+                text = stringResource(R.string.save),
                 onClick = { onEvent(ProfileEvent.SaveProfile) },
-                loading = state.isSavingProfile,
-                enabled = !state.isSavingProfile,
-                modifier = Modifier.weight(1f)
+                loading = busy,
+                enabled = !busy,
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Save
             )
         }
 
@@ -444,41 +448,200 @@ private fun AccountDetailEditContent(
     }
 }
 
-// Local copy of TeamMembersCard from ProfileScreen (kept here to avoid cross-file private access)
+@Composable
+private fun FieldCard(
+    label: String,
+    modifier: Modifier = Modifier,
+    isOptional: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            OptionalFieldLabel(
+                text = label.replace("*", "").trim(),
+                isOptional = isOptional,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun OrganizationSummaryCard(
+    user: com.clearchain.app.domain.model.Organization,
+    averageRating: Double,
+    reviewCount: Int,
+    onEdit: () -> Unit
+) {
+    val roleLabel = when (user.type) {
+        OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
+        OrganizationType.NGO -> stringResource(R.string.role_ngo)
+        OrganizationType.ADMIN -> stringResource(R.string.role_admin)
+    }
+    ProfileSummaryCard(
+        name = user.name,
+        roleLabel = roleLabel,
+        verified = user.verified,
+        averageRating = averageRating,
+        reviewCount = reviewCount,
+        profilePictureUrl = user.profilePictureUrl,
+        onEdit = onEdit
+    )
+}
+
+@Composable
+private fun AccountSectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            content()
+        }
+    }
+}
+
+@Composable
+private fun CompactAccountDetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    enabled: Boolean = true,
+    isAction: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    val actionModifier = if (enabled && onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+    val valueColor = if (isAction && enabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(actionModifier),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (label.isNotBlank()) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = valueColor
+            )
+        }
+        if (isAction && enabled) {
+            Icon(
+                imageVector = Icons.Default.OpenInNew,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
 @Composable
 private fun TeamMembersCard(user: com.clearchain.app.domain.model.Organization) {
-    Card(shape = MaterialTheme.shapes.medium) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            MemberRow(name = user.name, detail = user.email, badge = stringResource(R.string.label_owner_badge), tint = MaterialTheme.colorScheme.primaryContainer, onTint = MaterialTheme.colorScheme.onPrimaryContainer)
-            if (!user.contactPerson.isNullOrBlank()) {
-                HorizontalDivider()
-                MemberRow(name = user.contactPerson, detail = stringResource(R.string.label_contact_person), badge = stringResource(R.string.label_contact_badge), tint = MaterialTheme.colorScheme.secondaryContainer, onTint = MaterialTheme.colorScheme.onSecondaryContainer)
-            }
+    AccountSectionCard(stringResource(R.string.section_team_members)) {
+        if (!user.contactPerson.isNullOrBlank()) {
+            MemberRow(
+                name = user.contactPerson,
+                badge = stringResource(R.string.label_contact_badge),
+                tint = MaterialTheme.colorScheme.secondaryContainer,
+                onTint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
             HorizontalDivider()
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.PersonAdd, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.label_invite_team_member), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(stringResource(R.string.label_coming_soon), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                }
-                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(
+                Icons.Default.PersonAdd,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(14.dp)
+            )
+            Text(
+                text = stringResource(R.string.label_invite_team_member),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Text(
+                    text = stringResource(R.string.label_coming_soon),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun MemberRow(name: String, detail: String, badge: String, tint: androidx.compose.ui.graphics.Color, onTint: androidx.compose.ui.graphics.Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.small).background(tint), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Person, null, tint = onTint, modifier = Modifier.size(20.dp))
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+private fun MemberRow(
+    name: String,
+    badge: String,
+    tint: androidx.compose.ui.graphics.Color,
+    onTint: androidx.compose.ui.graphics.Color
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(Icons.Default.Person, null, tint = onTint, modifier = Modifier.size(14.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f)
+        )
         Surface(shape = MaterialTheme.shapes.small, color = tint) {
             Text(badge, style = MaterialTheme.typography.labelSmall, color = onTint, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
         }

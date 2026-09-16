@@ -27,7 +27,7 @@ import com.clearchain.app.data.local.entity.UserEntity
         InventoryEntity::class,
         NotificationEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = false
 )
 abstract class ClearChainDatabase : RoomDatabase() {

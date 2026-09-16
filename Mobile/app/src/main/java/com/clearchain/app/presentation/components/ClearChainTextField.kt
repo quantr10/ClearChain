@@ -24,10 +24,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.clearchain.app.R
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,7 +58,11 @@ fun ClearChainTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    fieldHeight: Dp = 32.dp,
+    fieldShape: Shape = ShapeMedium,
+    focusedBorderColor: Color = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor: Color = MaterialTheme.colorScheme.outlineVariant
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -63,9 +70,9 @@ fun ClearChainTextField(
 
     val borderColor = when {
         isError   -> MaterialTheme.colorScheme.error
-        isFocused -> MaterialTheme.colorScheme.primary
+        isFocused -> focusedBorderColor
         !enabled  -> MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)
-        else      -> MaterialTheme.colorScheme.outlineVariant
+        else      -> unfocusedBorderColor
     }
     val borderWidth = 1.dp
     val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface
@@ -88,8 +95,8 @@ fun ClearChainTextField(
             onValueChange     = onValueChange,
             modifier          = Modifier
                 .fillMaxWidth()
-                .then(if (singleLine) Modifier.height(32.dp) else Modifier)
-                .border(borderWidth, borderColor, ShapeMedium)
+                .then(if (singleLine) Modifier.height(fieldHeight) else Modifier)
+                .border(borderWidth, borderColor, fieldShape)
                 .padding(horizontal = 8.dp)
                 .then(if (!singleLine) Modifier.padding(vertical = 8.dp) else Modifier),
             textStyle         = MaterialTheme.typography.labelSmall.copy(color = contentColor),

@@ -3,6 +3,7 @@ package com.clearchain.app.di
 import com.clearchain.app.data.remote.api.*
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
 import com.clearchain.app.data.remote.interceptor.RetryInterceptor
+import com.clearchain.app.data.remote.interceptor.TokenAuthenticator
 import com.clearchain.app.util.Constants
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -46,12 +47,14 @@ object NetworkModule {
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
         retryInterceptor: RetryInterceptor,
-        loggingInterceptor: HttpLoggingInterceptor
+        loggingInterceptor: HttpLoggingInterceptor,
+        tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(retryInterceptor)
             .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

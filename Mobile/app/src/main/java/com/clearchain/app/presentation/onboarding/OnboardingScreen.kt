@@ -6,8 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,13 +22,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.R
@@ -41,6 +38,19 @@ import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.delay
 import androidx.compose.material3.SnackbarDuration
+
+/**
+ * MIME types the verification-document picker offers. Mirrors the allow-list in
+ * [com.clearchain.app.domain.usecase.profile.UploadVerificationDocumentUseCase] (and the
+ * Supabase "documents" bucket) so the system file browser only surfaces files the upload
+ * will actually accept.
+ */
+private val VERIFICATION_DOC_MIME_TYPES = arrayOf(
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"
+)
 
 @Composable
 fun OnboardingScreen(
@@ -135,9 +145,9 @@ fun OnboardingScreen(
                             modifier = Modifier.weight(1f)
                         )
                         ClearChainButton(
-                            text    = stringResource(R.string.onboarding_get_started),
+                            text    = stringResource(R.string.onboarding_view_status),
                             onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
-                            icon    = Icons.Default.RocketLaunch,
+                            icon    = Icons.Default.ArrowForward,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -227,13 +237,14 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
     Column(
         modifier            = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         ClearChainTextField(
             value         = state.phone,
             onValueChange = { viewModel.onEvent(OnboardingEvent.PhoneChanged(it)) },
             label         = stringResource(R.string.onboarding_phone_label),
+            isOptional    = false,
             placeholder   = stringResource(R.string.hint_phone_profile),
             leadingIcon   = Icons.Default.Phone,
             keyboardType  = KeyboardType.Phone,
@@ -262,6 +273,7 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 value         = state.contactPerson,
                 onValueChange = { viewModel.onEvent(OnboardingEvent.ContactPersonChanged(it)) },
                 label         = stringResource(R.string.onboarding_contact_label),
+                isOptional    = false,
                 placeholder   = stringResource(R.string.onboarding_contact_placeholder),
                 leadingIcon   = Icons.Default.Person,
                 imeAction     = ImeAction.Done,
@@ -278,7 +290,7 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
 @Composable
 private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel) {
     val documentPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
             viewModel.onEvent(OnboardingEvent.DocumentSelected(uri, uri.lastPathSegment ?: "document"))
@@ -288,8 +300,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
     Column(
         modifier            = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         AddressSuggestionField(
             value         = state.address,
@@ -297,7 +309,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             onAddressSelected = { suggestion ->
                 viewModel.onEvent(
                     OnboardingEvent.AddressSelected(
-                        address = suggestion.fullAddress,
+                        address = suggestion.streetAddress,
                         city    = suggestion.city,
                         state   = suggestion.state,
                         zipCode = suggestion.zipCode,
@@ -336,6 +348,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 placeholder   = stringResource(R.string.onboarding_state_placeholder),
                 leadingIcon   = Icons.Default.Map,
                 imeAction     = ImeAction.Next,
+                isError       = state.stateError != null,
+                errorMessage  = state.stateError,
                 enabled       = !state.isSaving,
                 modifier      = Modifier.weight(1f)
             )
@@ -347,6 +361,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 leadingIcon   = Icons.Default.LocalPostOffice,
                 keyboardType  = KeyboardType.Number,
                 imeAction     = ImeAction.Next,
+                isError       = state.zipCodeError != null,
+                errorMessage  = state.zipCodeError,
                 enabled       = !state.isSaving,
                 modifier      = Modifier.weight(1f)
             )
@@ -368,6 +384,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                         value          = state.openTime,
                         onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
                         label          = "",
+                        isError        = state.openTimeError != null,
+                        errorMessage   = state.openTimeError,
                         enabled        = !state.isSaving
                     )
                 }
@@ -376,6 +394,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                         value          = state.closeTime,
                         onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
                         label          = "",
+                        isError        = state.closeTimeError != null,
+                        errorMessage   = state.closeTimeError,
                         enabled        = !state.isSaving
                     )
                 }
@@ -398,11 +418,11 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             )
         }
 
-        // ── Verification document upload ─────────────────────────────
+        // ── Verification document upload (required) ──────────────────
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             OptionalFieldLabel(
                 text       = stringResource(R.string.onboarding_doc_label),
-                isOptional = true,
+                isOptional = false,
                 style      = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium
             )
@@ -412,7 +432,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (state.verificationDocumentUri != null) {
+            val hasDoc = state.verificationDocumentUri != null || state.uploadedDocumentUrl != null
+            if (hasDoc) {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                     shape = MaterialTheme.shapes.small,
@@ -425,30 +446,56 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.AttachFile, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            when {
+                                state.isUploadingDocument -> CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp), strokeWidth = 2.dp
+                                )
+                                state.uploadedDocumentUrl != null -> Icon(
+                                    Icons.Default.CheckCircle, null,
+                                    tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
+                                )
+                                else -> Icon(
+                                    Icons.Default.AttachFile, null,
+                                    tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)
+                                )
+                            }
                             Text(
-                                text  = state.verificationDocumentName ?: stringResource(R.string.onboarding_doc_selected),
+                                text  = when {
+                                    state.isUploadingDocument -> stringResource(R.string.onboarding_doc_uploading)
+                                    else -> state.verificationDocumentName ?: stringResource(R.string.onboarding_doc_selected)
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1
                             )
                         }
-                        IconButton(
-                            onClick = { viewModel.onEvent(OnboardingEvent.RemoveDocument) },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(Icons.Default.Close, stringResource(R.string.onboarding_remove_icon), modifier = Modifier.size(16.dp))
+                        if (!state.isUploadingDocument) {
+                            IconButton(
+                                onClick = { viewModel.onEvent(OnboardingEvent.RemoveDocument) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.Close, stringResource(R.string.onboarding_remove_icon), modifier = Modifier.size(16.dp))
+                            }
                         }
                     }
                 }
             } else {
                 ClearChainOutlinedButton(
                     text = stringResource(R.string.onboarding_upload_document),
-                    onClick = { documentPickerLauncher.launch("*/*") },
+                    onClick = { documentPickerLauncher.launch(VERIFICATION_DOC_MIME_TYPES) },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isSaving,
+                    enabled = !state.isSaving && !state.isUploadingDocument,
                     icon = Icons.Default.Upload
+                )
+            }
+
+            state.documentUploadError?.let { err ->
+                Text(
+                    text = err,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -476,9 +523,9 @@ private fun Step3Content(state: OnboardingState) {
     Column(
         modifier                = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 40.dp),
+            .padding(ScreenPadding),
         horizontalAlignment     = Alignment.CenterHorizontally,
-        verticalArrangement     = Arrangement.Center
+        verticalArrangement     = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
     ) {
         Box(
             modifier           = Modifier
@@ -504,52 +551,35 @@ private fun Step3Content(state: OnboardingState) {
             }
         }
 
-        Spacer(Modifier.height(28.dp))
-
         Text(
-            text       = stringResource(R.string.onboarding_all_set),
+            text       = stringResource(R.string.onboarding_submitted_title),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             textAlign  = TextAlign.Center,
             modifier   = Modifier.graphicsLayer(alpha = alpha)
         )
 
-        Spacer(Modifier.height(12.dp))
-
         Text(
-            text  = if (state.userType == OrganizationType.GROCERY)
-                stringResource(R.string.onboarding_grocery_complete)
-            else
-                stringResource(R.string.onboarding_ngo_complete),
+            text  = stringResource(R.string.onboarding_submitted_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier  = Modifier.graphicsLayer(alpha = alpha)
         )
 
-        Spacer(Modifier.height(32.dp))
-
-        val features = if (state.userType == OrganizationType.GROCERY) {
-            listOf(
-                Icons.Default.AddCircle to stringResource(R.string.onboarding_feature_create),
-                Icons.Default.Notifications to stringResource(R.string.onboarding_feature_requests),
-                Icons.Default.BarChart to stringResource(R.string.onboarding_feature_impact)
-            )
-        } else {
-            listOf(
-                Icons.Default.Search to stringResource(R.string.onboarding_feature_browse),
-                Icons.Default.LocalShipping to stringResource(R.string.onboarding_feature_pickups),
-                Icons.Default.Inventory to stringResource(R.string.onboarding_feature_inventory)
-            )
-        }
+        val steps = listOf(
+            Icons.Default.CheckCircle to stringResource(R.string.onboarding_submitted_step_profile),
+            Icons.Default.Schedule to stringResource(R.string.onboarding_submitted_step_review),
+            Icons.Default.Notifications to stringResource(R.string.onboarding_submitted_step_notify)
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer(alpha = alpha),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            features.forEach { (icon, label) ->
+            steps.forEach { (icon, label) ->
                 DashboardActionCard(
                     icon = icon,
                     title = label,

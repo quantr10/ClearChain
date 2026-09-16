@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using ClearChain.API.Common;
 using ClearChain.API.Services;
 using ClearChain.API.DTOs.ImageAnalysis;
 
@@ -17,9 +18,14 @@ public class ImageAnalysisController : ControllerBase
     private readonly IStorageService _storageService; // ✅ ADD THIS
     private readonly ILogger<ImageAnalysisController> _logger;
 
-    // Allowed image formats
-    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
-    private const long MaxFileSize = 4 * 1024 * 1024; // 4 MB (Azure limit)
+    // Formats accepted by /analyze specifically — this is what's sent to Azure Computer
+    // Vision, so it's declared independently from StorageBucketPolicy (used by /upload
+    // below) even though the two happen to list the same formats today. If Azure's real
+    // capabilities or the "food-images" bucket's config ever diverge again, each stays
+    // free to change on its own.
+    private static readonly string[] AnalyzeAllowedMimeTypes =
+        { "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif" };
+    private const long AnalyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB (Azure limit)
 
     public ImageAnalysisController(
         IImageAnalysisService analysisService,
@@ -94,23 +100,23 @@ public class ImageAnalysisController : ControllerBase
             }
 
             // Check file size
-            if (image.Length > MaxFileSize)
+            if (image.Length > AnalyzeMaxFileSize)
             {
                 return BadRequest(new AnalyzeImageResponse
                 {
                     Success = false,
-                    Message = $"Image too large. Maximum size is {MaxFileSize / 1024 / 1024} MB"
+                    Message = $"Image too large. Maximum size is {AnalyzeMaxFileSize / 1024 / 1024} MB"
                 });
             }
 
-            // Check file extension
-            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-            if (!AllowedExtensions.Contains(extension))
+            // Check content type (not file extension — the extension can lie about what's
+            // actually inside the file; the browser/OS-reported MIME type is what matters).
+            if (!AnalyzeAllowedMimeTypes.Contains(image.ContentType?.ToLowerInvariant()))
             {
                 return BadRequest(new AnalyzeImageResponse
                 {
                     Success = false,
-                    Message = $"Invalid file type. Allowed: {string.Join(", ", AllowedExtensions)}"
+                    Message = $"Invalid file type. Allowed: {string.Join(", ", AnalyzeAllowedMimeTypes)}"
                 });
             }
 
@@ -146,79 +152,6 @@ public class ImageAnalysisController : ControllerBase
                 Message = "An error occurred while analyzing the image. Please try again."
             });
         }
-    }
-
-    /// <summary>
-    /// Get analysis history for authenticated grocery
-    /// </summary>
-    /// <remarks>
-    /// GET /api/imageanalysis/history?limit=10
-    /// 
-    /// Returns list of previous AI analyses
-    /// </remarks>
-    [HttpGet("history")]
-    [Authorize]
-    [ProducesResponseType(typeof(AnalysisHistoryResponse), 200)]
-    [ProducesResponseType(401)]
-    public async Task<ActionResult<AnalysisHistoryResponse>> GetHistory([FromQuery] int limit = 10)
-    {
-        try
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
-            {
-                return Unauthorized(new AnalysisHistoryResponse
-                {
-                    Success = false,
-                    Message = "User not authenticated"
-                });
-            }
-
-            var analyses = await _analysisService.GetAnalysisHistoryAsync(groceryId, limit);
-
-            return Ok(new AnalysisHistoryResponse
-            {
-                Success = true,
-                Message = "Analysis history retrieved successfully",
-                Count = analyses.Count,
-                Analyses = analyses
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error retrieving analysis history");
-            return StatusCode(500, new AnalysisHistoryResponse
-            {
-                Success = false,
-                Message = "An error occurred while retrieving history"
-            });
-        }
-    }
-
-    /// <summary>
-    /// Health check for AI service
-    /// </summary>
-    [HttpGet("health")]
-    [AllowAnonymous]
-    public IActionResult Health()
-    {
-        return Ok(new
-        {
-            status = "healthy",
-            service = "Azure Computer Vision AI",
-            features = new[]
-            {
-                "Food category detection (10 categories)",
-                "Freshness scoring (0-100)",
-                "Quality grading (A/B/C/D)",
-                "Expiry date estimation",
-                "Auto-fill listing form"
-            },
-            maxFileSize = $"{MaxFileSize / 1024 / 1024} MB",
-            allowedFormats = AllowedExtensions,
-            endpoint = "/api/imageanalysis/analyze",
-            timestamp = DateTime.UtcNow
-        });
     }
 
     /// <summary>
@@ -299,13 +232,24 @@ public async Task<ActionResult<UploadImageResponse>> UploadImage(IFormFile image
             });
         }
 
-        // Check file size
-        if (image.Length > MaxFileSize)
+        // Stored straight to the "food-images" Supabase bucket (unlike /analyze above,
+        // which only calls Azure and is bound by Azure's own 4 MB / format limits) —
+        // validate against that bucket's actual configured limits.
+        if (!StorageBucketPolicy.IsAllowedImage(image.ContentType))
         {
             return BadRequest(new UploadImageResponse
             {
                 Success = false,
-                Message = $"Image too large. Maximum size is {MaxFileSize / 1024 / 1024} MB"
+                Message = $"Only {StorageBucketPolicy.ImageTypesMessage} are accepted"
+            });
+        }
+
+        if (image.Length > StorageBucketPolicy.ImageMaxBytes)
+        {
+            return BadRequest(new UploadImageResponse
+            {
+                Success = false,
+                Message = $"Image too large. Maximum size is {StorageBucketPolicy.ImageMaxBytes / 1024 / 1024} MB"
             });
         }
 

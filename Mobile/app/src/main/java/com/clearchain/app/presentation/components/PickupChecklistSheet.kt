@@ -30,9 +30,9 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 Modifier.fillMaxWidth(),

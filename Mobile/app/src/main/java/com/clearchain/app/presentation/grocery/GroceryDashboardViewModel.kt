@@ -11,11 +11,27 @@ import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class GroceryDashboardState(
+    val userName: String = "",
+    val profilePictureUrl: String? = null,
+    val stats: DashboardStatsData? = null,
+    val todaySummary: TodaySummaryData? = null,
+    val weeklyGoal: Int = 10,
+    val activities: List<ActivityItemData> = emptyList(),
+    val isRefreshing: Boolean = false
+) {
+    val weeklyCompleted: Int get() = stats?.completedThisWeek ?: 0
+
+    val weeklyProgress: Float get() =
+        if (weeklyGoal > 0) (weeklyCompleted.toFloat() / weeklyGoal).coerceIn(0f, 1f) else 0f
+}
 
 @HiltViewModel
 class GroceryDashboardViewModel @Inject constructor(
@@ -24,72 +40,74 @@ class GroceryDashboardViewModel @Inject constructor(
     private val organizationApi: OrganizationApi
 ) : ViewModel() {
 
-    private val _userName = MutableStateFlow(context.getString(R.string.label_grocery_store_name))
-    val userName = _userName.asStateFlow()
-
-    private val _stats = MutableStateFlow<DashboardStatsData?>(null)
-    val stats = _stats.asStateFlow()
-
-    private val _todaySummary = MutableStateFlow<TodaySummaryData?>(null)
-    val todaySummary = _todaySummary.asStateFlow()
-
-    private val _activities = MutableStateFlow<List<ActivityItemData>>(emptyList())
-    val activities = _activities.asStateFlow()
-
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing = _isRefreshing.asStateFlow()
+    private val _state = MutableStateFlow(
+        GroceryDashboardState(userName = context.getString(R.string.label_grocery_store_name))
+    )
+    val state = _state.asStateFlow()
 
     init {
-        loadAll()
+        observeUser()
+        viewModelScope.launch { loadAll() }
     }
 
     fun refresh() {
         viewModelScope.launch {
-            _isRefreshing.value = true
+            _state.update { it.copy(isRefreshing = true) }
             loadAll()
-            _isRefreshing.value = false
+            _state.update { it.copy(isRefreshing = false) }
         }
     }
 
-    private fun loadAll() {
-        loadUser()
-        loadStats()
-        loadTodaySummary()
-        loadActivity()
+    /** Reloads every dashboard section concurrently and suspends until all have settled,
+     *  so pull-to-refresh keeps its spinner until the stats, activity, and today's summary
+     *  are actually up to date.
+     *
+     *  Every section writes through [MutableStateFlow.update]: these loaders run in
+     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
+     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
+    private suspend fun loadAll(): Unit = coroutineScope {
+        launch { loadStats() }
+        launch { loadTodaySummary() }
+        launch { loadActivity() }
     }
 
-    private fun loadUser() {
-        viewModelScope.launch {
-            getCurrentUserUseCase().first()?.let { user ->
-                _userName.value = user.name
-            }
-        }
-    }
-
-    fun loadStats() {
+    // Collected rather than read once, so a new avatar or a renamed store shows
+    // up here as soon as the cached user changes.
+    private fun observeUser() {
         viewModelScope.launch {
             try {
-                val response = organizationApi.getMyStats()
-                _stats.value = response.data
+                getCurrentUserUseCase().collect { user ->
+                    if (user != null) {
+                        _state.update {
+                            it.copy(
+                                userName = user.name,
+                                profilePictureUrl = user.profilePictureUrl
+                            )
+                        }
+                    }
+                }
             } catch (_: Exception) {}
         }
     }
 
-    private fun loadTodaySummary() {
-        viewModelScope.launch {
-            try {
-                val response = organizationApi.getTodaySummary()
-                _todaySummary.value = response.data
-            } catch (_: Exception) {}
-        }
+    private suspend fun loadStats() {
+        try {
+            val stats = organizationApi.getMyStats().data
+            _state.update { it.copy(stats = stats) }
+        } catch (_: Exception) {}
     }
 
-    private fun loadActivity() {
-        viewModelScope.launch {
-            try {
-                val response = organizationApi.getMyActivity()
-                _activities.value = response.data
-            } catch (_: Exception) {}
-        }
+    private suspend fun loadTodaySummary() {
+        try {
+            val summary = organizationApi.getTodaySummary().data
+            _state.update { it.copy(todaySummary = summary) }
+        } catch (_: Exception) {}
+    }
+
+    private suspend fun loadActivity() {
+        try {
+            val activities = organizationApi.getMyActivity().data
+            _state.update { it.copy(activities = activities) }
+        } catch (_: Exception) {}
     }
 }

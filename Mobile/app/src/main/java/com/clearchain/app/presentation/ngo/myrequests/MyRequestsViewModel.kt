@@ -14,6 +14,7 @@ import com.clearchain.app.data.remote.api.ReviewApi
 import com.clearchain.app.data.remote.dto.SubmitReviewRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
@@ -55,8 +56,6 @@ class MyRequestsViewModel @Inject constructor(
 
     // ✅ NEW: Setup SignalR real-time updates
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
-
         // Listen for status changes
     viewModelScope.launch {
         signalRService.pickupRequestStatusChanged.collect { notification ->
@@ -84,13 +83,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
-    }
 
     fun onEvent(event: MyRequestsEvent) {
         when (event) {
@@ -231,9 +223,7 @@ class MyRequestsViewModel @Inject constructor(
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { request ->
-                request.listingTitle.lowercase().contains(query) ||
-                        request.groceryName.lowercase().contains(query) ||
-                        request.notes?.lowercase()?.contains(query) == true
+                request.searchText.contains(query)
             }
         }
 

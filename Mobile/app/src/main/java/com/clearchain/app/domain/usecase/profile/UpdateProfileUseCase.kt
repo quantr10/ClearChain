@@ -12,6 +12,7 @@ class UpdateProfileUseCase @Inject constructor(
         phone: String,
         address: String,
         location: String,
+        email: String = "",
         state: String = "",
         zipCode: String = "",
         hours: String? = null,
@@ -24,11 +25,14 @@ class UpdateProfileUseCase @Inject constructor(
     ): Result<Unit> {
         if (name.isBlank()) return Result.failure(Exception("Name is required"))
         if (name.length < 3) return Result.failure(Exception("Name must be at least 3 characters"))
+        if (email.isNotBlank() && !ValidationUtils.isValidEmail(email))
+            return Result.failure(Exception("Invalid email format"))
         if (phone.isNotBlank() && !ValidationUtils.isValidPhone(phone))
             return Result.failure(Exception("Invalid phone number"))
 
         return repository.updateProfile(
             name = name,
+            email = email.ifBlank { null },
             phone = phone.ifBlank { null },
             address = address.ifBlank { null },
             location = location.ifBlank { null },

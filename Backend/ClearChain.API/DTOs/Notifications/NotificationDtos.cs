@@ -22,9 +22,10 @@ public class NotificationListResponse
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int TotalPages { get; set; }
-}
 
-public class UnreadCountResponse
-{
-    public int UnreadCount { get; set; }
+    /// <summary>
+    /// The retention window this list was drawn from, so the client can label what it is
+    /// showing instead of implying an inbox that goes back forever.
+    /// </summary>
+    public int RetentionDays { get; set; }
 }

@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import java.io.File
 import javax.inject.Inject
 
 class ListingRepositoryImpl @Inject constructor(
@@ -127,8 +126,12 @@ class ListingRepositoryImpl @Inject constructor(
 
     override suspend fun analyzeImage(imageUri: Uri): Result<FoodAnalysisData> {
         return try {
+            // compressImage always re-encodes to JPEG regardless of the source format
+            // (see ImageUtils.compressImage), so the real content type is always jpeg —
+            // matching what uploadFoodImage below declares, and what the backend's
+            // Content-Type-based whitelist for /analyze now expects.
             val file = ImageUtils.compressImage(context, imageUri)
-            val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+            val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
             val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
             val response = imageAnalysisApi.analyzeImage(multipartBody)
             file.delete()

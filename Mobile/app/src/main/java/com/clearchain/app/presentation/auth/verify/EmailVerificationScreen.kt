@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
@@ -55,11 +56,11 @@ fun EmailVerificationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(rememberScrollState())
+                .padding(ScreenPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Spacer(Modifier.height(56.dp))
-
             Icon(
                 imageVector = Icons.Default.Email,
                 contentDescription = null,
@@ -67,25 +68,18 @@ fun EmailVerificationScreen(
                 tint = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(Modifier.height(16.dp))
-
             Text(
                 text = stringResource(R.string.email_verify_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(Modifier.height(8.dp))
-
             Text(
                 text = stringResource(R.string.email_verify_sent, state.email),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 32.dp)
+                textAlign = TextAlign.Center
             )
-
-            Spacer(Modifier.height(32.dp))
 
             OutlinedTextField(
                 value = state.code,
@@ -97,9 +91,7 @@ fun EmailVerificationScreen(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
-                modifier = Modifier
-                    .width(240.dp)
-                    .padding(horizontal = 32.dp),
+                modifier = Modifier.width(240.dp),
                 textStyle = LocalTextStyle.current.copy(
                     textAlign = TextAlign.Center,
                     fontSize = 24.sp,
@@ -109,28 +101,20 @@ fun EmailVerificationScreen(
             )
 
             if (state.error != null) {
-                Spacer(Modifier.height(8.dp))
                 Text(
                     text = state.error!!,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
+                    textAlign = TextAlign.Center
                 )
             }
-
-            Spacer(Modifier.height(24.dp))
 
             ClearChainButton(
                 text = stringResource(R.string.submit),
                 onClick = { viewModel.onEvent(EmailVerificationEvent.Verify) },
-                modifier = Modifier
-                    .padding(horizontal = 32.dp),
                 enabled = state.code.length == 6,
                 loading = state.isLoading
             )
-
-            Spacer(Modifier.height(16.dp))
 
             ClearChainButton(
                 text = when {
@@ -143,16 +127,12 @@ fun EmailVerificationScreen(
                         viewModel.onEvent(EmailVerificationEvent.ResendCode)
                     }
                 },
-                modifier = Modifier
-                    .padding(horizontal = 32.dp),
                 enabled = state.resendCooldownSeconds == 0,
                 loading = state.isResending,
                 containerColor = Color.White,
                 contentColor = BrandGreen,
                 border = BorderStroke(1.dp, BrandGreen)
             )
-
-            Spacer(Modifier.height(32.dp))
         }
     }
 }

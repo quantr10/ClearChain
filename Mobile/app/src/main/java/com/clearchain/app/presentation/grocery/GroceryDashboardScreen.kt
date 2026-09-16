@@ -13,10 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
@@ -35,16 +36,12 @@ fun GroceryDashboardScreen(
     navController: NavController,
     viewModel: GroceryDashboardViewModel = hiltViewModel()
 ) {
-    val userName          by viewModel.userName.collectAsState()
-    val stats             by viewModel.stats.collectAsState()
-    val todaySummary      by viewModel.todaySummary.collectAsState()
-    val activities        by viewModel.activities.collectAsState()
-    val isRefreshing      by viewModel.isRefreshing.collectAsState()
+    val state             by viewModel.state.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         HapticPullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = state.isRefreshing,
             onRefresh    = viewModel::refresh,
             modifier     = Modifier
                 .fillMaxSize()
@@ -56,49 +53,48 @@ fun GroceryDashboardScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 DashboardWelcomeHeader(
-                    userName       = userName,
+                    userName       = state.userName,
                     subtitle       = stringResource(R.string.grocery_dashboard_subtitle),
                     roleLabel      = stringResource(R.string.role_grocery),
+                    profilePictureUrl = state.profilePictureUrl,
                     gradientColors = listOf(BrandTeal, BrandGreen),
-                    onProfileClick = { navController.navigate(Screen.Profile.route) }
+                    onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
+                    onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
                 )
 
                 Column(
-                    modifier            = Modifier.padding(20.dp),
+                    modifier            = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ── Profile completeness card ──────────────────────────
-                    // ── Today's summary ────────────────────────────────────
-                    todaySummary?.let { summary ->
-                        DashboardSection(title = "") {
-                            Row(
-                                modifier              = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                TodaySummaryChip(
-                                    label = stringResource(R.string.chip_listing_created),
-                                    value = summary.listingsCreatedToday.toString(),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TodaySummaryChip(
-                                    label = stringResource(R.string.chip_requests_received),
-                                    value = summary.requestsCreatedToday.toString(),
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TodaySummaryChip(
-                                    label = stringResource(R.string.chip_pickups),
-                                    value = summary.pickupsToday.toString(),
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                    // ── Impact ─────────────────────────────────────────────
+                    // First card on the page: what the store has actually rescued leads,
+                    // before today's workload.
+                    state.stats?.let { stats ->
+                        DashboardSection(
+                            title      = stringResource(R.string.analytics_impact),
+                            titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
+                        ) {
+                            ImpactSummaryRow(
+                                kgSaved       = stats.foodSaved,
+                                mealsEstimate = stats.mealsEstimate,
+                                co2EstimateKg = stats.co2EstimateKg
+                            )
                         }
                     }
 
+                    // ── Weekly Pickups ─────────────────────────────────────
+                    // The same card the NGO home shows: both sides of a hand-over count
+                    // the same completed pickup.
+                    DashboardSection(title = "") {
+                        WeeklyGoalCard(
+                            completed = state.weeklyCompleted,
+                            goal      = state.weeklyGoal,
+                            progress  = state.weeklyProgress
+                        )
+                    }
+
                     // ── Today's Pickups ────────────────────────────────────
-                    val upcomingPickups = todaySummary?.upcomingPickups.orEmpty()
+                    val upcomingPickups = state.todaySummary?.upcomingPickups.orEmpty()
                     if (upcomingPickups.isNotEmpty()) {
                         DashboardSection(title = "") {
                             GroceryUpcomingPickupsTimeline(
@@ -109,16 +105,16 @@ fun GroceryDashboardScreen(
                     }
 
                     // ── Activity Trend + Recent Activity ──────────────────
-                    val sparklineData = buildDailyActivityCounts(activities)
+                    val sparklineData = buildDailyActivityCounts(state.activities)
                     DashboardSection(title = "") {
                         ActivitySparklineCard(
                             title = stringResource(R.string.label_actions_this_week),
                             data  = sparklineData
                         )
-                        if (activities.isNotEmpty()) {
+                        if (state.activities.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
-                            ActivityFeedList(activities = activities.take(5))
-                            if (activities.size > 5) {
+                            ActivityFeedList(activities = state.activities.take(5))
+                            if (state.activities.size > 5) {
                                 Spacer(Modifier.height(8.dp))
                                 ClearChainButton(
                                     text = stringResource(R.string.action_view_more),
@@ -130,7 +126,7 @@ fun GroceryDashboardScreen(
                     }
 
                     // ── Quick actions ──────────────────────────────────────
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
                             icon     = Icons.Default.AddCircle,
                             title    = stringResource(R.string.action_create_listing),
@@ -160,7 +156,7 @@ fun GroceryDashboardScreen(
     // ── Activity bottom sheet ──────────────────────────────────────────────
     if (showActivitySheet) {
         ActivityHistorySheet(
-            activities = activities,
+            activities = state.activities,
             onDismiss  = { showActivitySheet = false }
         )
     }
@@ -173,23 +169,23 @@ private fun GroceryUpcomingPickupsTimeline(
     pickups:   List<UpcomingPickupData>,
     onViewAll: () -> Unit
 ) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            pickups.take(3).forEachIndexed { index, pickup ->
-                GroceryPickupTimelineItem(
-                    pickup = pickup,
-                    isLast = index == minOf(pickups.size, 3) - 1
-                )
-            }
-            if (pickups.size > 3) {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.view_all_pickups, pickups.size),
-                    onClick  = onViewAll,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
+    // Rendered straight onto the DashboardSection that hosts it — a Card here would
+    // put a second rounded, elevated surface inside the section's own.
+    Column(modifier = Modifier.fillMaxWidth()) {
+        pickups.take(3).forEachIndexed { index, pickup ->
+            GroceryPickupTimelineItem(
+                pickup = pickup,
+                isLast = index == minOf(pickups.size, 3) - 1
+            )
+        }
+        if (pickups.size > 3) {
+            ClearChainOutlinedButton(
+                text = stringResource(R.string.view_all_pickups, pickups.size),
+                onClick  = onViewAll,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
         }
     }
 }
@@ -267,41 +263,5 @@ private fun GroceryPickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolea
 
     if (!isLast) {
         HorizontalDivider(modifier = Modifier.padding(start = 38.dp), thickness = 0.5.dp)
-    }
-}
-
-// ── Profile completeness card ──────────────────────────────────────────────────
-
-// ── Today summary chip ─────────────────────────────────────────────────────────
-
-@Composable
-private fun TodaySummaryChip(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color    = color.copy(alpha = 0.12f),
-        shape    = MaterialTheme.shapes.small,
-        modifier = modifier
-    ) {
-        Column(
-            modifier            = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text  = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Text(
-                text  = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }

@@ -24,17 +24,3 @@ data class DisputeResponse(
     val data: DisputeData? = null
 )
 
-@Serializable
-data class DisputeListResponse(
-    val message: String = "",
-    val data: List<DisputeData> = emptyList(),
-    val total: Int = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-    val totalPages: Int = 1
-)
-
-@Serializable
-data class AddStatementRequest(
-    val statement: String
-)

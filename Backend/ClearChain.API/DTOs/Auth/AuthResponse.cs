@@ -22,9 +22,13 @@ public class OrganizationDto
     public string ZipCode { get; set; } = string.Empty;
     public bool Verified { get; set; }
     public string VerificationStatus { get; set; } = string.Empty;
+    public string? VerificationNotes { get; set; }
     public string? Hours { get; set; }
     public string? ProfilePictureUrl { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
+
+    // ═══ Onboarding verification document ═══
+    public string? DocumentUrl { get; set; }
 
     // ═══ NEW FIELDS (Part 1) ═══
     public double? Latitude { get; set; }

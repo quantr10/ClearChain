@@ -20,11 +20,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.domain.model.FoodCategory
@@ -56,16 +56,6 @@ fun InventoryScreen(
         }
     }
 
-    // Beneficiary count dialog
-    state.showBeneficiaryDialogForId?.let {
-        BeneficiaryCountDialog(
-            count     = state.beneficiaryCount,
-            onChange  = { viewModel.onEvent(InventoryEvent.BeneficiaryCountChanged(it)) },
-            onConfirm = { viewModel.onEvent(InventoryEvent.ConfirmDistribute) },
-            onDismiss = { viewModel.onEvent(InventoryEvent.DismissBeneficiaryDialog) }
-        )
-    }
-
     // Manual add bottom sheet
     if (state.showManualAddSheet) {
         ManualAddSheet(
@@ -88,7 +78,7 @@ fun InventoryScreen(
     Scaffold(
         floatingActionButton = {
             if (!state.isSelectionMode) {
-                FloatingActionButton(onClick = { viewModel.onEvent(InventoryEvent.ShowManualAddSheet) }) {
+                SmallFloatingActionButton(onClick = { viewModel.onEvent(InventoryEvent.ShowManualAddSheet) }) {
                     Icon(Icons.Default.Add, stringResource(R.string.cd_add_item_manually))
                 }
             }
@@ -126,19 +116,12 @@ fun InventoryScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ListScreenHeader {
+                        ListHeaderSearchRow(
+                            query = state.searchQuery,
+                            onQueryChange = { viewModel.onEvent(InventoryEvent.SearchQueryChanged(it)) },
+                            placeholder = stringResource(R.string.search_inventory_placeholder)
                         ) {
-                            SearchBar(
-                                query = state.searchQuery,
-                                onQueryChange = { viewModel.onEvent(InventoryEvent.SearchQueryChanged(it)) },
-                                placeholder = stringResource(R.string.search_inventory_placeholder),
-                                modifier = Modifier.weight(1f),
-                            )
                             ClearChainActionIconButton(
                                 icon               = Icons.Default.FileDownload,
                                 contentDescription = stringResource(R.string.export_csv),
@@ -187,6 +170,7 @@ fun InventoryScreen(
                                 }
                             } else null
                         )
+                        }
 
                         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                         when {
@@ -221,7 +205,7 @@ fun InventoryScreen(
                                     onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
                                 ) {
                                     LazyColumn(
-                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                        contentPadding = ScreenPadding,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         items(state.filteredItems, key = { it.id }) { item ->
@@ -250,7 +234,7 @@ fun InventoryScreen(
                                                         }
                                                     ),
                                                     onDistribute = if (!state.isSelectionMode && item.status == InventoryStatus.ACTIVE) {
-                                                        { viewModel.onEvent(InventoryEvent.ShowBeneficiaryDialog(it)) }
+                                                        { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
                                                     } else null
                                                 )
                                                 if (state.isSelectionMode) {
@@ -320,7 +304,7 @@ private fun InventoryFilterSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -411,54 +395,6 @@ private fun InventoryFilterSheet(
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Beneficiary count dialog
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun BeneficiaryCountDialog(
-    count:     String,
-    onChange:  (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon  = { Icon(Icons.Default.People, null) },
-        title = { Text(stringResource(R.string.label_beneficiaries_count)) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.label_beneficiaries_optional))
-                OutlinedTextField(
-                    value         = count,
-                    onValueChange = onChange,
-                    label         = {
-                        OptionalFieldLabel(
-                            text = stringResource(R.string.label_number_people_optional),
-                            isOptional = true
-                        )
-                    },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine    = true,
-                    modifier      = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.action_distribute_confirm),
-                onClick = onConfirm,
-                fillMaxWidth = false
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
-        }
-    )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Manual add bottom sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -475,9 +411,10 @@ private fun ManualAddSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(stringResource(R.string.add_item_manually),
                 style = MaterialTheme.typography.titleLarge,

@@ -23,7 +23,6 @@ data class AdminOrganizationDto(
     val verificationStatus: String,
     val createdAt: String,
     val documentUrl: String? = null,
-    val documentUrl2: String? = null,
     val documentMimeType: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null
@@ -43,6 +42,12 @@ data class OrganizationResponse(
     val data: AdminOrganizationDto
 )
 
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class RejectOrganizationBody(
+    val reason: String? = null
+)
+
 // ─── Stats DTO ────────────────────────────────────────────────────────────────
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -59,6 +64,7 @@ data class AdminStatsDto(
     val totalListings: Int,
     val activeListings: Int,
     val reservedListings: Int,
+    val expiredListings: Int = 0,
 
     // Pickup request stats
     val totalPickupRequests: Int,
@@ -92,6 +98,7 @@ fun AdminStatsDto.toDomain(): AdminStats {
         totalListings         = totalListings,
         activeListings        = activeListings,
         reservedListings      = reservedListings,
+        expiredListings       = expiredListings,
         totalPickupRequests   = totalPickupRequests,
         pendingRequests       = pendingRequests,
         approvedRequests      = approvedRequests,
@@ -121,7 +128,6 @@ fun AdminOrganizationDto.toDomain(): Organization = Organization(
     },
     hours = null, profilePictureUrl = null, createdAt = createdAt,
     documentUrl = documentUrl,
-    documentUrl2 = documentUrl2,
     documentMimeType = documentMimeType,
     latitude = latitude,
     longitude = longitude

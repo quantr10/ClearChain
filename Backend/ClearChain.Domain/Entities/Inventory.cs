@@ -15,7 +15,6 @@ public class Inventory
     public InventoryStatus Status { get; set; } = InventoryStatus.Active;
     public string? Notes { get; set; }
     public string? PhotoUrl { get; set; }
-    public int BeneficiaryCount { get; set; } = 0;   // How many people received this item when distributed
     public bool IsManuallyAdded { get; set; } = false;  // true = not from a pickup request
     public string? SourcePickupRequestId { get; set; }  // original request link for traceability
 

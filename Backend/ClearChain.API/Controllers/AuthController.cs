@@ -63,7 +63,10 @@ public class AuthController : ControllerBase
                     CreatedAt = newOrg.CreatedAt.ToString("o")
                 };
 
-                await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
+                // Admins are auto-approved (see AuthService.RegisterAsync) — they never need
+                // review, so skip the "needs verification" alert for them specifically.
+                if (newOrg.Type != "admin")
+                    await _pushNotificationService.SendNewRegistrationAlertToAdmins(orgData);
                 await _pushNotificationService.SendWelcomeNotification(orgData);
 
                 await _adminNotificationService.NotifyNewOrganizationRegistered(new OrganizationRegisteredNotification
@@ -201,9 +204,11 @@ public class AuthController : ControllerBase
             ZipCode = user.ZipCode ?? "",
             Verified = user.Verified,
             VerificationStatus = user.VerificationStatus ?? "pending",
+            VerificationNotes = user.VerificationNotes,
             Hours = user.Hours,
             ProfilePictureUrl = user.ProfilePictureUrl,
             CreatedAt = user.CreatedAt.ToString("o"),
+            DocumentUrl = user.DocumentUrl,
             Latitude = user.Latitude,
             Longitude = user.Longitude,
             ContactPerson = user.ContactPerson,
@@ -275,24 +280,37 @@ public class AuthController : ControllerBase
 
         try
         {
-            var existingTokensWithSameToken = await _context.FCMTokens
-                .Where(t => t.Token == request.FcmToken).ToListAsync();
-            if (existingTokensWithSameToken.Any())
-                _context.FCMTokens.RemoveRange(existingTokensWithSameToken);
+            // A token identifies a device install, so the same token arriving for a different
+            // user means the device changed hands — drop the old owner's claim on it. The
+            // user's *other* tokens are their other devices and must survive, otherwise
+            // signing in on a phone silently stops notifications on their tablet.
+            var claimedElsewhere = await _context.FCMTokens
+                .Where(t => t.Token == request.FcmToken && t.OrganizationId != userGuid)
+                .ToListAsync();
+            if (claimedElsewhere.Any())
+                _context.FCMTokens.RemoveRange(claimedElsewhere);
 
-            var oldTokensForThisUser = await _context.FCMTokens
-                .Where(t => t.OrganizationId == userGuid && t.Token != request.FcmToken).ToListAsync();
-            if (oldTokensForThisUser.Any())
-                _context.FCMTokens.RemoveRange(oldTokensForThisUser);
+            var existing = await _context.FCMTokens
+                .FirstOrDefaultAsync(t => t.Token == request.FcmToken && t.OrganizationId == userGuid);
 
-            _context.FCMTokens.Add(new FCMToken
+            if (existing != null)
             {
-                Id = Guid.NewGuid(),
-                OrganizationId = userGuid,
-                Token = request.FcmToken,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
+                // Refreshing UpdatedAt is what keeps an active device out of the stale-token
+                // sweep in NotificationJobs.PruneStaleFcmTokens.
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.FCMTokens.Add(new FCMToken
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizationId = userGuid,
+                    Token = request.FcmToken,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "FCM token registered successfully" });
@@ -302,4 +320,5 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Failed to register FCM token", error = ex.Message });
         }
     }
+
 }

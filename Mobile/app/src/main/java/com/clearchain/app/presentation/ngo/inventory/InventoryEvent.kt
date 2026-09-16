@@ -50,11 +50,6 @@ sealed class InventoryEvent {
     data class ManualExpiryDateChanged(val date: String) : InventoryEvent()
     object SubmitManualAdd : InventoryEvent()
 
-    // Beneficiary count
-    data class ShowBeneficiaryDialog(val itemId: String) : InventoryEvent()
-    object DismissBeneficiaryDialog : InventoryEvent()
-    data class BeneficiaryCountChanged(val count: String) : InventoryEvent()
-    object ConfirmDistribute : InventoryEvent()
 
     object ExportCsv : InventoryEvent()
 }

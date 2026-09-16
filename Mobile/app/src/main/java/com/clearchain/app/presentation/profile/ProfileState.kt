@@ -8,6 +8,8 @@ data class ProfileState(
     val user: Organization? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val averageRating: Double = 0.0,
+    val reviewCount: Int = 0,
 
     // ── Stats ──────────────────────────────────────────────────────────────
     val stats: OrgStats? = null,
@@ -24,6 +26,7 @@ data class ProfileState(
     // ── Edit mode ──────────────────────────────────────────────────────────
     val isEditing: Boolean = false,
     val editName: String = "",
+    val editEmail: String = "",
     val editPhone: String = "",
     val editAddress: String = "",
     val editLocation: String = "",
@@ -39,9 +42,14 @@ data class ProfileState(
 
     // ── Edit validation errors ─────────────────────────────────────────────
     val editNameError: String? = null,
+    val editEmailError: String? = null,
     val editPhoneError: String? = null,
     val editAddressError: String? = null,
     val editLocationError: String? = null,
+    val editStateError: String? = null,
+    val editZipCodeError: String? = null,
+    val editOpenTimeError: String? = null,
+    val editCloseTimeError: String? = null,
     val editContactPersonError: String? = null,
 
     val isSavingProfile: Boolean = false,

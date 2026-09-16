@@ -12,6 +12,7 @@ data class AdminStats(
     val totalListings: Int,
     val activeListings: Int,
     val reservedListings: Int,
+    val expiredListings: Int,
 
     // Pickup request stats
     val totalPickupRequests: Int,

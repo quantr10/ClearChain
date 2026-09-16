@@ -39,6 +39,19 @@ private val LightColorScheme = lightColorScheme(
     onErrorContainer      = LightOnErrorContainer,
     outline               = Gray300,
     outlineVariant        = Gray200,
+    // Surface containers must be declared explicitly - the M3 baseline defaults are
+    // purple-tinted (surfaceContainerLow = #F7F2FA), which is what a raw `Card` picks up.
+    surfaceContainerLowest  = Color.White,
+    surfaceContainerLow     = Color.White,
+    surfaceContainer        = Gray50,
+    surfaceContainerHigh    = Gray100,
+    surfaceContainerHighest = Gray200,
+    surfaceBright           = Color.White,
+    surfaceDim              = Gray200,
+    surfaceTint             = LightPrimary,
+    inverseSurface          = Gray900,
+    inverseOnSurface        = Gray50,
+    scrim                   = Color.Black,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -65,6 +78,17 @@ private val DarkColorScheme = darkColorScheme(
     onErrorContainer      = DarkOnErrorContainer,
     outline               = Color(0xFF475569),
     outlineVariant        = Color(0xFF334155),
+    surfaceContainerLowest  = Color(0xFF0B1220),
+    surfaceContainerLow     = Color(0xFF18212F),
+    surfaceContainer        = DarkSurface,
+    surfaceContainerHigh    = Color(0xFF263244),
+    surfaceContainerHighest = DarkSurfaceVariant,
+    surfaceBright           = Color(0xFF394456),
+    surfaceDim              = DarkBackground,
+    surfaceTint             = DarkPrimary,
+    inverseSurface          = Color(0xFFF1F5F9),
+    inverseOnSurface        = Color(0xFF1E293B),
+    scrim                   = Color.Black,
 )
 
 @Composable

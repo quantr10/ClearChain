@@ -3,7 +3,8 @@ package com.clearchain.app.di
 import android.content.Context
 import androidx.room.Room
 import com.clearchain.app.data.local.database.ClearChainDatabase
-import com.clearchain.app.util.NetworkUtils
+import com.clearchain.app.data.local.database.MIGRATION_7_8
+import com.clearchain.app.data.local.database.MIGRATION_8_9
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,8 @@ object AppModule {
             ClearChainDatabase::class.java,
             ClearChainDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+            .fallbackToDestructiveMigration()  // last resort for versions without an explicit path
             .build()
     }
 
@@ -58,12 +60,4 @@ object AppModule {
     fun provideSettingsStore(
         @ApplicationContext context: Context
     ) = com.clearchain.app.data.local.SettingsStore(context)
-
-    @Provides
-    @Singleton
-    fun provideNetworkUtils(
-        @ApplicationContext context: Context
-    ): NetworkUtils {
-        return NetworkUtils(context)
-    }
 }

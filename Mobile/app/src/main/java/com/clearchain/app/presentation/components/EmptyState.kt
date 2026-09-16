@@ -11,14 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.clearchain.app.R
 
 @Composable
 fun EmptyState(
@@ -101,30 +97,4 @@ fun EmptyState(
             }
         }
     }
-}
-
-@Composable
-fun NoSearchResultsState(query: String, modifier: Modifier = Modifier) {
-    EmptyState(
-        icon = Icons.Default.SearchOff,
-        title = stringResource(R.string.empty_no_results_query, query),
-        subtitle = stringResource(R.string.empty_try_filters),
-        modifier = modifier
-    )
-}
-
-@Composable
-fun ErrorState(
-    message: String,
-    onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
-) {
-    EmptyState(
-        icon = Icons.Default.CloudOff,
-        title = stringResource(R.string.error_something_went_wrong),
-        subtitle = message,
-        actionLabel = if (onRetry != null) stringResource(R.string.action_try_again) else null,
-        onAction = onRetry,
-        modifier = modifier
-    )
 }

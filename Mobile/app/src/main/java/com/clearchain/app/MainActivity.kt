@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,18 +20,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.rememberNavController
+import com.clearchain.app.data.local.SessionManager
+import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.presentation.components.ReconnectingBanner
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.navigation.BottomNavBar
 import com.clearchain.app.presentation.navigation.NavGraph
+import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.ClearChainTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var sessionManager: SessionManager
+
+    @Inject
+    lateinit var signalRService: SignalRService
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -68,11 +82,36 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    
+                    val context = LocalContext.current
+
                     var showBottomBar by remember { mutableStateOf(false) }
                     var userType by remember { mutableStateOf<OrganizationType?>(null) }
-                    
+
+                    // TokenAuthenticator fires this when a token refresh itself fails (refresh
+                    // token expired/revoked too) — it has no UI access of its own from a
+                    // background OkHttp thread, so it just signals here and this bounces the
+                    // user back to Login instead of leaving them stuck on a dead session.
+                    LaunchedEffect(Unit) {
+                        sessionManager.sessionExpired.collect {
+                            showBottomBar = false
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.msg_session_expired),
+                                Toast.LENGTH_LONG
+                            ).show()
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    }
+
+                    // Real-time now backs most screens, so a dropped connection has to be
+                    // visible — otherwise stale numbers look like current ones. The
+                    // snackbarHost slot puts it above the nav bar with insets already handled.
+                    val connectionState by signalRService.connectionState.collectAsState()
+
                     Scaffold(
+                        snackbarHost = { ReconnectingBanner(connectionState) },
                         bottomBar = {
                             if (showBottomBar && userType != null) {
                                 BottomNavBar(
@@ -89,7 +128,11 @@ class MainActivity : ComponentActivity() {
                                 .consumeWindowInsets(paddingValues),
                             onShowBottomBar = { show, type ->
                                 showBottomBar = show
-                                userType = type
+                                // Profile sub-screens share the current user's nav bar.
+                                // Keep the last resolved type when a sub-screen has no type of its own.
+                                if (type != null || !show) {
+                                    userType = type
+                                }
                             }
                         )
                     }
@@ -103,6 +146,16 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleNotificationIntent(intent)
+
+        // A verification decision can flip which screen the current session should be on
+        // (e.g. an org sitting on PendingReview/Settings gets approved). The running
+        // NavGraph won't re-run its Splash gate on its own, so force a clean restart —
+        // recreate() re-enters onCreate and NavGraph starts at Splash again, which re-checks
+        // /auth/me and routes correctly.
+        val notificationType = intent.getStringExtra("type")
+        if (notificationType == "verification_approved" || notificationType == "verification_rejected") {
+            recreate()
+        }
     }
 
     // ✅ Handle notification deep link

@@ -1,7 +1,6 @@
 package com.clearchain.app.data.remote.api
 
 import com.clearchain.app.data.remote.dto.NotificationListResponse
-import com.clearchain.app.data.remote.dto.UnreadCountResponse
 import retrofit2.http.*
 
 interface NotificationApi {
@@ -13,15 +12,13 @@ interface NotificationApi {
         @Query("unreadOnly") unreadOnly: Boolean = false
     ): NotificationListResponse
 
-    @GET("notifications/unread-count")
-    suspend fun getUnreadCount(): UnreadCountResponse
-
     @PUT("notifications/{id}/read")
     suspend fun markAsRead(@Path("id") id: String): Any
 
     @PUT("notifications/read-all")
     suspend fun markAllAsRead(): Any
 
-    @DELETE("notifications/{id}")
-    suspend fun deleteNotification(@Path("id") id: String): Any
+    /** Clears the whole inbox server-side — one call rather than a delete per row. */
+    @DELETE("notifications")
+    suspend fun deleteAllNotifications(): Any
 }

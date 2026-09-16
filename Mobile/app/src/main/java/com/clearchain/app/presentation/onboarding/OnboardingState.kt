@@ -26,12 +26,17 @@ data class OnboardingState(
     val pickupInstructions: String = "",
     val addressError: String? = null,
     val cityError: String? = null,
+    val stateError: String? = null,
+    val zipCodeError: String? = null,
+    val openTimeError: String? = null,
+    val closeTimeError: String? = null,
 
-    // Document upload (verification)
+    // Document upload (verification) — required, at least one document
     val verificationDocumentUri: Uri? = null,
     val verificationDocumentName: String? = null,
     val isUploadingDocument: Boolean = false,
     val documentUploadError: String? = null,
+    val uploadedDocumentUrl: String? = null,
 
     // General
     val isSaving: Boolean = false,
@@ -46,6 +51,10 @@ data class OnboardingState(
     val canContinueStep2: Boolean
         get() = address.isNotBlank() &&
             city.isNotBlank() &&
+            state.isNotBlank() &&
+            zipCode.isNotBlank() &&
             openTime.isNotBlank() &&
-            closeTime.isNotBlank()
+            closeTime.isNotBlank() &&
+            uploadedDocumentUrl != null &&
+            !isUploadingDocument
 }

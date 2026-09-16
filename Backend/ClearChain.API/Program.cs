@@ -212,9 +212,35 @@ RecurringJob.AddOrUpdate<NotificationJobs>(
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 RecurringJob.AddOrUpdate<NotificationJobs>(
+    "expire-stale-pickup-requests",
+    job => job.ExpireStalePickupRequests(),
+    "20 0 * * *",  // 00:20 UTC — after the listing sweeps, so released stock lands on fresh rows
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+// ── Housekeeping — separate window from the notification jobs ──────────────
+RecurringJob.AddOrUpdate<NotificationJobs>(
     "cleanup-refresh-tokens",
     job => job.CleanupExpiredRefreshTokens(),
-    "0 1 * * *",   // 01:00 UTC — separate window from notification jobs
+    "0 1 * * *",   // 01:00 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "cleanup-old-notifications",
+    job => job.CleanupOldNotifications(),
+    "10 1 * * *",  // 01:10 UTC
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "prune-stale-fcm-tokens",
+    job => job.PruneStaleFcmTokens(),
+    "20 1 * * 0",  // Sundays 01:20 UTC — slow-moving data, no need for a daily pass
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+// ── Admin dashboard keep-alive ─────────────────────────────────────────────
+RecurringJob.AddOrUpdate<NotificationJobs>(
+    "broadcast-platform-stats",
+    job => job.BroadcastPlatformStats(),
+    "0 * * * *",   // hourly
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 app.UseCors("ClearChainPolicy");
@@ -230,6 +256,7 @@ app.MapHub<PickupRequestHub>("/hubs/pickuprequests");
 app.MapHub<ListingHub>("/hubs/listings");
 app.MapHub<InventoryHub>("/hubs/inventory");
 app.MapHub<AdminHub>("/hubs/admin");
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapGet("/", () => new
 {
@@ -248,7 +275,8 @@ app.MapGet("/api/health/signalr", () => new
         new { name = "PickupRequestHub", endpoint = "/hubs/pickuprequests" },
         new { name = "ListingHub", endpoint = "/hubs/listings" },
         new { name = "InventoryHub", endpoint = "/hubs/inventory" },
-        new { name = "AdminHub", endpoint = "/hubs/admin" }
+        new { name = "AdminHub", endpoint = "/hubs/admin" },
+        new { name = "NotificationHub", endpoint = "/hubs/notifications" }
     },
     authentication = "JWT Bearer Token (via query string or header)",
     timestamp = DateTime.UtcNow
@@ -259,10 +287,15 @@ app.MapGet("/api/health/jobs", () => new
     status = "active",
     jobs = new[]
     {
-        new { name = "check-expiring-listings", schedule = "Daily 2:00 AM UTC", description = "Notify groceries about listings expiring tomorrow" },
-        new { name = "check-expired-listings", schedule = "Daily 2:00 AM UTC", description = "Mark expired listings and notify" },
-        new { name = "check-expiring-inventory", schedule = "Daily 2:00 AM UTC", description = "Notify NGOs about inventory expiring in 2 days" },
-        new { name = "check-expired-inventory", schedule = "Daily 2:00 AM UTC", description = "Mark expired inventory and notify" }
+        new { name = "check-expiring-listings",       schedule = "Daily 00:00 UTC",  description = "Warn groceries about listings expiring tomorrow" },
+        new { name = "check-expired-listings",        schedule = "Daily 00:05 UTC",  description = "Mark listings expired, broadcast and notify" },
+        new { name = "check-expiring-inventory",      schedule = "Daily 00:10 UTC",  description = "Warn NGOs about inventory expiring in 2 days" },
+        new { name = "check-expired-inventory",       schedule = "Daily 00:15 UTC",  description = "Mark inventory expired, broadcast and notify" },
+        new { name = "expire-stale-pickup-requests",  schedule = "Daily 00:20 UTC",  description = "Cancel pending requests past their pickup date and release the reserved stock" },
+        new { name = "cleanup-refresh-tokens",        schedule = "Daily 01:00 UTC",  description = "Delete revoked/expired refresh tokens older than 30 days" },
+        new { name = "cleanup-old-notifications",     schedule = "Daily 01:10 UTC",  description = "Sweep read notifications after 30 days, everything after 90" },
+        new { name = "prune-stale-fcm-tokens",        schedule = "Sundays 01:20 UTC", description = "Drop device tokens not re-registered in 60 days" },
+        new { name = "broadcast-platform-stats",      schedule = "Hourly",            description = "Push fresh platform stats to the admin dashboard" }
     },
     dashboard = "/hangfire",
     timestamp = DateTime.UtcNow

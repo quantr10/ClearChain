@@ -63,19 +63,3 @@ fun ClearChainSurfaceCard(
         content = content
     )
 }
-
-@Composable
-fun ClearChainOutlinedCard(
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    ClearChainCard(
-        modifier = modifier,
-        onClick = onClick,
-        containerColor = MaterialTheme.colorScheme.surface,
-        elevation = 0.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        content = content
-    )
-}

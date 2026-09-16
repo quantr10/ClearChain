@@ -6,8 +6,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
@@ -48,6 +47,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import androidx.core.content.FileProvider
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -76,6 +76,8 @@ import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.clearchain.app.data.remote.signalr.SignalRService
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -126,7 +128,8 @@ class RequestDetailViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val confirmPickupUseCase: ConfirmPickupUseCase,
     private val reviewApi: ReviewApi,
-    private val organizationApi: OrganizationApi
+    private val organizationApi: OrganizationApi,
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RequestDetailState())
@@ -139,6 +142,9 @@ class RequestDetailViewModel @Inject constructor(
     // even if loadMyReview is called multiple times (e.g. after submitReview).
     private var autoSheetShownFor: String? = null
 
+    /** Room this screen joined, so it can be left when the screen goes away. */
+    private var joinedRequestId: String? = null
+
     init {
         viewModelScope.launch {
             getCurrentUserUseCase().first()?.let { user ->
@@ -147,7 +153,57 @@ class RequestDetailViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        joinedRequestId?.let { requestId ->
+            CoroutineScope(Dispatchers.IO).launch {
+                signalRService.leavePickupRequestRoom(requestId)
+            }
+        }
+    }
+
+    /**
+     * Keeps this screen in step with the other party. Both sides of a pickup are usually looking
+     * at this screen at the same time — the grocery marking it ready while the NGO waits — so a
+     * status change has to land here without a manual refresh.
+     */
+    private fun observeSignalR(requestId: String) {
+        if (joinedRequestId == requestId) return
+
+        // The server broadcasts detail updates to `pickup_{id}`, a group with no members until
+        // a client joins it. Nothing joined it before, so those broadcasts went nowhere.
+        viewModelScope.launch { signalRService.joinPickupRequestRoom(requestId) }
+        joinedRequestId = requestId
+
+        viewModelScope.launch {
+            signalRService.pickupRequestUpdated.collect { data ->
+                if (data.id == requestId) refreshRequest(requestId)
+            }
+        }
+        viewModelScope.launch {
+            signalRService.pickupRequestStatusChanged.collect { notification ->
+                if (notification.request.id == requestId) refreshRequest(requestId)
+            }
+        }
+        viewModelScope.launch {
+            signalRService.pickupRequestCancelled.collect { data ->
+                if (data.id == requestId) refreshRequest(requestId)
+            }
+        }
+    }
+
+    /** Reloads quietly — no spinner, since the screen already has content on it. */
+    private fun refreshRequest(requestId: String) {
+        viewModelScope.launch {
+            runCatching { pickupRequestApi.getPickupRequestById(requestId) }
+                .onSuccess { response ->
+                    _state.update { it.copy(request = response.data.toDomain()) }
+                }
+        }
+    }
+
     fun loadRequest(requestId: String) {
+        observeSignalR(requestId)
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
@@ -319,13 +375,6 @@ class RequestDetailViewModel @Inject constructor(
 
     fun showRejectDialog()    = _state.update { it.copy(showRejectDialog = true) }
     fun dismissRejectDialog() = _state.update { it.copy(showRejectDialog = false) }
-    fun dismissActionError()  = _state.update { it.copy(actionError = null) }
-
-    fun toggleChecklistItem(index: Int) = _state.update {
-        val updated = it.checkedItems.toMutableSet()
-        if (index in updated) updated.remove(index) else updated.add(index)
-        it.copy(checkedItems = updated)
-    }
 
     fun loadMessages(requestId: String) {
         viewModelScope.launch {
@@ -400,29 +449,8 @@ fun RequestDetailScreen(
         req.status != PickupRequestStatus.CANCELLED &&
         req.status != PickupRequestStatus.REJECTED
 
-    var showChecklistSheet   by remember { mutableStateOf(false) }
-    var showPhotoSourceDialog by remember { mutableStateOf(false) }
-    var pendingPickupPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var showPhotoPreview     by remember { mutableStateOf(false) }
-    var cameraPhotoUri       by remember { mutableStateOf<Uri?>(null) }
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            pendingPickupPhotoUri = uri
-            showPhotoPreview = true
-        }
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && cameraPhotoUri != null) {
-            pendingPickupPhotoUri = cameraPhotoUri
-            showPhotoPreview = true
-        }
-    }
+    var showChecklistSheet by remember { mutableStateOf(false) }
+    var showPhotoPicker    by remember { mutableStateOf(false) }
 
     LaunchedEffect(requestId) { viewModel.loadRequest(requestId) }
     LaunchedEffect(Unit) {
@@ -466,79 +494,49 @@ fun RequestDetailScreen(
     if (showChecklistSheet) {
         PickupChecklistSheet(
             onDismiss = { showChecklistSheet = false },
-            onNext    = { showChecklistSheet = false; showPhotoSourceDialog = true }
+            onNext    = { showChecklistSheet = false; showPhotoPicker = true }
         )
     }
 
-    // Step 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Camera or Gallery choice
-    if (showPhotoSourceDialog) {
-        PhotoSourceDialog(
-            onDismiss = { showPhotoSourceDialog = false },
-            onCamera  = {
-                showPhotoSourceDialog = false
-                val file = File(context.cacheDir, "pickup_${System.currentTimeMillis()}.jpg")
-                val uri  = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                cameraPhotoUri = uri
-                cameraLauncher.launch(uri)
+    // Steps 2 and 3 - photo source picker + preview
+    if (showPhotoPicker) {
+        PhotoPickerDialog(
+            onPhotoSelected = { uri ->
+                viewModel.confirmPickup(requestId, uri)
+                showPhotoPicker = false
             },
-            onGallery = {
-                showPhotoSourceDialog = false
-                galleryLauncher.launch(
-                    androidx.activity.result.PickVisualMediaRequest(
-                        ActivityResultContracts.PickVisualMedia.ImageOnly
-                    )
-                )
-            }
-        )
-    }
-
-    // Step 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Preview before upload
-    if (showPhotoPreview && pendingPickupPhotoUri != null) {
-        PhotoPreviewDialog(
-            uri       = pendingPickupPhotoUri!!,
-            isLoading = state.isActionLoading,
-            onDismiss = { showPhotoPreview = false; pendingPickupPhotoUri = null },
-            onConfirm = {
-                viewModel.confirmPickup(requestId, pendingPickupPhotoUri!!)
-                showPhotoPreview = false
-                pendingPickupPhotoUri = null
-            }
+            onDismiss = { showPhotoPicker = false },
+            title = stringResource(R.string.label_add_photo_proof),
+            message = stringResource(R.string.msg_choose_photo_source),
+            previewMessage = stringResource(R.string.msg_submit_photo_proof)
         )
     }
 
     // Reject dialog
     if (state.showRejectDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissRejectDialog() },
-            title   = { Text(stringResource(R.string.label_reject_request)) },
-            text    = { Text(stringResource(R.string.msg_reject_request_notice)) },
-            confirmButton = {
-                ClearChainButton(
-                    text = stringResource(R.string.reject),
-                    onClick = { viewModel.reject(requestId) },
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError,
-                    fillMaxWidth = false
-                )
-            },
-            dismissButton = {
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { viewModel.dismissRejectDialog() }
-                )
-            }
+        ConfirmDialog(
+            onDismiss = { viewModel.dismissRejectDialog() },
+            onConfirm = { viewModel.reject(requestId) },
+            icon = Icons.Default.Cancel,
+            title = stringResource(R.string.label_reject_request),
+            message = stringResource(R.string.msg_reject_request_notice),
+            confirmLabel = stringResource(R.string.reject),
+            dismissLabel = stringResource(R.string.cancel),
+            isDestructive = true
         )
     }
 
     // Chat bottom sheet
     if (showChatSheet) {
         ModalBottomSheet(onDismissRequest = { showChatSheet = false }) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     stringResource(R.string.label_messages_section),
                     style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier   = Modifier.padding(bottom = 12.dp)
+                    fontWeight = FontWeight.SemiBold
                 )
                 ChatSection(
                     messages       = state.messages,
@@ -556,7 +554,7 @@ fun RequestDetailScreen(
     Scaffold(
         floatingActionButton = {
             if (isChatVisible) {
-                FloatingActionButton(
+                SmallFloatingActionButton(
                     onClick            = { showChatSheet = true; viewModel.loadMessages(requestId) },
                     containerColor     = MaterialTheme.colorScheme.primary,
                     contentColor       = MaterialTheme.colorScheme.onPrimary
@@ -568,7 +566,13 @@ fun RequestDetailScreen(
         snackbarHost   = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ScreenTitleRow(
+                title = stringResource(R.string.title_request_details),
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 state.error != null -> EmptyState(
@@ -598,6 +602,7 @@ fun RequestDetailScreen(
                     onShowRatingSheet         = { viewModel.openRatingSheet() },
                     groceryProfile            = state.groceryProfile
                 )
+            }
             }
         }
     }
@@ -660,7 +665,6 @@ private fun RequestDetailContent(
         req.pickupTime
     )
 
-
     val handlingParts = buildList {
         if (req.requiresRefrigeration) add(stringResource(R.string.note_needs_refrigeration))
         if (req.isFragile)             add(stringResource(R.string.note_fragile_items))
@@ -672,29 +676,29 @@ private fun RequestDetailContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(ScreenPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Avatar + party name card (with action buttons top-right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+        //ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Avatar + party name card (with action buttons top-right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         val showReceiptBtn = isMyRequest && req.status == PickupRequestStatus.COMPLETED
         val partyName = if (isGrocery) req.ngoName else req.groceryName
         val partyType = if (isGrocery) stringResource(R.string.label_ngo_party)
                         else stringResource(R.string.label_grocery_party)
         val partyId   = if (isGrocery) req.ngoId else req.groceryId
+        val partyAvatar = if (isGrocery) req.ngoProfilePictureUrl
+                          else req.groceryProfilePictureUrl
 
         Card(
-            modifier  = Modifier.fillMaxWidth(),
+            modifier  = Modifier.fillMaxWidth().height(148.dp),
             colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(
-                modifier            = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp).padding(bottom = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            Box(
+                modifier = Modifier.fillMaxSize().padding(12.dp)
             ) {
                 if (showReceiptBtn || showDisputeButton) {
                     Row(
-                        modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier              = Modifier.align(Alignment.TopEnd),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
                         if (showReceiptBtn) {
@@ -714,23 +718,38 @@ private fun RequestDetailContent(
                         }
                     }
                 }
-                Surface(
-                    onClick  = { onNavigateToPublicProfile(partyId) },
-                    modifier = Modifier.size(64.dp),
-                    shape    = CircleShape,
-                    color    = MaterialTheme.colorScheme.primaryContainer
+                Column(
+                    modifier            = Modifier.align(Alignment.BottomCenter),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            partyName.take(1).uppercase(),
-                            style      = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color      = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    Surface(
+                        onClick  = { onNavigateToPublicProfile(partyId) },
+                        modifier = Modifier.size(64.dp),
+                        shape    = CircleShape,
+                        color    = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        if (!partyAvatar.isNullOrBlank()) {
+                            AsyncImage(
+                                model              = partyAvatar,
+                                contentDescription = partyName,
+                                modifier           = Modifier.fillMaxSize(),
+                                contentScale       = ContentScale.Crop
+                            )
+                        } else {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    partyName.take(1).uppercase(),
+                                    style      = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
                     }
+                    Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(partyType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(partyType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -996,8 +1015,6 @@ private fun RequestDetailContent(
                 ZoomablePhoto(url = req.proofPhotoUrl)
             }
         }
-
-        Spacer(Modifier.height(80.dp))
     }
 }
 
@@ -1079,7 +1096,7 @@ private fun RequestedItemRow(
             )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = item.listingTitle,
@@ -1092,7 +1109,7 @@ private fun RequestedItemRow(
                 expiryText?.let {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             Icons.Default.CalendarToday,
@@ -1116,7 +1133,7 @@ private fun RequestedItemRow(
             ) {
                 Text(
                     text = quantityText,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -1127,16 +1144,6 @@ private fun RequestedItemRow(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
     }
-}
-
-@Composable
-private fun CompactSectionLabel(text: String) {
-    Text(
-        text       = text,
-        style      = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Bold,
-        color      = MaterialTheme.colorScheme.onSurface
-    )
 }
 
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Compact detail row ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
@@ -1161,28 +1168,6 @@ private fun CompactDetailRow(
     }
 }
 
-// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Request info row (icon + colored text, no label) ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
-@Composable
-private fun RequestInfoRow(
-    icon:      androidx.compose.ui.graphics.vector.ImageVector,
-    text:      String,
-    textColor: Color,
-    bold:      Boolean = true
-) {
-    Row(
-        verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
-        Text(
-            text       = text,
-            style      = MaterialTheme.typography.labelSmall,
-            color      = textColor,
-            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
-        )
-    }
-}
-
 // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Zoomable proof photo ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
 @Composable
 private fun ZoomablePhoto(url: String) {
@@ -1194,29 +1179,28 @@ private fun ZoomablePhoto(url: String) {
     }
     LaunchedEffect(scale) { if (scale <= 1f) offset = Offset.Zero }
 
-    Card(
-        shape    = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().height(220.dp)
+    // Clipped Box, not a Card: the only caller puts this inside a SectionCard, so a
+    // Card here would be a second elevated surface inside that one.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .transformable(transformState)
     ) {
-        Box(
-            modifier = Modifier
+        AsyncImage(
+            model              = url,
+            contentDescription = stringResource(R.string.cd_proof_of_pickup),
+            modifier           = Modifier
                 .fillMaxSize()
-                .transformable(transformState)
-        ) {
-            AsyncImage(
-                model              = url,
-                contentDescription = stringResource(R.string.cd_proof_of_pickup),
-                modifier           = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX       = scale,
-                        scaleY       = scale,
-                        translationX = offset.x,
-                        translationY = offset.y
-                    ),
-                contentScale = ContentScale.Crop
-            )
-        }
+                .graphicsLayer(
+                    scaleX       = scale,
+                    scaleY       = scale,
+                    translationX = offset.x,
+                    translationY = offset.y
+                ),
+            contentScale = ContentScale.Crop
+        )
     }
 }
 
@@ -1278,17 +1262,16 @@ private fun LifecycleTimeline(request: PickupRequest) {
     }
 
     Card(
-        shape  = RoundedCornerShape(12.dp),
         colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier            = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Status sentence block
             if (statusTitle != null && statusSub != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         statusTitle,
                         style      = MaterialTheme.typography.titleMedium,
@@ -1315,7 +1298,7 @@ private fun LifecycleTimeline(request: PickupRequest) {
                     val iconBg    = if (isReached) green.copy(alpha = 0.15f) else muted.copy(alpha = 0.15f)
 
                     Surface(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(36.dp),
                         shape    = CircleShape,
                         color    = iconBg
                     ) {
@@ -1539,9 +1522,9 @@ private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Header
             Row(
@@ -1654,9 +1637,9 @@ private fun RatingSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 Modifier.fillMaxWidth(),
@@ -1764,89 +1747,4 @@ private fun RatingSheet(
             }
         }
     }
-}
-
-// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Step 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Camera or Gallery choice ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
-@Composable
-private fun PhotoSourceDialog(
-    onDismiss: () -> Unit,
-    onCamera:  () -> Unit,
-    onGallery: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.label_add_photo_proof)) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    stringResource(R.string.msg_choose_photo_source),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(2.dp))
-                ClearChainButton(
-                    text = stringResource(R.string.action_take_photo_camera),
-                    onClick  = onCamera,
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.PhotoCamera
-                )
-                ClearChainOutlinedButton(
-                    text = stringResource(R.string.action_choose_gallery),
-                    onClick  = onGallery,
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.Photo
-                )
-            }
-        },
-        confirmButton  = {},
-        dismissButton  = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
-        }
-    )
-}
-
-// ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â Step 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Photo preview before upload ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
-@Composable
-private fun PhotoPreviewDialog(
-    uri:       Uri,
-    isLoading: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.label_photo_preview)) },
-        text  = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    stringResource(R.string.msg_submit_photo_proof),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Card(
-                    shape    = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(240.dp)
-                ) {
-                    AsyncImage(
-                        model              = uri,
-                        contentDescription = null,
-                        modifier           = Modifier.fillMaxSize(),
-                        contentScale       = ContentScale.Crop
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.action_confirm_upload),
-                onClick = onConfirm,
-                enabled = !isLoading,
-                loading = isLoading,
-                fillMaxWidth = false
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
-        }
-    )
 }

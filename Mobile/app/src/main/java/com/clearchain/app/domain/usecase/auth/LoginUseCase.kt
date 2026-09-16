@@ -1,24 +1,22 @@
 package com.clearchain.app.domain.usecase.auth
 
 import android.util.Log
-import com.clearchain.app.data.local.database.ClearChainDatabase
-import com.clearchain.app.data.remote.api.AuthApi
-import com.clearchain.app.data.remote.dto.RegisterFCMTokenRequest
+import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
+import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
     private val authRepository: AuthRepository,
-    private val database: ClearChainDatabase,  // ✅ ADD
-    private val authApi: AuthApi  // ✅ ADD
+    private val registerFCMTokenUseCase: RegisterFCMTokenUseCase,
+    private val signalRService: SignalRService
 ) {
     suspend operator fun invoke(
         email: String,
         password: String
     ): Result<Pair<Organization, AuthTokens>> {
-        // Validate inputs
         if (email.isBlank()) {
             return Result.failure(Exception("Email cannot be empty"))
         }
@@ -31,23 +29,20 @@ class LoginUseCase @Inject constructor(
             return Result.failure(Exception("Invalid email format"))
         }
 
-        // Login
         val result = authRepository.login(email.trim(), password)
-        
-        // ✅ ADD: Register FCM token after successful login
+
         if (result.isSuccess) {
-            try {
-                val fcmToken = database.fcmTokenDao().getToken()
-                if (fcmToken != null) {
-                    authApi.registerFCMToken(RegisterFCMTokenRequest(fcmToken))
-                    Log.d("LoginUseCase", "🔔 FCM token registered with backend")
-                } else {
-                    Log.d("LoginUseCase", "⚠️ No FCM token found in database")
-                }
-            } catch (e: Exception) {
-                Log.e("LoginUseCase", "Failed to register FCM token: ${e.message}")
-                // Don't fail login if FCM registration fails
-            }
+            // Ask Firebase for the token rather than reading the local cache. The cache is only
+            // written by FCMService.onNewToken, which does not fire when Firebase hands back a
+            // token it already had — after a reinstall that left Room empty, reading the cache
+            // here found nothing and the device was never registered for push.
+            registerFCMTokenUseCase()
+                .onFailure { Log.w(TAG, "Push registration failed after login: ${it.message}") }
+
+            // The previous session's connection carries the previous account's token, so it has
+            // to be rebuilt before this user can receive anything.
+            runCatching { signalRService.reconnect() }
+                .onFailure { Log.w(TAG, "Real-time reconnect failed after login: ${it.message}") }
         }
 
         return result
@@ -55,5 +50,9 @@ class LoginUseCase @Inject constructor(
 
     private fun isValidEmail(email: String): Boolean {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private companion object {
+        const val TAG = "LoginUseCase"
     }
 }

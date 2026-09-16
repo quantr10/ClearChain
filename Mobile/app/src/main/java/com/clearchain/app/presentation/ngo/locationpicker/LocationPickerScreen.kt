@@ -18,8 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -258,8 +258,6 @@ class LocationPickerViewModel @Inject constructor(
         }
     }
 
-    fun clearSearch() { _state.update { it.copy(searchQuery = "", searchSuggestions = emptyList(), showSuggestions = false) } }
-
     fun saveAndFinish(onDone: () -> Unit) {
         val s = _state.value
         viewModelScope.launch {
@@ -317,18 +315,6 @@ fun LocationPickerScreen(
     }
 
     Scaffold(
-        topBar = {
-            if (showTopBar) {
-                SimpleTopBar(
-                    title   = stringResource(R.string.location_picker_title),
-                    actions = {
-                        onDismiss?.let {
-                            IconButton(onClick = it) { Icon(Icons.Default.Close, stringResource(R.string.dialog_close)) }
-                        }
-                    }
-                )
-            }
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         // Show loading while initializing
@@ -373,6 +359,14 @@ fun LocationPickerScreen(
 
         Column(Modifier.fillMaxSize().padding(padding)) {
 
+            if (showTopBar) {
+                ScreenTitleRow(
+                    title = stringResource(R.string.location_picker_title),
+                    onBack = onDismiss,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+
             // ═══ MAP ═══
             Box(Modifier.fillMaxWidth().weight(0.45f)) {
                 GoogleMap(
@@ -402,7 +396,7 @@ fun LocationPickerScreen(
 
             // ═══ CONTROLS ═══
             Column(
-                Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp),
+                Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Radius
@@ -456,46 +450,41 @@ fun LocationPickerScreen(
                 }
 
                 // Search
-                Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(stringResource(R.string.location_search_title), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        SearchBar(
-                            query = state.searchQuery,
-                            onQueryChange = { viewModel.onSearchQueryChanged(it, geocoder) },
-                            placeholder = stringResource(R.string.location_search_hint),
-                            modifier = Modifier.fillMaxWidth(),
-                            trailingIcon = if (state.isSearching) {
-                                {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                }
-                            } else {
-                                null
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.location_search_title), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    SearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.onSearchQueryChanged(it, geocoder) },
+                        placeholder = stringResource(R.string.location_search_hint),
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = if (state.isSearching) {
+                            {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp
+                                )
                             }
-                        )
+                        } else {
+                            null
+                        }
+                    )
 
-                        if (state.showSuggestions) {
-                            state.searchSuggestions.forEachIndexed { index, suggestion ->
-                                Row(
-                                    Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(24.dp)) {
-                                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
-                                    }
-                                    Column(Modifier.weight(1f)) {
-                                        Text(suggestion.name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(suggestion.fullAddress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    }
-                                    Icon(Icons.Default.NorthEast, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                    if (state.showSuggestions) {
+                        state.searchSuggestions.forEachIndexed { index, suggestion ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(24.dp)) {
+                                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
                                 }
-                                if (index < state.searchSuggestions.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                Column(Modifier.weight(1f)) {
+                                    Text(suggestion.name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(suggestion.fullAddress, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                }
+                                Icon(Icons.Default.NorthEast, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                             }
+                            if (index < state.searchSuggestions.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
                     }
                 }

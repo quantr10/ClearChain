@@ -8,6 +8,8 @@ import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.domain.model.itemTitles
+import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,7 +38,6 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
         viewModelScope.launch {
             signalRService.pickupRequestCreated.collect { request ->
                 loadTransactions()
@@ -54,13 +55,6 @@ class TransactionsViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch {
-            signalRService.disconnect()
-        }
-    }
-
     fun onEvent(event: TransactionsEvent) {
         when (event) {
             TransactionsEvent.LoadTransactions -> loadTransactions()
@@ -73,6 +67,11 @@ class TransactionsViewModel @Inject constructor(
 
             is TransactionsEvent.StatusFilterChanged -> {
                 _state.update { it.copy(selectedStatus = event.status) }
+                applyFilters()
+            }
+
+            is TransactionsEvent.SortOptionChanged -> {
+                _state.update { it.copy(selectedSort = event.option) }
                 applyFilters()
             }
 
@@ -110,13 +109,6 @@ class TransactionsViewModel @Inject constructor(
             TransactionsEvent.ClearError ->
                 _state.update { it.copy(error = null) }
 
-            is TransactionsEvent.ToggleExpanded -> {
-                val current = _state.value.expandedTransactionId
-                _state.update {
-                    it.copy(expandedTransactionId = if (current == event.transactionId) null else event.transactionId)
-                }
-            }
-
             TransactionsEvent.ShowExportDialog ->
                 _state.update { it.copy(showExportDialog = true, exportCsvText = buildCsvExport()) }
 
@@ -132,11 +124,12 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private fun buildCsvExport(): String {
-        val header = "ID,Item,Category,Grocery,NGO,Quantity,Pickup Date,Status,Created At\n"
+        val header = "ID,Item,Items,Category,Grocery,NGO,Quantity,Pickup Date,Status,Created At\n"
         val rows = _state.value.filteredTransactions.joinToString("\n") { t ->
             listOf(
                 t.id.take(8),
                 t.listingTitle.replace(",", ";"),
+                t.itemTitles.joinToString(" | ").replace(",", ";"),
                 t.listingCategory,
                 t.groceryName.replace(",", ";"),
                 t.ngoName.replace(",", ";"),
@@ -241,11 +234,13 @@ class TransactionsViewModel @Inject constructor(
         if (currentState.searchQuery.isNotBlank()) {
             val query = currentState.searchQuery.lowercase()
             filtered = filtered.filter { transaction ->
-                transaction.listingTitle.lowercase().contains(query) ||
-                        transaction.groceryName.lowercase().contains(query) ||
-                        transaction.ngoName.lowercase().contains(query) ||
-                        transaction.listingCategory.lowercase().contains(query)
+                transaction.searchText.contains(query)
             }
+        }
+
+        filtered = when (currentState.selectedSort.value) {
+            "date_asc" -> filtered.sortedBy { it.createdAt }
+            else       -> filtered.sortedByDescending { it.createdAt } // "date_desc" and default
         }
 
         _state.update { it.copy(filteredTransactions = filtered) }

@@ -8,7 +8,6 @@ import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.local.entity.toDomain
 import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.CreatePickupRequestRequest
-import com.clearchain.app.data.remote.dto.UpdatePickupRequestStatusRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.repository.PickupRequestRepository
@@ -18,7 +17,6 @@ import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import java.io.File
 import javax.inject.Inject
 
 class PickupRequestRepositoryImpl @Inject constructor(
@@ -101,23 +99,6 @@ class PickupRequestRepositoryImpl @Inject constructor(
             val cached = pickupRequestDao.getById(id)
             if (cached != null) Result.success(cached.toDomain())
             else Result.failure(e)
-        }
-    }
-
-    override suspend fun updatePickupRequestStatus(
-        id: String,
-        status: String
-    ): Result<PickupRequest> {
-        return try {
-            val response = pickupRequestApi.updatePickupRequestStatus(
-                id,
-                UpdatePickupRequestStatusRequest(status)
-            )
-            val domain = response.data.toDomain()
-            pickupRequestDao.upsert(domain.toEntity())
-            Result.success(domain)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 

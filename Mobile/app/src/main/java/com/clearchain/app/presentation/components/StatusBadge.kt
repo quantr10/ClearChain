@@ -100,19 +100,23 @@ fun InventoryStatusBadge(status: InventoryStatus) {
     StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
 }
 
+// Shared category → color mapping, reused anywhere a FoodCategory needs a swatch
+// (badges, bar charts, legends) so the same category always reads the same color.
+fun FoodCategory.chartColor(): Color = when (this) {
+    FoodCategory.FRUITS     -> CategoryColors.Fruits
+    FoodCategory.VEGETABLES -> CategoryColors.Vegetables
+    FoodCategory.DAIRY      -> CategoryColors.Dairy
+    FoodCategory.BAKERY     -> CategoryColors.Bakery
+    FoodCategory.MEAT       -> CategoryColors.Meat
+    FoodCategory.SEAFOOD    -> CategoryColors.Seafood
+    FoodCategory.PACKAGED   -> CategoryColors.Packaged
+    FoodCategory.BEVERAGES  -> CategoryColors.Beverages
+    FoodCategory.OTHER      -> CategoryColors.Other
+}
+
 @Composable
 fun CategoryBadge(category: FoodCategory) {
-    val color = when (category) {
-        FoodCategory.FRUITS     -> CategoryColors.Fruits
-        FoodCategory.VEGETABLES -> CategoryColors.Vegetables
-        FoodCategory.DAIRY      -> CategoryColors.Dairy
-        FoodCategory.BAKERY     -> CategoryColors.Bakery
-        FoodCategory.MEAT       -> CategoryColors.Meat
-        FoodCategory.SEAFOOD    -> CategoryColors.Seafood
-        FoodCategory.PACKAGED   -> CategoryColors.Packaged
-        FoodCategory.BEVERAGES  -> CategoryColors.Beverages
-        FoodCategory.OTHER      -> CategoryColors.Other
-    }
+    val color = category.chartColor()
     StatusBadge(
         label = stringResource(category.labelResId),
         backgroundColor = color.copy(alpha = 0.12f),

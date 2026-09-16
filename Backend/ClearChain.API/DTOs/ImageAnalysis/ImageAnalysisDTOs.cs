@@ -79,17 +79,6 @@ public class DetectedItem
     public double Confidence { get; set; }
 }
 
-/// <summary>
-/// Response for analysis history
-/// </summary>
-public class AnalysisHistoryResponse
-{
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public int Count { get; set; }
-    public List<FoodAnalysisData> Analyses { get; set; } = new();
-}
-
 public class UploadImageResponse
 {
     public bool Success { get; set; }

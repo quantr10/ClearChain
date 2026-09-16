@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.auth.register
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,8 +77,8 @@ fun RegisterScreen(
                 enter   = fadeIn() + slideInVertically { it / 4 }
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(ScreenPadding),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text       = stringResource(R.string.join_clearchain),
@@ -88,12 +87,6 @@ fun RegisterScreen(
                     )
 
                     // ── Role picker ────────────────────────────────────────
-                    Text(
-                        text  = stringResource(R.string.i_represent_a),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RoleCard(
                             icon     = Icons.Default.Store,

@@ -25,18 +25,6 @@ interface ListingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(listing: ListingEntity)
 
-    @Query("DELETE FROM listings WHERE groceryId = :groceryId")
-    suspend fun deleteByGrocery(groceryId: String)
-
-    @Query("DELETE FROM listings WHERE status = 'available'")
-    suspend fun deleteAllAvailable()
-
     @Query("DELETE FROM listings")
     suspend fun clearAll()
-
-    @Query("SELECT cachedAt FROM listings ORDER BY cachedAt DESC LIMIT 1")
-    suspend fun getLatestCacheTime(): Long?
-
-    @Query("SELECT * FROM listings WHERE expiryDate <= :isoDate AND status = 'available' ORDER BY expiryDate ASC")
-    suspend fun getExpiringSoon(isoDate: String): List<ListingEntity>
 }

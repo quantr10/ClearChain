@@ -1,6 +1,7 @@
 package com.clearchain.app.data.repository
 
 import com.clearchain.app.data.local.dao.AuthTokenDao
+import com.clearchain.app.data.local.dao.NotificationDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.AuthTokenEntity
 import com.clearchain.app.data.local.entity.toEntity  // CANONICAL from UserEntity.kt
@@ -23,7 +24,8 @@ import javax.inject.Inject
 class AuthRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,
     private val authTokenDao: AuthTokenDao,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val notificationDao: NotificationDao
 ) : AuthRepository {
 
     override suspend fun register(
@@ -44,6 +46,7 @@ class AuthRepositoryImpl @Inject constructor(
             val response = authApi.verifyEmail(VerifyEmailRequest(email, code))
             val (organization, tokens) = response.data.toDomain()
 
+            clearPreviousAccountCache()
             userDao.clearUsers()
             authTokenDao.saveTokens(AuthTokenEntity(
                 accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
@@ -71,6 +74,7 @@ class AuthRepositoryImpl @Inject constructor(
             val response = authApi.login(request)
             val (organization, tokens) = response.data.toDomain()
 
+            clearPreviousAccountCache()
             userDao.clearUsers()
             authTokenDao.saveTokens(AuthTokenEntity(
                 accessToken = tokens.accessToken, refreshToken = tokens.refreshToken,
@@ -81,6 +85,26 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * Drops cached rows that belong to whoever was signed in before.
+     *
+     * Called from the two paths that hand this device a session for a *different* account —
+     * login and email verification — and deliberately not from [refreshToken], which renews the
+     * same one.
+     *
+     * The notification cache has no account column: it is one table shared by every account
+     * that has ever signed in here, and sync only upserts, so a row left behind by a previous
+     * account is never removed and shows up in the next user's inbox. Logout already clears it,
+     * but a session that simply expires never reaches logout — it drops the user on the Login
+     * screen instead, which is why the clearing belongs here rather than only there.
+     *
+     * Local only: [NotificationDao.clearAll] is a delete against Room, not the inbox endpoint,
+     * so the previous account's notifications stay untouched on the server.
+     */
+    private suspend fun clearPreviousAccountCache() {
+        notificationDao.clearAll()
     }
 
     override suspend fun logout(): Result<Unit> {
@@ -131,6 +155,16 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): Flow<Organization?> {
         return userDao.getCurrentUserFlow().map { it?.toDomain() }  // uses canonical from UserEntity.kt
+    }
+
+    override suspend fun refreshCurrentUser(): Result<Organization> {
+        return try {
+            val organization = authApi.getCurrentUser().data.user.toDomain()
+            userDao.insertUser(organization.toEntity())  // REPLACE on conflict — keeps same row
+            Result.success(organization)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun isLoggedIn(): Flow<Boolean> {

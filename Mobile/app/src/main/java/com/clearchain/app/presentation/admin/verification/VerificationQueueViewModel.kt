@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
+import com.clearchain.app.data.remote.dto.RejectOrganizationBody
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,18 +36,12 @@ class VerificationQueueViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        viewModelScope.launch { signalRService.connect() }
         viewModelScope.launch {
             signalRService.newOrganizationRegistered.collect { notification ->
                 loadOrganizations()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_registration, notification.type, notification.name)))
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelScope.launch { signalRService.disconnect() }
     }
 
     fun onEvent(event: VerificationQueueEvent) {
@@ -58,6 +54,8 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update { it.copy(searchQuery = event.query) }
             is VerificationQueueEvent.StatusFilterChanged ->
                 _state.update { it.copy(selectedStatus = event.status) }
+            is VerificationQueueEvent.SortOptionChanged ->
+                _state.update { it.copy(selectedSort = event.option) }
 
             // Advanced filter sheet
             VerificationQueueEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
@@ -135,7 +133,7 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isProcessing = true, isBatchMode = false, selectedOrgIds = emptySet()) }
             var successCount = 0
             ids.forEach { orgId ->
-                try { adminApi.unverifyOrganization(orgId); successCount++ } catch (_: Exception) {}
+                try { adminApi.unverifyOrganization(orgId, RejectOrganizationBody()); successCount++ } catch (_: Exception) {}
             }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_rejected_orgs, successCount, ids.size)))
             loadOrganizations()
@@ -160,10 +158,11 @@ class VerificationQueueViewModel @Inject constructor(
 
     private fun rejectOrganization() {
         val orgId = _state.value.showRejectDialogForId ?: return
+        val reason = _state.value.rejectionReason.trim().ifBlank { null }
         viewModelScope.launch {
             _state.update { it.copy(showRejectDialogForId = null, isProcessing = true) }
             try {
-                adminApi.unverifyOrganization(orgId)
+                adminApi.unverifyOrganization(orgId, RejectOrganizationBody(reason))
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_org_rejected)))
                 loadOrganizations()
             } catch (e: Exception) {
@@ -178,7 +177,9 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val response = adminApi.getAllOrganizations()
-                val organizations = response.data.map { dto -> dto.toDomain() }
+                val organizations = response.data
+                    .map { dto -> dto.toDomain() }
+                    .filter { it.type != OrganizationType.ADMIN }
                 _state.update { it.copy(organizations = organizations, isLoading = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: context.getString(R.string.error_load_orgs), isLoading = false) }
@@ -191,7 +192,9 @@ class VerificationQueueViewModel @Inject constructor(
             _state.update { it.copy(isRefreshing = true, error = null) }
             try {
                 val response = adminApi.getAllOrganizations()
-                val organizations = response.data.map { dto -> dto.toDomain() }
+                val organizations = response.data
+                    .map { dto -> dto.toDomain() }
+                    .filter { it.type != OrganizationType.ADMIN }
                 _state.update { it.copy(organizations = organizations, isRefreshing = false) }
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_orgs_refreshed)))
             } catch (e: Exception) {

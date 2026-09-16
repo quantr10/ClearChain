@@ -124,6 +124,7 @@ fun InventoryItemCard(
 
     if (showDistributeDialog) {
         ConfirmDialog(
+            icon = Icons.Default.Redeem,
             title = stringResource(R.string.action_mark_distributed),
             message = stringResource(R.string.mark_distributed_confirm, item.productName),
             confirmLabel = stringResource(R.string.ok),

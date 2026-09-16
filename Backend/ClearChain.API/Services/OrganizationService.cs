@@ -19,11 +19,16 @@ public class OrganizationService : IOrganizationService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrganizationService> _logger;
+    private readonly IPushNotificationService _pushNotificationService;
 
-    public OrganizationService(ApplicationDbContext context, ILogger<OrganizationService> logger)
+    public OrganizationService(
+        ApplicationDbContext context,
+        ILogger<OrganizationService> logger,
+        IPushNotificationService pushNotificationService)
     {
         _context = context;
         _logger = logger;
+        _pushNotificationService = pushNotificationService;
     }
 
     public async Task<List<OrganizationDto>> GetPendingVerificationsAsync(string? type = null)
@@ -107,9 +112,55 @@ public class OrganizationService : IOrganizationService
         if (request.PickupInstructions != null) user.PickupInstructions = request.PickupInstructions;
         if (request.Description != null) user.Description = request.Description;
 
+        var resubmitted = ResubmitIfRejected(user);
+
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
-        return (true, "Profile updated successfully");
+
+        if (resubmitted)
+            await NotifyResubmissionAsync(user);
+
+        return (true, resubmitted ? "Profile updated and resubmitted for review" : "Profile updated successfully");
+    }
+
+    /// <summary>
+    /// A rejected org that edits its own profile or re-uploads a document is treated as
+    /// having addressed the feedback — flip it back to "pending" so it reappears in the
+    /// admin's review queue instead of staying stuck as rejected forever.
+    /// Does not save changes; caller is expected to call SaveChangesAsync.
+    /// </summary>
+    public static bool ResubmitIfRejected(Organization org)
+    {
+        if (org.VerificationStatus != "rejected")
+            return false;
+
+        org.VerificationStatus = "pending";
+        org.VerificationNotes = null;
+        return true;
+    }
+
+    private async Task NotifyResubmissionAsync(Organization org)
+    {
+        try
+        {
+            await _pushNotificationService.SendResubmissionAlertToAdmins(new DTOs.Admin.OrganizationData
+            {
+                Id = org.Id.ToString(),
+                Name = org.Name,
+                Email = org.Email,
+                Type = org.Type,
+                Phone = org.Phone ?? "",
+                Address = org.Address ?? "",
+                Location = org.Location ?? "",
+                Verified = org.Verified,
+                VerificationStatus = org.VerificationStatus,
+                CreatedAt = org.CreatedAt.ToString("o")
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send resubmission alert for {OrgId}", org.Id);
+        }
     }
 
     // ═══ UPDATED: includes new fields (Part 1) ═══
@@ -128,9 +179,11 @@ public class OrganizationService : IOrganizationService
             ZipCode = org.ZipCode ?? "",
             Verified = org.Verified,
             VerificationStatus = org.VerificationStatus,
+            VerificationNotes = org.VerificationNotes,
             Hours = org.Hours,
             ProfilePictureUrl = org.ProfilePictureUrl,
             CreatedAt = org.CreatedAt.ToString("o"),
+            DocumentUrl = org.DocumentUrl,
             // NEW
             Latitude = org.Latitude,
             Longitude = org.Longitude,

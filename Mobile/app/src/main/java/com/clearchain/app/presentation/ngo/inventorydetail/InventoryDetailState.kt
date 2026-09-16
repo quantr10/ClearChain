@@ -13,20 +13,6 @@ data class InventoryDetailState(
     val isLoadingRequest: Boolean = false,
     val error: String? = null,
 
-    // Edit mode
-    val isEditing: Boolean = false,
-    val editProductName: String = "",
-    val editCategory: String = "",
-    val editQuantity: String = "",
-    val editUnit: String = "",
-    val editExpiryDate: String = "",
-    val isSaving: Boolean = false,
-    val saveError: String? = null,
-
     // QR share
-    val showQrSheet: Boolean = false,
-
-    // Photo documentation
-    val isUploadingPhoto: Boolean = false,
-    val photoUploadError: String? = null
+    val showQrSheet: Boolean = false
 )

@@ -1,3 +1,4 @@
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.Notifications;
 using ClearChain.Domain.Entities;
 using ClearChain.Infrastructure.Data;
@@ -32,15 +33,20 @@ public class NotificationsController : ControllerBase
         var clampedPage = Math.Max(1, page);
         var clampedSize = Math.Clamp(pageSize, 1, 50);
 
+        // The nightly sweep is what normally bounds this table, but it can be behind — a
+        // missed run, or a restore from backup. Applying the same cutoff here keeps the
+        // endpoint's window exactly the one it reports, whatever state the rows are in.
+        var cutoff = NotificationRetentionPolicy.Cutoff(DateTime.UtcNow);
+
         var query = _context.Notifications
-            .Where(n => n.RecipientId == userId);
+            .Where(n => n.RecipientId == userId && n.CreatedAt >= cutoff);
 
         if (unreadOnly)
             query = query.Where(n => !n.IsRead);
 
         var total = await query.CountAsync();
         var unreadCount = await _context.Notifications
-            .CountAsync(n => n.RecipientId == userId && !n.IsRead);
+            .CountAsync(n => n.RecipientId == userId && n.CreatedAt >= cutoff && !n.IsRead);
 
         var items = await query
             .OrderByDescending(n => n.CreatedAt)
@@ -56,20 +62,9 @@ public class NotificationsController : ControllerBase
             Total = total,
             Page = clampedPage,
             PageSize = clampedSize,
-            TotalPages = (int)Math.Ceiling((double)total / clampedSize)
+            TotalPages = (int)Math.Ceiling((double)total / clampedSize),
+            RetentionDays = NotificationRetentionPolicy.RetentionDays
         });
-    }
-
-    // GET api/notifications/unread-count
-    [HttpGet("unread-count")]
-    public async Task<IActionResult> GetUnreadCount()
-    {
-        if (!TryGetUserId(out var userId)) return Unauthorized();
-
-        var count = await _context.Notifications
-            .CountAsync(n => n.RecipientId == userId && !n.IsRead);
-
-        return Ok(new UnreadCountResponse { UnreadCount = count });
     }
 
     // PUT api/notifications/{id}/read
@@ -111,47 +106,22 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = $"{unread.Count} notifications marked as read" });
     }
 
-    // DELETE api/notifications/{id}
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteNotification(Guid id)
+    // DELETE api/notifications — clears the caller's whole inbox
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAllNotifications()
     {
         if (!TryGetUserId(out var userId)) return Unauthorized();
 
-        var notification = await _context.Notifications
-            .FirstOrDefaultAsync(n => n.Id == id && n.RecipientId == userId);
+        var deleted = await _context.Notifications
+            .Where(n => n.RecipientId == userId)
+            .ExecuteDeleteAsync();
 
-        if (notification == null) return NotFound(new { message = "Notification not found" });
-
-        _context.Notifications.Remove(notification);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Notification deleted" });
+        return Ok(new { message = $"{deleted} notifications deleted" });
     }
 
-    // Internal helper called by other services to persist a notification
-    public static async Task CreateAsync(
-        ApplicationDbContext context,
-        Guid recipientId,
-        string type,
-        string title,
-        string body,
-        string? relatedId = null,
-        string? relatedType = null)
-    {
-        context.Notifications.Add(new Notification
-        {
-            Id = Guid.NewGuid(),
-            RecipientId = recipientId,
-            Type = type,
-            Title = title,
-            Body = body,
-            RelatedId = relatedId,
-            RelatedType = relatedType,
-            IsRead = false,
-            CreatedAt = DateTime.UtcNow
-        });
-        await context.SaveChangesAsync();
-    }
+    // Notifications are written by IPushNotificationService, never directly. Persisting a row
+    // on its own would produce an inbox entry that was never pushed or broadcast — visible on
+    // next launch, silent at the moment it mattered.
 
     private bool TryGetUserId(out Guid userId)
     {

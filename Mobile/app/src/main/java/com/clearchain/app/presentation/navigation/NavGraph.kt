@@ -19,7 +19,7 @@ import com.clearchain.app.presentation.help.HelpScreen
 import com.clearchain.app.presentation.notifications.NotificationInboxScreen
 import com.clearchain.app.presentation.publicprofile.PublicProfileScreen
 import com.clearchain.app.presentation.settings.SettingsScreen
-import com.clearchain.app.presentation.admin.statistics.StatisticsScreen
+import com.clearchain.app.presentation.admin.analytics.AdminAnalyticsScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
 import com.clearchain.app.presentation.auth.login.LoginScreen
@@ -40,11 +40,30 @@ import com.clearchain.app.presentation.ngo.inventorydetail.InventoryDetailScreen
 import com.clearchain.app.presentation.ngo.myrequests.MyRequestsScreen
 import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
 import com.clearchain.app.presentation.onboarding.OnboardingScreen
+import com.clearchain.app.presentation.pendingreview.PendingReviewScreen
 import com.clearchain.app.presentation.profile.ProfileScreen
 import com.clearchain.app.presentation.profile.AccountDetailScreen
 import com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen
 import com.clearchain.app.presentation.splash.SplashScreen
 import kotlinx.coroutines.flow.first
+
+/**
+ * Defense-in-depth: Splash/Login already keep a pending/rejected org off the dashboard,
+ * but if the cached user is somehow stale (killed mid-transition, etc.) this bounces them
+ * back to PendingReview instead of leaving a gated org on a fully-functional dashboard.
+ */
+@Composable
+private fun VerificationGate(navController: NavHostController) {
+    val getCurrentUserUseCase = hiltViewModel<VerificationGateViewModel>().getCurrentUserUseCase
+    LaunchedEffect(Unit) {
+        val user = getCurrentUserUseCase().first()
+        if (user != null && user.requiresVerificationGate()) {
+            navController.navigate(Screen.PendingReview.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+}
 
 @Composable
 fun NavGraph(
@@ -94,10 +113,25 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.PendingReview.route) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
+            PendingReviewScreen(
+                onNavigateRoute = { route ->
+                    navController.navigate(route) { popUpTo(0) { inclusive = true } }
+                },
+                onEditProfile = { navController.navigate(Screen.Onboarding.route) },
+                onOpenHelp = { navController.navigate(Screen.Help.route) },
+                onLoggedOut = {
+                    navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
+                }
+            )
+        }
+
         // ── Grocery ───────────────────────────────────────
 
         composable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
+            VerificationGate(navController)
             GroceryDashboardScreen(navController = navController)
         }
 
@@ -134,6 +168,7 @@ fun NavGraph(
 
         composable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            VerificationGate(navController)
             NgoDashboardScreen(navController = navController)
         }
 
@@ -156,11 +191,12 @@ fun NavGraph(
             route = Screen.CartPickup.route,
             arguments = listOf(navArgument("groceryId") { type = NavType.StringType })
         ) { backStackEntry ->
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.NGO) }
             val groceryId = backStackEntry.arguments?.getString("groceryId") ?: ""
             CartPickupScreen(
                 groceryId = groceryId,
-                onNavigate = { route -> navController.navigate(route) }
+                onNavigate = { route -> navController.navigate(route) },
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 
@@ -192,7 +228,7 @@ fun NavGraph(
         }
 
         composable(Screen.LocationPicker.route) {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.NGO) }
             LocationPickerScreen(
                 onLocationSelected = {
                     navController.navigate(Screen.BrowseListings.route) {
@@ -203,14 +239,6 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.LocationPickerEdit.route) {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
-            LocationPickerScreen(
-                onLocationSelected = { navController.navigateUp() },
-                onDismiss = { navController.navigateUp() }
-            )
-        }
-
         // ── Detail screens ────────────────────────────────
 
         composable(
@@ -218,6 +246,7 @@ fun NavGraph(
             arguments = listOf(navArgument("listingId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://listing/{listingId}" })
         ) { backStackEntry ->
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             val listingId = backStackEntry.arguments?.getString("listingId") ?: ""
             ListingDetailScreen(
                 listingId = listingId,
@@ -239,6 +268,7 @@ fun NavGraph(
             arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://request/{requestId}" })
         ) { backStackEntry ->
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             val requestId = backStackEntry.arguments?.getString("requestId") ?: ""
             RequestDetailScreen(
                 requestId = requestId,
@@ -253,9 +283,11 @@ fun NavGraph(
             route = Screen.InventoryDetail.route,
             arguments = listOf(navArgument("itemId") { type = NavType.StringType })
         ) { backStackEntry ->
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
             InventoryDetailScreen(
                 itemId = itemId,
+                onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 },
@@ -304,9 +336,18 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.AdminStatistics.route) {
+        composable(
+            route = Screen.AdminStatistics.route,
+            arguments = listOf(
+                navArgument("section") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            StatisticsScreen(onNavigateBack = { navController.navigateUp() })
+            AdminAnalyticsScreen()
         }
 
         // ── Shared ────────────────────────────────────────
@@ -318,7 +359,7 @@ fun NavGraph(
 
         composable(Screen.AccountDetail.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
-            AccountDetailScreen()
+            AccountDetailScreen(onNavigateBack = { navController.navigateUp() })
         }
 
         composable(Screen.Help.route) {
@@ -330,6 +371,7 @@ fun NavGraph(
             route = Screen.PublicProfile.route,
             arguments = listOf(navArgument("orgId") { type = NavType.StringType })
         ) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             PublicProfileScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToListingDetail = { listingId ->
@@ -342,6 +384,7 @@ fun NavGraph(
             route = Screen.Dispute.route,
             arguments = listOf(navArgument("pickupRequestId") { type = NavType.StringType })
         ) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             DisputeScreen(onNavigateBack = { navController.navigateUp() })
         }
 
@@ -386,7 +429,8 @@ fun NavGraph(
                 },
                 onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) },
                 onNavigateToHelp = { navController.navigate(Screen.Help.route) },
-                onNavigateToAccountDetail = { navController.navigate(Screen.AccountDetail.route) }
+                onNavigateToAccountDetail = { navController.navigate(Screen.AccountDetail.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
     }

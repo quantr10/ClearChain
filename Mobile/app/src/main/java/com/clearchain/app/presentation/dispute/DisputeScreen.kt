@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -20,7 +21,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.DisputeApi
 import com.clearchain.app.presentation.components.ClearChainButton
-import com.clearchain.app.presentation.components.DetailTopBar
+import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.util.HapticUtils
 import com.clearchain.app.util.UiEvent
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -121,9 +122,14 @@ fun DisputeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(ScreenPadding),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            ScreenTitleRow(
+                title = stringResource(R.string.open_dispute),
+                onBack = onNavigateBack
+            )
+
             // Info card
             Card(
                 colors = CardDefaults.cardColors(

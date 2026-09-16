@@ -11,6 +11,7 @@ import com.clearchain.app.data.remote.dto.DeleteAccountRequest
 import com.clearchain.app.domain.model.ActivityItem
 import com.clearchain.app.domain.model.OrgStats
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.domain.repository.OrganizationRepository
 import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
@@ -22,9 +23,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,6 +32,7 @@ class ProfileViewModel @Inject constructor(
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val organizationApi: OrganizationApi,
+    private val organizationRepository: OrganizationRepository,
     private val authApi: AuthApi
 ) : AndroidViewModel(application) {
 
@@ -67,6 +66,8 @@ class ProfileViewModel @Inject constructor(
 
             is ProfileEvent.EditNameChanged ->
                 _state.update { it.copy(editName = event.name, editNameError = null) }
+            is ProfileEvent.EditEmailChanged ->
+                _state.update { it.copy(editEmail = event.email, editEmailError = null) }
             is ProfileEvent.EditPhoneChanged ->
                 _state.update { it.copy(editPhone = event.phone, editPhoneError = null) }
             is ProfileEvent.EditAddressChanged ->
@@ -74,13 +75,13 @@ class ProfileViewModel @Inject constructor(
             is ProfileEvent.EditLocationChanged ->
                 _state.update { it.copy(editLocation = event.location, editLocationError = null) }
             is ProfileEvent.EditStateChanged ->
-                _state.update { it.copy(editState = event.state) }
+                _state.update { it.copy(editState = event.state, editStateError = null) }
             is ProfileEvent.EditZipCodeChanged ->
-                _state.update { it.copy(editZipCode = event.zipCode) }
+                _state.update { it.copy(editZipCode = event.zipCode, editZipCodeError = null) }
             is ProfileEvent.EditOpenTimeChanged ->
-                _state.update { it.copy(editOpenTime = event.time) }
+                _state.update { it.copy(editOpenTime = event.time, editOpenTimeError = null) }
             is ProfileEvent.EditCloseTimeChanged ->
-                _state.update { it.copy(editCloseTime = event.time) }
+                _state.update { it.copy(editCloseTime = event.time, editCloseTimeError = null) }
             is ProfileEvent.EditContactPersonChanged ->
                 _state.update { it.copy(editContactPerson = event.contactPerson, editContactPersonError = null) }
             is ProfileEvent.EditPickupInstructionsChanged ->
@@ -119,7 +120,17 @@ class ProfileViewModel @Inject constructor(
     private suspend fun loadProfileSuspend() {
         _state.update { it.copy(isLoading = true, error = null) }
         val user = getCurrentUserUseCase().first()
-        _state.update { it.copy(user = user, isLoading = false) }
+        val publicProfile = user?.let {
+            runCatching { organizationApi.getPublicProfile(it.id).data }.getOrNull()
+        }
+        _state.update {
+            it.copy(
+                user = user,
+                averageRating = publicProfile?.averageRating ?: 0.0,
+                reviewCount = publicProfile?.reviewCount ?: 0,
+                isLoading = false
+            )
+        }
     }
 
     private fun loadStats() {
@@ -178,6 +189,7 @@ class ProfileViewModel @Inject constructor(
             it.copy(
                 isEditing             = true,
                 editName              = user.name,
+                editEmail             = user.email,
                 editPhone             = user.phone,
                 editAddress           = user.address,
                 editLocation          = user.location,
@@ -191,7 +203,14 @@ class ProfileViewModel @Inject constructor(
                 editLat               = user.latitude,
                 editLng               = user.longitude,
                 editNameError         = null,
+                editEmailError        = null,
                 editPhoneError        = null,
+                editAddressError      = null,
+                editLocationError     = null,
+                editStateError        = null,
+                editZipCodeError      = null,
+                editOpenTimeError     = null,
+                editCloseTimeError    = null,
                 editContactPersonError = null,
                 error                 = null
             )
@@ -203,7 +222,14 @@ class ProfileViewModel @Inject constructor(
             it.copy(
                 isEditing              = false,
                 editNameError          = null,
+                editEmailError         = null,
                 editPhoneError         = null,
+                editAddressError       = null,
+                editLocationError      = null,
+                editStateError         = null,
+                editZipCodeError       = null,
+                editOpenTimeError      = null,
+                editCloseTimeError     = null,
                 editContactPersonError = null,
                 error                  = null
             )
@@ -219,6 +245,7 @@ class ProfileViewModel @Inject constructor(
 
             val result = updateProfileUseCase(
                 name                = s.editName,
+                email               = s.editEmail,
                 phone               = s.editPhone,
                 address             = s.editAddress,
                 location            = s.editLocation,
@@ -256,8 +283,33 @@ class ProfileViewModel @Inject constructor(
         } else if (s.editName.length < 3) {
             _state.update { it.copy(editNameError = getApplication<Application>().getString(R.string.error_name_min_chars)) }; valid = false
         }
-        if (s.editPhone.isNotBlank() && !ValidationUtils.isValidPhone(s.editPhone)) {
+        if (s.editEmail.isBlank()) {
+            _state.update { it.copy(editEmailError = getApplication<Application>().getString(R.string.error_email_required)) }; valid = false
+        } else if (!ValidationUtils.isValidEmail(s.editEmail)) {
+            _state.update { it.copy(editEmailError = getApplication<Application>().getString(R.string.error_email_invalid_format)) }; valid = false
+        }
+        if (s.editPhone.isBlank()) {
+            _state.update { it.copy(editPhoneError = getApplication<Application>().getString(R.string.error_phone_required)) }; valid = false
+        } else if (!ValidationUtils.isValidPhone(s.editPhone)) {
             _state.update { it.copy(editPhoneError = getApplication<Application>().getString(R.string.error_phone_invalid)) }; valid = false
+        }
+        if (s.editAddress.isBlank()) {
+            _state.update { it.copy(editAddressError = getApplication<Application>().getString(R.string.error_address_required)) }; valid = false
+        }
+        if (s.editLocation.isBlank()) {
+            _state.update { it.copy(editLocationError = getApplication<Application>().getString(R.string.error_city_required)) }; valid = false
+        }
+        if (s.editState.isBlank()) {
+            _state.update { it.copy(editStateError = getApplication<Application>().getString(R.string.error_state_required)) }; valid = false
+        }
+        if (s.editZipCode.isBlank()) {
+            _state.update { it.copy(editZipCodeError = getApplication<Application>().getString(R.string.error_zip_code_required)) }; valid = false
+        }
+        if (s.editOpenTime.isBlank()) {
+            _state.update { it.copy(editOpenTimeError = getApplication<Application>().getString(R.string.error_opening_time_required)) }; valid = false
+        }
+        if (s.editCloseTime.isBlank()) {
+            _state.update { it.copy(editCloseTimeError = getApplication<Application>().getString(R.string.error_closing_time_required)) }; valid = false
         }
         if ((s.user?.type == OrganizationType.NGO || s.user?.type == OrganizationType.GROCERY)
             && s.editContactPerson.isBlank()) {
@@ -292,14 +344,18 @@ class ProfileViewModel @Inject constructor(
             try {
                 val context = getApplication<Application>()
                 val bytes = ImageUtils.compressToBytes(context, uri)
-                val requestBody = bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
-                val part = MultipartBody.Part.createFormData("avatar", fileName, requestBody)
-                organizationApi.uploadAvatar(part)
+                // The repository writes the new URL into the cached user; going
+                // through the API directly left every screen on the old avatar
+                // until the next login refreshed the cache.
+                organizationRepository.uploadAvatar(bytes, fileName, "image/jpeg").getOrThrow()
                 loadProfile()
                 _uiEvent.send(UiEvent.ShowSnackbar(getApplication<Application>().getString(R.string.snack_avatar_updated)))
             } catch (e: Exception) {
-                _state.update { it.copy(avatarUploadError = e.message ?: "Failed to upload avatar") }
+                val msg = e.message
+                    ?: getApplication<Application>().getString(R.string.error_avatar_upload_failed)
+                _state.update { it.copy(avatarUploadError = msg) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
             } finally {
                 _state.update { it.copy(isUploadingAvatar = false) }
             }

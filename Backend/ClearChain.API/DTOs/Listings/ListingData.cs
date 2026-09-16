@@ -1,10 +1,11 @@
-namespace ClearChain.API.DTOs.Listings;
+﻿namespace ClearChain.API.DTOs.Listings;
 
 public class ListingData
 {
     public string Id { get; set; } = string.Empty;
     public string GroceryId { get; set; } = string.Empty;
     public string GroceryName { get; set; } = string.Empty;
+    public string? GroceryProfilePictureUrl { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;

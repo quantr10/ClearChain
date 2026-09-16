@@ -80,10 +80,10 @@ class LoginViewModel @Inject constructor(
                     )
                     _state.update { it.copy(isLoading = false) }
 
-                    val route = if (!user.isProfileComplete()) {
-                        Screen.Onboarding.route
-                    } else {
-                        when (user.type.name.lowercase()) {
+                    val route = when {
+                        !user.isProfileComplete() -> Screen.Onboarding.route
+                        user.requiresVerificationGate() -> Screen.PendingReview.route
+                        else -> when (user.type.name.lowercase()) {
                             "grocery" -> "grocery_dashboard"
                             "ngo" -> "ngo_dashboard"
                             "admin" -> "admin_dashboard"

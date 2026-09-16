@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
@@ -105,7 +105,10 @@ public class PickupRequestService : IPickupRequestService
 
         var data = MapToData(pickupRequest, reservedListing.Id, ngo.Name, listing.Grocery?.Name ?? "");
 
+        // SignalR reaches the grocery only while they have the app open; the push is what
+        // gets a new request in front of them when it isn't.
         await _notificationService.NotifyPickupRequestCreated(data);
+        await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
     }
@@ -624,8 +627,10 @@ public class PickupRequestService : IPickupRequestService
             ListingId = listingId?.ToString() ?? pr.ListingId?.ToString() ?? "",
             NgoId = pr.NgoId.ToString(),
             NgoName = ngoName ?? pr.Ngo?.Name ?? "",
+            NgoProfilePictureUrl = pr.Ngo?.ProfilePictureUrl,
             GroceryId = pr.GroceryId.ToString(),
             GroceryName = groceryName ?? pr.Grocery?.Name ?? "",
+            GroceryProfilePictureUrl = pr.Grocery?.ProfilePictureUrl,
             Status = pr.Status.ToString().ToLower(),
             RequestedQuantity = pr.RequestedQuantity ?? 0,
             PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),
@@ -645,6 +650,12 @@ public class PickupRequestService : IPickupRequestService
             RequiresRefrigeration = pr.RequiresRefrigeration,
             IsFragile = pr.IsFragile,
             IsHeavy = pr.IsHeavy,
+            GroceryLocation = pr.Grocery?.Location ?? pr.Grocery?.Address,
+            // Both organizations store their own coordinates, so the distance needs no
+            // caller context; it is null whenever either side never set one.
+            DistanceKm = HaversineKm(
+                pr.Ngo?.Latitude, pr.Ngo?.Longitude,
+                pr.Grocery?.Latitude, pr.Grocery?.Longitude),
             Items = pr.Items.Select(i => new PickupRequestItemData
             {
                 Id = i.Id.ToString(),
@@ -660,6 +671,44 @@ public class PickupRequestService : IPickupRequestService
             }).ToList()
         };
     }
+
+    private static double? HaversineKm(double? lat1, double? lon1, double? lat2, double? lon2)
+    {
+        if (lat1 is null || lon1 is null || lat2 is null || lon2 is null)
+            return null;
+
+        const double earthRadiusKm = 6371;
+        static double ToRadians(double degrees) => degrees * Math.PI / 180;
+
+        var dLat = ToRadians(lat2.Value - lat1.Value);
+        var dLon = ToRadians(lon2.Value - lon1.Value);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRadians(lat1.Value)) * Math.Cos(ToRadians(lat2.Value)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return Math.Round(earthRadiusKm * c, 1);
+    }
+
+    private static PickupRequestItem BuildItem(
+        Guid requestId,
+        ClearanceListing sourceListing,
+        ClearanceListing reservedListing,
+        int requestedQuantity) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            PickupRequestId = requestId,
+            ListingGroupId = sourceListing.GroupId,
+            OriginalListingId = sourceListing.Id,
+            ReservedListingId = reservedListing.Id,
+            RequestedQuantity = requestedQuantity,
+            ListingTitle = sourceListing.ProductName,
+            ListingCategory = sourceListing.Category,
+            ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
+            ListingUnit = sourceListing.Unit,
+            ListingPhotoUrl = FirstImageUrl(sourceListing.PhotoUrl),
+            CreatedAt = DateTime.UtcNow
+        };
 
     private static string? FirstImageUrl(string? photoUrl)
     {
@@ -713,18 +762,18 @@ public class PickupRequestService : IPickupRequestService
             group.TotalReserved += sourceListing.Quantity;
             group.UpdatedAt = DateTime.UtcNow;
 
-            return (sourceListing, new PickupRequest
+            var wholeRequest = new PickupRequest
             {
                 Id = requestId, NgoId = ngoId, GroceryId = sourceListing.GroceryId,
                 ListingId = sourceListing.Id, PickupDate = pickupDate,
                 Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
                 RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
-                ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
-                ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
-                ListingUnit = sourceListing.Unit,
                 RequiresRefrigeration = requiresRefrigeration,
                 IsFragile = isFragile, IsHeavy = isHeavy
-            });
+            };
+            wholeRequest.Items.Add(BuildItem(wholeRequest.Id, sourceListing, sourceListing, requestedQuantity));
+            PickupRequestSummary.Apply(wholeRequest);
+            return (sourceListing, wholeRequest);
         }
 
         var reservedListing = new ClearanceListing
@@ -752,18 +801,18 @@ public class PickupRequestService : IPickupRequestService
 
         _context.ClearanceListings.Add(reservedListing);
 
-        return (reservedListing, new PickupRequest
+        var partialRequest = new PickupRequest
         {
             Id = requestId, NgoId = ngoId, GroceryId = sourceListing.GroceryId,
             ListingId = reservedListing.Id, PickupDate = pickupDate,
             Status = PickupRequestStatus.Pending, RequestedAt = DateTime.UtcNow,
             RequestedQuantity = requestedQuantity, PickupTime = pickupTime, Notes = notes,
-            ListingTitle = sourceListing.ProductName, ListingCategory = sourceListing.Category,
-            ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
-            ListingUnit = sourceListing.Unit,
             RequiresRefrigeration = requiresRefrigeration,
             IsFragile = isFragile, IsHeavy = isHeavy
-        });
+        };
+        partialRequest.Items.Add(BuildItem(partialRequest.Id, sourceListing, reservedListing, requestedQuantity));
+        PickupRequestSummary.Apply(partialRequest);
+        return (reservedListing, partialRequest);
     }
 
     private async Task SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)

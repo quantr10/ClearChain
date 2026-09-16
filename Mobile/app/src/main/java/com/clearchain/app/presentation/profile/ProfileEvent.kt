@@ -18,6 +18,7 @@ sealed class ProfileEvent {
     object SaveProfile : ProfileEvent()
 
     data class EditNameChanged(val name: String)                       : ProfileEvent()
+    data class EditEmailChanged(val email: String)                     : ProfileEvent()
     data class EditPhoneChanged(val phone: String)                     : ProfileEvent()
     data class EditAddressChanged(val address: String)                 : ProfileEvent()
     data class EditLocationChanged(val location: String)               : ProfileEvent()
