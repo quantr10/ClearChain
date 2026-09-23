@@ -6,13 +6,12 @@ using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "admin")]
 public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -31,19 +30,9 @@ public class AdminController : ControllerBase
         [FromQuery] string? type = null,
         [FromQuery] bool? verified = null)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
-
-        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-        if (user == null || user.Type.ToLower() != "admin")
-        {
-            return Forbid();
-        }
-
-        var query = _context.Organizations.AsQueryable();
+        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
+        // an admin — this used to re-fetch and re-check the same thing on every action.
+        var query = _context.Organizations.Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(type))
         {
@@ -97,14 +86,8 @@ public class AdminController : ControllerBase
 
     private async Task<ActionResult<OrganizationResponse>> SetVerification(Guid id, bool approved, string? reason)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized(new { message = "User not authenticated" });
-
-        var admin = await _context.Organizations.FindAsync(Guid.Parse(userId));
-        if (admin == null || admin.Type.ToLower() != "admin")
-            return Forbid();
-
+        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
+        // an admin — this used to re-fetch and re-check the same thing on every action.
         var organization = await _context.Organizations.FindAsync(id);
         if (organization == null)
             return NotFound(new { message = "Organization not found" });
@@ -148,17 +131,8 @@ public class AdminController : ControllerBase
     [HttpGet("statistics/overview")]
     public async Task<ActionResult<AdminStatsOverviewResponse>> GetStatisticsOverview()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
-
-        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-        if (user == null || user.Type.ToLower() != "admin")
-        {
-            return Forbid();
-        }
+        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
+        // an admin — this used to re-fetch and re-check the same thing on every action.
 
         // Admin accounts live in the same table but are not organizations on the
         // platform, so they stay out of every count the dashboard charts.
@@ -221,18 +195,8 @@ public class AdminController : ControllerBase
     [HttpGet("pickuprequests")]
     public async Task<ActionResult<PickupRequestsResponse>> GetAllPickupRequests()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized(new { message = "User not authenticated" });
-        }
-
-        var user = await _context.Organizations.FindAsync(Guid.Parse(userId));
-        if (user == null || user.Type.ToLower() != "admin")
-        {
-            return Forbid();
-        }
-
+        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
+        // an admin — this used to re-fetch and re-check the same thing on every action.
         var pickupRequests = await _context.PickupRequests
             .Include(pr => pr.Ngo)
             .Include(pr => pr.Grocery)
@@ -331,8 +295,6 @@ public class AdminController : ControllerBase
         [FromQuery] string? to = null,
         [FromQuery] string preset = "all")
     {
-        if (!IsAdmin()) return Forbid();
-
         var now = DateTime.UtcNow;
         var (start, end) = ResolveRange(from, to, preset);
 
@@ -579,8 +541,6 @@ public class AdminController : ControllerBase
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
     {
-        if (!IsAdmin()) return Forbid();
-
         var disputes = await _context.Disputes
             .Include(d => d.Initiator)
             .Where(d => d.Status == "open" || d.Status == "under_review")
@@ -627,14 +587,6 @@ public class AdminController : ControllerBase
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private bool IsAdmin()
-    {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userId, out _)) return false;
-        var type = User.FindFirst("type")?.Value;
-        return type == "admin";
-    }
 
     private static (DateTime? start, DateTime? end) ResolveRange(string? from, string? to, string preset)
     {

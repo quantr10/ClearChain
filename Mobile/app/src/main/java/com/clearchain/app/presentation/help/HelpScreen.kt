@@ -81,7 +81,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
             item {
                 Text(
                     "Frequently Asked Questions",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
@@ -108,7 +108,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                         Column {
                             Text(
                                 "Still need help?",
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )

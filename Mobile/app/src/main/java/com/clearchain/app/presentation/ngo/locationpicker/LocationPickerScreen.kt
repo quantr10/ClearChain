@@ -2,6 +2,7 @@ package com.clearchain.app.presentation.ngo.locationpicker
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.location.Geocoder
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -37,6 +38,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.*
@@ -74,6 +76,7 @@ data class LocationPickerState(
 
 @HiltViewModel
 class LocationPickerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val locationPreferenceStore: LocationPreferenceStore,
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
@@ -286,10 +289,10 @@ class LocationPickerViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSavingLocation = true, error = null) }
             try {
-                locationPreferenceStore.save(LocationPreference(s.latitude, s.longitude, s.radiusKm, s.displayName.ifBlank { "Selected Location" }))
+                locationPreferenceStore.save(LocationPreference(s.latitude, s.longitude, s.radiusKm, s.displayName.ifBlank { context.getString(R.string.label_selected_location) }))
                 onDone()
             } catch (e: Exception) {
-                _state.update { it.copy(isSavingLocation = false, error = e.message ?: "Failed to save location") }
+                _state.update { it.copy(isSavingLocation = false, error = e.message ?: context.getString(R.string.error_save_location_failed)) }
             }
         }
     }

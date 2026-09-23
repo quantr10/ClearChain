@@ -5,7 +5,6 @@
     <!-- ── General ── -->
     <string name="ok">OK</string>
     <string name="msg_session_expired">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</string>
-    <string name="realtime_reconnecting">Đang kết nối lại…</string>
     <string name="cancel">Hủy</string>
     <string name="confirm">Xác nhận</string>
     <string name="save">Lưu</string>
@@ -48,6 +47,10 @@
     <string name="password">Mật khẩu</string>
     <string name="confirm_password">Xác nhận mật khẩu</string>
     <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="forgot_password_email_subject">ClearChain — Quên mật khẩu</string>
+    <string name="label_or">hoặc</string>
+    <string name="label_from_date">Từ %1$s</string>
+    <string name="label_request_count_short">%1$d yêu cầu</string>
     <string name="remember_me">Ghi nhớ đăng nhập</string>
     <string name="dont_have_account">Chưa có tài khoản?</string>
     <string name="already_have_account">Đã có tài khoản?</string>
@@ -176,6 +179,10 @@
     <string name="notif_new_listing">Thực phẩm mới gần đây</string>
     <string name="notif_request_update">Cập nhật yêu cầu lấy hàng</string>
     <string name="notif_expiry_reminder">Nhắc nhở hết hạn</string>
+    <string name="settings_general">Chung</string>
+    <string name="language_english">English</string>
+    <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="settings_open_link_failed">Không có ứng dụng nào để mở liên kết này</string>
 
     <!-- ── Profile ── -->
     <string name="my_profile">Hồ sơ của tôi</string>
@@ -470,7 +477,6 @@
     <string name="stat_completion_rate">Tỷ lệ hoàn thành</string>
     <string name="admin_completion_detail">%1$d trong %2$d yêu cầu đã hoàn thành</string>
     <string name="section_request_status_breakdown">Phân tích trạng thái yêu cầu</string>
-    <string name="requests_status_note">Tình trạng hiện tại của %1$d yêu cầu lấy hàng của bạn</string>
     <string name="section_org_types">Loại tổ chức</string>
     <string name="org_type_groceries">Cửa hàng thực phẩm</string>
     <string name="org_type_ngos">NGO</string>
@@ -928,6 +934,7 @@
     <string name="error_new_password_required">Cần nhập mật khẩu mới</string>
     <string name="error_password_min_length">Ít nhất 8 ký tự</string>
     <string name="error_password_needs_uppercase">Cần có chữ in hoa</string>
+    <string name="error_password_needs_lowercase">Cần có chữ thường</string>
     <string name="error_password_needs_number">Cần có số</string>
     <string name="error_passwords_dont_match">Mật khẩu không khớp</string>
     <string name="label_show_password">Hiện mật khẩu</string>
@@ -1458,4 +1465,72 @@
     <string name="chart_top_groceries">Cửa hàng theo số lượt lấy hàng hoàn tất</string>
     <string name="chart_top_ngos">NGO theo số lượt lấy hàng hoàn tất</string>
     <string name="label_unknown_item">Không rõ</string>
+
+    <!-- Relative time — shared by chat timestamps (verbose) and the notification inbox (compact) -->
+    <string name="time_just_now">Vừa xong</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="other">%d phút trước</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="other">%d giờ trước</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="other">%d ngày trước</item>
+    </plurals>
+    <string name="time_minutes_ago_compact">%1$d phút trước</string>
+    <string name="time_hours_ago_compact">%1$d giờ trước</string>
+
+    <string name="error_save_location_failed">Không thể lưu vị trí</string>
+    <string name="label_selected_location">Vị trí đã chọn</string>
+    <string name="error_submit_dispute_failed">Không thể gửi báo cáo sự cố</string>
+    <string name="error_distribute_item_failed">Không thể phân phát mặt hàng</string>
+    <string name="error_load_listings">Không thể tải danh sách</string>
+    <string name="error_update_quantity_failed">Không thể cập nhật số lượng</string>
+
+    <string name="account_detail">Chi tiết tài khoản</string>
+    <string name="cart_add_to_cart">Thêm vào giỏ hàng</string>
+    <string name="cart_checkout_missing_fields">Cần có ngày và giờ lấy hàng</string>
+    <string name="cart_decrease">Giảm</string>
+    <string name="cart_empty_subtitle">Thêm niêm yết từ mục Duyệt để yêu cầu lấy hàng từ cửa hàng.</string>
+    <string name="cart_empty_title">Giỏ hàng của bạn đang trống</string>
+    <string name="cart_increase">Tăng</string>
+    <string name="cart_max_expires">Tối đa %1$s %2$s • Hết hạn %3$s</string>
+    <string name="cart_pickup_request_created">Đã tạo yêu cầu lấy hàng</string>
+    <string name="cart_remove">Xóa</string>
+    <string name="cart_request_pickup_from">Yêu cầu lấy hàng từ %1$s</string>
+    <string name="cart_requested_items">Mặt hàng đã yêu cầu</string>
+    <string name="edit_listing">Chỉnh sửa niêm yết</string>
+    <string name="error_account_not_found">Không tìm thấy tài khoản với email này</string>
+    <string name="error_email_taken">Email này đã được đăng ký</string>
+    <string name="error_no_internet">Không có kết nối internet. Vui lòng kiểm tra mạng của bạn</string>
+    <string name="error_pickup_time_outside_window">Giờ lấy hàng phải trong giờ mở cửa của cửa hàng</string>
+    <string name="error_server">Lỗi máy chủ. Vui lòng thử lại sau</string>
+    <string name="error_too_many_attempts">Quá nhiều lần đăng nhập. Vui lòng đợi và thử lại</string>
+    <string name="error_wrong_credentials">Email hoặc mật khẩu không đúng</string>
+    <string name="hint_not_yet_rated">Chưa được đánh giá cho lần lấy hàng này</string>
+    <string name="hint_search_cart">Tìm trong giỏ hàng…</string>
+    <string name="inventory_photo_attached">Đã đính kèm ảnh</string>
+    <string name="label_items_count">%1$d mặt hàng</string>
+    <string name="label_ngo_rating">Đánh giá từ NGO</string>
+    <string name="label_org_transfer">%1$s → %2$s</string>
+    <string name="label_quantity_with_unit">%1$d %2$s</string>
+    <string name="label_reviewed_by">Được đánh giá bởi %1$s</string>
+    <string name="label_submitted_on">Đã gửi vào %1$s</string>
+    <string name="nav_cart">Giỏ hàng</string>
+    <string name="not_yet_distributed">Chưa được phân phát</string>
+    <string name="profile_detail_completed_pickups">%1$d lần lấy hàng đã hoàn thành</string>
+    <string name="profile_detail_donation_contact">Liên hệ quyên góp: %1$s</string>
+    <string name="profile_detail_grocery_role">Nhà cung cấp thực phẩm dư thừa</string>
+    <string name="profile_detail_ngo_role">Tổ chức tiếp nhận quyên góp</string>
+    <string name="profile_detail_pickup_hours">Giờ lấy hàng: %1$s</string>
+    <string name="profile_detail_rating_reviews">%1$s sao từ %2$d đánh giá</string>
+    <string name="profile_detail_receive_hours">Giờ tiếp nhận: %1$s</string>
+    <string name="profile_section_for_donors">Dành cho nhà tài trợ</string>
+    <string name="profile_section_for_ngos">Dành cho NGO</string>
+    <string name="profile_section_impact">Tác động</string>
+    <string name="profile_stat_food_distributed">Thực phẩm đã phân phát</string>
+    <string name="profile_stat_joined_since">Tham gia từ</string>
+    <string name="profile_stat_meals_saved">Bữa ăn đã cứu</string>
+    <string name="profile_stat_orders_processed">Đơn hàng đã xử lý</string>
+    <string name="snack_listing_updated">Đã cập nhật niêm yết thành công!</string>
 </resources>

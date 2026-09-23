@@ -1,6 +1,7 @@
 package com.clearchain.app.presentation.grocery
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
@@ -39,6 +40,10 @@ class GroceryDashboardViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val organizationApi: OrganizationApi
 ) : ViewModel() {
+
+    private companion object {
+        const val TAG = "GroceryDashboardVM"
+    }
 
     private val _state = MutableStateFlow(
         GroceryDashboardState(userName = context.getString(R.string.label_grocery_store_name))
@@ -86,7 +91,9 @@ class GroceryDashboardViewModel @Inject constructor(
                         }
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to observe current user", e)
+            }
         }
     }
 
@@ -94,20 +101,26 @@ class GroceryDashboardViewModel @Inject constructor(
         try {
             val stats = organizationApi.getMyStats().data
             _state.update { it.copy(stats = stats) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load stats", e)
+        }
     }
 
     private suspend fun loadTodaySummary() {
         try {
             val summary = organizationApi.getTodaySummary().data
             _state.update { it.copy(todaySummary = summary) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load today's summary", e)
+        }
     }
 
     private suspend fun loadActivity() {
         try {
             val activities = organizationApi.getMyActivity().data
             _state.update { it.copy(activities = activities) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load activity", e)
+        }
     }
 }

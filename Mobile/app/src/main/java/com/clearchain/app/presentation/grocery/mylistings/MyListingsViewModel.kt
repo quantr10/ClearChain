@@ -136,7 +136,7 @@ class MyListingsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load listings") }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_load_listings)) }
                 }
             )
         }
@@ -280,7 +280,7 @@ class MyListingsViewModel @Inject constructor(
                     loadListings()
                 },
                 onFailure = { error ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: "Failed to update quantity"))
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_update_quantity_failed)))
                 }
             )
         }

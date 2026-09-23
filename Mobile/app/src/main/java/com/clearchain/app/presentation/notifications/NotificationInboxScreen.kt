@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.notifications
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -149,7 +151,7 @@ private fun NotificationItem(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = formatTime(notification.createdAt.toLongOrNull() ?: 0L),
+                    text = formatTime(LocalContext.current, notification.createdAt.toLongOrNull() ?: 0L),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -173,14 +175,14 @@ private fun notificationIcon(type: String) = when (type) {
     else -> Icons.Default.Notifications
 }
 
-private fun formatTime(timestamp: Long): String {
+private fun formatTime(context: Context, timestamp: Long): String {
     if (timestamp == 0L) return ""
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3_600_000 -> "${diff / 60_000}m ago"
-        diff < 86_400_000 -> "${diff / 3_600_000}h ago"
+        diff < 60_000 -> context.getString(R.string.time_just_now)
+        diff < 3_600_000 -> context.getString(R.string.time_minutes_ago_compact, diff / 60_000)
+        diff < 86_400_000 -> context.getString(R.string.time_hours_ago_compact, diff / 3_600_000)
         else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(timestamp))
     }
 }

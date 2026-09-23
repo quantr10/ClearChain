@@ -86,6 +86,10 @@ data class RefreshTokenRequest(val refreshToken: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
+data class LogoutRequest(val refreshToken: String, val fcmToken: String? = null)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
 @SuppressLint("UnsafeOptInUsageError")

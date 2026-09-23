@@ -9,7 +9,7 @@ public class RegisterRequest
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Organization type is required")]
-    [RegularExpression("^(grocery|ngo|admin)$", ErrorMessage = "Type must be 'grocery', 'ngo', or 'admin'")]
+    [RegularExpression("^(grocery|ngo)$", ErrorMessage = "Type must be 'grocery' or 'ngo'")]
     public string Type { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Email is required")]

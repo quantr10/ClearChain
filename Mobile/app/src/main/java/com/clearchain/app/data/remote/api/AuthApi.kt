@@ -32,7 +32,7 @@ interface AuthApi {
 
     @POST("auth/logout")
     suspend fun logout(
-        @Body request: RefreshTokenRequest
+        @Body request: LogoutRequest
     ): Unit
 
     @GET("auth/me")

@@ -1,5 +1,6 @@
 package com.clearchain.app.di
 
+import com.clearchain.app.BuildConfig
 import com.clearchain.app.data.remote.api.*
 import com.clearchain.app.data.remote.interceptor.AuthInterceptor
 import com.clearchain.app.data.remote.interceptor.RetryInterceptor
@@ -34,7 +35,10 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // BODY logs full request/response bodies and headers — including the
+            // Authorization bearer token, passwords, and refresh tokens — to Logcat.
+            // That must never happen in a release build.
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
     }
 

@@ -154,10 +154,14 @@ class PickupRequestRepositoryImpl @Inject constructor(
     ): Result<PickupRequest> {
         return try {
             val file = ImageUtils.compressImage(context, photoUri)
-            val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val photoPart = MultipartBody.Part.createFormData("proofPhoto", file.name, requestFile)
-            val response = pickupRequestApi.confirmPickupWithPhoto(id, photoPart)
-            file.delete()
+            val response = try {
+                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val photoPart = MultipartBody.Part.createFormData("proofPhoto", file.name, requestFile)
+                pickupRequestApi.confirmPickupWithPhoto(id, photoPart)
+            } finally {
+                // Must run even if the call throws, or a failed confirmation leaks this file.
+                file.delete()
+            }
             val domain = response.data.toDomain()
             pickupRequestDao.upsert(domain.toEntity())
             Result.success(domain)

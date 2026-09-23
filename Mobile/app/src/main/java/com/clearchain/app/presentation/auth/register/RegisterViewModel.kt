@@ -64,24 +64,28 @@ class RegisterViewModel @Inject constructor(
             RegisterEvent.ToggleTos ->
                 _state.update { it.copy(tosAccepted = !it.tosAccepted, tosError = false) }
             RegisterEvent.Register -> register()
-            RegisterEvent.NavigateToLogin ->
-                viewModelScope.launch { _uiEvent.send(UiEvent.NavigateUp) }
             RegisterEvent.ClearError ->
                 _state.update { it.copy(error = null) }
         }
     }
 
+    /**
+     * Scores against the same four criteria ValidationUtils.isValidPassword actually
+     * requires (length, uppercase, lowercase, digit) — this used to score a special
+     * character instead of lowercase, so a password missing lowercase (e.g. "PASSWORD1")
+     * could show "STRONG" here and then fail real validation on submit.
+     */
     private fun evaluatePasswordStrength(password: String): PasswordStrength {
         if (password.isEmpty()) return PasswordStrength.NONE
         var score = 0
         if (password.length >= 8) score++
         if (password.any { it.isUpperCase() }) score++
+        if (password.any { it.isLowerCase() }) score++
         if (password.any { it.isDigit() }) score++
-        if (password.any { !it.isLetterOrDigit() }) score++
         return when {
             score <= 1 -> PasswordStrength.WEAK
-            score == 2 -> PasswordStrength.MEDIUM
-            else -> PasswordStrength.STRONG
+            score >= 4 -> PasswordStrength.STRONG
+            else -> PasswordStrength.MEDIUM
         }
     }
 

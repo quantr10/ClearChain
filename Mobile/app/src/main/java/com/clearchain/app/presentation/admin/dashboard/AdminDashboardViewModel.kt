@@ -7,7 +7,6 @@ import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
-import com.clearchain.app.domain.model.AdminStats
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,8 +39,7 @@ class AdminDashboardViewModel @Inject constructor(
     }
 
     private fun setupSignalR() {
-        // Connection state is surfaced app-wide by ReconnectingBanner in MainActivity — this
-        // screen only listens for the events themselves.
+        // This screen only listens for the events themselves; connection state is not surfaced.
         viewModelScope.launch {
             signalRService.newOrganizationRegistered.collect { notification ->
                 val activity = AdminActivity(
@@ -76,25 +74,6 @@ class AdminDashboardViewModel @Inject constructor(
 
         viewModelScope.launch {
             signalRService.statsUpdated.collect { stats ->
-                val adminStats = AdminStats(
-                    totalOrganizations = stats.totalNGOs + stats.totalGroceries,
-                    totalGroceries = stats.totalGroceries,
-                    totalNgos = stats.totalNGOs,
-                    verifiedOrganizations = 0,
-                    unverifiedOrganizations = 0,
-                    totalListings = stats.activeListings,
-                    activeListings = stats.activeListings,
-                    reservedListings = 0,
-                    expiredListings = 0,
-                    totalPickupRequests = stats.totalDonations,
-                    pendingRequests = stats.pendingRequests,
-                    approvedRequests = 0,
-                    readyRequests = 0,
-                    rejectedRequests = 0,
-                    completedRequests = stats.completedToday,
-                    cancelledRequests = 0,
-                    totalFoodSaved = stats.totalDonations.toDouble()
-                )
                 val activity = AdminActivity(
                     id = UUID.randomUUID().toString(),
                     type = AdminActivityType.STATS_UPDATED,
@@ -105,7 +84,23 @@ class AdminDashboardViewModel @Inject constructor(
                 )
                 _state.update {
                     it.copy(
-                        stats = adminStats,
+                        // Merged into the existing stats rather than replaced — this push
+                        // payload only carries a subset of AdminStats' fields, and the rest
+                        // (verified/unverified orgs, reserved/expired listings, etc., loaded
+                        // via REST) must not be zeroed out by every real-time update. If the
+                        // initial REST load hasn't landed yet, there's nothing to merge into —
+                        // leave it null rather than show a partially-populated AdminStats.
+                        stats = it.stats?.copy(
+                            totalOrganizations = stats.totalNGOs + stats.totalGroceries,
+                            totalGroceries = stats.totalGroceries,
+                            totalNgos = stats.totalNGOs,
+                            totalListings = stats.activeListings,
+                            activeListings = stats.activeListings,
+                            totalPickupRequests = stats.totalDonations,
+                            pendingRequests = stats.pendingRequests,
+                            completedRequests = stats.completedToday,
+                            totalFoodSaved = stats.totalDonations.toDouble()
+                        ),
                         recentActivities = listOf(activity) + it.recentActivities.take(19)
                     )
                 }

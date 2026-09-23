@@ -1,5 +1,7 @@
 package com.clearchain.app.presentation.auth.login
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -34,6 +37,7 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val lockoutMessage = if (state.isLockedOut) {
         stringResource(R.string.msg_account_locked, state.lockoutMinutes)
@@ -138,9 +142,20 @@ fun LoginScreen(
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
+                        val forgotPasswordSubject = stringResource(R.string.forgot_password_email_subject)
                         ClearChainOutlinedButton(
                             text = stringResource(R.string.forgot_password),
-                            onClick = {}
+                            onClick = {
+                                // No self-service reset flow exists yet — route to support
+                                // instead of a dead button.
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@clearchain.app")).apply {
+                                            putExtra(Intent.EXTRA_SUBJECT, forgotPasswordSubject)
+                                        }
+                                    )
+                                }
+                            }
                         )
                     }
 

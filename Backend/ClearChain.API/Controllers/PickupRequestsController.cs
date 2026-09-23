@@ -106,7 +106,7 @@ public class PickupRequestsController : ControllerBase
             return BadRequest(new { message = $"Photo must be under {StorageBucketPolicy.ImageMaxBytes / 1024 / 1024} MB" });
 
         using var stream = proofPhoto.OpenReadStream();
-        var result = await _service.MarkPickedUpAsync(id, userId, stream, proofPhoto.FileName);
+        var result = await _service.MarkPickedUpAsync(id, userId, stream, proofPhoto.FileName, proofPhoto.ContentType);
         if (!result.Success) return MapError(result);
 
         var response = new PickupRequestResponse { Message = "Pickup confirmed successfully", Data = result.Data! };
@@ -191,6 +191,7 @@ public class PickupRequestsController : ControllerBase
         PickupRequestServiceError.InvalidStatus
             or PickupRequestServiceError.InvalidInput
             or PickupRequestServiceError.StorageError => BadRequest(new { message = result.ErrorMessage }),
+        PickupRequestServiceError.Conflict => Conflict(new { message = result.ErrorMessage }),
         _ => StatusCode(500, new { message = result.ErrorMessage })
     };
 }

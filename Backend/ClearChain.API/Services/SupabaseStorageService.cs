@@ -1,16 +1,15 @@
-using Supabase.Storage;
-
 namespace ClearChain.API.Services;
 
 public interface IStorageService
 {
-    Task<string> UploadPickupProofAsync(Stream fileStream, string fileName);
-    Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId);
+    Task<string> UploadPickupProofAsync(Stream fileStream, string fileName, string contentType);
+    Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId, string contentType);
     Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string bucket);
 }
 
 public class SupabaseStorageService : IStorageService
 {
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SupabaseStorageService> _logger;
     private readonly string _supabaseUrl;
@@ -19,9 +18,11 @@ public class SupabaseStorageService : IStorageService
     private const string FOOD_IMAGES_BUCKET = "food-images";
 
     public SupabaseStorageService(
+        IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         ILogger<SupabaseStorageService> logger)
     {
+        _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
 
@@ -31,7 +32,7 @@ public class SupabaseStorageService : IStorageService
             ?? throw new InvalidOperationException("SUPABASE_SERVICE_KEY not configured");
     }
 
-    public async Task<string> UploadPickupProofAsync(Stream fileStream, string fileName)
+    public async Task<string> UploadPickupProofAsync(Stream fileStream, string fileName, string contentType)
     {
         try
         {
@@ -47,14 +48,15 @@ public class SupabaseStorageService : IStorageService
 
             _logger.LogInformation($"Uploading file: {uniqueFileName}, Size: {fileBytes.Length} bytes");
 
-            using var httpClient = new HttpClient();
+            var httpClient = _httpClientFactory.CreateClient();
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
 
             var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{PICKUP_PROOFS_BUCKET}/{uniqueFileName}";
 
             using var content = new ByteArrayContent(fileBytes);
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                string.IsNullOrEmpty(contentType) ? "application/octet-stream" : contentType);
 
             var response = await httpClient.PostAsync(uploadUrl, content);
 
@@ -77,7 +79,7 @@ public class SupabaseStorageService : IStorageService
             throw new Exception($"Failed to upload photo: {ex.Message}", ex);
         }
     }
-    public async Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId)
+    public async Task<string> UploadFoodImageAsync(Stream fileStream, string fileName, Guid groceryId, string contentType)
     {
         try
         {
@@ -93,14 +95,15 @@ public class SupabaseStorageService : IStorageService
 
             _logger.LogInformation($"Uploading food image: {uniqueFileName}, Size: {fileBytes.Length} bytes");
 
-            using var httpClient = new HttpClient();
+            var httpClient = _httpClientFactory.CreateClient();
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
 
             var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{FOOD_IMAGES_BUCKET}/{uniqueFileName}";
 
             using var content = new ByteArrayContent(fileBytes);
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                string.IsNullOrEmpty(contentType) ? "application/octet-stream" : contentType);
 
             var response = await httpClient.PostAsync(uploadUrl, content);
 
@@ -135,7 +138,7 @@ public class SupabaseStorageService : IStorageService
             await fileStream.CopyToAsync(memoryStream);
             var fileBytes = memoryStream.ToArray();
 
-            using var httpClient = new HttpClient();
+            var httpClient = _httpClientFactory.CreateClient();
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
 

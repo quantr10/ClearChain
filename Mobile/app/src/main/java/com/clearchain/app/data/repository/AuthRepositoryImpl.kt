@@ -3,6 +3,7 @@ package com.clearchain.app.data.repository
 import com.clearchain.app.data.local.dao.AuthTokenDao
 import com.clearchain.app.data.local.dao.NotificationDao
 import com.clearchain.app.data.local.dao.UserDao
+import com.clearchain.app.data.local.database.ClearChainDatabase
 import com.clearchain.app.data.local.entity.AuthTokenEntity
 import com.clearchain.app.data.local.entity.toDomain // CANONICAL from UserEntity.kt
 import com.clearchain.app.data.local.entity.toEntity // CANONICAL from UserEntity.kt
@@ -19,7 +20,8 @@ class AuthRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,
     private val authTokenDao: AuthTokenDao,
     private val userDao: UserDao,
-    private val notificationDao: NotificationDao
+    private val notificationDao: NotificationDao,
+    private val database: ClearChainDatabase
 ) : AuthRepository {
 
     override suspend fun register(
@@ -118,7 +120,11 @@ class AuthRepositoryImpl @Inject constructor(
             val tokens = authTokenDao.getTokens()
             if (tokens?.refreshToken != null) {
                 try {
-                    authApi.logout(RefreshTokenRequest(tokens.refreshToken))
+                    // Sending this device's FCM token lets the server unregister it —
+                    // without it, this device kept receiving the departing account's
+                    // push notifications until the stale-token sweep or another login.
+                    val fcmToken = database.fcmTokenDao().getToken()
+                    authApi.logout(LogoutRequest(tokens.refreshToken, fcmToken))
                 } catch (_: Exception) {
                     // Non-fatal: local state is still cleared even if server call fails
                 }

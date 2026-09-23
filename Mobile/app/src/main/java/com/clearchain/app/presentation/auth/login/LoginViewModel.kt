@@ -50,8 +50,6 @@ class LoginViewModel @Inject constructor(
             is LoginEvent.PasswordChanged ->
                 _state.update { it.copy(password = event.password, passwordError = null) }
             LoginEvent.Login -> login()
-            LoginEvent.NavigateToRegister ->
-                viewModelScope.launch { _uiEvent.send(UiEvent.Navigate("register")) }
             LoginEvent.ClearError ->
                 _state.update { it.copy(error = null, isLockedOut = false) }
             LoginEvent.ToggleRememberMe ->

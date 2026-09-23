@@ -21,12 +21,6 @@ data class CreatePickupRequestRequest(
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class UpdatePickupRequestStatusRequest(
-    val status: String
-)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
 data class BulkActionRequest(val ids: List<String>)
 
 @SuppressLint("UnsafeOptInUsageError")

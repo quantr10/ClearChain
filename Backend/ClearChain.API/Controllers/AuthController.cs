@@ -166,9 +166,9 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
     {
-        var success = await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
+        var success = await _authService.RevokeRefreshTokenAsync(request.RefreshToken, request.FcmToken);
 
         if (!success)
             return BadRequest(new { message = "Invalid refresh token" });

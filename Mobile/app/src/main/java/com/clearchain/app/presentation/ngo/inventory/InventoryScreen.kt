@@ -71,13 +71,9 @@ fun InventoryScreen(
     }
 
     Scaffold(
-        floatingActionButton = {
-            if (!state.isSelectionMode) {
-                SmallFloatingActionButton(onClick = { viewModel.onEvent(InventoryEvent.ShowManualAddSheet) }) {
-                    Icon(Icons.Default.Add, stringResource(R.string.cd_add_item_manually))
-                }
-            }
-        },
+        // The manual-add FAB was removed: it opened a form that only faked success
+        // (no backend endpoint exists to actually add an inventory item this way) —
+        // see ManualAddSheet/submitManualAdd. Restore once a real endpoint exists.
         bottomBar = {
             AnimatedVisibility(
                 visible = state.isSelectionMode && state.selectedCount > 0,

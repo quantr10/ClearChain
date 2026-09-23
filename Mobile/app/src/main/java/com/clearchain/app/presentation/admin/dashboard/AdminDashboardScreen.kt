@@ -324,7 +324,6 @@ private fun DrillDownSection(
 ) {
     DashboardSection(
         title = title,
-        titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp),
         modifier = Modifier.clickable {
             navController.navigate(Screen.AdminStatistics.createRoute(section.key))
         },

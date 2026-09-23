@@ -1,12 +1,7 @@
 package com.clearchain.app.presentation.ngo.myrequests
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
@@ -18,10 +13,10 @@ import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
+import com.clearchain.app.util.PickupReceiptPdf
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -370,7 +365,7 @@ class MyRequestsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isGeneratingReceipt = true) }
             try {
-                val uri = withContext(Dispatchers.IO) { buildReceiptPdf(request) }
+                val uri = withContext(Dispatchers.IO) { PickupReceiptPdf.build(context, request) }
                 _uiEvent.send(UiEvent.ShareFile(uri, title = context.getString(R.string.snack_receipt_title, request.listingTitle)))
             } catch (e: Exception) {
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_receipt_failed)))
@@ -378,71 +373,6 @@ class MyRequestsViewModel @Inject constructor(
                 _state.update { it.copy(isGeneratingReceipt = false) }
             }
         }
-    }
-
-    private fun buildReceiptPdf(request: PickupRequest): Uri {
-        val doc = PdfDocument()
-        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4
-        val page = doc.startPage(pageInfo)
-        val canvas: Canvas = page.canvas
-
-        val titlePaint = Paint().apply {
-            textSize = 24f
-            color = Color.BLACK
-            isFakeBoldText = true
-        }
-        val labelPaint = Paint().apply {
-            textSize = 14f
-            color = Color.GRAY
-        }
-        val valuePaint = Paint().apply {
-            textSize = 14f
-            color = Color.BLACK
-        }
-        val dividerPaint = Paint().apply {
-            color = Color.LTGRAY
-            strokeWidth = 1f
-        }
-
-        var y = 60f
-        canvas.drawText(context.getString(R.string.label_pickup_receipt), 40f, y, titlePaint)
-        y += 8f
-        canvas.drawLine(40f, y, 555f, y, dividerPaint)
-        y += 30f
-
-        fun row(label: String, value: String) {
-            canvas.drawText(label, 40f, y, labelPaint)
-            canvas.drawText(value, 220f, y, valuePaint)
-            y += 24f
-        }
-
-        row(context.getString(R.string.label_reference_id), request.id.take(16) + "…")
-        row(context.getString(R.string.label_food_item), request.listingTitle)
-        row(context.getString(R.string.label_category), request.listingCategory)
-        row(context.getString(R.string.listing_quantity), "${request.requestedQuantity}")
-        row(context.getString(R.string.label_from), request.groceryName)
-        row(context.getString(R.string.label_pickup_date), request.pickupDate)
-        row(context.getString(R.string.label_pickup_time), request.pickupTime)
-        row(context.getString(R.string.label_status), request.status.name)
-        request.notes?.takeIf { it.isNotBlank() }?.let { row(context.getString(R.string.label_notes), it.take(60)) }
-
-        y += 12f
-        canvas.drawLine(40f, y, 555f, y, dividerPaint)
-        y += 20f
-        canvas.drawText(
-            context.getString(R.string.pdf_generated_by),
-            40f,
-            y,
-            labelPaint.apply { textSize = 10f }
-        )
-
-        doc.finishPage(page)
-
-        val file = File(context.cacheDir, "receipt_${request.id.take(8)}.pdf")
-        doc.writeTo(file.outputStream())
-        doc.close()
-
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
 
     private fun submitReview() {

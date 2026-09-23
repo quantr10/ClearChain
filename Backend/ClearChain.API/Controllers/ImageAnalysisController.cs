@@ -233,7 +233,7 @@ public class ImageAnalysisController : ControllerBase
         _logger.LogInformation($"📤 Uploading image for grocery {groceryId}");
 
         using var stream = image.OpenReadStream();
-        var imageUrl = await _storageService.UploadFoodImageAsync(stream, image.FileName, groceryId);
+        var imageUrl = await _storageService.UploadFoodImageAsync(stream, image.FileName, groceryId, image.ContentType);
 
         return Ok(new UploadImageResponse
         {

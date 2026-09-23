@@ -142,21 +142,6 @@ data class AdminAlertItem(
     val createdAt: String
 )
 
-// ── NGO reputation ───────────────────────────────────────────────────────────
-
-@Serializable
-data class NgoReputationResponse(
-    val data: NgoReputationData? = null
-)
-
-@Serializable
-data class NgoReputationData(
-    val totalRequests: Int = 0,
-    val completedPickups: Int = 0,
-    val cancelledPickups: Int = 0,
-    val completionRate: Double = 0.0
-)
-
 // ── Today summary ────────────────────────────────────────────────────────────
 // TodaySummaryResponse and TodaySummaryData are defined in OrganizationDto.kt
 

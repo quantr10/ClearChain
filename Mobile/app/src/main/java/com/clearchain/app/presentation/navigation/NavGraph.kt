@@ -404,6 +404,8 @@ fun NavGraph(
                     when (type) {
                         "pickup_request" -> navController.navigate(Screen.RequestDetail.createRoute(id))
                         "listing" -> navController.navigate(Screen.ListingDetail.createRoute(id))
+                        "inventory" -> navController.navigate(Screen.InventoryDetail.createRoute(id))
+                        "organization" -> navController.navigate(Screen.PublicProfile.createRoute(id))
                         else -> Unit
                     }
                 }

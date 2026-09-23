@@ -54,6 +54,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<CartItem>().ToTable("cartitems");
         modelBuilder.Entity<PickupRequestItem>().ToTable("pickuprequestitems");
 
+        // Postgres's xmin system column as an optimistic concurrency token — no migration
+        // needed, it already exists on every row. Without this, two concurrent requests
+        // against the same listing/group can both read the same Quantity/TotalAvailable,
+        // both pass validation, and both write, oversubscribing stock (a lost update).
+        modelBuilder.Entity<ClearanceListing>().Property<uint>("xmin").IsRowVersion();
+        modelBuilder.Entity<ListingGroup>().Property<uint>("xmin").IsRowVersion();
+
         // Configure ListingGroup - ClearanceListing relationship
         modelBuilder.Entity<ListingGroup>()
             .HasMany(lg => lg.ChildListings)
@@ -212,6 +219,25 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Inventory>()
             .Property(i => i.Status)
             .HasConversion(inventoryStatusConverter);
+
+        // Inventory had no FK/index on NgoId at all — the single most-queried column on
+        // this table (GetMyInventory, dashboard stats, distribute, expiry sweep all filter
+        // by it). Configured by property rather than a navigation property since Inventory
+        // doesn't expose one.
+        modelBuilder.Entity<Inventory>()
+            .HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(i => i.NgoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Inventory>()
+            .HasIndex(i => i.NgoId);
+
+        modelBuilder.Entity<Inventory>()
+            .HasOne<PickupRequest>()
+            .WithMany()
+            .HasForeignKey(i => i.PickupRequestId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Map all column names to lowercase
         foreach (var entity in modelBuilder.Model.GetEntityTypes())

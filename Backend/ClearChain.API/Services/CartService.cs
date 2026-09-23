@@ -14,7 +14,8 @@ public enum CartServiceError
     Forbidden,
     InvalidInput,
     InvalidStatus,
-    DatabaseError
+    DatabaseError,
+    Conflict
 }
 
 public record CartServiceResult(
@@ -236,6 +237,14 @@ public class CartService : ICartService
             await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
 
             return new CartServiceResult(true, PickupRequest: data, Cart: await MapCartAsync(cart.Id));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await tx.RollbackAsync();
+            // A listing in this checkout was reserved or modified by someone else between
+            // our read and this write (caught by the xmin concurrency token).
+            return Fail(CartServiceError.Conflict,
+                "One or more items were just updated by someone else. Please refresh your cart and try again.");
         }
         catch (Exception ex)
         {

@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.ngo
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.remote.api.OrganizationApi
@@ -57,6 +58,10 @@ class NgoDashboardViewModel @Inject constructor(
     private val listingRepository: ListingRepository
 ) : ViewModel() {
 
+    private companion object {
+        const val TAG = "NgoDashboardVM"
+    }
+
     private val _state = MutableStateFlow(NgoDashboardState())
     val state = _state.asStateFlow()
 
@@ -106,7 +111,9 @@ class NgoDashboardViewModel @Inject constructor(
                         }
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to observe current user", e)
+            }
         }
     }
 
@@ -117,21 +124,27 @@ class NgoDashboardViewModel @Inject constructor(
             // `totalCompleted % 20`, which moved with the all-time total and told the
             // reader nothing about their week.
             _state.update { it.copy(stats = s, weeklyCompleted = s.completedThisWeek) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load stats", e)
+        }
     }
 
     private suspend fun loadTodaySummary() {
         try {
             val summary = organizationApi.getTodaySummary().data
             _state.update { it.copy(todaySummary = summary) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load today's summary", e)
+        }
     }
 
     private suspend fun loadActivity() {
         try {
             val activities = organizationApi.getMyActivity().data
             _state.update { it.copy(activities = activities) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load activity", e)
+        }
     }
 
     private suspend fun loadNearbyListings() {
@@ -152,6 +165,8 @@ class NgoDashboardViewModel @Inject constructor(
                     )
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load nearby listings", e)
+        }
     }
 }

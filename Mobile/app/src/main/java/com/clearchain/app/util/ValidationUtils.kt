@@ -18,13 +18,16 @@ object ValidationUtils {
         return hasUppercase && hasLowercase && hasDigit
     }
 
+    /**
+     * Shared by onboarding and profile-edit (previously two different rules — onboarding
+     * required a leading "+" and validated digit count, profile-edit only checked overall
+     * string length — so a number valid from one screen could be rejected re-entering
+     * the other). An optional leading "+", 10-15 digits, with common separators allowed.
+     */
     fun isValidPhone(phone: String): Boolean {
-        return phone.isNotBlank() && phone.length >= 10
-    }
-
-    enum class PasswordStrength {
-        WEAK,
-        MEDIUM,
-        STRONG
+        val trimmed = phone.trim()
+        val digits = trimmed.removePrefix("+").filter(Char::isDigit)
+        return digits.length in 10..15 &&
+            trimmed.all { it.isDigit() || it in setOf('+', ' ', '-', '(', ')') }
     }
 }

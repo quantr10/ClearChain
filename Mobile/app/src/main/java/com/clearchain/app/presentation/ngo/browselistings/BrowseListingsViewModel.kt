@@ -299,7 +299,7 @@ class BrowseListingsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message ?: "Failed to load") }
+                    _state.update { it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_load_listings)) }
                 }
             )
         }

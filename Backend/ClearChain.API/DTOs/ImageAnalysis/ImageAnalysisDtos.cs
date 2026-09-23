@@ -23,7 +23,7 @@ public class FoodAnalysisData
 
     /// <summary>
     /// Food category detected by AI (for Category field)
-    /// Must match: FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|CANNED_GOODS|BEVERAGES|FROZEN_FOODS|GRAINS
+    /// Must match: FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER
     /// </summary>
     public string Category { get; set; } = string.Empty;
 

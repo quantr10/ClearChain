@@ -1,5 +1,7 @@
 package com.clearchain.app.util
 
+import android.content.Context
+import com.clearchain.app.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -41,22 +43,22 @@ object DateTimeUtils {
         }
     }
 
-    fun getTimeAgo(isoDate: String): String {
+    fun getTimeAgo(context: Context, isoDate: String): String {
         return try {
             val date = SimpleDateFormat(ISO_8601_FORMAT, Locale.getDefault()).parse(isoDate)
             val now = Date()
             val diff = now.time - (date?.time ?: 0)
 
             val seconds = TimeUnit.MILLISECONDS.toSeconds(diff)
-            val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
-            val hours = TimeUnit.MILLISECONDS.toHours(diff)
-            val days = TimeUnit.MILLISECONDS.toDays(diff)
+            val minutes = TimeUnit.MILLISECONDS.toMinutes(diff).toInt()
+            val hours = TimeUnit.MILLISECONDS.toHours(diff).toInt()
+            val days = TimeUnit.MILLISECONDS.toDays(diff).toInt()
 
             when {
-                seconds < 60 -> "Just now"
-                minutes < 60 -> "$minutes minute${if (minutes > 1) "s" else ""} ago"
-                hours < 24 -> "$hours hour${if (hours > 1) "s" else ""} ago"
-                days < 7 -> "$days day${if (days > 1) "s" else ""} ago"
+                seconds < 60 -> context.getString(R.string.time_just_now)
+                minutes < 60 -> context.resources.getQuantityString(R.plurals.time_minutes_ago, minutes, minutes)
+                hours < 24 -> context.resources.getQuantityString(R.plurals.time_hours_ago, hours, hours)
+                days < 7 -> context.resources.getQuantityString(R.plurals.time_days_ago, days, days)
                 else -> formatDate(isoDate)
             }
         } catch (e: Exception) {

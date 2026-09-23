@@ -13,12 +13,46 @@ using ClearChain.API.Jobs;
 using Microsoft.AspNetCore.SignalR;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Serilog;
 
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
+
+// Fail fast on missing required config rather than the previous behavior, where each of
+// these was only checked the first time a request happened to need it (a scoped service
+// constructor throwing InvalidOperationException) — so a missing var surfaced as a random
+// 500 on whichever endpoint hit it first, possibly hours after a bad deploy.
+var requiredConfigKeys = new[]
+{
+    "DATABASE_URL", "JWT_SECRET_KEY", "JWT_ISSUER", "JWT_AUDIENCE",
+    "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "AZURE_VISION_ENDPOINT", "AZURE_VISION_KEY"
+};
+var missingConfigKeys = requiredConfigKeys
+    .Where(key => string.IsNullOrWhiteSpace(builder.Configuration[key]))
+    .ToList();
+if (missingConfigKeys.Count > 0)
+{
+    throw new InvalidOperationException(
+        $"Missing required configuration: {string.Join(", ", missingConfigKeys)}. " +
+        "Set these in .env (see .env.example) or as environment variables.");
+}
+
+// Serilog was referenced in the project but never wired up (ILogger<T> was writing to
+// the default console provider only) — this makes it the actual logging pipeline the
+// project's own README describes, with the same rolling daily file the app already had
+// a stray leftover of.
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine(AppContext.BaseDirectory, "logs", "clearchain-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30));
 
 var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -41,6 +75,10 @@ builder.Services.AddHangfireServer(options =>
 
 // Register NotificationJobs for dependency injection
 builder.Services.AddScoped<NotificationJobs>();
+
+// IHttpClientFactory — SupabaseStorageService's uploads were building a raw `new
+// HttpClient()` per call, the classic socket-exhaustion/DNS-staleness anti-pattern.
+builder.Services.AddHttpClient();
 
 // Add Services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -93,7 +131,11 @@ builder.Services.AddAuthentication(options =>
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
 
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            // SignalR's browser/WebSocket clients and a plain browser tab opening the
+            // Hangfire dashboard can't attach an Authorization header, so both accept the
+            // token via query string instead.
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs") || path.StartsWithSegments("/hangfire")))
             {
                 context.Token = accessToken;
             }
@@ -171,67 +213,63 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// ── Hangfire Dashboard — restricted to admin role ────────────────────────────
-// Access: https://your-domain/hangfire
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    AppPath = "/",
-    DashboardTitle = "ClearChain Background Jobs",
-    Authorization = new[] { new HangfireAuthorizationFilter() }
-});
-
 // ── Scheduled Jobs — staggered 5 min apart to avoid DB contention ────────────
-RecurringJob.AddOrUpdate<NotificationJobs>(
+// Service-based API (not the static RecurringJob.* one): JobStorage.Current is only
+// set once Hangfire is actually resolved from DI, which UseHangfireDashboard below
+// (moved after UseAuthentication/UseAuthorization) no longer guarantees has happened
+// by this point.
+var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "check-expiring-listings",
     job => job.CheckExpiringListings(),
     "0 0 * * *",   // 00:00 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "check-expired-listings",
     job => job.CheckExpiredListings(),
     "5 0 * * *",   // 00:05 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "check-expiring-inventory",
     job => job.CheckExpiringInventory(),
     "10 0 * * *",  // 00:10 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "check-expired-inventory",
     job => job.CheckExpiredInventory(),
     "15 0 * * *",  // 00:15 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "expire-stale-pickup-requests",
     job => job.ExpireStalePickupRequests(),
     "20 0 * * *",  // 00:20 UTC — after the listing sweeps, so released stock lands on fresh rows
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 // ── Housekeeping — separate window from the notification jobs ────────────────
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "cleanup-refresh-tokens",
     job => job.CleanupExpiredRefreshTokens(),
     "0 1 * * *",   // 01:00 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "cleanup-old-notifications",
     job => job.CleanupOldNotifications(),
     "10 1 * * *",  // 01:10 UTC
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "prune-stale-fcm-tokens",
     job => job.PruneStaleFcmTokens(),
     "20 1 * * 0",  // Sundays 01:20 UTC — slow-moving data, no need for a daily pass
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
 // ── Admin dashboard keep-alive ───────────────────────────────────────────────
-RecurringJob.AddOrUpdate<NotificationJobs>(
+recurringJobs.AddOrUpdate<NotificationJobs>(
     "broadcast-platform-stats",
     job => job.BroadcastPlatformStats(),
     "0 * * * *",   // hourly
@@ -243,6 +281,18 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── Hangfire Dashboard — restricted to admin role ────────────────────────────
+// Access: https://your-domain/hangfire (append ?access_token=<jwt> — a browser tab
+// can't send an Authorization header). Must come after UseAuthentication/UseAuthorization
+// so HangfireAuthorizationFilter sees a populated HttpContext.User; before this, the
+// filter always saw an unauthenticated request and denied everyone, admins included.
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    AppPath = "/",
+    DashboardTitle = "ClearChain Background Jobs",
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
 
 app.MapControllers();
 

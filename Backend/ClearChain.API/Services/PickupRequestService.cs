@@ -15,7 +15,8 @@ public enum PickupRequestServiceError
     InvalidStatus,
     InvalidInput,
     StorageError,
-    DatabaseError
+    DatabaseError,
+    Conflict
 }
 
 public record PickupRequestServiceResult(
@@ -31,7 +32,7 @@ public interface IPickupRequestService
 {
     Task<PickupRequestServiceResult> CreateAsync(Guid ngoId, CreatePickupRequestRequest request);
     Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null);
-    Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName);
+    Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType);
     Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId);
     Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize);
     Task<PickupRequestServiceResult> GetGroceryRequestsAsync(Guid groceryId, int page, int pageSize);
@@ -82,6 +83,8 @@ public class PickupRequestService : IPickupRequestService
             return Fail(PickupRequestServiceError.NotFound, "Listing not found");
         if (listing.Status != ListingStatus.Open)
             return Fail(PickupRequestServiceError.InvalidStatus, "Listing is not available");
+        if (request.RequestedQuantity <= 0)
+            return Fail(PickupRequestServiceError.InvalidInput, "Requested quantity must be at least 1");
         if (request.RequestedQuantity > listing.Quantity)
             return Fail(PickupRequestServiceError.InvalidInput, $"Requested quantity exceeds available quantity ({listing.Quantity})");
         if (!DateTime.TryParse(request.PickupDate, out var pickupDate))
@@ -101,7 +104,18 @@ public class PickupRequestService : IPickupRequestService
             request.RequiresRefrigeration, request.IsFragile, request.IsHeavy);
 
         _context.PickupRequests.Add(pickupRequest);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The listing/group was reserved or modified by someone else between our read
+            // and this write (caught by the xmin concurrency token) — refuse rather than
+            // silently overselling the same stock.
+            return Fail(PickupRequestServiceError.Conflict,
+                "This listing was just updated by someone else. Please refresh and try again.");
+        }
 
         var data = MapToData(pickupRequest, reservedListing.Id, ngo.Name, listing.Grocery?.Name ?? "");
 
@@ -203,7 +217,7 @@ public class PickupRequestService : IPickupRequestService
     }
 
     public async Task<PickupRequestServiceResult> MarkPickedUpAsync(
-        Guid requestId, Guid callerId, Stream photoStream, string fileName)
+        Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType)
     {
         var pickupRequest = await _context.PickupRequests
             .Include(p => p.Ngo)
@@ -227,7 +241,7 @@ public class PickupRequestService : IPickupRequestService
         string proofPhotoUrl;
         try
         {
-            proofPhotoUrl = await _storageService.UploadPickupProofAsync(photoStream, fileName);
+            proofPhotoUrl = await _storageService.UploadPickupProofAsync(photoStream, fileName, contentType);
             _logger.LogInformation("Proof photo uploaded: {Url}", proofPhotoUrl);
         }
         catch (Exception ex)

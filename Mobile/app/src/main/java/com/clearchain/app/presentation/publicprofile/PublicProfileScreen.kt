@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.publicprofile
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -43,6 +44,7 @@ import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -59,6 +61,7 @@ data class PublicProfileState(
 // ── ViewModel ────────────────────────────────────────────────────────────────
 @HiltViewModel
 class PublicProfileViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val organizationApi: OrganizationApi,
     private val listingApi: ListingApi
@@ -91,7 +94,7 @@ class PublicProfileViewModel @Inject constructor(
                     loadMoreFromStore(response.data.id)
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: "Failed to load profile", isLoading = false) }
+                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_failed_load_profile), isLoading = false) }
             }
         }
     }

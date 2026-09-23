@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -54,8 +53,6 @@ fun DashboardSection(
     title: String,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
-    /** Defaults to the small section caption; pass a larger style for a headline section. */
-    titleStyle: TextStyle? = null,
     action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -80,8 +77,8 @@ fun DashboardSection(
                     if (title.isNotBlank()) {
                         Text(
                             text = title,
-                            style = titleStyle ?: MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
                             color = resolvedContentColor
                         )
                     }

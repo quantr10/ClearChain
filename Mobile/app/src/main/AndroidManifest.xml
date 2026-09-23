@@ -48,18 +48,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links: clearchain:// scheme -->
-            <intent-filter android:autoVerify="true">
+            <!-- Deep links: clearchain:// scheme. autoVerify only applies to http(s) Android
+                 App Links, not custom schemes — omitted here since it would be a no-op and
+                 lint (correctly) flags it as invalid on a filter with no http(s) host. -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="clearchain" />
             </intent-filter>
 
-
         </activity>
 
-        <!-- ✅ ADD FCM Service -->
+        <!-- FCM Service -->
         <service
             android:name=".data.remote.firebase.FCMService"
             android:exported="false">

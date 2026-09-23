@@ -170,7 +170,7 @@ public class InventoryController : ControllerBase
             return Unauthorized(new { message = "User not authenticated" });
 
         var item = await _context.Inventories
-            .FirstOrDefaultAsync(i => i.Id == id);
+            .FirstOrDefaultAsync(i => i.Id == id && i.NgoId.ToString() == userId);
 
         if (item == null)
             return NotFound(new { message = "Inventory item not found" });
