@@ -11,6 +11,7 @@ import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.data.remote.dto.SubmitReportRequest
 import com.clearchain.app.data.remote.dto.UpdateCartItemRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.di.ApplicationScope
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.ListingRepository
@@ -41,7 +42,8 @@ class ListingDetailViewModel @Inject constructor(
     private val deleteListingUseCase: DeleteListingUseCase,
     private val updateListingQuantityUseCase: UpdateListingQuantityUseCase,
     private val signalRService: SignalRService,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ListingDetailState())
@@ -67,7 +69,7 @@ class ListingDetailViewModel @Inject constructor(
         // Leaving the room is a fire-and-forget send on the shared connection — it releases a
         // server-side group membership without touching the connection itself.
         joinedListingId?.let { listingId ->
-            CoroutineScope(Dispatchers.IO).launch {
+            applicationScope.launch {
                 signalRService.leaveListingRoom(listingId)
             }
         }
@@ -105,7 +107,7 @@ class ListingDetailViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(error = e.message ?: "Failed to load listing", isLoading = false) }
+                    _state.update { it.copy(error = e.message ?: context.getString(R.string.error_failed_load_listing), isLoading = false) }
                 }
             )
         }
@@ -230,6 +232,11 @@ class ListingDetailViewModel @Inject constructor(
     }
 
     private fun observeSignalR(listingId: String) {
+        // loadListing() calls this on every reload (including after a successful quantity
+        // update), so without this guard each reload added another permanent room join plus
+        // two more listingUpdated/listingQuantityChanged collectors that were never cancelled.
+        if (joinedListingId == listingId) return
+
         // The server's `listing_{id}` group has no members until someone joins it, so without
         // this the per-listing broadcasts never reach anyone. Left in leaveListingRoom below.
         viewModelScope.launch { signalRService.joinListingRoom(listingId) }
@@ -324,7 +331,7 @@ class ListingDetailViewModel @Inject constructor(
                     loadListing(listing.id)
                 },
                 onFailure = { e ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: "Failed to update quantity"))
+                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_update_quantity_failed)))
                 }
             )
         }

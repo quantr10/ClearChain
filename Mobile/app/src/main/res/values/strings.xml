@@ -4,7 +4,6 @@
     <!-- ── General ── -->
     <string name="ok">OK</string>
     <string name="msg_session_expired">Your session has expired. Please log in again.</string>
-    <string name="realtime_reconnecting">Reconnecting…</string>
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="save">Save</string>
@@ -47,6 +46,10 @@
     <string name="password">Password</string>
     <string name="confirm_password">Confirm password</string>
     <string name="forgot_password">Forgot password?</string>
+    <string name="forgot_password_email_subject">ClearChain — Forgot my password</string>
+    <string name="label_or">or</string>
+    <string name="label_from_date">From %1$s</string>
+    <string name="label_request_count_short">%1$d req</string>
     <string name="remember_me">Remember me</string>
     <string name="dont_have_account">Don\'t have an account?</string>
     <string name="already_have_account">Already have an account?</string>
@@ -176,6 +179,12 @@
     <string name="notif_new_listing">New food listings nearby</string>
     <string name="notif_request_update">Pickup request updates</string>
     <string name="notif_expiry_reminder">Expiry reminders</string>
+    <string name="settings_general">General</string>
+    <string name="language_english">English</string>
+    <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="settings_open_link_failed">No app available to open this link</string>
+    <string name="url_terms_of_service" translatable="false">https://clearchain.app/terms</string>
+    <string name="url_privacy_policy" translatable="false">https://clearchain.app/privacy</string>
 
     <!-- ── Profile ── -->
     <string name="my_profile">My profile</string>
@@ -964,6 +973,7 @@
     <string name="error_new_password_required">New password required</string>
     <string name="error_password_min_length">At least 8 characters</string>
     <string name="error_password_needs_uppercase">Needs an uppercase letter</string>
+    <string name="error_password_needs_lowercase">Needs a lowercase letter</string>
     <string name="error_password_needs_number">Needs a number</string>
     <string name="error_passwords_dont_match">Passwords don\'t match</string>
     <string name="label_show_password">Show password</string>
@@ -1514,4 +1524,28 @@
     <string name="quality_no_data">No reviews, disputes or reports in this period.</string>
 
     <string name="chart_no_organizations">No organizations registered yet.</string>
+
+    <!-- Relative time — shared by chat timestamps (verbose) and the notification inbox (compact) -->
+    <string name="time_just_now">Just now</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <string name="time_minutes_ago_compact">%1$dm ago</string>
+    <string name="time_hours_ago_compact">%1$dh ago</string>
+
+    <string name="error_save_location_failed">Failed to save location</string>
+    <string name="label_selected_location">Selected Location</string>
+    <string name="error_submit_dispute_failed">Failed to submit dispute</string>
+    <string name="error_distribute_item_failed">Failed to distribute item</string>
+    <string name="error_load_listings">Failed to load listings</string>
+    <string name="error_update_quantity_failed">Failed to update quantity</string>
 </resources>

@@ -12,6 +12,7 @@ import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
 import com.clearchain.app.domain.usecase.profile.UploadVerificationDocumentUseCase
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -159,7 +160,7 @@ class OnboardingViewModel @Inject constructor(
                 var valid = true
                 val phoneError = when {
                     s.phone.isBlank() -> context.getString(R.string.error_phone_required)
-                    !isValidOnboardingPhone(s.phone) -> context.getString(R.string.error_phone_invalid)
+                    !ValidationUtils.isValidPhone(s.phone) -> context.getString(R.string.error_phone_invalid)
                     else -> null
                 }
                 if (phoneError != null) {
@@ -343,14 +344,6 @@ class OnboardingViewModel @Inject constructor(
             !stepTwoComplete -> 2
             else -> 3
         }
-    }
-
-    private fun isValidOnboardingPhone(phone: String): Boolean {
-        val trimmed = phone.trim()
-        val digits = trimmed.filter(Char::isDigit)
-        return trimmed.startsWith("+") &&
-            digits.length in 10..15 &&
-            trimmed.all { it.isDigit() || it in setOf('+', ' ', '-', '(', ')') }
     }
 
     private fun isValidContactPerson(name: String): Boolean {

@@ -16,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
@@ -69,10 +68,7 @@ fun GroceryDashboardScreen(
                     // First card on the page: what the store has actually rescued leads,
                     // before today's workload.
                     state.stats?.let { stats ->
-                        DashboardSection(
-                            title = stringResource(R.string.analytics_impact),
-                            titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
-                        ) {
+                        DashboardSection(title = stringResource(R.string.analytics_impact)) {
                             ImpactSummaryRow(
                                 kgSaved = stats.foodSaved,
                                 mealsEstimate = stats.mealsEstimate,

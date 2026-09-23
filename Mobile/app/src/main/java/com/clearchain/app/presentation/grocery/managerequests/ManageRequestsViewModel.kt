@@ -135,7 +135,7 @@ class ManageRequestsViewModel @Inject constructor(
                     fetchNgoReputations(requests.map { it.ngoId }.toSet())
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to load requests") }
+                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_load_requests)) }
                 }
             )
         }
@@ -228,7 +228,7 @@ class ManageRequestsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved)))
                     loadRequests()
                 },
-                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to approve") } }
+                onFailure = { error -> _state.update { it.copy(error = error.message ?: context.getString(R.string.error_approve_failed)) } }
             )
         }
     }
@@ -240,7 +240,7 @@ class ManageRequestsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected)))
                     loadRequests()
                 },
-                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to reject") } }
+                onFailure = { error -> _state.update { it.copy(error = error.message ?: context.getString(R.string.error_reject_failed)) } }
             )
         }
     }

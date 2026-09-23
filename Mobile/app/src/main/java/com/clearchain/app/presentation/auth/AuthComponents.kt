@@ -12,9 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.clearchain.app.R
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 
@@ -84,7 +86,7 @@ fun AuthDivider() {
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f))
         Text(
-            text = "or",
+            text = stringResource(R.string.label_or),
             modifier = Modifier.padding(horizontal = 12.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

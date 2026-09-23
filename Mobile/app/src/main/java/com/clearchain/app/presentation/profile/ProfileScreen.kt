@@ -388,6 +388,7 @@ private fun ChangePasswordDialog(
     val errNewRequired = stringResource(R.string.error_new_password_required)
     val errMinLength = stringResource(R.string.error_password_min_length)
     val errNeedsUppercase = stringResource(R.string.error_password_needs_uppercase)
+    val errNeedsLowercase = stringResource(R.string.error_password_needs_lowercase)
     val errNeedsNumber = stringResource(R.string.error_password_needs_number)
     val errDontMatch = stringResource(R.string.error_passwords_dont_match)
 
@@ -406,6 +407,7 @@ private fun ChangePasswordDialog(
                 newPassword.isBlank() -> error = errNewRequired
                 newPassword.length < 8 -> error = errMinLength
                 !newPassword.any { it.isUpperCase() } -> error = errNeedsUppercase
+                !newPassword.any { it.isLowerCase() } -> error = errNeedsLowercase
                 !newPassword.any { it.isDigit() } -> error = errNeedsNumber
                 newPassword != confirmNewPassword -> error = errDontMatch
                 else -> onConfirm(currentPassword, newPassword)
@@ -465,129 +467,6 @@ private fun ChangePasswordDialog(
 }
 
 // ── Account stats card ───────────────────────────────────────────────────────
-
-// ── Team Members Card ────────────────────────────────────────────────────────
-
-@Composable
-private fun TeamMembersCard(user: Organization) {
-    Card(shape = RoundedCornerShape(16.dp)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            MemberRow(
-                name = user.name,
-                detail = user.email,
-                badge = stringResource(R.string.label_owner_badge),
-                tint = MaterialTheme.colorScheme.primaryContainer,
-                onTint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            if (!user.contactPerson.isNullOrBlank()) {
-                HorizontalDivider()
-                MemberRow(
-                    name = user.contactPerson,
-                    detail = stringResource(R.string.label_contact_person),
-                    badge = stringResource(R.string.label_contact_badge),
-                    tint = MaterialTheme.colorScheme.secondaryContainer,
-                    onTint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-
-            HorizontalDivider()
-
-            // Invite placeholder (multi-user support requires backend infrastructure)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.PersonAdd,
-                        null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.label_invite_team_member),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        stringResource(R.string.label_coming_soon),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
-                Icon(
-                    Icons.Default.ChevronRight,
-                    null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MemberRow(
-    name: String,
-    detail: String,
-    badge: String,
-    tint: Color,
-    onTint: Color
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(tint),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.Person,
-                null,
-                tint = onTint,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Surface(shape = RoundedCornerShape(4.dp), color = tint) {
-            Text(
-                badge,
-                style = MaterialTheme.typography.labelSmall,
-                color = onTint,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-            )
-        }
-    }
-}
 
 // ── Logout dialog ────────────────────────────────────────────────────────────
 

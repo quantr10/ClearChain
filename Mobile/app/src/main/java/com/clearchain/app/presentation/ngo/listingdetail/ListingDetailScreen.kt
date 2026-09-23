@@ -40,6 +40,7 @@ import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.openInGoogleMaps
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -464,24 +465,7 @@ fun ListingDetailScreen(
                                                 ClearChainActionIconButton(
                                                     icon = Icons.Default.Navigation,
                                                     contentDescription = stringResource(R.string.action_get_directions),
-                                                    onClick = {
-                                                        val encoded = Uri.encode(address)
-                                                        val uri = Uri.parse("geo:0,0?q=$encoded")
-                                                        runCatching {
-                                                            context.startActivity(
-                                                                Intent(Intent.ACTION_VIEW, uri).apply {
-                                                                    setPackage("com.google.android.apps.maps")
-                                                                }
-                                                            )
-                                                        }.onFailure {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse("https://maps.google.com/?q=$encoded")
-                                                                )
-                                                            )
-                                                        }
-                                                    }
+                                                    onClick = { openInGoogleMaps(context, address) }
                                                 )
                                             }
                                         }

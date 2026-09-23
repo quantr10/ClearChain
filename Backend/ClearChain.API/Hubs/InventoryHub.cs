@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using ClearChain.Infrastructure.Data;
 
 namespace ClearChain.API.Hubs;
 
@@ -7,10 +9,12 @@ namespace ClearChain.API.Hubs;
 public class InventoryHub : Hub
 {
     private readonly ILogger<InventoryHub> _logger;
+    private readonly ApplicationDbContext _context;
 
-    public InventoryHub(ILogger<InventoryHub> logger)
+    public InventoryHub(ILogger<InventoryHub> logger, ApplicationDbContext context)
     {
         _logger = logger;
+        _context = context;
     }
 
     public override async Task OnConnectedAsync()
@@ -43,6 +47,19 @@ public class InventoryHub : Hub
     // Client can join specific inventory item room
     public async Task JoinInventoryItemRoom(string itemId)
     {
+        // Without this check, any authenticated org that knows or guesses an inventory
+        // item's GUID could join its room and see another NGO's inventory updates.
+        if (!Guid.TryParse(itemId, out var itemGuid) ||
+            !Guid.TryParse(Context.UserIdentifier, out var callerId))
+            return;
+
+        var owns = await _context.Inventories.AnyAsync(i => i.Id == itemGuid && i.NgoId == callerId);
+        if (!owns)
+        {
+            _logger.LogWarning($"Connection {Context.ConnectionId} (user {callerId}) denied joining item_{itemId} — not the owning NGO");
+            return;
+        }
+
         await Groups.AddToGroupAsync(Context.ConnectionId, $"item_{itemId}");
         _logger.LogInformation($"Connection {Context.ConnectionId} joined item_{itemId}");
     }

@@ -77,7 +77,7 @@ class DisputeViewModel @Inject constructor(
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dispute_submitted)))
                 _uiEvent.send(UiEvent.NavigateUp)
             } catch (e: Exception) {
-                _state.update { it.copy(isSubmitting = false, error = e.message ?: "Failed to submit dispute") }
+                _state.update { it.copy(isSubmitting = false, error = e.message ?: context.getString(R.string.error_submit_dispute_failed)) }
             }
         }
     }

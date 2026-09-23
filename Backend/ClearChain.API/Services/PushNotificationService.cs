@@ -350,7 +350,7 @@ public class PushNotificationService : IPushNotificationService
         // (see RequireVerifiedOrganizationAttribute), so notifying them is noise they can't act
         // on — and it would fill their inbox before they are even approved.
         var recipientIds = await _context.Organizations
-            .Where(o => o.Type.ToLower() == organizationType.ToLower() && o.Verified)
+            .Where(o => o.Type.ToLower() == organizationType.ToLower() && o.Verified && !o.IsDeleted)
             .Select(o => o.Id)
             .ToListAsync();
 

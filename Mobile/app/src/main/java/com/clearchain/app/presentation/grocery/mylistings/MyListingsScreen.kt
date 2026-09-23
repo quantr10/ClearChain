@@ -311,7 +311,7 @@ fun MyListingsScreen(
                                                             if (listing.requestCount > 0) {
                                                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                                                                     Icon(Icons.Default.Inventory, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
-                                                                    Text("${listing.requestCount} req", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                                                    Text(stringResource(R.string.label_request_count_short, listing.requestCount), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                                                 }
                                                             }
                                                         }

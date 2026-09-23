@@ -417,7 +417,7 @@ class CreateListingViewModel @Inject constructor(
                 title = analysis.title,
                 description = analysis.notes,
                 category = analysis.category.uppercase(),
-                expiryDate = analysis.expiryDate.substring(0, 10),
+                expiryDate = analysis.expiryDate.take(10),
                 imageUrl = analysis.imageUrl
             )
         }

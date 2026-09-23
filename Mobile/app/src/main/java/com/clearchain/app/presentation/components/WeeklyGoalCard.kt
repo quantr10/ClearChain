@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.BrandGreen
 
@@ -40,27 +39,25 @@ fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(16.dp)
                 )
                 Text(
                     text = stringResource(R.string.weekly_pickups),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
                 )
             }
             Text(
                 text = "$completed / $goal",
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp
+                fontWeight = FontWeight.Bold
             )
         }
         LinearProgressIndicator(

@@ -82,10 +82,7 @@ fun NgoDashboardScreen(
                     // ── Impact ───────────────────────────────────────────────
                     // First card on the page: what the organization has actually achieved
                     // leads, before today's workload.
-                    DashboardSection(
-                        title = stringResource(R.string.analytics_impact),
-                        titleStyle = MaterialTheme.typography.titleSmall.copy(fontSize = 14.sp)
-                    ) {
+                    DashboardSection(title = stringResource(R.string.analytics_impact)) {
                         ImpactSummaryRow(
                             kgSaved = state.impact.kgSaved,
                             mealsEstimate = state.impact.mealsProvided,
@@ -214,11 +211,18 @@ internal fun ActivityHistorySheet(
             ) {
                 Text(
                     stringResource(R.string.section_activity_trend),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, stringResource(R.string.close))
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        stringResource(R.string.close),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
             Spacer(Modifier.height(8.dp))

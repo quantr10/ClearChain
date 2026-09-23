@@ -96,13 +96,3 @@ fun FoodCategory.displayName(): String {
         FoodCategory.OTHER -> "Other"
     }
 }
-
-fun ListingStatus.displayName(): String {
-    return when (this) {
-        ListingStatus.AVAILABLE -> "Available"
-        ListingStatus.RESERVED -> "Reserved"
-        ListingStatus.COMPLETED -> "Completed"
-        ListingStatus.EXPIRED -> "Expired"
-        ListingStatus.ARCHIVED -> "Archived"
-    }
-}

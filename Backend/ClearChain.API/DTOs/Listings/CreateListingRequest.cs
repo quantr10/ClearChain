@@ -10,8 +10,10 @@ public class CreateListingRequest
 
     public string Description { get; set; } = string.Empty;
 
+    // Matches the mobile app's FoodCategory enum and AzureVisionService's detector output
+    // (PACKAGED replaced CANNED_GOODS there; keep both vocabularies in sync).
     [Required]
-    [RegularExpression(@"^(FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|CANNED_GOODS|BEVERAGES|FROZEN_FOODS|GRAINS)$")]
+    [RegularExpression(@"^(FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER)$")]
     public string Category { get; set; } = string.Empty;
 
     [Required]

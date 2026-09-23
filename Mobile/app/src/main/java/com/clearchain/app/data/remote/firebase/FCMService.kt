@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.clearchain.app.MainActivity
 import com.clearchain.app.R
+import com.clearchain.app.data.local.SettingsStore
 import com.clearchain.app.data.local.database.ClearChainDatabase
 import com.clearchain.app.data.local.entity.NotificationEntity
 import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
@@ -20,6 +21,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
@@ -40,12 +42,20 @@ class FCMService : FirebaseMessagingService() {
     @Inject
     lateinit var registerFCMTokenUseCase: RegisterFCMTokenUseCase
 
+    @Inject
+    lateinit var settingsStore: SettingsStore
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private const val TAG = "FCMService"
         const val CHANNEL_ID = "clearchain_notifications"
         private const val CHANNEL_NAME = "ClearChain Notifications"
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
     }
 
     override fun onNewToken(token: String) {
@@ -67,6 +77,7 @@ class FCMService : FirebaseMessagingService() {
 
         val title = data["title"] ?: message.notification?.title ?: "ClearChain"
         val body = data["body"] ?: message.notification?.body ?: ""
+        val type = data["type"] ?: "general"
 
         serviceScope.launch {
             try {
@@ -77,7 +88,7 @@ class FCMService : FirebaseMessagingService() {
                         // The server's row id, so the same notification arriving again over
                         // SignalR or an inbox sync replaces this row instead of duplicating it.
                         id = data["notificationId"] ?: message.messageId ?: UUID.randomUUID().toString(),
-                        type = data["type"] ?: "general",
+                        type = type,
                         title = title,
                         body = body,
                         relatedId = relatedId,
@@ -89,9 +100,16 @@ class FCMService : FirebaseMessagingService() {
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error saving notification", e)
             }
-        }
 
-        showNotification(title, body, data)
+            // The inbox row above is written either way — a notification preference is about
+            // being interrupted, not about losing the record, and a muted type the user later
+            // goes looking for is still there. Only the tray notification is suppressed.
+            if (settingsStore.allowsNotification(type)) {
+                showNotification(title, body, data)
+            } else {
+                Log.d(TAG, "🔕 Suppressed by notification preference: $type")
+            }
+        }
     }
 
     /**

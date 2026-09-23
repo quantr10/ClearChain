@@ -78,6 +78,7 @@ public class CartController : ControllerBase
         CartServiceError.NotFound => NotFound(new { message = result.ErrorMessage }),
         CartServiceError.Forbidden => Forbid(),
         CartServiceError.InvalidInput or CartServiceError.InvalidStatus => BadRequest(new { message = result.ErrorMessage }),
+        CartServiceError.Conflict => Conflict(new { message = result.ErrorMessage }),
         _ => StatusCode(500, new { message = result.ErrorMessage })
     };
 }

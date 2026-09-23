@@ -181,10 +181,14 @@ class ListingRepositoryImpl @Inject constructor(
             // matching what uploadFoodImage below declares, and what the backend's
             // Content-Type-based whitelist for /analyze now expects.
             val file = ImageUtils.compressImage(context, imageUri)
-            val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
-            val response = imageAnalysisApi.analyzeImage(multipartBody)
-            file.delete()
+            val response = try {
+                val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
+                imageAnalysisApi.analyzeImage(multipartBody)
+            } finally {
+                // Must run even if the call throws, or a failed analysis leaks this file.
+                file.delete()
+            }
             if (response.success && response.data != null) {
                 Result.success(response.data)
             } else {
@@ -207,10 +211,14 @@ class ListingRepositoryImpl @Inject constructor(
     override suspend fun uploadFoodImage(imageUri: Uri): Result<String> {
         return try {
             val file = ImageUtils.compressImage(context, imageUri)
-            val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
-            val response = imageAnalysisApi.uploadFoodImage(multipartBody)
-            file.delete()
+            val response = try {
+                val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
+                imageAnalysisApi.uploadFoodImage(multipartBody)
+            } finally {
+                // Must run even if the call throws, or a failed upload leaks this file.
+                file.delete()
+            }
             if (response.success && response.imageUrl != null) {
                 Result.success(response.imageUrl)
             } else {

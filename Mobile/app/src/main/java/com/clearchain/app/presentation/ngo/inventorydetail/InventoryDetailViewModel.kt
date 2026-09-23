@@ -9,6 +9,7 @@ import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.di.ApplicationScope
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +27,8 @@ class InventoryDetailViewModel @Inject constructor(
     private val inventoryApi: InventoryApi,
     private val pickupRequestApi: PickupRequestApi,
     private val listingApi: ListingApi,
-    private val signalRService: SignalRService
+    private val signalRService: SignalRService,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(InventoryDetailState())
@@ -41,7 +43,7 @@ class InventoryDetailViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         joinedItemId?.let { itemId ->
-            CoroutineScope(Dispatchers.IO).launch {
+            applicationScope.launch {
                 signalRService.leaveInventoryItemRoom(itemId)
             }
         }

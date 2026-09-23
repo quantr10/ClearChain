@@ -128,8 +128,10 @@ public class OrganizationService : IOrganizationService
 
         if (emailChanged)
         {
-            await SendEmailVerificationAsync(user);
-            return (true, "Profile updated. Check your new email for a verification code — you will need it to sign in again.");
+            var emailSent = await SendEmailVerificationAsync(user);
+            return (true, emailSent
+                ? "Profile updated. Check your new email for a verification code — you will need it to sign in again."
+                : "Profile updated, but we couldn't send the verification code to your new email. Use \"resend\" to try again.");
         }
 
         return (true, resubmitted ? "Profile updated and resubmitted for review" : "Profile updated successfully");
@@ -169,14 +171,26 @@ public class OrganizationService : IOrganizationService
     /// Issues a fresh verification code for the user's current address, matching the
     /// code shape and 15-minute lifetime used at registration.
     /// </summary>
-    private async Task SendEmailVerificationAsync(Organization user)
+    private async Task<bool> SendEmailVerificationAsync(Organization user)
     {
-        var code = Random.Shared.Next(100000, 999999).ToString();
+        var code = VerificationCodeGenerator.Generate();
         user.EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(code);
         user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+        user.EmailVerificationAttempts = 0;
         await _context.SaveChangesAsync();
 
-        await _emailService.SendVerificationEmailAsync(user.Email, user.Name, code);
+        try
+        {
+            await _emailService.SendVerificationEmailAsync(user.Email, user.Name, code);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // The token/expiry above are already saved, so the user can still verify via
+            // "resend" — a failed send here must not surface as a 500 on profile update.
+            _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
+            return false;
+        }
     }
 
     /// <summary>

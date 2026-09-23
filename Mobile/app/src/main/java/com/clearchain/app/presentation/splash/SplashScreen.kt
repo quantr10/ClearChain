@@ -84,11 +84,26 @@ fun SplashScreen(
                 // fully handled by the checks above) doesn't linger in prefs forever.
                 val prefs = context.getSharedPreferences("deeplink", Context.MODE_PRIVATE)
                 val pendingScreen = prefs.getString("pending_screen", null)
+                val pendingRequestId = prefs.getString("pending_request_id", null)
                 if (pendingScreen != null) {
                     prefs.edit().clear().apply()
+
+                    // A pickup-request push carries the specific request's id — route
+                    // straight to it instead of the generic list it used to fall back to.
+                    if ((pendingScreen == "my_requests" || pendingScreen == "grocery_requests") &&
+                        pendingRequestId != null
+                    ) {
+                        navController.navigate(Screen.RequestDetail.createRoute(pendingRequestId)) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                        return@LaunchedEffect
+                    }
+
                     val route = when (pendingScreen) {
                         "my_requests" -> Screen.MyRequests.route
+                        "grocery_requests" -> Screen.PickupRequests.route
                         "browse_listings" -> Screen.BrowseListings.route
+                        "my_listings" -> Screen.MyListings.route
                         "inventory" -> Screen.Inventory.route
                         else -> null
                     }

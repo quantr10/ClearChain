@@ -1,6 +1,7 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.Listings;
 using ClearChain.API.Middleware;
 using ClearChain.API.Services;
@@ -54,11 +55,7 @@ public class ListingsController : ControllerBase
             RelatedRequestId = listing.RelatedRequestId?.ToString(),
             SplitIndex = listing.SplitIndex,
             ViewCount = listing.ViewCount,
-            ImageUrls = string.IsNullOrEmpty(listing.PhotoUrl)
-                ? new List<string>()
-                : listing.PhotoUrl.StartsWith("[")
-                    ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(listing.PhotoUrl) ?? new List<string>()
-                    : new List<string> { listing.PhotoUrl },
+            ImageUrls = ParseImageUrls(listing.PhotoUrl),
             GroceryLatitude = listing.Grocery?.Latitude,
             GroceryLongitude = listing.Grocery?.Longitude,
             GroceryHours = listing.Grocery?.Hours
@@ -202,6 +199,24 @@ public class ListingsController : ControllerBase
 
     private static double ToRadians(double degrees) => degrees * Math.PI / 180;
 
+    private static List<string> ParseImageUrls(string? photoUrl)
+    {
+        if (string.IsNullOrEmpty(photoUrl))
+            return new List<string>();
+
+        if (!photoUrl.StartsWith("["))
+            return new List<string> { photoUrl };
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(photoUrl) ?? new List<string>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new List<string>();
+        }
+    }
+
     [HttpGet("grocery/my")]
     [Authorize]
     public async Task<ActionResult<ListingsResponse>> GetMyListings(
@@ -261,14 +276,12 @@ public class ListingsController : ControllerBase
     public async Task<ActionResult<ListingResponse>> CreateListing(
         [FromBody] CreateListingRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
 
-        var grocery = await _context.Organizations
-            .FirstOrDefaultAsync(o => o.Id.ToString() == userId);
+        var grocery = await _context.Organizations.FindAsync(userId);
 
         if (grocery == null)
         {
@@ -304,7 +317,7 @@ public class ListingsController : ControllerBase
         {
             Id = groupId,
             OriginalListingId = listingId,
-            GroceryId = Guid.Parse(userId),
+            GroceryId = userId,
             ProductName = request.Title,
             Category = request.Category.ToUpper(),
             Unit = request.Unit,
@@ -335,7 +348,7 @@ public class ListingsController : ControllerBase
         {
             Id = listingId,
             GroupId = groupId,
-            GroceryId = Guid.Parse(userId),
+            GroceryId = userId,
             ProductName = request.Title,
             Category = request.Category.ToUpper(),
             Quantity = request.Quantity,

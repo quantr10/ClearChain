@@ -276,7 +276,7 @@ private fun DateRangeFilterRow(
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
                                 "${state.filterStartDate!!.takeLast(5)} \u2013 ${state.filterEndDate!!.takeLast(5)}"
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null ->
-                                "From ${state.filterStartDate!!.takeLast(5)}"
+                                stringResource(R.string.label_from_date, state.filterStartDate!!.takeLast(5))
                             else -> label
                         }
                         Text(label2)

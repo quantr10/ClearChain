@@ -11,7 +11,7 @@ public interface IAuthService
     Task<(bool Success, string Message, Organization? NewOrg)> RegisterAsync(RegisterRequest request);
     Task<(bool Success, string Message, AuthResponse? Response)> LoginAsync(LoginRequest request);
     Task<(bool Success, string Message, AuthResponse? Response)> RefreshTokenAsync(string refreshToken);
-    Task<bool> RevokeRefreshTokenAsync(string refreshToken);
+    Task<bool> RevokeRefreshTokenAsync(string refreshToken, string? fcmToken = null);
     Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     Task<(bool Available, string Message)> CheckEmailAvailableAsync(string email);
     Task<(bool Success, string Message)> DeleteAccountAsync(Guid userId, string password);
@@ -21,9 +21,13 @@ public interface IAuthService
 
 public class AuthService : IAuthService
 {
+    private const int MaxEmailVerificationAttempts = 5;
+
     private readonly ApplicationDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IEmailService _emailService;
+    private readonly IPushNotificationService _pushNotificationService;
+    private readonly ILogger<AuthService> _logger;
     private readonly int _refreshTokenExpiryDays;
     private readonly int _jwtExpirySeconds;
 
@@ -31,13 +35,36 @@ public class AuthService : IAuthService
         ApplicationDbContext context,
         IJwtService jwtService,
         IEmailService emailService,
+        IPushNotificationService pushNotificationService,
+        ILogger<AuthService> logger,
         IConfiguration configuration)
     {
         _context = context;
         _jwtService = jwtService;
         _emailService = emailService;
+        _pushNotificationService = pushNotificationService;
+        _logger = logger;
         _refreshTokenExpiryDays = int.Parse(configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7");
         _jwtExpirySeconds = int.Parse(configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60;
+    }
+
+    /// <summary>
+    /// Sends the verification email without letting a transient SMTP failure surface as an
+    /// unhandled 500 — the account row is already committed by the time this runs, so a
+    /// failed send just means the user needs to use "resend", not that registration failed.
+    /// </summary>
+    private async Task<bool> TrySendVerificationEmailAsync(string email, string name, string code)
+    {
+        try
+        {
+            await _emailService.SendVerificationEmailAsync(email, name, code);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", email);
+            return false;
+        }
     }
 
     public async Task<(bool Success, string Message, Organization? NewOrg)> RegisterAsync(RegisterRequest request)
@@ -45,14 +72,15 @@ public class AuthService : IAuthService
         if (await _context.Organizations.AnyAsync(o => o.Email.ToLower() == request.Email.ToLower()))
             return (false, "Email already registered", null);
 
-        var verificationCode = Random.Shared.Next(100000, 999999).ToString();
+        // Public self-registration only ever creates grocery/NGO accounts pending
+        // verification. Checked again here (not just via the DTO's [RegularExpression])
+        // so this invariant holds even for a caller that builds the request directly —
+        // admin accounts must never be reachable through this path.
         var type = request.Type.ToLower();
+        if (type != "grocery" && type != "ngo")
+            return (false, "Type must be 'grocery' or 'ngo'", null);
 
-        // Admin accounts don't go through org verification at all — they're trusted by
-        // definition (see Organization.requiresVerificationGate() on the client, which
-        // exempts admins the same way). Auto-approve here so one never sits in the
-        // verification queue as "pending".
-        var isAdmin = type == "admin";
+        var verificationCode = VerificationCodeGenerator.Generate();
 
         var organization = new Organization
         {
@@ -65,8 +93,8 @@ public class AuthService : IAuthService
             EmailVerified = false,
             EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(verificationCode),
             EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15),
-            Verified = isAdmin,
-            VerificationStatus = isAdmin ? "approved" : "pending",
+            Verified = false,
+            VerificationStatus = "pending",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -94,9 +122,12 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
         }
 
-        await _emailService.SendVerificationEmailAsync(organization.Email, organization.Name, verificationCode);
+        var emailSent = await TrySendVerificationEmailAsync(organization.Email, organization.Name, verificationCode);
 
-        return (true, "Verification email sent. Please check your inbox.", organization);
+        return (true, emailSent
+            ? "Verification email sent. Please check your inbox."
+            : "Account created, but we couldn't send the verification email. Use \"resend\" to try again.",
+            organization);
     }
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> VerifyEmailAsync(string email, string code)
@@ -117,11 +148,29 @@ public class AuthService : IAuthService
             return (false, "Verification code has expired. Please request a new one.", null);
 
         if (!BCrypt.Net.BCrypt.Verify(code, user.EmailVerificationToken))
+        {
+            user.EmailVerificationAttempts++;
+            if (user.EmailVerificationAttempts >= MaxEmailVerificationAttempts)
+            {
+                // Too many wrong guesses — invalidate the code outright instead of leaving
+                // it brute-forceable for the rest of its 15-minute window.
+                user.EmailVerificationToken = null;
+                user.EmailVerificationTokenExpiry = null;
+                user.EmailVerificationAttempts = 0;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return (false, "Too many incorrect attempts. Request a new code.", null);
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
             return (false, "Invalid verification code.", null);
+        }
 
         user.EmailVerified = true;
         user.EmailVerificationToken = null;
         user.EmailVerificationTokenExpiry = null;
+        user.EmailVerificationAttempts = 0;
         user.UpdatedAt = DateTime.UtcNow;
 
         var accessToken = _jwtService.GenerateAccessToken(user);
@@ -157,14 +206,17 @@ public class AuthService : IAuthService
         if (user == null) return (false, "Account not found");
         if (user.EmailVerified) return (false, "Email already verified");
 
-        var newCode = Random.Shared.Next(100000, 999999).ToString();
+        var newCode = VerificationCodeGenerator.Generate();
         user.EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(newCode);
         user.EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+        user.EmailVerificationAttempts = 0;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        await _emailService.SendVerificationEmailAsync(user.Email, user.Name, newCode);
-        return (true, "Verification email resent");
+        var emailSent = await TrySendVerificationEmailAsync(user.Email, user.Name, newCode);
+        return emailSent
+            ? (true, "Verification email resent")
+            : (false, "Couldn't send the verification email. Please try again shortly.");
     }
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> LoginAsync(LoginRequest request)
@@ -271,7 +323,7 @@ public class AuthService : IAuthService
         });
     }
 
-    public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
+    public async Task<bool> RevokeRefreshTokenAsync(string refreshToken, string? fcmToken = null)
     {
         var storedToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
         if (storedToken == null || storedToken.IsRevoked) return false;
@@ -279,6 +331,10 @@ public class AuthService : IAuthService
         storedToken.IsRevoked = true;
         storedToken.RevokedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(fcmToken))
+            await _pushNotificationService.RemoveTokenAsync(storedToken.OrganizationId, fcmToken);
+
         return true;
     }
 

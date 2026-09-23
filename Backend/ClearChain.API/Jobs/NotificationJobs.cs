@@ -114,6 +114,15 @@ public class NotificationJobs
             {
                 listing.Status = ListingStatus.Expired;
                 listing.UpdatedAt = DateTime.UtcNow;
+
+                // Mirrors ArchiveListing — a listing leaving circulation must free its
+                // share of the group's advertised availability, or the group's aggregate
+                // totals (shown to browsing NGOs) overstate what's actually left.
+                if (listing.Group != null)
+                {
+                    listing.Group.TotalAvailable = Math.Max(0, listing.Group.TotalAvailable - listing.Quantity);
+                    listing.Group.UpdatedAt = DateTime.UtcNow;
+                }
             }
 
             // Persist before announcing: a client that reacts to the broadcast by refetching

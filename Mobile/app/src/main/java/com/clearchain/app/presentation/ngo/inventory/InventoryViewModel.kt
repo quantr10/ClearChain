@@ -348,7 +348,7 @@ class InventoryViewModel @Inject constructor(
                     loadInventory()
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = error.message ?: "Failed to distribute item", isLoading = false) }
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_distribute_item_failed), isLoading = false) }
                 }
             )
         }

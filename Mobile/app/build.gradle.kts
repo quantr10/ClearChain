@@ -40,7 +40,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
 
     // Hilt
@@ -134,16 +135,6 @@ dependencies {
 
     // SignalR
     implementation("com.microsoft.signalr:signalr:8.0.0")
-
-    // Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.5.0")
-
-    // Accompanist permissions
-    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
-
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-    implementation("androidx.compose.material3:material3:1.3.1")
 
     implementation("com.google.android.gms:play-services-location:21.1.0")
     implementation("com.google.maps.android:maps-compose:4.3.3")

@@ -160,11 +160,14 @@ class TransactionsViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         allTransactions = allRequests,
-                        filteredTransactions = allRequests,
                         flaggedIds = flaggedIds,
                         isLoading = false
                     )
                 }
+                // Re-applies whatever status/date/search filter is active — this runs on
+                // every SignalR event, so skipping it silently reset the admin's filters
+                // to "show everything" each time a transaction event arrived.
+                applyFilters()
             } catch (e: Exception) {
                 _state.update {
                     it.copy(

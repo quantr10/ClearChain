@@ -139,7 +139,41 @@ Table names are lowercase; 17 tables are mapped:
 `foodimageanalyses`, `fcmtokens`, `refreshtokens`.
 
 Schema changes are applied through EF Core migrations in
-`Backend/ClearChain.Infrastructure/Migrations`.
+`Backend/ClearChain.Infrastructure/Migrations`. The directory starts empty on a fresh
+checkout — the prior incremental migrations were squashed, so generate the baseline
+before first use:
+
+```bash
+cd Backend
+dotnet ef migrations add InitialCreate --project ClearChain.Infrastructure --startup-project ClearChain.API
+dotnet ef database update --project ClearChain.Infrastructure --startup-project ClearChain.API
+```
+
+A database that already carries this schema must be stamped rather than migrated, or
+EF will try to create tables that exist. After generating the migration above, record
+it as applied instead of running `database update`:
+
+```sql
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId"    character varying(150) NOT NULL,
+    "ProductVersion" character varying(32)  NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+VALUES ('<the generated migration id>', '8.0.11')
+ON CONFLICT ("MigrationId") DO NOTHING;
+```
+
+Drop any rows left over from the earlier incremental migrations at the same time —
+they name migrations that no longer exist.
+
+For a later schema change, add a new migration on top of the baseline rather than
+editing it:
+
+```bash
+dotnet ef migrations add <Name> --project ClearChain.Infrastructure --startup-project ClearChain.API
+```
 
 ## User roles
 

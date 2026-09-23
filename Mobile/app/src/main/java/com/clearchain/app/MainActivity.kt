@@ -12,7 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,18 +23,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.clearchain.app.data.local.SessionManager
-import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.data.local.SettingsStore
 import com.clearchain.app.domain.model.OrganizationType
-import com.clearchain.app.presentation.components.ReconnectingBanner
 import com.clearchain.app.presentation.navigation.BottomNavBar
 import com.clearchain.app.presentation.navigation.NavGraph
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.ClearChainTheme
+import com.clearchain.app.util.LocaleUtils
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
     lateinit var sessionManager: SessionManager
 
     @Inject
-    lateinit var signalRService: SignalRService
+    lateinit var settingsStore: SettingsStore
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -56,11 +57,11 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // Apply stored locale before the Activity inflates any resources
-        val lang = newBase.getSharedPreferences("settings_sync", Context.MODE_PRIVATE)
-            .getString("language", "en") ?: "en"
-        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
-        super.attachBaseContext(newBase)
+        // Apply the stored locale before the Activity inflates any resources. Read straight from
+        // SharedPreferences because DataStore is suspend-only and this runs before onCreate.
+        val lang = newBase.getSharedPreferences(SettingsStore.SYNC_PREFS, Context.MODE_PRIVATE)
+            .getString("language", SettingsStore.LANG_EN) ?: SettingsStore.LANG_EN
+        super.attachBaseContext(LocaleUtils.wrap(newBase, lang))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,8 +75,23 @@ class MainActivity : ComponentActivity() {
         // Request notification permission
         requestNotificationPermission()
 
+        // The mirror is seeded here so an install that picked a theme before the mirror
+        // existed keeps it, rather than falling back to "system" on this launch.
+        lifecycleScope.launch { settingsStore.primeSyncedTheme() }
+
         setContent {
-            ClearChainTheme {
+            // syncedTheme() is the value already on disk, so the very first frame paints the
+            // chosen palette; the flow then keeps it live when the setting changes.
+            val storedTheme = remember { settingsStore.syncedTheme() }
+            val theme by settingsStore.theme.collectAsState(initial = storedTheme)
+
+            ClearChainTheme(
+                darkTheme = when (theme) {
+                    SettingsStore.THEME_LIGHT -> false
+                    SettingsStore.THEME_DARK -> true
+                    else -> isSystemInDarkTheme()
+                }
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -104,13 +120,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Real-time now backs most screens, so a dropped connection has to be
-                    // visible — otherwise stale numbers look like current ones. The
-                    // snackbarHost slot puts it above the nav bar with insets already handled.
-                    val connectionState by signalRService.connectionState.collectAsState()
-
                     Scaffold(
-                        snackbarHost = { ReconnectingBanner(connectionState) },
                         bottomBar = {
                             if (showBottomBar && userType != null) {
                                 BottomNavBar(

@@ -19,23 +19,4 @@ object Constants {
      * at the root, not under the REST prefix.
      */
     val SERVER_ROOT_URL: String = BASE_URL.trimEnd('/').removeSuffix("/api")
-
-    // Database
-    const val DATABASE_NAME = "clearchain_db"
-
-    // Preferences
-    const val PREFERENCES_NAME = "clearchain_preferences"
-    const val KEY_ACCESS_TOKEN = "access_token"
-    const val KEY_REFRESH_TOKEN = "refresh_token"
-    const val KEY_USER_ID = "user_id"
-
-    // Timeouts
-    const val NETWORK_TIMEOUT = 30L // seconds
-
-    // Pagination
-    const val PAGE_SIZE = 20
-
-    // Image
-    const val MAX_IMAGE_SIZE_MB = 5
-    const val IMAGE_QUALITY = 80
 }

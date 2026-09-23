@@ -311,7 +311,7 @@ private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate
 }
 
 // Shared section card — matches AccountDetailScreen / RequestDetailScreen.
-// Card title uses titleMedium, the same size as the card titles on the home screen.
+// Card title uses the same labelSmall/Bold heading as every other section across the app.
 
 /** Matches the rhythm of [WeeklyGoalCard], which the rate cards sit alongside. */
 private val RATE_CARD_SPACING = 12.dp
@@ -341,9 +341,8 @@ private fun AnalyticsSectionCard(
                     if (title.isNotBlank()) {
                         Text(
                             title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }

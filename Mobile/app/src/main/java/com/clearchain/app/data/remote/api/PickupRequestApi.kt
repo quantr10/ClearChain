@@ -28,12 +28,6 @@ interface PickupRequestApi {
         @Path("id") id: String
     ): PickupRequestResponse
 
-    @PUT("pickuprequests/{id}/status")
-    suspend fun updatePickupRequestStatus(
-        @Path("id") id: String,
-        @Body request: UpdatePickupRequestStatusRequest
-    ): PickupRequestResponse
-
     @DELETE("pickuprequests/{id}")
     suspend fun cancelPickupRequest(
         @Path("id") id: String

@@ -38,6 +38,7 @@ public class Organization
     public bool EmailVerified { get; set; } = false;
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiry { get; set; }
+    public int EmailVerificationAttempts { get; set; } = 0;
 
     // ── Onboarding document ──────────────────────────────────────────────────
     public string? DocumentUrl { get; set; }        // Verification doc (business reg / charity cert)

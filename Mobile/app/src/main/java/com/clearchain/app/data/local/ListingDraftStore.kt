@@ -32,8 +32,6 @@ class ListingDraftStore @Inject constructor(
         val KEY_QUANTITY = stringPreferencesKey("draft_quantity")
         val KEY_UNIT = stringPreferencesKey("draft_unit")
         val KEY_EXPIRY_DATE = stringPreferencesKey("draft_expiry_date")
-        val KEY_PICKUP_START = stringPreferencesKey("draft_pickup_start")
-        val KEY_PICKUP_END = stringPreferencesKey("draft_pickup_end")
         val KEY_SAVED_AT = longPreferencesKey("draft_saved_at")
     }
 
