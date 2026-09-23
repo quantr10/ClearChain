@@ -4,12 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
-import com.clearchain.app.data.remote.api.ListingApi
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.displayName
+import com.clearchain.app.domain.usecase.listing.ArchiveListingUseCase
 import com.clearchain.app.domain.usecase.listing.DeleteListingUseCase
 import com.clearchain.app.domain.usecase.listing.GetMyListingsUseCase
+import com.clearchain.app.domain.usecase.listing.RestoreListingUseCase
 import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +26,8 @@ class MyListingsViewModel @Inject constructor(
     private val getMyListingsUseCase: GetMyListingsUseCase,
     private val deleteListingUseCase: DeleteListingUseCase,
     private val updateListingQuantityUseCase: UpdateListingQuantityUseCase,
-    private val listingApi: ListingApi,
+    private val archiveListingUseCase: ArchiveListingUseCase,
+    private val restoreListingUseCase: RestoreListingUseCase,
     private val signalRService: SignalRService
 ) : ViewModel() {
 
@@ -193,8 +195,7 @@ class MyListingsViewModel @Inject constructor(
             _state.update { it.copy(bulkOperation = MyListingsBulkOperation.ARCHIVE) }
             var success = 0
             ids.forEach { id ->
-                runCatching { listingApi.archiveListing(id) }
-                    .onSuccess { success++ }
+                archiveListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_archived, success)))
@@ -210,8 +211,7 @@ class MyListingsViewModel @Inject constructor(
             _state.update { it.copy(bulkOperation = MyListingsBulkOperation.RESTORE) }
             var success = 0
             ids.forEach { id ->
-                runCatching { listingApi.restoreListing(id) }
-                    .onSuccess { success++ }
+                restoreListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_restored, success)))

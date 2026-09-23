@@ -160,6 +160,28 @@ class ListingRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun archiveListing(id: String): Result<Listing> {
+        return try {
+            val response = listingApi.archiveListing(id)
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun restoreListing(id: String): Result<Listing> {
+        return try {
+            val response = listingApi.restoreListing(id)
+            val domain = response.data.toDomain()
+            listingDao.upsert(domain.toEntity())
+            Result.success(domain)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateListingQuantity(listingId: String, newQuantity: Int): Result<Listing> {
         return try {
             val response = listingApi.updateListingQuantity(

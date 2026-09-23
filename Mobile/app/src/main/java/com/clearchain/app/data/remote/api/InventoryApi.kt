@@ -2,6 +2,7 @@ package com.clearchain.app.data.remote.api
 
 import com.clearchain.app.data.remote.dto.InventoryItemResponse
 import com.clearchain.app.data.remote.dto.InventoryListResponse
+import com.clearchain.app.data.remote.dto.UpdateExpiredItemsResponse
 import retrofit2.http.*
 
 interface InventoryApi {
@@ -17,7 +18,7 @@ interface InventoryApi {
     ): InventoryItemResponse
 
     @POST("inventory/update-expired")
-    suspend fun updateExpiredItems(): InventoryItemResponse
+    suspend fun updateExpiredItems(): UpdateExpiredItemsResponse
 
     @GET("inventory/{id}")
     suspend fun getInventoryItemById(@Path("id") id: String): InventoryItemResponse

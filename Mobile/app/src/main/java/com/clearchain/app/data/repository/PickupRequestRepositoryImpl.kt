@@ -7,9 +7,12 @@ import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.toDomain
 import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.remote.api.PickupRequestApi
+import com.clearchain.app.data.remote.dto.BulkActionRequest
+import com.clearchain.app.data.remote.dto.BulkRejectRequest
 import com.clearchain.app.data.remote.dto.CreatePickupRequestRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.PickupRequest
+import com.clearchain.app.domain.repository.BulkActionOutcome
 import com.clearchain.app.domain.repository.PickupRequestRepository
 import com.clearchain.app.util.ImageUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -167,6 +170,44 @@ class PickupRequestRepositoryImpl @Inject constructor(
             Result.success(domain)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun bulkApprovePickupRequests(ids: List<String>): Result<BulkActionOutcome> {
+        return try {
+            val response = pickupRequestApi.bulkApprove(BulkActionRequest(ids))
+            patchCachedStatus(response.results, newStatus = "approved")
+            val succeeded = response.results.count { it.success }
+            Result.success(BulkActionOutcome(succeeded = succeeded, failed = response.results.size - succeeded))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun bulkRejectPickupRequests(ids: List<String>, reason: String?): Result<BulkActionOutcome> {
+        return try {
+            val response = pickupRequestApi.bulkReject(BulkRejectRequest(ids, reason))
+            patchCachedStatus(response.results, newStatus = "rejected")
+            val succeeded = response.results.count { it.success }
+            Result.success(BulkActionOutcome(succeeded = succeeded, failed = response.results.size - succeeded))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * The bulk endpoints return per-id success flags, not the updated requests themselves, so
+     * each succeeded id's cached copy is patched with the new status directly rather than
+     * re-fetched — avoids N extra network calls just to keep the offline cache in sync.
+     */
+    private suspend fun patchCachedStatus(
+        results: List<com.clearchain.app.data.remote.dto.BulkActionResultItem>,
+        newStatus: String
+    ) {
+        results.filter { it.success }.forEach { result ->
+            pickupRequestDao.getById(result.id)?.let { cached ->
+                pickupRequestDao.upsert(cached.copy(status = newStatus))
+            }
         }
     }
 }

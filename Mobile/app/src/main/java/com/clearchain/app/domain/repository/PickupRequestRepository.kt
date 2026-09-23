@@ -33,4 +33,11 @@ interface PickupRequestRepository {
         id: String,
         photoUri: Uri
     ): Result<PickupRequest>
+
+    suspend fun bulkApprovePickupRequests(ids: List<String>): Result<BulkActionOutcome>
+
+    suspend fun bulkRejectPickupRequests(ids: List<String>, reason: String?): Result<BulkActionOutcome>
 }
+
+/** How many of a bulk approve/reject actually went through. */
+data class BulkActionOutcome(val succeeded: Int, val failed: Int)

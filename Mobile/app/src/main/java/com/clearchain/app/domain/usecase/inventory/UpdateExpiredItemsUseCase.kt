@@ -1,17 +1,11 @@
 package com.clearchain.app.domain.usecase.inventory
 
-import com.clearchain.app.data.remote.api.InventoryApi
+import com.clearchain.app.domain.repository.InventoryRepository
 import javax.inject.Inject
 
 class UpdateExpiredItemsUseCase @Inject constructor(
-    private val inventoryApi: InventoryApi
+    private val inventoryRepository: InventoryRepository
 ) {
-    suspend operator fun invoke(): Result<Unit> {
-        return try {
-            inventoryApi.updateExpiredItems()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend operator fun invoke(): Result<Unit> =
+        inventoryRepository.updateExpiredItems().map { }
 }

@@ -29,7 +29,14 @@ data class BulkRejectRequest(val ids: List<String>, val reason: String? = null)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class BulkActionResponse(val message: String, val succeeded: Int = 0, val failed: Int = 0)
+data class BulkActionResultItem(val id: String, val success: Boolean, val message: String)
+
+// The backend returns { message, results: [{id, success, message}] } — this used to declare
+// top-level succeeded/failed counts that don't exist in that shape, so they silently defaulted
+// to 0 and every bulk approve/reject reported "0 requests" regardless of the real outcome.
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class BulkActionResponse(val message: String, val results: List<BulkActionResultItem> = emptyList())
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
