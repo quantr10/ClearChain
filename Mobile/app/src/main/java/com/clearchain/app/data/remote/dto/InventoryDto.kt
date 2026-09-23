@@ -19,6 +19,16 @@ data class InventoryItemResponse(
     val data: InventoryItemData
 )
 
+// The backend's POST /inventory/update-expired returns { message, count } — no `data` field.
+// InventoryItemResponse (which requires one) was being used for this call, so every response
+// failed to deserialize and the endpoint always reported failure even on a successful sweep.
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class UpdateExpiredItemsResponse(
+    val message: String,
+    val count: Int = 0
+)
+
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class InventoryItemData(

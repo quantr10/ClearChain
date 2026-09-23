@@ -1,6 +1,16 @@
 package com.clearchain.app.domain.repository
 
+import com.clearchain.app.data.remote.api.NgoReputationData
+
 interface OrganizationRepository {
+
+    /**
+     * Another org's reputation stats. No local cache target exists for this — it's read-only
+     * information about a different organization, not the signed-in user's own data — so this
+     * is a straight passthrough to the API, added only for architectural consistency (every
+     * other organization action goes through this repository).
+     */
+    suspend fun getNgoReputation(organizationId: String): Result<NgoReputationData>
 
     /**
      * Uploads the single verification document (business licence / charity certificate).

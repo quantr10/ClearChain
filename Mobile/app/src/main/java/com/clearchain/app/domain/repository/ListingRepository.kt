@@ -44,6 +44,10 @@ interface ListingRepository {
 
     suspend fun deleteListing(id: String): Result<Unit>
 
+    suspend fun archiveListing(id: String): Result<Listing>
+
+    suspend fun restoreListing(id: String): Result<Listing>
+
     suspend fun updateListingQuantity(listingId: String, newQuantity: Int): Result<Listing>
 
     suspend fun analyzeImage(imageUri: Uri): Result<FoodAnalysisData>
