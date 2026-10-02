@@ -73,7 +73,6 @@ public class StatsBacklogDto
     public int? OldestPendingVerificationDays { get; set; }
 
     public int OpenDisputes { get; set; }
-    public int PendingReports { get; set; }
 }
 
 /// <summary>
@@ -107,7 +106,6 @@ public class StatsQualityDto
     public int DisputesOpened { get; set; }
     /// <summary>Disputes / completed pickups, 0..1.</summary>
     public double DisputeRate { get; set; }
-    public int ReportsFiled { get; set; }
 }
 
 public class StatsLeaderboardsDto

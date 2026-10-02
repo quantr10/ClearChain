@@ -1,7 +1,5 @@
 package com.clearchain.app.presentation.auth.login
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -29,6 +27,7 @@ import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.*
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.sendEmail
 import kotlinx.coroutines.delay
 
 @Composable
@@ -148,13 +147,7 @@ fun LoginScreen(
                             onClick = {
                                 // No self-service reset flow exists yet — route to support
                                 // instead of a dead button.
-                                runCatching {
-                                    context.startActivity(
-                                        Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@clearchain.app")).apply {
-                                            putExtra(Intent.EXTRA_SUBJECT, forgotPasswordSubject)
-                                        }
-                                    )
-                                }
+                                sendEmail(context, "support@clearchain.app", forgotPasswordSubject)
                             }
                         )
                     }

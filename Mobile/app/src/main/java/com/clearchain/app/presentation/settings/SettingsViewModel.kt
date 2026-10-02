@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.data.local.SettingsStore
+import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -11,7 +12,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsStore: SettingsStore
+    private val settingsStore: SettingsStore,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -39,7 +41,12 @@ class SettingsViewModel @Inject constructor(
                     notifRequestUpdate = values[3] as Boolean,
                     notifExpiry = values[4] as Boolean
                 )
-            }.collect { _state.value = it }
+            }.collect { combined -> _state.update { combined.copy(currentUserType = it.currentUserType) } }
+        }
+        viewModelScope.launch {
+            getCurrentUserUseCase().first()?.let { user ->
+                _state.update { it.copy(currentUserType = user.type) }
+            }
         }
     }
 

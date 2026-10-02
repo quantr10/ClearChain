@@ -13,6 +13,7 @@ sealed class BrowseListingsEvent {
     data class AddToCart(val listingId: String) : BrowseListingsEvent()
     data class IncrementCartItem(val listingId: String) : BrowseListingsEvent()
     data class DecrementCartItem(val listingId: String) : BrowseListingsEvent()
+    data class RemoveCartItem(val listingId: String) : BrowseListingsEvent()
     object OpenCart : BrowseListingsEvent()
     object ClearError : BrowseListingsEvent()
 

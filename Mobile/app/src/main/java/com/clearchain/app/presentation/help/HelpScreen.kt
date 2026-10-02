@@ -1,18 +1,26 @@
 package com.clearchain.app.presentation.help
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
+import com.clearchain.app.presentation.components.ClearChainCard
 import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.util.sendEmail
 
 private data class FaqItem(val question: String, val answer: String)
 
@@ -62,6 +70,7 @@ private val FAQS = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpScreen(onNavigateBack: () -> Unit) {
+    val context = LocalContext.current
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -78,26 +87,18 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                     onBack = onNavigateBack
                 )
             }
-            item {
-                Text(
-                    "Frequently Asked Questions",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
             items(FAQS.size) { idx ->
                 FaqCard(FAQS[idx])
             }
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                ClearChainCard(
+                    onClick = { sendEmail(context, "support@clearchain.app") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Icon(
@@ -105,7 +106,7 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 "Still need help?",
                                 style = MaterialTheme.typography.labelSmall,
@@ -118,6 +119,12 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         }
+                        Icon(
+                            Icons.Default.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        )
                     }
                 }
             }
@@ -129,32 +136,40 @@ fun HelpScreen(onNavigateBack: () -> Unit) {
 @Composable
 private fun FaqCard(item: FaqItem) {
     var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { expanded = !expanded }
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    val chevronRotation by animateFloatAsState(if (expanded) 180f else 0f, label = "chevronRotation")
+    ClearChainCard(onClick = { expanded = !expanded }) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .animateContentSize()
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     item.question,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    Icons.Default.ExpandMore,
                     contentDescription = null,
+                    modifier = Modifier.rotate(chevronRotation),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             if (expanded) {
-                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
                 Text(
                     item.answer,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

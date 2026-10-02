@@ -330,8 +330,7 @@ private fun BacklogCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
             BacklogTile(
                 icon = Icons.Default.ReportProblem,
                 label = stringResource(R.string.backlog_open_cases),
-                value = (b.openDisputes + b.pendingReports).toString(),
-                detail = stringResource(R.string.backlog_cases_detail, b.openDisputes, b.pendingReports),
+                value = b.openDisputes.toString(),
                 urgent = b.openDisputes > 0,
                 modifier = Modifier.weight(1f)
             )
@@ -400,7 +399,7 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
             }
         }
     ) {
-        if (q.reviewCount == 0 && q.disputesOpened == 0 && q.reportsFiled == 0) {
+        if (q.reviewCount == 0 && q.disputesOpened == 0) {
             EmptyChartNote(stringResource(R.string.quality_no_data))
         } else {
             MetricRow(stringResource(R.string.quality_reviews), q.reviewCount.toString())
@@ -412,11 +411,6 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
                 label = stringResource(R.string.quality_disputes),
                 value = q.disputesOpened.toString(),
                 valueColor = if (q.disputesOpened > 0) MaterialTheme.colorScheme.error else null
-            )
-            MetricRow(
-                label = stringResource(R.string.quality_reports),
-                value = q.reportsFiled.toString(),
-                valueColor = if (q.reportsFiled > 0) MaterialTheme.colorScheme.error else null
             )
             if (data.headline.completedPickups > 0) {
                 FootNote(stringResource(R.string.quality_dispute_rate, (q.disputeRate * 100).roundToInt()))

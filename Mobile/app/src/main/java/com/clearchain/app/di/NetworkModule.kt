@@ -149,9 +149,4 @@ object NetworkModule {
     @Singleton
     fun provideSavedListingApi(retrofit: Retrofit): SavedListingApi =
         retrofit.create(SavedListingApi::class.java)
-
-    @Provides
-    @Singleton
-    fun provideReportApi(retrofit: Retrofit): ReportApi =
-        retrofit.create(ReportApi::class.java)
 }

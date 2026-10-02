@@ -7,7 +7,7 @@ import com.clearchain.app.presentation.components.CommonSortOptions
 import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
 
-enum class MyListingsTab { AVAILABLE, ARCHIVED, RESERVED, EXPIRED }
+enum class MyListingsTab { ALL, AVAILABLE, ARCHIVED, RESERVED, EXPIRED }
 enum class MyListingsBulkOperation { DELETE, ARCHIVE, RESTORE }
 
 data class MyListingsState(

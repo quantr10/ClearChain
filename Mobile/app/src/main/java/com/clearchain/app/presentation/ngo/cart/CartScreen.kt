@@ -4,13 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,7 +22,12 @@ import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun CartScreen(
@@ -101,6 +106,7 @@ fun CartScreen(
                                         state = state,
                                         onEvent = viewModel::onEvent,
                                         onListingClick = { listingId -> onNavigate(Screen.ListingDetail.createRoute(listingId)) },
+                                        onGroceryClick = { groceryId -> onNavigate(Screen.PublicProfile.createRoute(groceryId)) },
                                         onRequestPickup = { onNavigate(Screen.CartPickup.createRoute(group.groceryId)) }
                                     )
                                 }
@@ -120,28 +126,36 @@ private fun CartGroupCard(
     state: CartState,
     onEvent: (CartEvent) -> Unit,
     onListingClick: (String) -> Unit,
+    onGroceryClick: (String) -> Unit,
     onRequestPickup: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
+    ClearChainCard {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onGroceryClick(group.groceryId) },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AvatarImage(
                     imageUrl = group.groceryProfilePictureUrl,
                     name = group.groceryName,
-                    size = 32
+                    size = 38
                 )
                 Text(
                     group.groceryName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "${group.items.size} item${if (group.items.size != 1) "s" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             group.items.forEachIndexed { index, item ->
                 CartItemRow(
                     item = item,
@@ -168,65 +182,80 @@ private fun CartItemRow(
     onListingClick: () -> Unit
 ) {
     val textColor = if (item.isValid) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
+    val expiryColor = cartItemExpiryColor(item.expiryDate)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onListingClick),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(onClick = onListingClick),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ProductThumbnail(
+                imageUrl = item.imageUrl,
+                contentDescription = item.title,
+                size = 48.dp
+            )
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                ProductThumbnail(
-                    imageUrl = item.imageUrl,
-                    contentDescription = item.title,
-                    size = 48.dp
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Column(
-                    Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Icon(
+                        Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = expiryColor
+                    )
                     Text(
-                        text = item.title,
+                        text = stringResource(
+                            R.string.label_expires_date,
+                            item.expiryDate?.let { DateTimeUtils.formatDate(it) } ?: "N/A"
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = textColor,
+                        color = expiryColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = stringResource(R.string.label_expires_date, item.expiryDate ?: "N/A"),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    item.invalidReason?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                }
+                item.invalidReason?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+        ) {
+            ClearChainQuantityStepper(
+                quantity = item.requestedQuantity,
+                unit = item.unit,
+                canIncrement = item.requestedQuantity.toDouble() < item.maxQuantity,
+                enabled = item.isValid,
+                onDecrement = { onEvent(CartEvent.DecrementItem(item.id, item.requestedQuantity)) },
+                onIncrement = { onEvent(CartEvent.IncrementItem(item.id, item.requestedQuantity)) },
+                expanded = false,
+                buttonSize = 24.dp
+            )
             ClearChainActionIconButton(
                 icon = Icons.Default.Delete,
                 contentDescription = stringResource(R.string.cart_remove),
@@ -235,17 +264,33 @@ private fun CartItemRow(
                 containerColor = MaterialTheme.colorScheme.errorContainer
             )
         }
-        ClearChainQuantityStepper(
-            quantity = item.requestedQuantity,
-            unit = item.unit,
-            canIncrement = item.requestedQuantity.toDouble() < item.maxQuantity,
-            enabled = item.isValid,
-            onDecrement = { onEvent(CartEvent.DecrementItem(item.id, item.requestedQuantity)) },
-            onIncrement = { onEvent(CartEvent.IncrementItem(item.id, item.requestedQuantity)) }
-        )
         if (showDivider) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
+    }
+}
+
+@Composable
+private fun cartItemExpiryColor(expiryDate: String?): Color {
+    val expiry = expiryDate?.takeIf { it.isNotBlank() } ?: return MaterialTheme.colorScheme.onSurfaceVariant
+    val daysUntilExpiry = remember(expiry) {
+        try {
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(expiry)!!
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
+            TimeUnit.MILLISECONDS.toDays(date.time - today.time)
+        } catch (_: Exception) {
+            Long.MAX_VALUE
+        }
+    }
+    return when {
+        daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
+        daysUntilExpiry <= 3L -> Color(0xFFE65100)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 

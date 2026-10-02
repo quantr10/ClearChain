@@ -59,6 +59,8 @@ import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.PickupReceiptPdf
+import com.clearchain.app.util.dialPhone
+import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -728,14 +730,6 @@ private fun RequestDetailContent(
         // -- 2. Lifecycle timeline (already a Card) --
         LifecycleTimeline(request = req)
 
-        // Product name
-        Text(
-            req.listingTitle,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth()
-        )
-
         // -- 4. Description card --
         if (!req.listingDescription.isNullOrBlank()) {
             SectionCard(stringResource(R.string.label_description)) {
@@ -749,7 +743,16 @@ private fun RequestDetailContent(
 
         // -- 5. Request Info card --
         if (req.items.isNotEmpty()) {
-            SectionCard(stringResource(R.string.cart_requested_items)) {
+            SectionCard(
+                title = stringResource(R.string.cart_requested_items),
+                trailing = {
+                    Text(
+                        "${req.items.size} ${if (req.items.size == 1) "item" else "items"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            ) {
                 req.items.forEachIndexed { index, item ->
                     RequestedItemRow(
                         item = item,
@@ -771,8 +774,14 @@ private fun RequestDetailContent(
 
         // -- 5b. About Us card (NGO only) --
         if (isNgo && groceryProfile != null) {
-            val address = groceryProfile.address?.takeIf { it.isNotBlank() }
-                ?: groceryProfile.location?.takeIf { it.isNotBlank() }
+            // Street (up to the first comma, in case the stored address already includes
+            // the city) + city + state + ZIP, on one line - matches Location & Hours.
+            val address = listOfNotNull(
+                groceryProfile.address?.substringBefore(',')?.trim()?.takeIf { it.isNotBlank() },
+                groceryProfile.location?.trim()?.takeIf { it.isNotBlank() },
+                groceryProfile.state?.trim()?.takeIf { it.isNotBlank() },
+                groceryProfile.zipCode?.trim()?.takeIf { it.isNotBlank() }
+            ).joinToString(", ").takeIf { it.isNotBlank() }
 
             SectionCard(stringResource(R.string.section_about_us)) {
                 if (address != null) {
@@ -799,16 +808,19 @@ private fun RequestDetailContent(
                         ClearChainActionIconButton(
                             icon = Icons.Default.Navigation,
                             contentDescription = stringResource(R.string.action_get_directions),
-                            onClick = { openInGoogleMaps(context, address) }
+                            onClick = {
+                                openInGoogleMaps(
+                                    context,
+                                    mapsQuery(groceryProfile.latitude, groceryProfile.longitude, address)
+                                )
+                            }
                         )
                     }
                 }
 
                 groceryProfile.phone?.takeIf { it.isNotBlank() }?.let { phone ->
                     Row(
-                        modifier = Modifier.clickable {
-                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
-                        },
+                        modifier = Modifier.clickable { dialPhone(context, phone) },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -837,26 +849,25 @@ private fun RequestDetailContent(
                     onClick = onConfirmPickup,
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.PhotoCamera,
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             }
 
             if (isGrocery && req.status == PickupRequestStatus.PENDING) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ClearChainButton(
-                        text = stringResource(R.string.approve),
-                        onClick = onApprove,
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Check
-                    )
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.reject),
                         onClick = onReject,
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Close,
-                        contentColor = MaterialTheme.colorScheme.error,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.approve),
+                        onClick = onApprove,
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Check
                     )
                 }
             }
@@ -1003,6 +1014,7 @@ private fun ImageActionButton(
 @Composable
 private fun SectionCard(
     title: String,
+    trailing: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -1014,12 +1026,19 @@ private fun SectionCard(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                trailing?.invoke()
+            }
             content()
         }
     }
@@ -1084,14 +1103,14 @@ private fun RequestedItemRow(
                 }
             }
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
                     text = quantityText,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
@@ -1181,14 +1200,17 @@ private fun LifecycleTimeline(request: PickupRequest) {
 
     val green = MaterialTheme.colorScheme.primary
     val muted = MaterialTheme.colorScheme.outlineVariant
+    val isNegativeStatus = request.status == PickupRequestStatus.CANCELLED ||
+        request.status == PickupRequestStatus.REJECTED
 
-    // -- Current-stage text (only for active statuses) --
+    // -- Current-stage text --
     val statusTitle = when (request.status) {
         PickupRequestStatus.PENDING -> stringResource(R.string.label_status_submitted)
         PickupRequestStatus.APPROVED -> stringResource(R.string.label_status_approved)
         PickupRequestStatus.READY -> stringResource(R.string.label_status_ready)
         PickupRequestStatus.COMPLETED -> stringResource(R.string.label_status_completed)
-        else -> null
+        PickupRequestStatus.CANCELLED -> stringResource(R.string.label_status_cancelled)
+        PickupRequestStatus.REJECTED -> stringResource(R.string.label_status_rejected)
     }
     val statusSub = when (request.status) {
         PickupRequestStatus.PENDING -> stringResource(
@@ -1214,7 +1236,14 @@ private fun LifecycleTimeline(request: PickupRequest) {
                 DateTimeUtils.formatTime(ts)
             )
         }
-        else -> null
+        PickupRequestStatus.CANCELLED -> stringResource(
+            R.string.label_cancelled_on,
+            DateTimeUtils.formatDateTime(request.createdAt)
+        )
+        PickupRequestStatus.REJECTED -> stringResource(
+            R.string.label_rejected_on,
+            DateTimeUtils.formatDateTime(request.createdAt)
+        )
     }
 
     Card(
@@ -1226,22 +1255,20 @@ private fun LifecycleTimeline(request: PickupRequest) {
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Status sentence block
-            if (statusTitle != null && statusSub != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        statusTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        statusSub,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    statusTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isNegativeStatus) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    statusSub,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isNegativeStatus) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
             // Horizontal icon bar
             Row(
@@ -1277,32 +1304,6 @@ private fun LifecycleTimeline(request: PickupRequest) {
                         )
                     }
                 }
-            }
-        }
-    }
-
-    // Cancelled / Rejected banner
-    if (request.status == PickupRequestStatus.CANCELLED || request.status == PickupRequestStatus.REJECTED) {
-        Surface(
-            color = MaterialTheme.colorScheme.errorContainer,
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Cancel, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onErrorContainer)
-                Text(
-                    if (request.status == PickupRequestStatus.CANCELLED) {
-                        stringResource(R.string.label_cancelled_on, DateTimeUtils.formatDateTime(request.createdAt))
-                    } else {
-                        stringResource(R.string.label_rejected_on, DateTimeUtils.formatDateTime(request.createdAt))
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
             }
         }
     }

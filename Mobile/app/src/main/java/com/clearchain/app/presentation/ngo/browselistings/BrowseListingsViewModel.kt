@@ -134,6 +134,7 @@ class BrowseListingsViewModel @Inject constructor(
             is BrowseListingsEvent.AddToCart -> addToCart(event.listingId)
             is BrowseListingsEvent.IncrementCartItem -> addToCart(event.listingId)
             is BrowseListingsEvent.DecrementCartItem -> decrementCartItem(event.listingId)
+            is BrowseListingsEvent.RemoveCartItem -> removeCartItem(event.listingId)
             BrowseListingsEvent.OpenCart -> viewModelScope.launch {
                 _uiEvent.send(UiEvent.Navigate(Screen.Cart.route))
             }
@@ -229,6 +230,19 @@ class BrowseListingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isUpdatingCart = true) }
             runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = item.requestedQuantity - 1)) }
+                .onSuccess { response -> updateCartState(response.data) }
+                .onFailure { error ->
+                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                }
+            _state.update { it.copy(isUpdatingCart = false) }
+        }
+    }
+
+    private fun removeCartItem(listingId: String) {
+        val item = _state.value.cartItemsByListingId[listingId] ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(isUpdatingCart = true) }
+            runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = 0)) }
                 .onSuccess { response -> updateCartState(response.data) }
                 .onFailure { error ->
                     _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }

@@ -91,6 +91,7 @@ fun ClearChainOutlinedButton(
     loading: Boolean = false,
     icon: ImageVector? = null,
     contentColor: Color = MaterialTheme.colorScheme.primary,
+    containerColor: Color = Color.White,
     fillMaxWidth: Boolean = false,
     border: BorderStroke? = null,
     iconSize: Dp = ClearChainButtonDefaults.IconSize
@@ -108,7 +109,7 @@ fun ClearChainOutlinedButton(
         enabled = enabled || loading,
         shape = ButtonShape,
         contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = containerColor, contentColor = contentColor),
         border = border ?: ButtonDefaults.outlinedButtonBorder(enabled)
     ) {
         if (loading) {

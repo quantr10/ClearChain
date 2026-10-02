@@ -30,8 +30,9 @@ import java.util.concurrent.TimeUnit
 fun ListingCard(
     listing: Listing,
     showGroceryInfo: Boolean = false,
+    showPickupTime: Boolean = true,
     onClick: (() -> Unit)? = null,
-    primaryAction: (@Composable () -> Unit)? = null,
+    cartAction: (@Composable () -> Unit)? = null,
     secondaryActions: (@Composable RowScope.() -> Unit)? = null,
     topRightAction: (@Composable () -> Unit)? = null,
     onGroceryAvatarClick: (() -> Unit)? = null,
@@ -141,6 +142,17 @@ fun ListingCard(
                         onClick = onGroceryAvatarClick
                     )
                 }
+
+                // Cart action (bottom-right, Browse mode only)
+                if (cartAction != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp)
+                    ) {
+                        cartAction()
+                    }
+                }
             }
 
             // ── Content ──────────────────────────────────────────────────────
@@ -220,27 +232,29 @@ fun ListingCard(
                 }
 
                 // Pickup time
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Schedule,
-                        null,
-                        Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        listing.groceryHours
-                            ?: stringResource(
-                                R.string.listing_pickup_from,
-                                listing.pickupTimeStart,
-                                listing.pickupTimeEnd
-                            ),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (showPickupTime) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            null,
+                            Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            listing.groceryHours
+                                ?: stringResource(
+                                    R.string.listing_pickup_from,
+                                    listing.pickupTimeStart,
+                                    listing.pickupTimeEnd
+                                ),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 // Location + distance (browse mode, merged into one row)
@@ -290,7 +304,6 @@ fun ListingCard(
                 }
 
                 // Actions
-                primaryAction?.invoke()
                 secondaryActions?.let {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

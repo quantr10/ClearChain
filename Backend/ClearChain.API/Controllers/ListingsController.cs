@@ -376,6 +376,7 @@ public class ListingsController : ControllerBase
 
         await _listingNotificationService.NotifyListingCreatedAsync(listingDto);
         await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
+        await _pushNotificationService.SendListingCreatedConfirmationNotification(userId, listingDto);
 
         return CreatedAtAction(
             nameof(GetListingById),
@@ -435,9 +436,9 @@ public class ListingsController : ControllerBase
             return NotFound(new { message = "Listing not found or you don't have permission to delete it" });
         }
 
-        if (listing.Status != ListingStatus.Open && listing.Status != ListingStatus.Archived)
+        if (listing.Status != ListingStatus.Open && listing.Status != ListingStatus.Archived && listing.Status != ListingStatus.Expired)
         {
-            return BadRequest(new { message = "Can only delete available or archived listings" });
+            return BadRequest(new { message = "Can only delete available, archived, or expired listings" });
         }
 
         var deletedListingId = listing.Id.ToString();

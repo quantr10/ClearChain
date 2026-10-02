@@ -346,11 +346,6 @@ public class CartService : ICartService
                 isValid = false;
                 invalidReason = $"Pickup date cannot be after expiry date ({listing.ExpirationDate.Value:yyyy-MM-dd}).";
             }
-            else if (listing.Group == null)
-            {
-                isValid = false;
-                invalidReason = "Listing cannot be requested right now. Remove it.";
-            }
 
             yield return new CartItemData
             {

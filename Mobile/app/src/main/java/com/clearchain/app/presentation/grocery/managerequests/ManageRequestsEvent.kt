@@ -29,5 +29,8 @@ sealed class ManageRequestsEvent {
     object BulkApprove : ManageRequestsEvent()
     data class BulkReject(val reason: String? = null) : ManageRequestsEvent()
 
+    // CSV export
+    object ExportCsv : ManageRequestsEvent()
+
     object ClearError : ManageRequestsEvent()
 }

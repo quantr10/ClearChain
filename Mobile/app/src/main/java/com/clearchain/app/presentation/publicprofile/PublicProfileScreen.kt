@@ -1,8 +1,6 @@
 package com.clearchain.app.presentation.publicprofile
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -41,8 +39,10 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
+import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
+import com.clearchain.app.util.sendEmail
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -335,14 +335,10 @@ private fun ContactInformationSection(profile: PublicProfileData) {
     if (email != null || phone != null) {
         ProfileSectionCard(stringResource(R.string.section_contact)) {
             email?.let {
-                ContactLinkRow(Icons.Default.Email, it) {
-                    context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$it")))
-                }
+                ContactLinkRow(Icons.Default.Email, it) { sendEmail(context, it) }
             }
             phone?.let {
-                ContactLinkRow(Icons.Default.Phone, it) {
-                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$it")))
-                }
+                ContactLinkRow(Icons.Default.Phone, it) { dialPhone(context, it) }
             }
         }
     }

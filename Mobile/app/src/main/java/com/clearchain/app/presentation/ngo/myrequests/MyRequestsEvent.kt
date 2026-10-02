@@ -35,6 +35,9 @@ sealed class MyRequestsEvent {
     // PDF receipt
     data class GenerateReceipt(val requestId: String) : MyRequestsEvent()
 
+    // CSV export
+    object ExportCsv : MyRequestsEvent()
+
     object ClearError : MyRequestsEvent()
 
     // Advanced filter sheet

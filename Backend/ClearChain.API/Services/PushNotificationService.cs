@@ -193,6 +193,22 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "browse_listings" }
             });
 
+    // Confirms to the grocery that just posted it that the listing is live. Unlike the NGO
+    // broadcast above, this is a receipt of the grocery's own action, not discretionary
+    // content - so it isn't gated by the "new listings nearby" preference (which only
+    // applies to NGOs anyway).
+    public Task SendListingCreatedConfirmationNotification(Guid groceryId, ListingData listing) =>
+        SendNotificationAsync(
+            groceryId,
+            "✅ Listing Posted!",
+            $"Your listing for {listing.Quantity} {listing.Unit} {listing.Title} is now live.",
+            new Dictionary<string, string>
+            {
+                { "type", "listing_created" },
+                { "listingId", listing.Id },
+                { "screen", "my_listings" }
+            });
+
     public Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing) =>
         SendNotificationAsync(
             groceryId,
