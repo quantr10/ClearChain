@@ -397,18 +397,13 @@ public class AdminController : ControllerBase
             .CountAsync(d => (!start.HasValue || d.CreatedAt >= start.Value)
                           && (!end.HasValue || d.CreatedAt <= end.Value));
 
-        var reportsFiled = await _context.Reports
-            .CountAsync(r => (!start.HasValue || r.CreatedAt >= start.Value)
-                          && (!end.HasValue || r.CreatedAt <= end.Value));
-
         var quality = new StatsQualityDto
         {
             AverageRating = reviews.Count == 0 ? null : Math.Round(reviews.Average(), 2),
             ReviewCount = reviews.Count,
             ReviewCoverage = completed.Count == 0 ? 0 : Math.Round((double)reviews.Count / completed.Count, 3),
             DisputesOpened = disputesOpened,
-            DisputeRate = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3),
-            ReportsFiled = reportsFiled
+            DisputeRate = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3)
         };
 
         // ── Backlog: the live queue, deliberately not scoped to the period ───
@@ -445,8 +440,7 @@ public class AdminController : ControllerBase
             PendingVerifications = pendingOrgs.Count,
             OldestPendingVerificationDays = oldestPendingDays,
             // Both states still sit on an admin's desk, which is what this queue counts.
-            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review"),
-            PendingReports = await _context.Reports.CountAsync(r => r.Status == "pending")
+            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review")
         };
 
         var data = new AdminStatisticsData
@@ -537,15 +531,15 @@ public class AdminController : ControllerBase
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
     // ── GET api/admin/disputes ───────────────────────────────────────────────
-    // Admin alert feed: open disputes + pending reports
+    // Admin alert feed: open disputes
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
     {
-        var disputes = await _context.Disputes
+        var feed = await _context.Disputes
             .Include(d => d.Initiator)
             .Where(d => d.Status == "open" || d.Status == "under_review")
             .OrderByDescending(d => d.CreatedAt)
-            .Take(20)
+            .Take(30)
             .Select(d => new
             {
                 type = "dispute",
@@ -557,31 +551,7 @@ public class AdminController : ControllerBase
                 status = d.Status,
                 createdAt = d.CreatedAt.ToString("o")
             })
-            .ToListAsync<object>();
-
-        var reports = await _context.Reports
-            .Include(r => r.Reporter)
-            .Include(r => r.Listing)
-            .Where(r => r.Status == "pending")
-            .OrderByDescending(r => r.CreatedAt)
-            .Take(20)
-            .Select(r => new
-            {
-                type = "report",
-                severity = "medium",
-                id = r.Id.ToString(),
-                title = $"Report: {r.Reason}",
-                body = r.Details ?? "",
-                initiator = r.Reporter!.Name,
-                status = r.Status,
-                createdAt = r.CreatedAt.ToString("o")
-            })
-            .ToListAsync<object>();
-
-        var feed = disputes.Concat(reports)
-            .OrderByDescending(x => ((dynamic)x).createdAt)
-            .Take(30)
-            .ToList();
+            .ToListAsync();
 
         return Ok(new { data = feed, total = feed.Count });
     }

@@ -1,10 +1,17 @@
 package com.clearchain.app.presentation.grocery.managerequests
 
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.repository.OrganizationRepository
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
@@ -16,11 +23,18 @@ import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ManageRequestsViewModel @Inject constructor(
@@ -120,6 +134,8 @@ class ManageRequestsViewModel @Inject constructor(
                 _state.update { it.copy(selectedIds = emptySet()) }
             ManageRequestsEvent.BulkApprove -> bulkApprove()
             is ManageRequestsEvent.BulkReject -> bulkReject(event.reason)
+
+            ManageRequestsEvent.ExportCsv -> exportCsv()
 
             ManageRequestsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
@@ -286,6 +302,66 @@ class ManageRequestsViewModel @Inject constructor(
             )
             _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
             loadRequests()
+        }
+    }
+
+    private fun exportCsv() {
+        val current = _state.value
+        val requests = current.filteredRequests
+        if (requests.isEmpty()) {
+            viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_no_requests_export))) }
+            return
+        }
+        val tag = current.selectedStatus?.lowercase() ?: "all"
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val sb = StringBuilder()
+                    sb.appendLine("Items,Category,Quantity,Unit,Status,NGO,Pickup Date,Pickup Time,Created At,Notes")
+                    requests.forEach { request ->
+                        fun esc(s: String) = if (s.contains(',') || s.contains('"')) "\"${s.replace("\"", "\"\"")}\"" else s
+                        sb.appendLine(
+                            "${esc(request.itemTitles.joinToString("; "))},${esc(request.listingCategory)}," +
+                                "${request.requestedQuantity},${esc(request.listingUnit)},${request.status.name}," +
+                                "${esc(request.ngoName)},${request.pickupDate.take(10)},${esc(request.pickupTime)}," +
+                                "${request.createdAt.take(10)},${esc(request.notes ?: "")}"
+                        )
+                    }
+                    val csv = sb.toString()
+                    val fileName = "clearchain_requests_${tag}_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
+
+                    val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
+                            context.contentResolver.openOutputStream(u)?.use { it.write(csv.toByteArray()) }
+                        }
+                    } else {
+                        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                        FileOutputStream(file).use { it.write(csv.toByteArray()) }
+                        Uri.fromFile(file)
+                    }
+
+                    if (uri != null) {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val chooser = Intent.createChooser(shareIntent, "Share Requests CSV")
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(chooser)
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_saved)))
+                    } else {
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_failed)))
+                    }
+                } catch (e: Exception) {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_export_failed, e.message ?: "")))
+                }
+            }
         }
     }
 }

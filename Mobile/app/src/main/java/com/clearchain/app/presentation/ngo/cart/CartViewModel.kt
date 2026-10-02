@@ -53,7 +53,7 @@ class CartViewModel @Inject constructor(
                 )
             }
             CartEvent.DismissCheckout -> _state.update { it.copy(checkoutGroceryId = null) }
-            is CartEvent.PickupDateChanged -> _state.update { it.copy(pickupDate = event.value, error = null) }
+            is CartEvent.PickupDateChanged -> onPickupDateChanged(event.value)
             is CartEvent.PickupTimeChanged -> updatePickupTime(event.value)
             is CartEvent.NotesChanged -> _state.update { it.copy(notes = event.value) }
             CartEvent.ToggleRefrigeration -> _state.update { it.copy(requiresRefrigeration = !it.requiresRefrigeration) }
@@ -81,11 +81,25 @@ class CartViewModel @Inject constructor(
         }
     }
 
+    private fun onPickupDateChanged(value: String) {
+        val s = _state.value
+        val group = s.groups.firstOrNull { it.groceryId == s.checkoutGroceryId }
+        // A time picked for the old date may no longer be far enough in the future
+        // (or in the store's hours) once the date itself changes - drop it rather
+        // than silently keep an invalid selection.
+        val keepTime = s.pickupTime.takeIf {
+            it.isNotBlank() && isPickupTimeAllowed(value, it, group?.pickupTimeStart, group?.pickupTimeEnd) == null
+        }.orEmpty()
+        _state.update { it.copy(pickupDate = value, pickupTime = keepTime, error = null) }
+    }
+
     private fun updatePickupTime(value: String) {
         val s = _state.value
         val group = s.groups.firstOrNull { it.groceryId == s.checkoutGroceryId }
-        if (value.isNotBlank() && !isPickupTimeAllowed(value, group?.pickupTimeStart, group?.pickupTimeEnd)) {
-            _state.update { it.copy(error = context.getString(R.string.error_pickup_time_outside_window)) }
+        val error = value.takeIf { it.isNotBlank() }
+            ?.let { isPickupTimeAllowed(s.pickupDate, it, group?.pickupTimeStart, group?.pickupTimeEnd) }
+        if (error != null) {
+            _state.update { it.copy(error = context.getString(error)) }
             return
         }
         _state.update { it.copy(pickupTime = value, error = null) }
@@ -103,8 +117,8 @@ class CartViewModel @Inject constructor(
             _state.update { it.copy(error = context.getString(R.string.error_pickup_date_after_expiry, group?.earliestExpiryDate.orEmpty())) }
             return
         }
-        if (!isPickupTimeAllowed(s.pickupTime, group?.pickupTimeStart, group?.pickupTimeEnd)) {
-            _state.update { it.copy(error = context.getString(R.string.error_pickup_time_outside_window)) }
+        isPickupTimeAllowed(s.pickupDate, s.pickupTime, group?.pickupTimeStart, group?.pickupTimeEnd)?.let { error ->
+            _state.update { it.copy(error = context.getString(error)) }
             return
         }
         viewModelScope.launch {
@@ -149,13 +163,22 @@ class CartViewModel @Inject constructor(
         }.getOrDefault(false)
     }
 
-    private fun isPickupTimeAllowed(value: String, startValue: String?, endValue: String?): Boolean {
+    /** Returns the string-resource id of the reason [value] is not a valid pickup time, or null if it is valid. */
+    private fun isPickupTimeAllowed(pickupDate: String, value: String, startValue: String?, endValue: String?): Int? {
         return runCatching {
-            if (startValue.isNullOrBlank() || endValue.isNullOrBlank()) return@runCatching true
             val pickupTime = LocalTime.parse(value.take(5))
-            val start = LocalTime.parse(startValue.take(5))
-            val end = LocalTime.parse(endValue.take(5))
-            !pickupTime.isBefore(start) && !pickupTime.isAfter(end)
-        }.getOrDefault(false)
+            if (!startValue.isNullOrBlank() && !endValue.isNullOrBlank()) {
+                val start = LocalTime.parse(startValue.take(5))
+                val end = LocalTime.parse(endValue.take(5))
+                if (pickupTime.isBefore(start) || pickupTime.isAfter(end)) {
+                    return@runCatching R.string.error_pickup_time_outside_window
+                }
+            }
+            val isToday = runCatching { LocalDate.parse(pickupDate.take(10)) == LocalDate.now() }.getOrDefault(false)
+            if (isToday && pickupTime.isBefore(LocalTime.now().plusHours(2))) {
+                return@runCatching R.string.error_pickup_time_too_soon
+            }
+            null
+        }.getOrDefault(R.string.error_invalid_date_format)
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.clearchain.app.BuildConfig
 import com.clearchain.app.R
 import com.clearchain.app.data.local.SettingsStore
+import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.DashboardSection
 import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.ui.theme.ButtonShape
@@ -120,14 +122,19 @@ fun SettingsScreen(
             // ── Notifications ─────────────────────────────────────────────
             item {
                 DashboardSection(title = stringResource(R.string.notifications_settings)) {
-                    SettingsSwitchRow(
-                        icon = Icons.Default.LocalGroceryStore,
-                        title = stringResource(R.string.notif_new_listing),
-                        checked = state.notifNewListing,
-                        onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifNewListingChanged(it)) }
-                    )
+                    // Only NGOs ever receive a "new listing" push - it's broadcast exclusively
+                    // to organizations of type NGO, so the toggle would be a dead switch for a
+                    // Grocery account.
+                    if (state.currentUserType != OrganizationType.GROCERY) {
+                        SettingsSwitchRow(
+                            icon = Icons.Default.LocalGroceryStore,
+                            title = stringResource(R.string.notif_new_listing),
+                            checked = state.notifNewListing,
+                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifNewListingChanged(it)) }
+                        )
 
-                    SettingsRowDivider()
+                        SettingsRowDivider()
+                    }
 
                     SettingsSwitchRow(
                         icon = Icons.Default.LocalShipping,
@@ -385,7 +392,8 @@ private fun SettingsSwitchRow(
             // change back to the row, so a tap anywhere on the line behaves identically.
             Switch(
                 checked = checked,
-                onCheckedChange = { toggle() }
+                onCheckedChange = { toggle() },
+                modifier = Modifier.scale(0.8f)
             )
         }
     )

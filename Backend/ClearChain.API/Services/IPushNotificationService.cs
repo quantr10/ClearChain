@@ -26,6 +26,7 @@ public interface IPushNotificationService
 
     // ── Listing Notifications ────────────────────────────────────────────────
     Task SendNewListingNotificationToAllNGOs(ListingData listing);
+    Task SendListingCreatedConfirmationNotification(Guid groceryId, ListingData listing);
     Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing);
     Task SendListingExpiredNotification(Guid groceryId, ListingData listing);
 

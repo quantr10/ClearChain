@@ -15,9 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +41,7 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
+import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -41,6 +49,15 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
+
+// Screen-wide touch signal used to collapse an expanded cart stepper: every touch-down
+// anywhere on screen bumps `tick`, and carries the position + root coordinate space so a
+// listener can tell whether that touch landed on its own stepper (and should be ignored).
+private data class GlobalTouch(
+    val tick: Int,
+    val position: Offset?,
+    val rootCoordinates: LayoutCoordinates?
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -51,6 +68,10 @@ fun BrowseListingsScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showLocationSheet by remember { mutableStateOf(false) }
+    var touchTick by remember { mutableStateOf(0) }
+    var lastTouchPosition by remember { mutableStateOf<Offset?>(null) }
+    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val globalTouch = GlobalTouch(touchTick, lastTouchPosition, rootCoordinates)
 
     LaunchedEffect(state.isLocationSet, state.isCheckingLocation) {
         if (!state.isCheckingLocation && !state.isLocationSet) {
@@ -113,7 +134,24 @@ fun BrowseListingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .onGloballyPositioned { rootCoordinates = it }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val down = event.changes.firstOrNull { it.changedToDown() }
+                            if (down != null) {
+                                lastTouchPosition = down.position
+                                touchTick++
+                            }
+                        }
+                    }
+                }
+        ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // -- Static header --------------------------------------------------
 
@@ -197,10 +235,10 @@ fun BrowseListingsScreen(
                             )
 
                         state.showMapView ->
-                            GroceryMapView(state = state, viewModel = viewModel, navController = navController)
+                            GroceryMapView(state = state, viewModel = viewModel, navController = navController, globalTouch = globalTouch)
 
                         else ->
-                            ListingsListView(state = state, viewModel = viewModel, navController = navController)
+                            ListingsListView(state = state, viewModel = viewModel, navController = navController, globalTouch = globalTouch)
                     }
                 }
             }
@@ -216,7 +254,8 @@ fun BrowseListingsScreen(
 private fun ListingsListView(
     state: BrowseListingsState,
     viewModel: BrowseListingsViewModel,
-    navController: NavController
+    navController: NavController,
+    globalTouch: GlobalTouch
 ) {
     when {
         state.filteredListings.isEmpty() -> EmptyState(
@@ -276,14 +315,16 @@ private fun ListingsListView(
                         onGroceryAvatarClick = {
                             navController.navigate(Screen.PublicProfile.createRoute(listing.groceryId))
                         },
-                        primaryAction = {
+                        cartAction = {
                             ListingCartAction(
                                 listing = listing,
                                 cartItem = cartItem,
                                 enabled = !state.isUpdatingCart,
+                                globalTouch = globalTouch,
                                 onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
                                 onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
-                                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) }
+                                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
+                                onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) }
                             )
                         }
                     )
@@ -299,27 +340,94 @@ private fun ListingCartAction(
     listing: Listing,
     cartItem: CartItemData?,
     enabled: Boolean,
+    globalTouch: GlobalTouch,
     onAddToCart: (String) -> Unit,
     onIncrementCartItem: (String) -> Unit,
-    onDecrementCartItem: (String) -> Unit
+    onDecrementCartItem: (String) -> Unit,
+    onRemoveFromCart: (String) -> Unit
 ) {
-    if (cartItem == null || cartItem.requestedQuantity <= 0) {
-        ClearChainButton(
-            text = stringResource(R.string.cart_add_to_cart),
-            onClick = { onAddToCart(listing.id) },
-            modifier = Modifier.fillMaxWidth(),
-            icon = Icons.Default.ShoppingCart,
-            enabled = enabled
-        )
-    } else {
-        ClearChainQuantityStepper(
-            quantity = cartItem.requestedQuantity,
-            unit = listing.unit,
-            canIncrement = cartItem.requestedQuantity < listing.quantity,
-            enabled = enabled,
-            onDecrement = { onDecrementCartItem(listing.id) },
-            onIncrement = { onIncrementCartItem(listing.id) }
-        )
+    var isExpanded by remember(listing.id) { mutableStateOf(false) }
+    var expandTick by remember(listing.id) { mutableStateOf(0) }
+    var stepperBounds by remember(listing.id) { mutableStateOf<Rect?>(null) }
+
+    LaunchedEffect(globalTouch.tick) {
+        if (isExpanded && globalTouch.tick != expandTick) {
+            expandTick = globalTouch.tick
+            val position = globalTouch.position
+            val bounds = stepperBounds
+            val touchedStepper = position != null && bounds != null && bounds.contains(position)
+            if (!touchedStepper) {
+                isExpanded = false
+            }
+        }
+    }
+
+    when {
+        cartItem == null || cartItem.requestedQuantity <= 0 -> {
+            ClearChainActionIconButton(
+                icon = Icons.Default.Add,
+                contentDescription = stringResource(R.string.cart_add_to_cart),
+                onClick = {
+                    onAddToCart(listing.id)
+                    expandTick = globalTouch.tick
+                    isExpanded = true
+                },
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                enabled = enabled
+            )
+        }
+        isExpanded -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                ClearChainQuantityStepper(
+                    quantity = cartItem.requestedQuantity,
+                    unit = listing.unit,
+                    canIncrement = cartItem.requestedQuantity < listing.quantity,
+                    enabled = enabled,
+                    onDecrement = { onDecrementCartItem(listing.id) },
+                    onIncrement = { onIncrementCartItem(listing.id) },
+                    expanded = false,
+                    buttonSize = 24.dp,
+                    modifier = Modifier.onGloballyPositioned { coordinates ->
+                        stepperBounds = globalTouch.rootCoordinates?.localBoundingBoxOf(coordinates)
+                    }
+                )
+                ClearChainActionIconButton(
+                    icon = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.cart_remove),
+                    onClick = { onRemoveFromCart(listing.id) },
+                    tint = MaterialTheme.colorScheme.error,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    enabled = enabled
+                )
+            }
+        }
+        else -> {
+            Surface(
+                onClick = {
+                    expandTick = globalTouch.tick
+                    isExpanded = true
+                },
+                modifier = Modifier.height(ClearChainButtonDefaults.Height).widthIn(min = 72.dp),
+                enabled = enabled,
+                shape = ButtonShape,
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shadowElevation = 3.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        "${cartItem.requestedQuantity} ${listing.unit}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }
 // -----------------------------------------------------------------------------
@@ -331,7 +439,8 @@ private fun ListingCartAction(
 private fun GroceryMapView(
     state: BrowseListingsState,
     viewModel: BrowseListingsViewModel,
-    navController: NavController
+    navController: NavController,
+    globalTouch: GlobalTouch
 ) {
     val prefLat = state.userLat ?: 10.8231
     val prefLng = state.userLng ?: 106.6297
@@ -469,11 +578,13 @@ private fun GroceryMapView(
                 favoritedIds = state.favoritedIds,
                 cartItemsByListingId = state.cartItemsByListingId,
                 isUpdatingCart = state.isUpdatingCart,
+                globalTouch = globalTouch,
                 onNavigateToDetail = { navController.navigate(Screen.ListingDetail.createRoute(it)) },
                 onNavigateToProfile = { navController.navigate(Screen.PublicProfile.createRoute(it)) },
                 onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
                 onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
                 onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
+                onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) },
                 onToggleFavorite = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(it)) },
                 onDismiss = { viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet) }
             )
@@ -540,11 +651,13 @@ private fun GroceryPinSheet(
     favoritedIds: Set<String>,
     cartItemsByListingId: Map<String, CartItemData>,
     isUpdatingCart: Boolean,
+    globalTouch: GlobalTouch,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToProfile: (String) -> Unit,
     onAddToCart: (String) -> Unit,
     onIncrementCartItem: (String) -> Unit,
     onDecrementCartItem: (String) -> Unit,
+    onRemoveFromCart: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -604,14 +717,16 @@ private fun GroceryPinSheet(
                         }
                     },
                     onGroceryAvatarClick = { onNavigateToProfile(listing.groceryId) },
-                    primaryAction = {
+                    cartAction = {
                         ListingCartAction(
                             listing = listing,
                             cartItem = cartItem,
                             enabled = !isUpdatingCart,
+                            globalTouch = globalTouch,
                             onAddToCart = onAddToCart,
                             onIncrementCartItem = onIncrementCartItem,
-                            onDecrementCartItem = onDecrementCartItem
+                            onDecrementCartItem = onDecrementCartItem,
+                            onRemoveFromCart = onRemoveFromCart
                         )
                     }
                 )
@@ -644,14 +759,16 @@ private fun GroceryPinSheet(
                             }
                         },
                         onGroceryAvatarClick = { onNavigateToProfile(listing.groceryId) },
-                        primaryAction = {
+                        cartAction = {
                             ListingCartAction(
                                 listing = listing,
                                 cartItem = cartItem,
                                 enabled = !isUpdatingCart,
+                                globalTouch = globalTouch,
                                 onAddToCart = onAddToCart,
                                 onIncrementCartItem = onIncrementCartItem,
-                                onDecrementCartItem = onDecrementCartItem
+                                onDecrementCartItem = onDecrementCartItem,
+                                onRemoveFromCart = onRemoveFromCart
                             )
                         }
                     )

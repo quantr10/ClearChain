@@ -142,6 +142,11 @@ fun MyRequestsScreen(
                         onQueryChange = { viewModel.onEvent(MyRequestsEvent.SearchQueryChanged(it)) },
                         placeholder = stringResource(R.string.hint_search_by_item_grocery)
                     ) {
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.FileDownload,
+                            contentDescription = stringResource(R.string.export_csv),
+                            onClick = { viewModel.onEvent(MyRequestsEvent.ExportCsv) }
+                        )
                         BadgedBox(
                             badge = {
                                 if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }

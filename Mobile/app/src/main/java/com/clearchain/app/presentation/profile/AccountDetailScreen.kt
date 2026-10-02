@@ -1,7 +1,5 @@
 package com.clearchain.app.presentation.profile
 
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,8 +25,10 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
+import com.clearchain.app.util.sendEmail
 
 @Composable
 fun AccountDetailScreen(
@@ -123,9 +123,7 @@ fun AccountDetailScreen(
                                         value = user.email,
                                         isAction = true
                                     ) {
-                                        context.startActivity(
-                                            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${user.email}"))
-                                        )
+                                        sendEmail(context, user.email)
                                     }
                                     CompactAccountDetailRow(
                                         icon = Icons.Default.Phone,
@@ -134,9 +132,7 @@ fun AccountDetailScreen(
                                         enabled = user.phone.isNotBlank(),
                                         isAction = true
                                     ) {
-                                        context.startActivity(
-                                            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
-                                        )
+                                        dialPhone(context, user.phone)
                                     }
                                 }
 

@@ -34,7 +34,6 @@
     <string name="next">Next</string>
     <string name="continue_label">Continue</string>
     <string name="share">Share</string>
-    <string name="report">Report</string>
     <string name="view_all">View all</string>
     <string name="see_more">See more</string>
 
@@ -625,13 +624,6 @@
     <string name="label_grocery_store">Grocery Store</string>
     <string name="error_failed_load_listing">Failed to load listing</string>
     <string name="badge_live">LIVE</string>
-    <string name="report_listing_title">Report Listing</string>
-    <string name="report_listing_subtitle">Help us keep the platform safe and reliable.</string>
-    <string name="report_reason_inaccurate">Inaccurate information</string>
-    <string name="report_reason_already_gone">Food already gone</string>
-    <string name="report_reason_spam">Spam or duplicate</string>
-    <string name="report_reason_inappropriate">Inappropriate content</string>
-    <string name="report_reason_other">Other</string>
     <string name="btn_submit">Submit</string>
 
     <!-- My Requests -->
@@ -830,6 +822,34 @@
     <string name="empty_no_org_category">No organizations in this category</string>
     <string name="empty_no_org_category_subtitle">Switch filter to see other organizations</string>
 
+    <!-- Admin Disputes (status strings shared with the NGO's own "── Disputes ──" section) -->
+    <string name="disputes">Disputes</string>
+    <string name="admin_review_disputes">Resolve open disputes</string>
+    <string name="empty_no_disputes">No disputes</string>
+    <string name="empty_no_disputes_subtitle">Disputes NGOs open on completed pickups will appear here</string>
+    <string name="dispute_parties">%1$s vs. %2$s</string>
+    <string name="dispute_ngo_contact">NGO</string>
+    <string name="dispute_grocery_contact">Grocery</string>
+    <string name="dispute_ngo_statement">NGO\'s statement</string>
+    <string name="dispute_grocery_statement">Grocery\'s statement</string>
+    <string name="dispute_grocery_statement_placeholder">What did the grocery say when you contacted them?</string>
+    <string name="dispute_admin_resolution">Resolution note</string>
+    <string name="dispute_photo_evidence">Photo evidence</string>
+    <string name="dispute_mark_resolved">Mark resolved</string>
+    <string name="action_send_email">Send email</string>
+    <string name="action_call">Call</string>
+    <string name="dispute_resolve_title">Resolve dispute</string>
+    <string name="dispute_resolve_outcome_label">Outcome</string>
+    <string name="dispute_outcome_ngo">Resolved in NGO\'s favor</string>
+    <string name="dispute_outcome_grocery">Resolved in grocery\'s favor</string>
+    <string name="dispute_outcome_dismissed">Dismissed — no action needed</string>
+    <string name="dispute_resolution_note">Resolution note</string>
+    <string name="dispute_resolution_note_placeholder">Summarize how this was resolved outside the app</string>
+    <string name="error_load_disputes">Failed to load disputes</string>
+    <string name="error_resolution_note_required">A resolution note is required</string>
+    <string name="error_resolve_dispute_failed">Failed to resolve dispute</string>
+    <string name="snack_dispute_resolved">Dispute resolved</string>
+
     <!-- Manage Requests / NGO My Requests empty states -->
     <string name="empty_no_pickup_requests">No pickup requests yet</string>
     <string name="empty_requests_grocery_subtitle">Requests from NGOs will appear here</string>
@@ -981,6 +1001,8 @@
 
     <!-- My Listings delete confirm -->
     <string name="msg_delete_listing_confirm">Delete \"%1$s\"? This cannot be undone.</string>
+    <string name="msg_archive_listing_confirm">Archive \"%1$s\"? It will be hidden from NGOs until you restore it.</string>
+    <string name="msg_restore_listing_confirm">Restore \"%1$s\"? It will become available to NGOs again.</string>
 
     <!-- Search placeholders -->
     <string name="hint_search_by_item_ngo">Search by item, NGO…</string>
@@ -998,7 +1020,6 @@
     <string name="cd_remove_image">Remove image</string>
     <string name="cd_add_photo">Add photo</string>
     <string name="cd_full_size_image">Full size image</string>
-    <string name="cd_report_listing_icon">Report listing</string>
     <string name="cd_upload_failed">Upload Failed</string>
     <string name="cd_clear_notifications">Clear all notifications</string>
     <string name="cd_view_profile">View profile</string>
@@ -1053,6 +1074,8 @@
     <string name="label_status_approved">Your request is approved.</string>
     <string name="label_status_ready">Your request is ready.</string>
     <string name="label_status_completed">Your request is completed.</string>
+    <string name="label_status_cancelled">Your request is cancelled.</string>
+    <string name="label_status_rejected">Your request is rejected.</string>
     <string name="label_requested_on_at">Requested on %1$s at %2$s</string>
     <string name="label_completed_on_at">Completed on %1$s at %2$s</string>
     <string name="label_pickup_on_at">Pickup on %1$s at %2$s</string>
@@ -1084,6 +1107,8 @@
     <string name="snack_new_listing">New listing available: %1$s</string>
     <string name="snack_listings_refreshed">Listings refreshed</string>
     <string name="snack_listing_deleted">Listing deleted</string>
+    <string name="snack_listing_archived">Listing archived</string>
+    <string name="snack_listing_restored">Listing restored</string>
 
 
     <string name="snack_n_listings_deleted">%1$d listings deleted</string>
@@ -1108,6 +1133,8 @@
     <string name="snack_account_deleted">Account deleted successfully</string>
     <string name="snack_new_inventory_item">New item received: %1$s</string>
     <string name="snack_no_inventory_export">No inventory data to export</string>
+    <string name="snack_no_listings_export">No listings to export</string>
+    <string name="snack_no_requests_export">No requests to export</string>
     <string name="snack_csv_saved">CSV saved to Downloads</string>
     <string name="snack_csv_failed">Failed to save CSV</string>
     <string name="snack_export_failed">Export failed: %1$s</string>
@@ -1377,7 +1404,10 @@
     <string name="error_pickup_date_past">Pickup date cannot be in the past</string>
     <string name="error_pickup_date_after_expiry">Pickup date cannot be after expiry date (%1$s)</string>
     <string name="error_pickup_time_outside_window">Pickup time must be during the store opening time</string>
+    <string name="error_pickup_time_too_soon">Pickup time must be at least 2 hours from now</string>
     <string name="error_invalid_date_format">Invalid date format</string>
+    <string name="label_select_pickup_time">Select pickup time</string>
+    <string name="no_pickup_times_today">No pickup times left for today — pick another date</string>
 
     <!-- Vehicle type labels -->
 
@@ -1504,9 +1534,7 @@
     <string name="backlog_ready_requests">Ready for pickup</string>
     <string name="backlog_pending_verifications">Verifications</string>
     <string name="backlog_open_disputes">Open disputes</string>
-    <string name="backlog_pending_reports">Reports</string>
     <string name="backlog_open_cases">Open cases</string>
-    <string name="backlog_cases_detail">%1$d disputes · %2$d reports</string>
     <string name="backlog_oldest">oldest %1$s</string>
     <string name="backlog_oldest_days">oldest %1$d d</string>
 
@@ -1519,9 +1547,8 @@
     <string name="quality_reviews">Reviews left</string>
     <string name="quality_review_coverage_label">Pickups rated</string>
     <string name="quality_disputes">Disputes opened</string>
-    <string name="quality_reports">Listings reported</string>
     <string name="quality_dispute_rate">%1$d%% of completed pickups ended in a dispute</string>
-    <string name="quality_no_data">No reviews, disputes or reports in this period.</string>
+    <string name="quality_no_data">No reviews or disputes in this period.</string>
 
     <string name="chart_no_organizations">No organizations registered yet.</string>
 

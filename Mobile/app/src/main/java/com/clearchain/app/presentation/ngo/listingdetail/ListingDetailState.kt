@@ -15,12 +15,6 @@ data class ListingDetailState(
     val similarListings: List<Listing> = emptyList(),
     val isLoadingSimilar: Boolean = false,
 
-    // Report dialog
-    val showReportDialog: Boolean = false,
-    val reportReason: String = "",
-    val isSubmittingReport: Boolean = false,
-    val reportSubmitted: Boolean = false,
-
     // Real-time availability override from SignalR
     val availabilityOverride: Int? = null,
 
@@ -37,5 +31,9 @@ data class ListingDetailState(
 
     // Grocery: action states
     val isDeleting: Boolean = false,
-    val showDeleteConfirm: Boolean = false
+    val showDeleteConfirm: Boolean = false,
+    val isArchiving: Boolean = false,
+    val showArchiveConfirm: Boolean = false,
+    val isRestoring: Boolean = false,
+    val showRestoreConfirm: Boolean = false
 )

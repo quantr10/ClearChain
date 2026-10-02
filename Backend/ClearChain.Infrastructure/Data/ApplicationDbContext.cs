@@ -24,7 +24,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<Review> Reviews { get; set; } = null!;
-    public DbSet<Report> Reports { get; set; } = null!;
     public DbSet<Dispute> Disputes { get; set; } = null!;
     public DbSet<SavedListing> SavedListings { get; set; } = null!;
     public DbSet<Cart> Carts { get; set; } = null!;
@@ -47,7 +46,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Notification>().ToTable("notifications");
         modelBuilder.Entity<Message>().ToTable("messages");
         modelBuilder.Entity<Review>().ToTable("reviews");
-        modelBuilder.Entity<Report>().ToTable("reports");
         modelBuilder.Entity<Dispute>().ToTable("disputes");
         modelBuilder.Entity<SavedListing>().ToTable("savedlistings");
         modelBuilder.Entity<Cart>().ToTable("carts");
@@ -130,12 +128,6 @@ public class ApplicationDbContext : DbContext
             .HasOne(r => r.PickupRequest).WithMany().HasForeignKey(r => r.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Review>().HasIndex(r => r.ReviewedId);
         modelBuilder.Entity<Review>().HasIndex(r => new { r.PickupRequestId, r.ReviewerId }).IsUnique();
-
-        // ── Report ───────────────────────────────────────────────────────────
-        modelBuilder.Entity<Report>()
-            .HasOne(r => r.Reporter).WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<Report>()
-            .HasOne(r => r.Listing).WithMany().HasForeignKey(r => r.ListingId).OnDelete(DeleteBehavior.SetNull);
 
         // ── Dispute ──────────────────────────────────────────────────────────
         modelBuilder.Entity<Dispute>()

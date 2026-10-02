@@ -1,10 +1,9 @@
 package com.clearchain.app.presentation.ngo.cart
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,12 +20,13 @@ import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun CartPickupScreen(
@@ -102,8 +102,38 @@ private fun CartPickupContent(
             }
         }
     }
-    val timeSlots = remember(group.pickupTimeStart, group.pickupTimeEnd) {
-        generateTimeSlots(group.pickupTimeStart, group.pickupTimeEnd)
+    val storeStart = remember(group.pickupTimeStart) {
+        group.pickupTimeStart?.let { runCatching { LocalTime.parse(it.take(5)) }.getOrNull() } ?: LocalTime.MIN
+    }
+    val storeEnd = remember(group.pickupTimeEnd) {
+        group.pickupTimeEnd?.let { runCatching { LocalTime.parse(it.take(5)) }.getOrNull() } ?: LocalTime.of(23, 59)
+    }
+    val isPickupToday = remember(state.pickupDate) {
+        runCatching { LocalDate.parse(state.pickupDate.take(10)) == LocalDate.now() }.getOrDefault(false)
+    }
+    // If picking up today, nothing sooner than 2 hours from now is selectable. LocalTime
+    // arithmetic wraps at midnight, so route through LocalDateTime to detect that "now + 2h"
+    // actually rolled into tomorrow (e.g. it's 11pm) - in that case no time today qualifies.
+    val minTime = remember(storeStart, isPickupToday) {
+        if (!isPickupToday) {
+            storeStart
+        } else {
+            val nowPlus2h = LocalDateTime.now().plusHours(2)
+            val floorToday = if (nowPlus2h.toLocalDate() == LocalDate.now()) nowPlus2h.toLocalTime() else LocalTime.MAX
+            maxOf(floorToday, storeStart)
+        }
+    }
+    val maxTime = storeEnd
+    val hasValidPickupTimes = !minTime.isAfter(maxTime)
+    val validHours = remember(minTime, maxTime, hasValidPickupTimes) {
+        if (!hasValidPickupTimes) emptyList() else (minTime.hour..maxTime.hour).toList()
+    }
+    val validMinutesForHour: (Int) -> List<Int> = remember(minTime, maxTime) {
+        { hour ->
+            val lo = if (hour == minTime.hour) minTime.minute else 0
+            val hi = if (hour == maxTime.hour) maxTime.minute else 59
+            if (lo > hi) emptyList() else (lo..hi).toList()
+        }
     }
     val isLoading = state.isSubmitting
     val canSubmit = group.canCheckout &&
@@ -134,7 +164,7 @@ private fun CartPickupContent(
                     }
                     group.items.forEach { item ->
                         Row(
-                            verticalAlignment = Alignment.Top,
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             ProductThumbnail(
@@ -144,10 +174,33 @@ private fun CartPickupContent(
                             )
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CalendarToday,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        stringResource(R.string.label_expires_date, item.expiryDate ?: "N/A"),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
                                 Text(
-                                    stringResource(R.string.label_expires_date, item.expiryDate ?: "N/A"),
+                                    text = "${item.requestedQuantity} ${item.unit}",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }
@@ -170,39 +223,69 @@ private fun CartPickupContent(
 
         item {
             FieldCard(label = stringResource(R.string.label_pickup_time_field)) {
-                if (timeSlots.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            stringResource(
-                                R.string.label_pickup_time_window,
-                                group.pickupTimeStart.orEmpty(),
-                                group.pickupTimeEnd.orEmpty()
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(timeSlots) { slot ->
-                                FilterChip(
-                                    selected = state.pickupTime == slot,
-                                    onClick = { onEvent(CartEvent.PickupTimeChanged(slot)) },
-                                    label = { Text(slot, style = MaterialTheme.typography.labelSmall) },
-                                    enabled = !isLoading,
-                                    leadingIcon = if (state.pickupTime == slot) {
-                                        { Icon(Icons.Default.Check, null, Modifier.size(14.dp)) }
-                                    } else {
-                                        null
-                                    }
-                                )
-                            }
+                var showTimeSheet by remember { mutableStateOf(false) }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        stringResource(
+                            R.string.label_pickup_time_window,
+                            group.pickupTimeStart.orEmpty(),
+                            group.pickupTimeEnd.orEmpty()
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
+                            .clickable(enabled = !isLoading && hasValidPickupTimes) { showTimeSheet = true }
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AccessTime,
+                                null,
+                                Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = state.pickupTime.ifBlank { stringResource(R.string.label_select_pickup_time) },
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (state.pickupTime.isNotBlank()) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                }
+                            )
                         }
                     }
-                } else {
-                    TimePickerField(
-                        value = state.pickupTime,
-                        onTimeSelected = { onEvent(CartEvent.PickupTimeChanged(it)) },
-                        label = "",
-                        enabled = !isLoading
+                    if (!hasValidPickupTimes) {
+                        Text(
+                            stringResource(R.string.no_pickup_times_today),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                if (showTimeSheet) {
+                    PickupTimeSheet(
+                        hours = validHours,
+                        minutesForHour = validMinutesForHour,
+                        initialTime = state.pickupTime,
+                        onConfirm = { hour, minute ->
+                            val formatted = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+                            onEvent(CartEvent.PickupTimeChanged(formatted))
+                            showTimeSheet = false
+                        },
+                        onDismiss = { showTimeSheet = false }
                     )
                 }
             }
@@ -267,6 +350,62 @@ private fun CartPickupContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PickupTimeSheet(
+    hours: List<Int>,
+    minutesForHour: (Int) -> List<Int>,
+    initialTime: String,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val initialHour = initialTime.takeIf { it.length >= 5 }?.substring(0, 2)?.toIntOrNull()
+        ?.takeIf { it in hours }
+        ?: hours.firstOrNull()
+        ?: 0
+    val initialMinutes = minutesForHour(initialHour)
+    val initialMinute = initialTime.takeIf { it.length >= 5 }?.substring(3, 5)?.toIntOrNull()
+        ?.takeIf { it in initialMinutes }
+        ?: initialMinutes.firstOrNull()
+        ?: 0
+
+    var hour by remember { mutableStateOf(initialHour) }
+    var minute by remember { mutableStateOf(initialMinute) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                stringResource(R.string.label_select_pickup_time),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            WheelTimePicker(
+                hours = hours,
+                minutesForHour = minutesForHour,
+                selectedHour = hour,
+                selectedMinute = minute,
+                onHourChange = { hour = it },
+                onMinuteChange = { minute = it }
+            )
+            ClearChainButton(
+                text = stringResource(R.string.ok),
+                onClick = { onConfirm(hour, minute) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
 @Composable
 private fun FieldCard(
     label: String,
@@ -315,20 +454,4 @@ private fun SpecialHandlingRow(
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
         Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled, modifier = Modifier.size(24.dp))
     }
-}
-
-private fun generateTimeSlots(startValue: String?, endValue: String?): List<String> {
-    return runCatching {
-        if (startValue.isNullOrBlank() || endValue.isNullOrBlank()) return@runCatching emptyList()
-        val fmt = DateTimeFormatter.ofPattern("HH:mm")
-        val start = LocalTime.parse(startValue.take(5), fmt)
-        val end = LocalTime.parse(endValue.take(5), fmt)
-        val slots = mutableListOf<String>()
-        var current = start
-        while (!current.isAfter(end.minusMinutes(30))) {
-            slots.add(current.format(fmt))
-            current = current.plusMinutes(30)
-        }
-        slots
-    }.getOrDefault(emptyList())
 }

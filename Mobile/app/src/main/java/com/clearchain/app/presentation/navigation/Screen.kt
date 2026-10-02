@@ -33,6 +33,7 @@ sealed class Screen(val route: String) {
     object AdminDashboard : Screen("admin_dashboard")
     object Verification : Screen("admin/verification")
     object Transactions : Screen("admin/transactions")
+    object AdminDisputes : Screen("admin/disputes")
 
     /** The section argument opens the screen scrolled to one card; omit it to open at the top. */
     object AdminStatistics : Screen("admin/statistics?section={section}") {

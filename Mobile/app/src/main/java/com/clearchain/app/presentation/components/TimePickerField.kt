@@ -33,13 +33,6 @@ fun TimePickerField(
     fieldShape: Shape = ShapeMedium
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    val initialHour = value.takeIf { it.length >= 5 }?.substring(0, 2)?.toIntOrNull() ?: 0
-    val initialMinute = value.takeIf { it.length >= 5 }?.substring(3, 5)?.toIntOrNull() ?: 0
-    val timePickerState = rememberTimePickerState(
-        initialHour = initialHour,
-        initialMinute = initialMinute,
-        is24Hour = true
-    )
 
     val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
     val contentColor = if (enabled) {
@@ -113,21 +106,50 @@ fun TimePickerField(
     }
 
     if (showPicker) {
-        ConfirmDialog(
-            onDismiss = { showPicker = false },
-            icon = Icons.Default.AccessTime,
-            title = stringResource(R.string.label_select_time),
-            message = stringResource(R.string.msg_select_time),
-            confirmLabel = stringResource(R.string.ok),
-            dismissLabel = stringResource(R.string.cancel),
-            onConfirm = {
-                val h = timePickerState.hour.toString().padStart(2, '0')
-                val m = timePickerState.minute.toString().padStart(2, '0')
-                onTimeSelected("$h:$m")
-                showPicker = false
-            }
+        val initialHour = value.takeIf { it.length >= 5 }?.substring(0, 2)?.toIntOrNull() ?: 0
+        val initialMinute = value.takeIf { it.length >= 5 }?.substring(3, 5)?.toIntOrNull() ?: 0
+        var hour by remember { mutableStateOf(initialHour) }
+        var minute by remember { mutableStateOf(initialMinute) }
+
+        ModalBottomSheet(
+            onDismissRequest = { showPicker = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
-            TimePicker(state = timePickerState)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    stringResource(R.string.label_select_time),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                WheelTimePicker(
+                    hours = FULL_HOURS,
+                    minutesForHour = { FULL_MINUTES },
+                    selectedHour = hour,
+                    selectedMinute = minute,
+                    onHourChange = { hour = it },
+                    onMinuteChange = { minute = it }
+                )
+                ClearChainButton(
+                    text = stringResource(R.string.ok),
+                    onClick = {
+                        val h = hour.toString().padStart(2, '0')
+                        val m = minute.toString().padStart(2, '0')
+                        onTimeSelected("$h:$m")
+                        showPicker = false
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
+
+private val FULL_HOURS = (0..23).toList()
+private val FULL_MINUTES = (0..59).toList()

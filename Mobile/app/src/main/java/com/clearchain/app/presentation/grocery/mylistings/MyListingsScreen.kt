@@ -82,12 +82,12 @@ fun MyListingsScreen(
             AnimatedVisibility(
                 visible = state.isSelectionMode &&
                     state.selectedCount > 0 &&
-                    state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED),
+                    state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED, MyListingsTab.EXPIRED),
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it }
             ) {
                 Surface(
-                    tonalElevation = 8.dp,
+                    color = Color.White,
                     shadowElevation = 8.dp
                 ) {
                     Row(
@@ -138,6 +138,18 @@ fun MyListingsScreen(
                                     icon = Icons.Default.Delete
                                 )
                             }
+                            MyListingsTab.EXPIRED -> {
+                                ClearChainButton(
+                                    text = stringResource(R.string.delete),
+                                    onClick = { showBulkDeleteConfirm = true },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !state.isBulkOperating,
+                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError,
+                                    icon = Icons.Default.Delete
+                                )
+                            }
                             else -> Unit
                         }
                     }
@@ -165,6 +177,11 @@ fun MyListingsScreen(
                         onQueryChange = { viewModel.onEvent(MyListingsEvent.SearchQueryChanged(it)) },
                         placeholder = stringResource(R.string.search_listings_placeholder)
                     ) {
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.FileDownload,
+                            contentDescription = stringResource(R.string.export_csv),
+                            onClick = { viewModel.onEvent(MyListingsEvent.ExportCsv) }
+                        )
                         BadgedBox(
                             badge = {
                                 if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -178,9 +195,10 @@ fun MyListingsScreen(
                         }
                     }
 
-                    // Tab row: Available | Archived | Reserved | Expired
+                    // Tab row: All | Available | Archived | Reserved | Expired
                     FilterChipsRow(
                         tabs = listOf(
+                            MyListingsTab.ALL to stringResource(R.string.filter_all),
                             MyListingsTab.AVAILABLE to stringResource(R.string.tab_available),
                             MyListingsTab.ARCHIVED to stringResource(R.string.tab_archived),
                             MyListingsTab.RESERVED to stringResource(R.string.status_reserved),
@@ -269,7 +287,7 @@ fun MyListingsScreen(
                                                         }
                                                     },
                                                     onLongClick = {
-                                                        if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED)) {
+                                                        if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED, MyListingsTab.EXPIRED)) {
                                                             if (!state.isSelectionMode) {
                                                                 viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
                                                             }
@@ -278,7 +296,10 @@ fun MyListingsScreen(
                                                     }
                                                 ),
                                                 showGroceryInfo = false,
-                                                topRightAction = if (!state.isSelectionMode && listing.status == ListingStatus.AVAILABLE) {
+                                                showPickupTime = false,
+                                                topRightAction = if (!state.isSelectionMode &&
+                                                    listing.status in setOf(ListingStatus.AVAILABLE, ListingStatus.ARCHIVED)
+                                                ) {
                                                     {
                                                         IconButton(
                                                             onClick = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },

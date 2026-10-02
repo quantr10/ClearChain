@@ -97,6 +97,11 @@ fun ColumnBarChart(
     height: Int = 120
 ) {
     val maxValue = bars.maxOfOrNull { it.value }?.coerceAtLeast(1) ?: 1
+    // A lone small count (e.g. one request out of six statuses) doesn't need the full
+    // height - stretching it to `height` regardless pushes every zero-value column's
+    // number/label down to stay bottom-aligned, leaving a tall empty gap under the title.
+    // Scaling the cap down with maxValue keeps that gap proportional to the data.
+    val effectiveHeight = (height / 4 * maxValue).coerceIn(height / 4, height)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -120,7 +125,7 @@ fun ColumnBarChart(
                 Spacer(Modifier.height(4.dp))
                 Box(
                     modifier = Modifier
-                        .height((height * heightFraction).dp)
+                        .height((effectiveHeight * heightFraction).dp)
                         .fillMaxWidth(0.6f)
                         .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                         .background(bar.color)

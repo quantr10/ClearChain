@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -433,7 +435,7 @@ fun LocationPickerScreen(
             // ── CONTROLS ─────────────────────────────────────────────────────
             Column(
                 Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(ScreenPadding),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Radius
                 Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
@@ -458,34 +460,6 @@ fun LocationPickerScreen(
                             Text("1 km", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("50 km", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                    }
-                }
-
-                // Quick buttons
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ClearChainButton(
-                        text = stringResource(R.string.location_current),
-                        onClick = {
-                            if (locationPermission.status.isGranted) {
-                                viewModel.useCurrentLocation(context, geocoder)
-                            } else {
-                                pendingGps = true
-                                locationPermission.launchPermissionRequest()
-                            }
-                        },
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        enabled = !state.isSavingLocation,
-                        loading = state.isLoadingGps,
-                        icon = Icons.Default.MyLocation
-                    )
-                    if (state.hasProfileLocation) {
-                        ClearChainButton(
-                            text = stringResource(R.string.location_profile),
-                            onClick = { viewModel.useProfileLocation() },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            enabled = !state.isLoadingGps && !state.isSavingLocation,
-                            icon = Icons.Default.Person
-                        )
                     }
                 }
 
@@ -527,6 +501,37 @@ fun LocationPickerScreen(
                             }
                             if (index < state.searchSuggestions.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
+                    }
+                }
+
+                // Quick buttons
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ClearChainButton(
+                        text = stringResource(R.string.location_current),
+                        onClick = {
+                            if (locationPermission.status.isGranted) {
+                                viewModel.useCurrentLocation(context, geocoder)
+                            } else {
+                                pendingGps = true
+                                locationPermission.launchPermissionRequest()
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        enabled = !state.isSavingLocation,
+                        loading = state.isLoadingGps,
+                        icon = Icons.Default.MyLocation,
+                        containerColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    )
+                    if (state.hasProfileLocation) {
+                        ClearChainButton(
+                            text = stringResource(R.string.location_profile),
+                            onClick = { viewModel.useProfileLocation() },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            enabled = !state.isLoadingGps && !state.isSavingLocation,
+                            icon = Icons.Default.Person
+                        )
                     }
                 }
 

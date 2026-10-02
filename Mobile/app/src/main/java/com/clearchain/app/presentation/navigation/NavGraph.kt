@@ -14,6 +14,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.admin.analytics.AdminAnalyticsScreen
 import com.clearchain.app.presentation.admin.dashboard.AdminDashboardScreen
+import com.clearchain.app.presentation.admin.disputes.AdminDisputesScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
 import com.clearchain.app.presentation.analytics.AnalyticsScreen
@@ -334,6 +335,14 @@ fun NavGraph(
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
             )
+        }
+
+        composable(
+            route = Screen.AdminDisputes.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin/disputes" })
+        ) {
+            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
+            AdminDisputesScreen(onNavigateBack = { navController.navigateUp() })
         }
 
         composable(

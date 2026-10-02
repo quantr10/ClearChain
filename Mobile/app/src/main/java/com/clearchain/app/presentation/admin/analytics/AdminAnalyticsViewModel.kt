@@ -261,7 +261,6 @@ class AdminAnalyticsViewModel @Inject constructor(
         line(string(R.string.backlog_ready_requests), "${b.readyRequests}")
         line(string(R.string.backlog_pending_verifications), "${b.pendingVerifications}")
         line(string(R.string.backlog_open_disputes), "${b.openDisputes}")
-        line(string(R.string.backlog_pending_reports), "${b.pendingReports}")
 
         val q = data.quality
         heading(string(R.string.section_quality))
@@ -269,7 +268,6 @@ class AdminAnalyticsViewModel @Inject constructor(
         line(string(R.string.quality_reviews), "${q.reviewCount}")
         line(string(R.string.quality_review_coverage_label), pct(q.reviewCoverage))
         line(string(R.string.quality_disputes), "${q.disputesOpened}")
-        line(string(R.string.quality_reports), "${q.reportsFiled}")
 
         if (data.leaderboards.topGroceries.isNotEmpty()) {
             heading(string(R.string.chart_top_groceries))

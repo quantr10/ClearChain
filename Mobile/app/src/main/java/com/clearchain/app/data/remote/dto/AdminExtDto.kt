@@ -64,8 +64,7 @@ data class StatsBacklog(
     val oldestPendingRequestHours: Double? = null,
     val pendingVerifications: Int = 0,
     val oldestPendingVerificationDays: Int? = null,
-    val openDisputes: Int = 0,
-    val pendingReports: Int = 0
+    val openDisputes: Int = 0
 )
 
 @Serializable
@@ -87,8 +86,7 @@ data class StatsQuality(
     val reviewCoverage: Double = 0.0,
     val disputesOpened: Int = 0,
     /** Disputes / completed pickups, 0..1. */
-    val disputeRate: Double = 0.0,
-    val reportsFiled: Int = 0
+    val disputeRate: Double = 0.0
 )
 
 @Serializable
@@ -132,7 +130,7 @@ data class AdminAlertFeedResponse(
 
 @Serializable
 data class AdminAlertItem(
-    val type: String, // "dispute" | "report"
+    val type: String, // "dispute"
     val severity: String, // "high" | "medium"
     val id: String,
     val title: String,
@@ -144,12 +142,3 @@ data class AdminAlertItem(
 
 // ── Today summary ────────────────────────────────────────────────────────────
 // TodaySummaryResponse and TodaySummaryData are defined in OrganizationDto.kt
-
-// ── Report ───────────────────────────────────────────────────────────────────
-
-@Serializable
-data class SubmitReportRequest(
-    val listingId: String,
-    val reason: String,
-    val details: String? = null
-)

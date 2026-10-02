@@ -35,6 +35,7 @@ fun InventoryScreen(
     viewModel: InventoryViewModel = hiltViewModel()
 ) {
     val statusFilters = listOf(
+        FilterChipData(null, stringResource(R.string.filter_all)),
         FilterChipData("ACTIVE", stringResource(R.string.status_active)),
         FilterChipData("DISTRIBUTED", stringResource(R.string.status_distributed)),
         FilterChipData("EXPIRED", stringResource(R.string.status_expired))

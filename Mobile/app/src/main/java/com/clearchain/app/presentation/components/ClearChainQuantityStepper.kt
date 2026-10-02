@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.ButtonShape
@@ -31,10 +32,12 @@ fun ClearChainQuantityStepper(
     enabled: Boolean,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+    buttonSize: Dp = ClearChainButtonDefaults.Height
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = if (expanded) modifier.fillMaxWidth() else modifier,
         horizontalArrangement = Arrangement.spacedBy(ClearChainButtonDefaults.Spacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -43,11 +46,11 @@ fun ClearChainQuantityStepper(
             contentDescription = stringResource(R.string.cart_decrease),
             onClick = onDecrement,
             tint = MaterialTheme.colorScheme.error,
-            enabled = enabled
+            enabled = enabled,
+            size = buttonSize
         )
         Surface(
-            modifier = Modifier
-                .weight(1f)
+            modifier = (if (expanded) Modifier.weight(1f) else Modifier)
                 .height(ClearChainButtonDefaults.Height)
                 .widthIn(min = 72.dp),
             shape = ButtonShape,
@@ -72,7 +75,8 @@ fun ClearChainQuantityStepper(
             contentDescription = stringResource(R.string.cart_increase),
             onClick = onIncrement,
             tint = MaterialTheme.colorScheme.primary,
-            enabled = enabled && canIncrement
+            enabled = enabled && canIncrement,
+            size = buttonSize
         )
     }
 }
@@ -83,7 +87,8 @@ private fun QuantityStepperIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     tint: Color,
-    enabled: Boolean
+    enabled: Boolean,
+    size: Dp
 ) {
     val context = LocalContext.current
     Surface(
@@ -93,7 +98,7 @@ private fun QuantityStepperIconButton(
                 onClick()
             }
         },
-        modifier = Modifier.size(ClearChainButtonDefaults.Height),
+        modifier = Modifier.size(size),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(

@@ -78,9 +78,9 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
 
-            // Status Tab — never allow null (All is removed)
+            // Status Tab
             is InventoryEvent.StatusTabChanged -> {
-                _state.update { it.copy(selectedStatusTab = event.status ?: InventoryStatus.ACTIVE) }
+                _state.update { it.copy(selectedStatusTab = event.status) }
                 applyFilters()
             }
 
@@ -150,11 +150,13 @@ class InventoryViewModel @Inject constructor(
     }
 
     private fun exportCsv() {
-        val items = _state.value.allItems
+        val current = _state.value
+        val items = current.filteredItems
         if (items.isEmpty()) {
             viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_no_inventory_export))) }
             return
         }
+        val tag = current.selectedStatusTab?.name?.lowercase() ?: "all"
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
@@ -169,7 +171,7 @@ class InventoryViewModel @Inject constructor(
                         )
                     }
                     val csv = sb.toString()
-                    val fileName = "clearchain_inventory_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
+                    val fileName = "clearchain_inventory_${tag}_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
 
                     val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         val values = ContentValues().apply {

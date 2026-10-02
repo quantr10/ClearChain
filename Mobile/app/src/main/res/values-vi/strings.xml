@@ -35,7 +35,6 @@
     <string name="next">Tiếp theo</string>
     <string name="continue_label">Tiếp tục</string>
     <string name="share">Chia sẻ</string>
-    <string name="report">Báo cáo</string>
     <string name="view_all">Xem tất cả</string>
     <string name="see_more">Xem thêm</string>
 
@@ -301,6 +300,8 @@
     <string name="label_date">Ngày</string>
     <string name="label_time">Giờ</string>
     <string name="label_select_time">Chọn giờ</string>
+    <string name="label_select_pickup_time">Chọn giờ lấy hàng</string>
+    <string name="no_pickup_times_today">Không còn giờ lấy hàng nào hôm nay — hãy chọn ngày khác</string>
     <string name="msg_select_time">Chọn giờ bằng đồng hồ bên dưới.</string>
     <string name="proof_photo">Ảnh bằng chứng</string>
     <string name="view_full">Xem toàn màn hình</string>
@@ -605,13 +606,6 @@
     <string name="label_grocery_store">Cửa hàng thực phẩm</string>
     <string name="error_failed_load_listing">Không thể tải niêm yết</string>
     <string name="badge_live">TRỰC TIẾP</string>
-    <string name="report_listing_title">Báo cáo niêm yết</string>
-    <string name="report_listing_subtitle">Giúp chúng tôi giữ nền tảng an toàn và đáng tin cậy.</string>
-    <string name="report_reason_inaccurate">Thông tin không chính xác</string>
-    <string name="report_reason_already_gone">Thực phẩm đã hết</string>
-    <string name="report_reason_spam">Spam hoặc trùng lặp</string>
-    <string name="report_reason_inappropriate">Nội dung không phù hợp</string>
-    <string name="report_reason_other">Khác</string>
     <string name="btn_submit">Gửi</string>
 
     <!-- My Requests -->
@@ -807,6 +801,34 @@
     <string name="empty_no_org_category">Không có tổ chức trong danh mục này</string>
     <string name="empty_no_org_category_subtitle">Chuyển bộ lọc để xem tổ chức khác</string>
 
+    <!-- Admin Disputes (status strings shared with the NGO's own "── Disputes ──" section) -->
+    <string name="disputes">Tranh chấp</string>
+    <string name="admin_review_disputes">Xử lý các tranh chấp đang mở</string>
+    <string name="empty_no_disputes">Không có tranh chấp</string>
+    <string name="empty_no_disputes_subtitle">Các tranh chấp NGO mở trên đơn đã hoàn thành sẽ hiện ở đây</string>
+    <string name="dispute_parties">%1$s và %2$s</string>
+    <string name="dispute_ngo_contact">NGO</string>
+    <string name="dispute_grocery_contact">Cửa hàng</string>
+    <string name="dispute_ngo_statement">Lời trình bày của NGO</string>
+    <string name="dispute_grocery_statement">Lời trình bày của cửa hàng</string>
+    <string name="dispute_grocery_statement_placeholder">Cửa hàng đã nói gì khi bạn liên hệ?</string>
+    <string name="dispute_admin_resolution">Ghi chú giải quyết</string>
+    <string name="dispute_photo_evidence">Ảnh bằng chứng</string>
+    <string name="dispute_mark_resolved">Đánh dấu đã giải quyết</string>
+    <string name="action_send_email">Gửi email</string>
+    <string name="action_call">Gọi điện</string>
+    <string name="dispute_resolve_title">Giải quyết tranh chấp</string>
+    <string name="dispute_resolve_outcome_label">Kết quả</string>
+    <string name="dispute_outcome_ngo">Giải quyết theo hướng có lợi cho NGO</string>
+    <string name="dispute_outcome_grocery">Giải quyết theo hướng có lợi cho cửa hàng</string>
+    <string name="dispute_outcome_dismissed">Bác bỏ — không cần xử lý</string>
+    <string name="dispute_resolution_note">Ghi chú giải quyết</string>
+    <string name="dispute_resolution_note_placeholder">Tóm tắt cách bạn đã xử lý bên ngoài ứng dụng</string>
+    <string name="error_load_disputes">Không thể tải danh sách tranh chấp</string>
+    <string name="error_resolution_note_required">Cần nhập ghi chú giải quyết</string>
+    <string name="error_resolve_dispute_failed">Không thể giải quyết tranh chấp</string>
+    <string name="snack_dispute_resolved">Đã giải quyết tranh chấp</string>
+
     <!-- Manage Requests / NGO My Requests empty states -->
     <string name="empty_no_pickup_requests">Chưa có yêu cầu lấy hàng nào</string>
     <string name="empty_requests_grocery_subtitle">Yêu cầu từ NGO sẽ xuất hiện ở đây</string>
@@ -942,6 +964,8 @@
 
     <!-- My Listings delete confirm -->
     <string name="msg_delete_listing_confirm">Xóa \"%1$s\"? Không thể hoàn tác.</string>
+    <string name="msg_archive_listing_confirm">Lưu trữ \"%1$s\"? Sản phẩm sẽ bị ẩn khỏi các tổ chức NGO cho đến khi bạn khôi phục.</string>
+    <string name="msg_restore_listing_confirm">Khôi phục \"%1$s\"? Sản phẩm sẽ hiển thị lại với các tổ chức NGO.</string>
 
     <!-- Search placeholders -->
     <string name="hint_search_by_item_ngo">Tìm theo mặt hàng, NGO…</string>
@@ -959,7 +983,6 @@
     <string name="cd_remove_image">Xóa ảnh</string>
     <string name="cd_add_photo">Thêm ảnh</string>
     <string name="cd_full_size_image">Ảnh toàn màn hình</string>
-    <string name="cd_report_listing_icon">Báo cáo</string>
     <string name="cd_upload_failed">Tải lên thất bại</string>
     <string name="cd_clear_notifications">Xóa tất cả thông báo</string>
     <string name="cd_view_profile">Xem hồ sơ</string>
@@ -1014,6 +1037,8 @@
     <string name="label_status_approved">Yêu cầu của bạn đã được duyệt.</string>
     <string name="label_status_ready">Yêu cầu của bạn sẵn sàng.</string>
     <string name="label_status_completed">Yêu cầu của bạn đã hoàn thành.</string>
+    <string name="label_status_cancelled">Yêu cầu của bạn đã bị hủy.</string>
+    <string name="label_status_rejected">Yêu cầu của bạn đã bị từ chối.</string>
     <string name="label_requested_on_at">Được yêu cầu vào %1$s lúc %2$s</string>
     <string name="label_completed_on_at">Hoàn thành vào %1$s lúc %2$s</string>
     <string name="label_pickup_on_at">Lấy hàng vào %1$s lúc %2$s</string>
@@ -1044,6 +1069,8 @@
     <string name="snack_new_listing">Có danh sách mới: %1$s</string>
     <string name="snack_listings_refreshed">Đã làm mới danh sách</string>
     <string name="snack_listing_deleted">Đã xóa danh sách</string>
+    <string name="snack_listing_archived">Đã lưu trữ danh sách</string>
+    <string name="snack_listing_restored">Đã khôi phục danh sách</string>
 
 
     <string name="snack_n_listings_deleted">Đã xóa %1$d danh sách</string>
@@ -1067,6 +1094,7 @@
     <string name="snack_account_deleted">Xóa tài khoản thành công</string>
     <string name="snack_new_inventory_item">Nhận mặt hàng mới: %1$s</string>
     <string name="snack_no_inventory_export">Không có dữ liệu tồn kho để xuất</string>
+    <string name="snack_no_listings_export">Không có danh sách để xuất</string>
     <string name="snack_csv_saved">CSV đã lưu vào Tải xuống</string>
     <string name="snack_csv_failed">Lưu CSV thất bại</string>
     <string name="snack_export_failed">Xuất thất bại: %1$s</string>
@@ -1434,9 +1462,7 @@
     <string name="backlog_ready_requests">Sẵn sàng lấy hàng</string>
     <string name="backlog_pending_verifications">Chờ duyệt hồ sơ</string>
     <string name="backlog_open_disputes">Khiếu nại đang mở</string>
-    <string name="backlog_pending_reports">Báo cáo</string>
     <string name="backlog_open_cases">Vụ việc đang mở</string>
-    <string name="backlog_cases_detail">%1$d khiếu nại · %2$d báo cáo</string>
     <string name="backlog_oldest">lâu nhất %1$s</string>
     <string name="backlog_oldest_days">lâu nhất %1$d ngày</string>
 
@@ -1449,9 +1475,8 @@
     <string name="quality_reviews">Lượt đánh giá</string>
     <string name="quality_review_coverage_label">Lượt lấy hàng được đánh giá</string>
     <string name="quality_disputes">Khiếu nại đã mở</string>
-    <string name="quality_reports">Tin bị báo cáo</string>
     <string name="quality_dispute_rate">%1$d%% lượt lấy hàng hoàn tất phát sinh khiếu nại</string>
-    <string name="quality_no_data">Kỳ này không có đánh giá, khiếu nại hay báo cáo nào.</string>
+    <string name="quality_no_data">Kỳ này không có đánh giá hay khiếu nại nào.</string>
 
     <string name="chart_no_organizations">Chưa có tổ chức nào đăng ký.</string>
 
@@ -1504,6 +1529,7 @@
     <string name="error_email_taken">Email này đã được đăng ký</string>
     <string name="error_no_internet">Không có kết nối internet. Vui lòng kiểm tra mạng của bạn</string>
     <string name="error_pickup_time_outside_window">Giờ lấy hàng phải trong giờ mở cửa của cửa hàng</string>
+    <string name="error_pickup_time_too_soon">Giờ lấy hàng phải cách hiện tại ít nhất 2 giờ</string>
     <string name="error_server">Lỗi máy chủ. Vui lòng thử lại sau</string>
     <string name="error_too_many_attempts">Quá nhiều lần đăng nhập. Vui lòng đợi và thử lại</string>
     <string name="error_wrong_credentials">Email hoặc mật khẩu không đúng</string>

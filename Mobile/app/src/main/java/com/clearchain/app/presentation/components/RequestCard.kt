@@ -44,6 +44,11 @@ fun RequestCard(
         RequestViewMode.NGO -> request.groceryName
         RequestViewMode.ADMIN -> request.listingTitle
     }
+    val titleAvatarUrl = when (viewMode) {
+        RequestViewMode.GROCERY -> request.ngoProfilePictureUrl
+        RequestViewMode.NGO -> request.groceryProfilePictureUrl
+        RequestViewMode.ADMIN -> null
+    }
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column(
@@ -56,14 +61,22 @@ fun RequestCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(
+                Row(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (viewMode != RequestViewMode.ADMIN) {
+                        AvatarImage(
+                            imageUrl = titleAvatarUrl,
+                            name = titleText,
+                            size = 38
+                        )
+                    }
                     Text(
                         text = titleText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -75,8 +88,8 @@ fun RequestCard(
             // Details
 
             if (request.items.isNotEmpty()) {
-                RequestItemsPreview(request)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                RequestItemsPreview(request)
             }
 
             // Where the food is, and how far the NGO has to go for it.
@@ -347,18 +360,18 @@ private fun GroceryRequestActions(
     when (request.status) {
         PickupRequestStatus.PENDING -> {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ClearChainButton(
-                    text = stringResource(R.string.approve),
-                    onClick = onApprove,
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Check
-                )
                 ClearChainOutlinedButton(
                     text = stringResource(R.string.reject),
                     onClick = onReject,
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.Close,
                     contentColor = MaterialTheme.colorScheme.error
+                )
+                ClearChainButton(
+                    text = stringResource(R.string.approve),
+                    onClick = onApprove,
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Check
                 )
             }
         }
