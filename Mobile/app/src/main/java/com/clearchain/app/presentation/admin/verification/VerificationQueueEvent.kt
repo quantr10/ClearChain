@@ -37,4 +37,7 @@ sealed class VerificationQueueEvent {
     object ClearSelection : VerificationQueueEvent()
     object BatchApprove : VerificationQueueEvent()
     object BatchReject : VerificationQueueEvent()
+
+    // CSV export
+    object ExportCsv : VerificationQueueEvent()
 }

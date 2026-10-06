@@ -141,6 +141,7 @@
     <!-- ── Reviews ── -->
     <string name="rate_and_review">Rate this pickup</string>
     <string name="your_rating">Your rating</string>
+    <string name="cd_rated_out_of_five">Rated %1$d out of 5</string>
     <string name="your_comment">Comment (optional)</string>
     <string name="review_submitted">Review submitted. Thank you!</string>
     <string name="avg_rating">Avg: %1$.1f ★</string>
@@ -178,6 +179,8 @@
     <string name="notif_new_listing">New food listings nearby</string>
     <string name="notif_request_update">Pickup request updates</string>
     <string name="notif_expiry_reminder">Expiry reminders</string>
+    <string name="notif_admin_registration">New registrations</string>
+    <string name="notif_admin_dispute">Dispute alerts</string>
     <string name="settings_general">General</string>
     <string name="language_english">English</string>
     <string name="language_vietnamese">Tiếng Việt</string>
@@ -302,6 +305,9 @@
     <string name="label_qty">Qty</string>
     <string name="label_date">Date</string>
     <string name="label_time">Time</string>
+    <string name="msg_select_time_wheels">Scroll the wheels to choose the hour and minute.</string>
+    <string name="msg_pickup_checklist">Confirm each item below before completing the pickup.</string>
+    <string name="msg_choose_location">Set the area where you want to find listings.</string>
     <string name="label_select_time">Select time</string>
     <string name="msg_select_time">Choose a time using the clock below.</string>
     <string name="proof_photo">Proof Photo</string>
@@ -354,6 +360,7 @@
     <string name="nav_verify">Verify</string>
     <string name="nav_history">History</string>
     <string name="nav_stats">Stats</string>
+    <string name="nav_disputes">Disputes</string>
 
     <!-- Cart -->
     <string name="cart_empty_title">Your cart is empty</string>
@@ -408,9 +415,6 @@
     <string name="inventory_photo_attached">Photo attached</string>
     <string name="not_yet_distributed">Not yet distributed</string>
     <string name="section_item_details">Item Details</string>
-    <string name="label_product_name">Product Name *</string>
-    <string name="label_quantity_required">Quantity *</string>
-    <string name="label_unit">Unit</string>
     <string name="label_expiry_date_format">Expiry Date * (YYYY-MM-DD)</string>
     <string name="dialog_close">Close</string>
     <string name="share_item_label">Share item label</string>
@@ -418,6 +422,7 @@
     <string name="inventory_step_distributed">Distributed</string>
     <string name="inventory_step_expired">Expired</string>
     <string name="inventory_step_expires">Expires</string>
+    <string name="msg_qr_label">Share this label to identify the item.</string>
     <string name="qr_item_label_title">Item QR Label</string>
     <string name="label_product">Product</string>
     <string name="label_category_short">Category</string>
@@ -534,20 +539,13 @@
     <string name="email_resend_label">Resend code</string>
 
     <!-- Dispute -->
-    <string name="dispute_info_text">Disputes are reviewed within 48 hours. Provide as much detail as possible.</string>
-    <string name="dispute_reason_label">Reason *</string>
     <string name="dispute_reason_poor_condition">Poor food condition</string>
     <string name="dispute_reason_wrong_items">Wrong items received</string>
     <string name="dispute_reason_quantity">Quantity mismatch</string>
     <string name="dispute_reason_expired">Items already expired</string>
     <string name="dispute_reason_not_available">Items not available at pickup</string>
     <string name="dispute_reason_other">Other</string>
-    <string name="dispute_reason_no_show">NGO did not show up</string>
-    <string name="dispute_reason_time_violation">Pickup time not respected</string>
-    <string name="dispute_reason_damage">Items damaged during pickup</string>
-    <string name="dispute_reason_wrong_qty_taken">Wrong quantity taken</string>
-    <string name="dispute_reason_behavior">Inappropriate behavior</string>
-    <string name="dispute_statement_label">Statement *</string>
+    <string name="dispute_statement_label">Description</string>
     <string name="dispute_statement_hint">Describe what happened in detail…</string>
     <string name="dispute_submit">Submit Dispute</string>
 
@@ -652,9 +650,6 @@
     <string name="action_apply_ai">Apply AI</string>
     <string name="action_enter_manually">Enter Manually</string>
     <string name="action_add">Add</string>
-    <string name="label_export_transactions">Export Transactions</string>
-    <string name="msg_export_transactions">Review the preview below, then tap Share to open it in another app (Notes, Files, email, etc.).</string>
-    <string name="label_csv_preview_rows">CSV preview (%1$d rows):</string>
     <string name="verification_checklist_title">Verification Checklist</string>
     <string name="verification_confirm_items">Please confirm all items before approving:</string>
     <string name="verification_approve_org">Approve Organization</string>
@@ -724,8 +719,6 @@
 
     <!-- Shared dialog / misc -->
     <string name="action_update">Update</string>
-    <string name="add_item_manually">Add Item Manually</string>
-    <string name="action_add_to_inventory">Add to Inventory</string>
 
     <!-- Heatmap labels -->
     <string name="label_less">Less</string>
@@ -756,7 +749,6 @@
     <string name="label_comments_optional">Comments (optional)</string>
     <string name="hint_pickup_experience">How was your pickup experience?</string>
     <string name="label_ngo_rating">Rating from NGO</string>
-    <string name="label_reviewed_by">Reviewed by %1$s</string>
     <string name="hint_not_yet_rated">Not yet rated for this pickup</string>
 
     <!-- Profile -->
@@ -798,6 +790,10 @@
     <string name="action_mark_ready">Mark as Ready</string>
     <string name="action_confirm_pickup_photo">Confirm Pickup with Photo</string>
     <string name="action_file_dispute">File a Dispute</string>
+    <string name="action_view_dispute">View Dispute</string>
+    <string name="msg_dispute_report">Tell us what went wrong with this pickup. An admin will review your report.</string>
+    <string name="hint_dispute_report">Something wrong with this pickup?</string>
+    <string name="hint_dispute_view">View the report you submitted</string>
     <string name="advanced_filters">Advanced Filters</string>
     <string name="label_ai_food_analysis">AI Food Analysis</string>
     <string name="label_analyzing_food">Analyzing your food…</string>
@@ -830,11 +826,16 @@
     <string name="dispute_parties">%1$s vs. %2$s</string>
     <string name="dispute_ngo_contact">NGO</string>
     <string name="dispute_grocery_contact">Grocery</string>
-    <string name="dispute_ngo_statement">NGO\'s statement</string>
+    <string name="dispute_ngo_statement">Description</string>
     <string name="dispute_grocery_statement">Grocery\'s statement</string>
     <string name="dispute_grocery_statement_placeholder">What did the grocery say when you contacted them?</string>
     <string name="dispute_admin_resolution">Resolution note</string>
     <string name="dispute_photo_evidence">Photo evidence</string>
+    <string name="dispute_listing_section">Listing</string>
+    <string name="dispute_reason_section">Reason</string>
+    <string name="dispute_start_review">Start review</string>
+    <string name="snack_dispute_review_started">Dispute moved to under review</string>
+    <string name="error_start_review_failed">Could not start the review</string>
     <string name="dispute_mark_resolved">Mark resolved</string>
     <string name="action_send_email">Send email</string>
     <string name="action_call">Call</string>
@@ -1029,7 +1030,6 @@
     <string name="cd_star_n">%1$d star</string>
     <string name="cd_proof_of_pickup">Proof of pickup</string>
     <string name="cd_saved_only">Saved only</string>
-    <string name="label_expiry_date_field">Expiry Date</string>
     <string name="greeting_hi">Hi, %1$s</string>
     <string name="cd_edit">Edit</string>
     <string name="cd_preview">Preview</string>
@@ -1135,6 +1135,8 @@
     <string name="snack_no_inventory_export">No inventory data to export</string>
     <string name="snack_no_listings_export">No listings to export</string>
     <string name="snack_no_requests_export">No requests to export</string>
+    <string name="snack_no_transactions_export">No transactions to export</string>
+    <string name="snack_no_orgs_export">No organizations to export</string>
     <string name="snack_csv_saved">CSV saved to Downloads</string>
     <string name="snack_csv_failed">Failed to save CSV</string>
     <string name="snack_export_failed">Export failed: %1$s</string>
@@ -1377,7 +1379,6 @@
     <string name="cd_exit_selection">Exit selection</string>
     <string name="cd_create_listing">Create listing</string>
     <string name="cd_select_multiple">Select multiple</string>
-    <string name="cd_add_item_manually">Add item manually</string>
     <string name="cd_change_location">Change location</string>
     <string name="cd_return_to_location">Return to my location</string>
     <string name="cd_select_time">Select time</string>
@@ -1393,7 +1394,6 @@
     <string name="error_must_be_positive">Must be greater than 0</string>
     <string name="error_same_as_current">Same as current</string>
     <string name="label_current_qty">Current: %1$d %2$s</string>
-    <string name="error_select_reason">Please select a reason</string>
 
     <!-- Pickup request validation errors -->
     <string name="error_listing_not_found">Listing not found</string>

@@ -245,12 +245,6 @@ fun AdminDashboardScreen(
                             onClick = { navController.navigate(Screen.Transactions.route) }
                         )
                         DashboardActionCard(
-                            icon = Icons.Default.Gavel,
-                            title = stringResource(R.string.disputes),
-                            subtitle = stringResource(R.string.admin_review_disputes),
-                            onClick = { navController.navigate(Screen.AdminDisputes.route) }
-                        )
-                        DashboardActionCard(
                             icon = Icons.Default.BarChart,
                             title = stringResource(R.string.statistics),
                             subtitle = stringResource(R.string.system_health),

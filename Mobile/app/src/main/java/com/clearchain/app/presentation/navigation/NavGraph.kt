@@ -14,14 +14,12 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.admin.analytics.AdminAnalyticsScreen
 import com.clearchain.app.presentation.admin.dashboard.AdminDashboardScreen
-import com.clearchain.app.presentation.admin.disputes.AdminDisputesScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
 import com.clearchain.app.presentation.analytics.AnalyticsScreen
 import com.clearchain.app.presentation.auth.login.LoginScreen
 import com.clearchain.app.presentation.auth.register.RegisterScreen
 import com.clearchain.app.presentation.auth.verify.EmailVerificationScreen
-import com.clearchain.app.presentation.dispute.DisputeScreen
 import com.clearchain.app.presentation.grocery.GroceryDashboardScreen
 import com.clearchain.app.presentation.grocery.createlisting.CreateListingScreen
 import com.clearchain.app.presentation.grocery.editlisting.EditListingScreen
@@ -274,7 +272,6 @@ fun NavGraph(
             RequestDetailScreen(
                 requestId = requestId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToDispute = { id -> navController.navigate(Screen.Dispute.createRoute(id)) },
                 onNavigateToPublicProfile = { orgId -> navController.navigate(Screen.PublicProfile.createRoute(orgId)) },
                 onNavigateToListing = { listingId -> navController.navigate(Screen.ListingDetail.createRoute(listingId)) }
             )
@@ -338,14 +335,6 @@ fun NavGraph(
         }
 
         composable(
-            route = Screen.AdminDisputes.route,
-            deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin/disputes" })
-        ) {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            AdminDisputesScreen(onNavigateBack = { navController.navigateUp() })
-        }
-
-        composable(
             route = Screen.AdminStatistics.route,
             arguments = listOf(
                 navArgument("section") {
@@ -387,14 +376,6 @@ fun NavGraph(
                     navController.navigate(Screen.ListingDetail.createRoute(listingId))
                 }
             )
-        }
-
-        composable(
-            route = Screen.Dispute.route,
-            arguments = listOf(navArgument("pickupRequestId") { type = NavType.StringType })
-        ) {
-            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
-            DisputeScreen(onNavigateBack = { navController.navigateUp() })
         }
 
         composable(Screen.Settings.route) {

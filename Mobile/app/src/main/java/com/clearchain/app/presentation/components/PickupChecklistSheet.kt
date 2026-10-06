@@ -2,20 +2,21 @@ package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 
 private const val CHECKLIST_SIZE = 5
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** The five checks an NGO ticks before confirming a pickup; Next stays disabled until all are ticked. */
 @Composable
-fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
+fun PickupChecklistDialog(onDismiss: () -> Unit, onNext: () -> Unit) {
     val checklistItems = listOf(
         stringResource(R.string.checklist_item_1),
         stringResource(R.string.checklist_item_2),
@@ -26,31 +27,23 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
     var checkedItems by remember { mutableStateOf(setOf<Int>()) }
     val allChecked = checkedItems.size == CHECKLIST_SIZE
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.label_pickup_verification_checklist),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${checkedItems.size}/$CHECKLIST_SIZE",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.CheckCircle,
+        title = stringResource(R.string.label_pickup_verification_checklist),
+        message = stringResource(R.string.msg_pickup_checklist),
+        confirmLabel = stringResource(R.string.next),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmEnabled = allChecked,
+        onConfirm = onNext
+    ) {
+        Text(
+            "${checkedItems.size}/$CHECKLIST_SIZE",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             checklistItems.forEachIndexed { index, item ->
                 val checked = index in checkedItems
                 Row(
@@ -81,14 +74,6 @@ fun PickupChecklistSheet(onDismiss: () -> Unit, onNext: () -> Unit) {
                     )
                 }
             }
-            ClearChainButton(
-                text = stringResource(R.string.next),
-                onClick = onNext,
-                enabled = allChecked,
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.onTertiary
-            )
         }
     }
 }

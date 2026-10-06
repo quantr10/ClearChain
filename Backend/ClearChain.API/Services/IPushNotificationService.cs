@@ -18,6 +18,7 @@ public interface IPushNotificationService
     // ── Pickup Request Notifications ─────────────────────────────────────────
     Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request);
+    Task SendPickupRequestAutoCancelledNotification(Guid ngoId, PickupRequestData request);
     Task SendPickupRejectedNotification(Guid userId, PickupRequestData request);
     Task SendPickupApprovedNotification(Guid userId, PickupRequestData request);
     Task SendPickupReadyNotification(Guid userId, PickupRequestData request);
@@ -40,6 +41,8 @@ public interface IPushNotificationService
     Task SendResubmissionAlertToAdmins(OrganizationData organization);
     Task SendVerificationApprovedNotification(Guid organizationId, string organizationType);
     Task SendVerificationRejectedNotification(Guid organizationId, string? reason);
+    Task SendNewDisputeAlertToAdmins(Guid disputeId, string reason, string initiatorName);
+    Task SendDisputeResolvedNotification(Guid userId, Guid pickupRequestId, string reason, string status, string? adminResolution, string screen);
 
     // ── Generic sender — persists, pushes and broadcasts one notification ────
     Task SendNotificationAsync(Guid userId, string title, string body, Dictionary<string, string> data);

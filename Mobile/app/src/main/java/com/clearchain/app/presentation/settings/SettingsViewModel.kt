@@ -32,14 +32,18 @@ class SettingsViewModel @Inject constructor(
                 settingsStore.language,
                 settingsStore.notifNewListing,
                 settingsStore.notifRequestUpdate,
-                settingsStore.notifExpiry
+                settingsStore.notifExpiry,
+                settingsStore.notifAdminRegistration,
+                settingsStore.notifAdminDispute
             ) { values ->
                 SettingsState(
                     theme = values[0] as String,
                     language = values[1] as String,
                     notifNewListing = values[2] as Boolean,
                     notifRequestUpdate = values[3] as Boolean,
-                    notifExpiry = values[4] as Boolean
+                    notifExpiry = values[4] as Boolean,
+                    notifAdminRegistration = values[5] as Boolean,
+                    notifAdminDispute = values[6] as Boolean
                 )
             }.collect { combined -> _state.update { combined.copy(currentUserType = it.currentUserType) } }
         }
@@ -65,6 +69,8 @@ class SettingsViewModel @Inject constructor(
                 is SettingsEvent.NotifNewListingChanged -> settingsStore.setNotifNewListing(event.enabled)
                 is SettingsEvent.NotifRequestUpdateChanged -> settingsStore.setNotifRequestUpdate(event.enabled)
                 is SettingsEvent.NotifExpiryChanged -> settingsStore.setNotifExpiry(event.enabled)
+                is SettingsEvent.NotifAdminRegistrationChanged -> settingsStore.setNotifAdminRegistration(event.enabled)
+                is SettingsEvent.NotifAdminDisputeChanged -> settingsStore.setNotifAdminDispute(event.enabled)
             }
         }
     }

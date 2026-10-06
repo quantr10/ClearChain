@@ -99,7 +99,6 @@ private fun getGroceryNavigationItems(): List<NavigationItem> = listOf(
 private fun getAdminNavigationItems(): List<NavigationItem> = listOf(
     NavigationItem(Screen.AdminDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
     NavigationItem(Screen.Verification.route, Icons.Filled.VerifiedUser, Icons.Outlined.VerifiedUser, R.string.nav_verify),
-    NavigationItem(Screen.Transactions.route, Icons.Filled.History, Icons.Outlined.History, R.string.nav_history),
     NavigationItem(
         route = Screen.AdminStatistics.route,
         selectedIcon = Icons.Filled.BarChart,
@@ -109,5 +108,6 @@ private fun getAdminNavigationItems(): List<NavigationItem> = listOf(
         // the admin home uses.
         navRoute = Screen.AdminStatistics.BASE
     ),
+    NavigationItem(Screen.Transactions.route, Icons.Filled.History, Icons.Outlined.History, R.string.nav_history),
     NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)
 )

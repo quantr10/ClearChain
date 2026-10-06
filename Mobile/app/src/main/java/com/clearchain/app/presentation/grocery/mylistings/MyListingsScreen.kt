@@ -528,17 +528,18 @@ private fun EditQuantityDialog(
             }
         }
     ) {
-        OutlinedTextField(
+        ClearChainTextField(
             value = quantity,
             onValueChange = {
                 quantity = it
                 error = null
             },
-            label = { Text(stringResource(R.string.label_new_quantity)) },
-            suffix = { Text(unit) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = stringResource(R.string.label_new_quantity),
+            trailingIcon = { Text(unit, style = MaterialTheme.typography.labelSmall) },
+            keyboardType = KeyboardType.Number,
             isError = error != null,
-            supportingText = error?.let { { Text(it) } }
+            errorMessage = error,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

@@ -148,7 +148,7 @@ public class PickupRequestsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id);
+        var result = await _service.GetByIdAsync(id, includeContacts: User.IsInRole("admin"));
         if (!result.Success) return MapError(result);
 
         return Ok(new PickupRequestResponse { Message = "Pickup request retrieved successfully", Data = result.Data! });

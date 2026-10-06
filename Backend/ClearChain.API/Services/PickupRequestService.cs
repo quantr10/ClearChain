@@ -31,9 +31,9 @@ public record PickupRequestServiceResult(
 public interface IPickupRequestService
 {
     Task<PickupRequestServiceResult> CreateAsync(Guid ngoId, CreatePickupRequestRequest request);
-    Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null);
+    Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false);
     Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType);
-    Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId);
+    Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, bool includeContacts = false);
     Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize);
     Task<PickupRequestServiceResult> GetGroceryRequestsAsync(Guid groceryId, int page, int pageSize);
     Task<PickupRequestServiceResult> ApproveAsync(Guid requestId, Guid groceryId);
@@ -127,7 +127,7 @@ public class PickupRequestService : IPickupRequestService
         return new PickupRequestServiceResult(true, Data: data);
     }
 
-    public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null)
+    public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false)
     {
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
@@ -211,6 +211,11 @@ public class PickupRequestService : IPickupRequestService
         {
             await _notificationService.NotifyPickupRequestCancelledAsync(data);
             await _pushNotificationService.SendPickupRequestCancelledNotification(pr.GroceryId, data);
+
+            // A human NGO cancelling its own request already knows - only the grocery needs
+            // telling. A job cancelling on the NGO's behalf is news to both sides.
+            if (isSystemCancelled)
+                await _pushNotificationService.SendPickupRequestAutoCancelledNotification(pr.NgoId, data);
         }
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -454,7 +459,7 @@ public class PickupRequestService : IPickupRequestService
         return new PickupRequestServiceResult(true, Data: data, InventoryData: inventoryDto);
     }
 
-    public async Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId)
+    public async Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, bool includeContacts = false)
     {
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
@@ -469,7 +474,7 @@ public class PickupRequestService : IPickupRequestService
             ? await _context.ClearanceListings.FindAsync(pr.ListingId.Value)
             : null;
 
-        var data = MapToData(pr);
+        var data = MapToData(pr, includeContacts: includeContacts);
         if (listing != null)
         {
             if (string.IsNullOrEmpty(data.ListingTitle)) data.ListingTitle = listing.ProductName;
@@ -633,7 +638,8 @@ public class PickupRequestService : IPickupRequestService
         string? groceryName = null,
         string? proofPhotoUrl = null,
         double? ngoPickupRate = null,
-        int ngoTotalCompleted = 0)
+        int ngoTotalCompleted = 0,
+        bool includeContacts = false)
     {
         return new PickupRequestData
         {
@@ -645,6 +651,10 @@ public class PickupRequestService : IPickupRequestService
             GroceryId = pr.GroceryId.ToString(),
             GroceryName = groceryName ?? pr.Grocery?.Name ?? "",
             GroceryProfilePictureUrl = pr.Grocery?.ProfilePictureUrl,
+            NgoEmail = includeContacts ? pr.Ngo?.Email : null,
+            NgoPhone = includeContacts ? pr.Ngo?.Phone : null,
+            GroceryEmail = includeContacts ? pr.Grocery?.Email : null,
+            GroceryPhone = includeContacts ? pr.Grocery?.Phone : null,
             Status = pr.Status.ToString().ToLower(),
             RequestedQuantity = pr.RequestedQuantity ?? 0,
             PickupDate = pr.PickupDate.ToString("yyyy-MM-dd"),

@@ -160,17 +160,18 @@ fun ListingDetailScreen(
                 }
             }
         ) {
-            OutlinedTextField(
+            ClearChainTextField(
                 value = qty,
                 onValueChange = {
                     qty = it
                     qtyError = null
                 },
-                label = { Text(stringResource(R.string.label_new_quantity)) },
-                suffix = { Text(listing.unit) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                label = stringResource(R.string.label_new_quantity),
+                trailingIcon = { Text(listing.unit, style = MaterialTheme.typography.labelSmall) },
+                keyboardType = KeyboardType.Number,
                 isError = qtyError != null,
-                supportingText = qtyError?.let { { Text(it) } }
+                errorMessage = qtyError,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

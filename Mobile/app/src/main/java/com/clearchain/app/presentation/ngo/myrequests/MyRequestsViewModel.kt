@@ -127,17 +127,6 @@ class MyRequestsViewModel @Inject constructor(
                 _state.update { it.copy(reviewComment = event.comment) }
             MyRequestsEvent.SubmitReview -> submitReview()
 
-            // Dispute
-            is MyRequestsEvent.DisputeRequest -> {
-                viewModelScope.launch {
-                    _uiEvent.send(
-                        UiEvent.Navigate(
-                            com.clearchain.app.presentation.navigation.Screen.Dispute.createRoute(event.requestId)
-                        )
-                    )
-                }
-            }
-
             // PDF receipt
             is MyRequestsEvent.GenerateReceipt -> {
                 val request = _state.value.allRequests.find { it.id == event.requestId }

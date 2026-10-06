@@ -98,6 +98,32 @@ public class ReviewsController : ControllerBase
         });
     }
 
+    // GET api/reviews/pickup/{pickupRequestId} — the reviews left on one pickup (at most one per
+    // side). Looked up by pickup rather than through an organization's review list, which is paged
+    // and would miss an older pickup's review. Readable by admins and by the two organizations on
+    // the pickup; anyone else gets the same "not found" as for a pickup that does not exist.
+    [HttpGet("pickup/{pickupRequestId}")]
+    public async Task<IActionResult> GetReviewsForPickup(Guid pickupRequestId)
+    {
+        if (!this.TryGetUserId(out var userId)) return Unauthorized();
+
+        var pickup = await _context.PickupRequests
+            .AsNoTracking()
+            .FirstOrDefaultAsync(pr => pr.Id == pickupRequestId);
+
+        if (pickup == null || (!User.IsInRole("admin") && pickup.NgoId != userId && pickup.GroceryId != userId))
+            return NotFound(new { message = "Pickup request not found" });
+
+        var reviews = await _context.Reviews
+            .Include(r => r.Reviewer)
+            .Include(r => r.Reviewed)
+            .Where(r => r.PickupRequestId == pickupRequestId)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+
+        return Ok(new { message = "Reviews retrieved", data = reviews.Select(MapToDto).ToList() });
+    }
+
     // GET api/reviews/my — Get reviews I submitted as NGO
     [HttpGet("my")]
     public async Task<IActionResult> GetMyReviews()
@@ -105,6 +131,7 @@ public class ReviewsController : ControllerBase
         if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
         var reviews = await _context.Reviews
+            .Include(r => r.Reviewer)
             .Include(r => r.Reviewed)
             .Where(r => r.ReviewerId == userId)
             .OrderByDescending(r => r.CreatedAt)

@@ -276,7 +276,7 @@ private fun CartPickupContent(
                 }
 
                 if (showTimeSheet) {
-                    PickupTimeSheet(
+                    PickupTimeDialog(
                         hours = validHours,
                         minutesForHour = validMinutesForHour,
                         initialTime = state.pickupTime,
@@ -352,7 +352,7 @@ private fun CartPickupContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PickupTimeSheet(
+private fun PickupTimeDialog(
     hours: List<Int>,
     minutesForHour: (Int) -> List<Int>,
     initialTime: String,
@@ -372,37 +372,23 @@ private fun PickupTimeSheet(
     var hour by remember { mutableStateOf(initialHour) }
     var minute by remember { mutableStateOf(initialMinute) }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.AccessTime,
+        title = stringResource(R.string.label_select_pickup_time),
+        message = stringResource(R.string.msg_select_time_wheels),
+        confirmLabel = stringResource(R.string.ok),
+        dismissLabel = stringResource(R.string.cancel),
+        onConfirm = { onConfirm(hour, minute) }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                stringResource(R.string.label_select_pickup_time),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            WheelTimePicker(
-                hours = hours,
-                minutesForHour = minutesForHour,
-                selectedHour = hour,
-                selectedMinute = minute,
-                onHourChange = { hour = it },
-                onMinuteChange = { minute = it }
-            )
-            ClearChainButton(
-                text = stringResource(R.string.ok),
-                onClick = { onConfirm(hour, minute) },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        WheelTimePicker(
+            hours = hours,
+            minutesForHour = minutesForHour,
+            selectedHour = hour,
+            selectedMinute = minute,
+            onHourChange = { hour = it },
+            onMinuteChange = { minute = it }
+        )
     }
 }
 

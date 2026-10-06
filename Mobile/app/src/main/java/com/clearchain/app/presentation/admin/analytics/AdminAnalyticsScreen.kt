@@ -88,23 +88,6 @@ fun AdminAnalyticsScreen(
     }
 
     Scaffold(
-        floatingActionButton = {
-            SmallFloatingActionButton(
-                onClick = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                if (state.isExporting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.cd_export_pdf))
-                }
-            }
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -139,7 +122,8 @@ fun AdminAnalyticsScreen(
                             item {
                                 AnalyticsHeader(
                                     state = state,
-                                    onSelect = { viewModel.onEvent(AdminAnalyticsEvent.SelectPeriod(it)) }
+                                    onSelect = { viewModel.onEvent(AdminAnalyticsEvent.SelectPeriod(it)) },
+                                    onExportPdf = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) }
                                 )
                             }
 
@@ -150,8 +134,6 @@ fun AdminAnalyticsScreen(
                             item { LeaderboardCard(data, highlighted) }
                             item { QualityCard(data, highlighted) }
                             item { OrganizationsCard(data, highlighted) }
-
-                            item { Spacer(Modifier.height(72.dp)) }
                         }
                     }
                 }
@@ -165,7 +147,8 @@ fun AdminAnalyticsScreen(
 @Composable
 private fun AnalyticsHeader(
     state: AdminAnalyticsState,
-    onSelect: (StatsPeriodOption) -> Unit
+    onSelect: (StatsPeriodOption) -> Unit,
+    onExportPdf: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -187,6 +170,12 @@ private fun AnalyticsHeader(
             if (state.isLoading && state.data != null) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             }
+            ClearChainActionIconButton(
+                icon = Icons.Default.FileDownload,
+                contentDescription = stringResource(R.string.cd_export_pdf),
+                onClick = onExportPdf,
+                enabled = !state.isExporting
+            )
         }
 
         Row(

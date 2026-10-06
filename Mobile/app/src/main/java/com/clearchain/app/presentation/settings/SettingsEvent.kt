@@ -6,4 +6,6 @@ sealed class SettingsEvent {
     data class NotifNewListingChanged(val enabled: Boolean) : SettingsEvent()
     data class NotifRequestUpdateChanged(val enabled: Boolean) : SettingsEvent()
     data class NotifExpiryChanged(val enabled: Boolean) : SettingsEvent()
+    data class NotifAdminRegistrationChanged(val enabled: Boolean) : SettingsEvent()
+    data class NotifAdminDisputeChanged(val enabled: Boolean) : SettingsEvent()
 }

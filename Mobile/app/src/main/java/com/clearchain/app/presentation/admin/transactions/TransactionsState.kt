@@ -28,9 +28,6 @@ data class TransactionsState(
     // Filter sheet
     val showFilterSheet: Boolean = false,
 
-    val showExportDialog: Boolean = false,
-    val exportCsvText: String = "",
-
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,

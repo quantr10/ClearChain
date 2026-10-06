@@ -4,4 +4,12 @@
     <cache-path
         name="pickup_photos"
         path="pickup_photos/" />
+    <!-- Pickup receipt PDFs shared from the request screens (PickupReceiptPdf) -->
+    <cache-path
+        name="receipts"
+        path="receipts/" />
+    <!-- Photos taken with the camera in PhotoPickerDialog -->
+    <cache-path
+        name="photo_uploads"
+        path="photo_uploads/" />
 </paths>

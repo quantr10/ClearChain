@@ -16,8 +16,7 @@ sealed class TransactionsEvent {
     data class ShowDatePicker(val forStart: Boolean) : TransactionsEvent()
     object HideDatePicker : TransactionsEvent()
 
-    object ShowExportDialog : TransactionsEvent()
-    object DismissExportDialog : TransactionsEvent()
+    object ExportCsv : TransactionsEvent()
 
     object ShowFilterSheet : TransactionsEvent()
     object HideFilterSheet : TransactionsEvent()

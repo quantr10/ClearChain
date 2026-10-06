@@ -122,35 +122,56 @@ fun SettingsScreen(
             // ── Notifications ─────────────────────────────────────────────
             item {
                 DashboardSection(title = stringResource(R.string.notifications_settings)) {
-                    // Only NGOs ever receive a "new listing" push - it's broadcast exclusively
-                    // to organizations of type NGO, so the toggle would be a dead switch for a
-                    // Grocery account.
-                    if (state.currentUserType != OrganizationType.GROCERY) {
+                    // Admin never transacts (no listings, pickups or inventory of its own), so
+                    // none of the Grocery/NGO content toggles below ever apply - it gets its own
+                    // pair for the alerts it actually receives: org registrations and disputes.
+                    if (state.currentUserType == OrganizationType.ADMIN) {
                         SettingsSwitchRow(
-                            icon = Icons.Default.LocalGroceryStore,
-                            title = stringResource(R.string.notif_new_listing),
-                            checked = state.notifNewListing,
-                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifNewListingChanged(it)) }
+                            icon = Icons.Default.PersonAdd,
+                            title = stringResource(R.string.notif_admin_registration),
+                            checked = state.notifAdminRegistration,
+                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifAdminRegistrationChanged(it)) }
                         )
 
                         SettingsRowDivider()
+
+                        SettingsSwitchRow(
+                            icon = Icons.Default.Gavel,
+                            title = stringResource(R.string.notif_admin_dispute),
+                            checked = state.notifAdminDispute,
+                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifAdminDisputeChanged(it)) }
+                        )
+                    } else {
+                        // Only NGOs ever receive a "new listing" push - it's broadcast exclusively
+                        // to organizations of type NGO, so the toggle would be a dead switch for a
+                        // Grocery account.
+                        if (state.currentUserType != OrganizationType.GROCERY) {
+                            SettingsSwitchRow(
+                                icon = Icons.Default.LocalGroceryStore,
+                                title = stringResource(R.string.notif_new_listing),
+                                checked = state.notifNewListing,
+                                onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifNewListingChanged(it)) }
+                            )
+
+                            SettingsRowDivider()
+                        }
+
+                        SettingsSwitchRow(
+                            icon = Icons.Default.LocalShipping,
+                            title = stringResource(R.string.notif_request_update),
+                            checked = state.notifRequestUpdate,
+                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifRequestUpdateChanged(it)) }
+                        )
+
+                        SettingsRowDivider()
+
+                        SettingsSwitchRow(
+                            icon = Icons.Default.Timer,
+                            title = stringResource(R.string.notif_expiry_reminder),
+                            checked = state.notifExpiry,
+                            onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifExpiryChanged(it)) }
+                        )
                     }
-
-                    SettingsSwitchRow(
-                        icon = Icons.Default.LocalShipping,
-                        title = stringResource(R.string.notif_request_update),
-                        checked = state.notifRequestUpdate,
-                        onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifRequestUpdateChanged(it)) }
-                    )
-
-                    SettingsRowDivider()
-
-                    SettingsSwitchRow(
-                        icon = Icons.Default.Timer,
-                        title = stringResource(R.string.notif_expiry_reminder),
-                        checked = state.notifExpiry,
-                        onCheckedChange = { viewModel.onEvent(SettingsEvent.NotifExpiryChanged(it)) }
-                    )
                 }
             }
 

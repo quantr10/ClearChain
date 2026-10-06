@@ -52,15 +52,6 @@ fun InventoryScreen(
         }
     }
 
-    // Manual add bottom sheet
-    if (state.showManualAddSheet) {
-        ManualAddSheet(
-            state = state,
-            onEvent = { viewModel.onEvent(it) },
-            onDismiss = { viewModel.onEvent(InventoryEvent.HideManualAddSheet) }
-        )
-    }
-
     BackHandler(state.isSelectionMode) { viewModel.onEvent(InventoryEvent.ToggleSelectionMode) }
 
     if (state.showFilterSheet) {
@@ -72,9 +63,6 @@ fun InventoryScreen(
     }
 
     Scaffold(
-        // The manual-add FAB was removed: it opened a form that only faked success
-        // (no backend endpoint exists to actually add an inventory item this way) —
-        // see ManualAddSheet/submitManualAdd. Restore once a real endpoint exists.
         bottomBar = {
             AnimatedVisibility(
                 visible = state.isSelectionMode && state.selectedCount > 0,
@@ -395,91 +383,3 @@ private fun InventoryFilterSheet(
 }
 
 // ── Category breakdown horizontal bar chart ──────────────────────────────────
-
-// ── Manual add bottom sheet ──────────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun ManualAddSheet(
-    state: InventoryState,
-    onEvent: (InventoryEvent) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                stringResource(R.string.add_item_manually),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            OutlinedTextField(
-                value = state.manualProductName,
-                onValueChange = { onEvent(InventoryEvent.ManualProductNameChanged(it)) },
-                label = { Text(stringResource(R.string.label_product_name)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            // Category selector
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.label_category), style = MaterialTheme.typography.labelLarge)
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FoodCategory.entries.forEach { cat ->
-                        FilterChip(
-                            selected = state.manualCategory == cat.name,
-                            onClick = { onEvent(InventoryEvent.ManualCategoryChanged(cat.name)) },
-                            label = { Text(stringResource(cat.labelResId), style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = state.manualQuantity,
-                    onValueChange = { onEvent(InventoryEvent.ManualQuantityChanged(it)) },
-                    label = { Text(stringResource(R.string.label_quantity_required)) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    )
-                )
-                OutlinedTextField(
-                    value = state.manualUnit,
-                    onValueChange = { onEvent(InventoryEvent.ManualUnitChanged(it)) },
-                    label = { Text(stringResource(R.string.label_unit)) },
-                    modifier = Modifier.width(80.dp),
-                    singleLine = true
-                )
-            }
-
-            DatePickerField(
-                value = state.manualExpiryDate,
-                onDateSelected = { onEvent(InventoryEvent.ManualExpiryDateChanged(it)) },
-                label = stringResource(R.string.label_expiry_date_field)
-            )
-
-            ClearChainButton(
-                text = stringResource(R.string.action_add_to_inventory),
-                onClick = { onEvent(InventoryEvent.SubmitManualAdd) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = state.manualProductName.isNotBlank(),
-                loading = state.isSubmittingManual
-            )
-        }
-    }
-}

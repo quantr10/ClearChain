@@ -1,6 +1,12 @@
 package com.clearchain.app.presentation.admin.transactions
 
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
@@ -13,11 +19,18 @@ import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
@@ -114,11 +127,7 @@ class TransactionsViewModel @Inject constructor(
             TransactionsEvent.ClearError ->
                 _state.update { it.copy(error = null) }
 
-            TransactionsEvent.ShowExportDialog ->
-                _state.update { it.copy(showExportDialog = true, exportCsvText = buildCsvExport()) }
-
-            TransactionsEvent.DismissExportDialog ->
-                _state.update { it.copy(showExportDialog = false) }
+            TransactionsEvent.ExportCsv -> exportCsv()
 
             TransactionsEvent.ShowFilterSheet ->
                 _state.update { it.copy(showFilterSheet = true) }
@@ -128,23 +137,64 @@ class TransactionsViewModel @Inject constructor(
         }
     }
 
-    private fun buildCsvExport(): String {
-        val header = "ID,Item,Items,Category,Grocery,NGO,Quantity,Pickup Date,Status,Created At\n"
-        val rows = _state.value.filteredTransactions.joinToString("\n") { t ->
-            listOf(
-                t.id.take(8),
-                t.listingTitle.replace(",", ";"),
-                t.itemTitles.joinToString(" | ").replace(",", ";"),
-                t.listingCategory,
-                t.groceryName.replace(",", ";"),
-                t.ngoName.replace(",", ";"),
-                t.requestedQuantity.toString(),
-                t.pickupDate,
-                t.status.name,
-                t.createdAt.take(10)
-            ).joinToString(",")
+    private fun exportCsv() {
+        val current = _state.value
+        val transactions = current.filteredTransactions
+        if (transactions.isEmpty()) {
+            viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_no_transactions_export))) }
+            return
         }
-        return header + rows
+        val tag = current.selectedStatus?.lowercase() ?: "all"
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val sb = StringBuilder()
+                    sb.appendLine("Items,Category,Grocery,NGO,Quantity,Pickup Date,Pickup Time,Status,Created At,Notes")
+                    transactions.forEach { t ->
+                        fun esc(s: String) = if (s.contains(',') || s.contains('"')) "\"${s.replace("\"", "\"\"")}\"" else s
+                        sb.appendLine(
+                            "${esc(t.itemTitles.joinToString("; "))},${esc(t.listingCategory)}," +
+                                "${esc(t.groceryName)},${esc(t.ngoName)},${t.requestedQuantity}," +
+                                "${t.pickupDate.take(10)},${esc(t.pickupTime)},${t.status.name}," +
+                                "${t.createdAt.take(10)},${esc(t.notes ?: "")}"
+                        )
+                    }
+                    val csv = sb.toString()
+                    val fileName = "clearchain_transactions_${tag}_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.csv"
+
+                    val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                            put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                        }
+                        context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
+                            context.contentResolver.openOutputStream(u)?.use { it.write(csv.toByteArray()) }
+                        }
+                    } else {
+                        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
+                        FileOutputStream(file).use { it.write(csv.toByteArray()) }
+                        Uri.fromFile(file)
+                    }
+
+                    if (uri != null) {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/csv"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        val chooser = Intent.createChooser(shareIntent, "Share Transactions CSV")
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(chooser)
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_saved)))
+                    } else {
+                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_csv_failed)))
+                    }
+                } catch (e: Exception) {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_export_failed, e.message ?: "")))
+                }
+            }
+        }
     }
 
     private fun loadTransactions() {

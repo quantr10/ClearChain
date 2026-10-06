@@ -3,6 +3,10 @@ package com.clearchain.app.presentation.shared.requestdetail
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
@@ -38,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -55,9 +60,12 @@ import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.presentation.dispute.DisputeStatusBadge
+import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.DateTimeUtils
+import com.clearchain.app.util.ImageUtils
 import com.clearchain.app.util.PickupReceiptPdf
 import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.mapsQuery
@@ -65,6 +73,7 @@ import com.clearchain.app.util.openInGoogleMaps
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -75,6 +84,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 private const val PICKUP_CHECKLIST_SIZE = 5
 
@@ -100,7 +113,21 @@ data class RequestDetailState(
     val showAutoRatingSheet: Boolean = false,
     val showRatingSheet: Boolean = false,
     val isGeneratingReceipt: Boolean = false,
-    val groceryProfile: PublicProfileData? = null
+    val groceryProfile: PublicProfileData? = null,
+    // NGO dispute on this pickup. The button stays hidden until disputeChecked, so a slow or failed
+    // lookup can't invite a second report.
+    val myDispute: MyDisputeData? = null,
+    val disputeChecked: Boolean = false,
+    val showDisputeSheet: Boolean = false,
+    val isSubmittingDispute: Boolean = false,
+    // Admin's view of the dispute on this pickup, plus the actions that move it along.
+    val adminDispute: DisputeListItemData? = null,
+    val isStartingReview: Boolean = false,
+    val showResolveDialog: Boolean = false,
+    val resolveOutcome: String = "resolved_ngo",
+    val resolveGroceryStatement: String = "",
+    val resolveNote: String = "",
+    val isResolving: Boolean = false
 ) {
     val allChecked: Boolean get() = checkedItems.size == PICKUP_CHECKLIST_SIZE
 }
@@ -115,6 +142,7 @@ class RequestDetailViewModel @Inject constructor(
     private val confirmPickupUseCase: ConfirmPickupUseCase,
     private val reviewApi: ReviewApi,
     private val organizationApi: OrganizationApi,
+    private val disputeApi: DisputeApi,
     private val signalRService: SignalRService,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
@@ -198,14 +226,24 @@ class RequestDetailViewModel @Inject constructor(
                 val req = response.data.toDomain()
                 _state.update { it.copy(request = req, isLoading = false) }
                 loadMessages(requestId)
-                if (_state.value.currentUserType == OrganizationType.NGO) {
+                // The user is read from storage in init, so on a fast response it may not be in the
+                // state yet; wait for it rather than skipping the role-specific loads.
+                val userType = _state.value.currentUserType
+                    ?: getCurrentUserUseCase().first()?.type?.also { type ->
+                        _state.update { it.copy(currentUserType = type) }
+                    }
+                if (userType == OrganizationType.NGO) {
                     loadGroceryProfile(req.groceryId)
+                    loadMyDispute(requestId)
+                }
+                if (userType == OrganizationType.ADMIN) {
+                    loadAdminDispute(requestId)
                 }
                 if (req.status == PickupRequestStatus.COMPLETED) {
-                    if (_state.value.currentUserType == OrganizationType.NGO) {
+                    if (userType == OrganizationType.NGO) {
                         loadMyReview(requestId)
-                    } else if (_state.value.currentUserType == OrganizationType.GROCERY) {
-                        loadNgoReview(requestId, req.groceryId)
+                    } else if (userType == OrganizationType.GROCERY || userType == OrganizationType.ADMIN) {
+                        loadNgoReview(requestId, req.ngoId)
                     }
                 }
             } catch (e: Exception) {
@@ -241,11 +279,13 @@ class RequestDetailViewModel @Inject constructor(
         }
     }
 
-    private fun loadNgoReview(requestId: String, groceryId: String) {
+    /** The rating the NGO gave this pickup, for the grocery that received it and for an admin. */
+    private fun loadNgoReview(requestId: String, ngoId: String) {
         viewModelScope.launch {
             try {
-                val response = reviewApi.getReviewsForOrganization(groceryId)
-                val review = response.data.find { it.pickupRequestId == requestId }
+                val response = reviewApi.getReviewsForPickup(requestId)
+                // A pickup can carry a review from each side; this is the one the NGO wrote.
+                val review = response.data.find { it.reviewerId == ngoId }
                 _state.update { it.copy(ngoReview = review) }
             } catch (_: Exception) {}
         }
@@ -277,10 +317,122 @@ class RequestDetailViewModel @Inject constructor(
             try {
                 val uri = withContext(Dispatchers.IO) { PickupReceiptPdf.build(context, req) }
                 _uiEvent.send(UiEvent.ShareFile(uri, title = context.getString(R.string.snack_receipt_title, req.listingTitle)))
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                // Logged because the snackbar alone hid why this failed for a long time.
+                Log.e("RequestDetail", "Could not generate the pickup receipt", e)
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_receipt_failed)))
             } finally {
                 _state.update { it.copy(isGeneratingReceipt = false) }
+            }
+        }
+    }
+
+    private fun loadMyDispute(requestId: String) {
+        viewModelScope.launch {
+            runCatching { disputeApi.getMyDisputes() }
+                .onSuccess { response ->
+                    val mine = response.data.find { it.pickupRequestId == requestId }
+                    _state.update { it.copy(myDispute = mine, disputeChecked = true) }
+                }
+        }
+    }
+
+    private fun loadAdminDispute(requestId: String) {
+        viewModelScope.launch {
+            runCatching { disputeApi.getDisputes(pickupRequestId = requestId) }
+                .onSuccess { response ->
+                    _state.update { it.copy(adminDispute = response.data.firstOrNull()) }
+                }
+        }
+    }
+
+    fun startDisputeReview(requestId: String) {
+        val dispute = _state.value.adminDispute ?: return
+        if (_state.value.isStartingReview) return
+        viewModelScope.launch {
+            _state.update { it.copy(isStartingReview = true) }
+            try {
+                disputeApi.startReview(dispute.id)
+                _state.update { it.copy(isStartingReview = false) }
+                loadAdminDispute(requestId)
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dispute_review_started)))
+            } catch (e: Exception) {
+                _state.update { it.copy(isStartingReview = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_start_review_failed)))
+            }
+        }
+    }
+
+    fun openResolveDialog() = _state.update {
+        it.copy(showResolveDialog = true, resolveOutcome = "resolved_ngo", resolveGroceryStatement = "", resolveNote = "")
+    }
+    fun closeResolveDialog() = _state.update { it.copy(showResolveDialog = false) }
+    fun onResolveOutcomeChange(value: String) = _state.update { it.copy(resolveOutcome = value) }
+    fun onResolveGroceryStatementChange(value: String) = _state.update { it.copy(resolveGroceryStatement = value) }
+    fun onResolveNoteChange(value: String) = _state.update { it.copy(resolveNote = value) }
+
+    fun resolveDispute(requestId: String) {
+        val dispute = _state.value.adminDispute ?: return
+        val note = _state.value.resolveNote.trim()
+        if (note.isBlank()) {
+            viewModelScope.launch {
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_resolution_note_required)))
+            }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isResolving = true) }
+            try {
+                disputeApi.resolveDispute(
+                    dispute.id,
+                    ResolveDisputeRequest(
+                        status = _state.value.resolveOutcome,
+                        groceryStatement = _state.value.resolveGroceryStatement.trim().ifBlank { null },
+                        adminResolution = note
+                    )
+                )
+                _state.update { it.copy(showResolveDialog = false, isResolving = false) }
+                loadAdminDispute(requestId)
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dispute_resolved)))
+            } catch (e: Exception) {
+                _state.update { it.copy(isResolving = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_resolve_dispute_failed)))
+            }
+        }
+    }
+
+    fun openDisputeSheet() = _state.update { it.copy(showDisputeSheet = true) }
+    fun closeDisputeSheet() = _state.update { it.copy(showDisputeSheet = false) }
+
+    /**
+     * Files the NGO's dispute. On failure the sheet stays open so the typed statement and photo
+     * are not lost; on success the sheet closes and the pickup shows the new dispute.
+     */
+    fun submitDispute(requestId: String, reason: NgoDisputeReason, statement: String, photoUri: Uri?) {
+        if (_state.value.isSubmittingDispute) return
+        viewModelScope.launch {
+            _state.update { it.copy(isSubmittingDispute = true) }
+            var photoFile: File? = null
+            try {
+                photoFile = photoUri?.let { withContext(Dispatchers.IO) { ImageUtils.compressImage(context, it) } }
+                val photoPart = photoFile?.let {
+                    MultipartBody.Part.createFormData("photo", it.name, it.asRequestBody("image/jpeg".toMediaTypeOrNull()))
+                }
+                disputeApi.openDispute(
+                    pickupRequestId = requestId.toRequestBody(),
+                    reason = reason.key.toRequestBody(),
+                    statement = statement.toRequestBody(),
+                    photo = photoPart
+                )
+                _state.update { it.copy(isSubmittingDispute = false, showDisputeSheet = false) }
+                loadMyDispute(requestId)
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dispute_submitted)))
+            } catch (_: Exception) {
+                _state.update { it.copy(isSubmittingDispute = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_submit_dispute_failed)))
+            } finally {
+                // The compressed copy is only a temporary upload file.
+                photoFile?.delete()
             }
         }
     }
@@ -375,7 +527,6 @@ class RequestDetailViewModel @Inject constructor(
 fun RequestDetailScreen(
     requestId: String,
     onNavigateBack: () -> Unit,
-    onNavigateToDispute: (String) -> Unit = {},
     onNavigateToPublicProfile: (String) -> Unit = {},
     onNavigateToListing: (String) -> Unit = {},
     viewModel: RequestDetailViewModel = hiltViewModel()
@@ -388,6 +539,7 @@ fun RequestDetailScreen(
     val req = state.request
     val isGrocery = state.currentUserType == OrganizationType.GROCERY
     val isNgo = state.currentUserType == OrganizationType.NGO
+    val isAdmin = state.currentUserType == OrganizationType.ADMIN
     val isMyRequest = req != null && when {
         isGrocery -> req.groceryId == state.currentUserId
         isNgo -> req.ngoId == state.currentUserId
@@ -420,9 +572,8 @@ fun RequestDetailScreen(
     }
 
     // Auto rating sheet on first view after completion (NGO only)
-    if (state.showAutoRatingSheet && req != null && isNgo) {
-        RatingSheet(
-            myReview = state.myReview,
+    if (state.showAutoRatingSheet && req != null && isNgo && state.myReview == null) {
+        RatingDialog(
             isSubmitting = state.isSubmittingReview,
             onDismiss = { viewModel.dismissAutoRatingSheet() },
             onSubmit = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
@@ -430,9 +581,8 @@ fun RequestDetailScreen(
     }
 
     // Manual rating sheet from "Show" button (NGO only)
-    if (state.showRatingSheet && req != null && isNgo) {
-        RatingSheet(
-            myReview = state.myReview,
+    if (state.showRatingSheet && req != null && isNgo && state.myReview == null) {
+        RatingDialog(
             isSubmitting = state.isSubmittingReview,
             onDismiss = { viewModel.closeRatingSheet() },
             onSubmit = { rating, comment -> viewModel.submitReview(requestId, rating, comment) }
@@ -441,7 +591,7 @@ fun RequestDetailScreen(
 
     // Step 1 - Checklist verification sheet
     if (showChecklistSheet) {
-        PickupChecklistSheet(
+        PickupChecklistDialog(
             onDismiss = { showChecklistSheet = false },
             onNext = {
                 showChecklistSheet = false
@@ -475,6 +625,21 @@ fun RequestDetailScreen(
             confirmLabel = stringResource(R.string.reject),
             dismissLabel = stringResource(R.string.cancel),
             isDestructive = true
+        )
+    }
+
+    // Admin: resolve the dispute on this pickup
+    if (state.showResolveDialog) {
+        ResolveDisputeDialog(
+            outcome = state.resolveOutcome,
+            groceryStatement = state.resolveGroceryStatement,
+            note = state.resolveNote,
+            isResolving = state.isResolving,
+            onOutcomeChange = viewModel::onResolveOutcomeChange,
+            onGroceryStatementChange = viewModel::onResolveGroceryStatementChange,
+            onNoteChange = viewModel::onResolveNoteChange,
+            onConfirm = { viewModel.resolveDispute(requestId) },
+            onDismiss = { viewModel.closeResolveDialog() }
         )
     }
 
@@ -542,10 +707,20 @@ fun RequestDetailScreen(
                         state = state,
                         isGrocery = isGrocery,
                         isNgo = isNgo,
+                        isAdmin = isAdmin,
                         isMyRequest = isMyRequest,
-                        showDisputeButton = isMyRequest &&
-                            req.status != PickupRequestStatus.CANCELLED &&
-                            req.status != PickupRequestStatus.REJECTED,
+                        // Only the NGO that owns a completed pickup can dispute it, and only once; after
+                        // that the same button opens the submitted dispute read-only.
+                        showDisputeButton = isNgo && isMyRequest &&
+                            state.disputeChecked &&
+                            req.status == PickupRequestStatus.COMPLETED,
+                        onOpenDispute = { viewModel.openDisputeSheet() },
+                        onCloseDispute = { viewModel.closeDisputeSheet() },
+                        onSubmitDispute = { reason, statement, photo ->
+                            viewModel.submitDispute(requestId, reason, statement, photo)
+                        },
+                        onStartDisputeReview = { viewModel.startDisputeReview(requestId) },
+                        onOpenResolveDialog = { viewModel.openResolveDialog() },
                         onApprove = { viewModel.approve(requestId) },
                         onReject = { viewModel.showRejectDialog() },
                         onMarkReady = { viewModel.markReady(requestId) },
@@ -570,8 +745,14 @@ private fun RequestDetailContent(
     state: RequestDetailState,
     isGrocery: Boolean,
     isNgo: Boolean,
+    isAdmin: Boolean,
     isMyRequest: Boolean,
     showDisputeButton: Boolean,
+    onOpenDispute: () -> Unit,
+    onCloseDispute: () -> Unit,
+    onSubmitDispute: (NgoDisputeReason, String, Uri?) -> Unit,
+    onStartDisputeReview: () -> Unit,
+    onOpenResolveDialog: () -> Unit,
     onApprove: () -> Unit,
     onReject: () -> Unit,
     onMarkReady: () -> Unit,
@@ -584,7 +765,6 @@ private fun RequestDetailContent(
     groceryProfile: PublicProfileData? = null
 ) {
     val context = LocalContext.current
-    var showDisputeSheet by remember { mutableStateOf(false) }
     // -- Expiry computation (same logic as RequestCard) --
     val daysUntilExpiry: Long? = remember(req.listingExpiryDate) {
         val raw = req.listingExpiryDate ?: return@remember null
@@ -655,7 +835,32 @@ private fun RequestDetailContent(
             req.groceryProfilePictureUrl
         }
 
-        Card(
+        if (isAdmin) {
+            // An admin is neither party, so show both with their contact details.
+            ClearChainCard {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PartyContactRow(
+                        role = stringResource(R.string.label_ngo_party),
+                        name = req.ngoName,
+                        avatarUrl = req.ngoProfilePictureUrl,
+                        email = req.ngoEmail,
+                        phone = req.ngoPhone,
+                        onOpenProfile = { onNavigateToPublicProfile(req.ngoId) }
+                    )
+                    PartyContactRow(
+                        role = stringResource(R.string.label_grocery_party),
+                        name = req.groceryName,
+                        avatarUrl = req.groceryProfilePictureUrl,
+                        email = req.groceryEmail,
+                        phone = req.groceryPhone,
+                        onOpenProfile = { onNavigateToPublicProfile(req.groceryId) }
+                    )
+                }
+            }
+        } else Card(
             modifier = Modifier.fillMaxWidth().height(148.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -663,7 +868,7 @@ private fun RequestDetailContent(
             Box(
                 modifier = Modifier.fillMaxSize().padding(12.dp)
             ) {
-                if (showReceiptBtn || showDisputeButton) {
+                if (showReceiptBtn) {
                     Row(
                         modifier = Modifier.align(Alignment.TopEnd),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
@@ -674,13 +879,6 @@ private fun RequestDetailContent(
                                 label = stringResource(R.string.cd_download_receipt),
                                 loading = state.isGeneratingReceipt,
                                 onClick = onGenerateReceipt
-                            )
-                        }
-                        if (showDisputeButton) {
-                            ImageActionButton(
-                                icon = Icons.Default.Flag,
-                                label = stringResource(R.string.action_file_dispute),
-                                onClick = { showDisputeSheet = true }
                             )
                         }
                     }
@@ -720,10 +918,11 @@ private fun RequestDetailContent(
             }
         }
 
-        if (showDisputeSheet) {
-            DisputeSheet(
-                isGrocery = isGrocery,
-                onDismiss = { showDisputeSheet = false }
+        if (state.showDisputeSheet && state.myDispute == null) {
+            DisputeDialog(
+                isSubmitting = state.isSubmittingDispute,
+                onDismiss = onCloseDispute,
+                onSubmit = onSubmitDispute
             )
         }
 
@@ -770,6 +969,16 @@ private fun RequestDetailContent(
             if (handlingParts.isNotEmpty()) {
                 CompactDetailRow(Icons.AutoMirrored.Filled.StickyNote2, handlingParts.joinToString(" \u00B7 "), MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+
+        // Admin: the dispute on this pickup, right after the request details it refers to.
+        state.adminDispute?.let { dispute ->
+            AdminDisputeSection(
+                dispute = dispute,
+                isStartingReview = state.isStartingReview,
+                onStartReview = onStartDisputeReview,
+                onResolve = onOpenResolveDialog
+            )
         }
 
         // -- 5b. About Us card (NGO only) --
@@ -898,78 +1107,86 @@ private fun RequestDetailContent(
             LinearProgressIndicator(Modifier.fillMaxWidth())
         }
 
-        // -- 8. Rating card (NGO: submit rating; Grocery: view received rating) --
+        // -- 8. Rating card (NGO: submit rating; Grocery and admin: view the received rating) --
         if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isNgo) {
-            SectionCard(stringResource(R.string.label_rate_experience)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        stringResource(R.string.hint_pickup_experience),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    ClearChainActionIconButton(
-                        icon = Icons.Default.Star,
-                        contentDescription = stringResource(R.string.action_show),
-                        onClick = onShowRatingSheet
-                    )
+            val myReview = state.myReview
+            if (myReview != null) {
+                // Already rated: the rating itself is the section, nothing to open.
+                ReviewSection(
+                    title = stringResource(R.string.your_rating),
+                    rating = myReview.rating,
+                    comment = myReview.comment,
+                    createdAt = myReview.createdAt
+                )
+            } else {
+                SectionCard(stringResource(R.string.label_rate_experience)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onShowRatingSheet),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            stringResource(R.string.hint_pickup_experience),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.Star,
+                            contentDescription = stringResource(R.string.action_show),
+                            onClick = onShowRatingSheet
+                        )
+                    }
                 }
             }
         }
 
-        if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isGrocery) {
-            SectionCard(stringResource(R.string.label_ngo_rating)) {
-                val review = state.ngoReview
-                if (review != null) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            repeat(5) { i ->
-                                Icon(
-                                    imageVector = if (i < review.rating) Icons.Default.Star else Icons.Default.StarBorder,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(28.dp),
-                                    tint = if (i < review.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
-                        Text(
-                            stringResource(R.string.label_reviewed_by, review.reviewerName),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (!review.comment.isNullOrBlank()) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    "\"${review.comment}\"",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(12.dp)
-                                )
-                            }
-                        }
-                    }
-                } else {
+        // The NGO's rating of the grocery. The grocery sees it, or that it is still missing; an admin
+        // sees it only once it exists, so a pickup nobody rated shows no rating section at all.
+        if (req.status == PickupRequestStatus.COMPLETED && ((isMyRequest && isGrocery) || isAdmin)) {
+            val review = state.ngoReview
+            if (review != null) {
+                ReviewSection(
+                    title = stringResource(R.string.label_ngo_rating),
+                    rating = review.rating,
+                    comment = review.comment,
+                    createdAt = review.createdAt
+                )
+            } else if (isGrocery) {
+                SectionCard(stringResource(R.string.label_ngo_rating)) {
+                    NoReviewYet(stringResource(R.string.hint_not_yet_rated))
+                }
+            }
+        }
+
+        // -- 8b. Dispute (NGO): the report already filed, or the prompt to file one --
+        if (showDisputeButton) {
+            val myDispute = state.myDispute
+            if (myDispute != null) {
+                MyDisputeSection(myDispute)
+            } else {
+                SectionCard(stringResource(R.string.open_dispute)) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onOpenDispute),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.StarBorder, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            stringResource(R.string.hint_not_yet_rated),
+                            stringResource(R.string.hint_dispute_report),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.Flag,
+                            contentDescription = stringResource(R.string.action_file_dispute),
+                            onClick = onOpenDispute
                         )
                     }
                 }
@@ -1012,7 +1229,7 @@ private fun ImageActionButton(
 
 // -- Section card --
 @Composable
-private fun SectionCard(
+internal fun SectionCard(
     title: String,
     trailing: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
@@ -1462,259 +1679,168 @@ private fun ChatBubble(message: MessageData, isMine: Boolean) {
     }
 }
 
-// -- Dispute Sheet --
-@OptIn(ExperimentalMaterial3Api::class)
+// -- Dispute dialog --
 @Composable
-private fun DisputeSheet(isGrocery: Boolean, onDismiss: () -> Unit) {
-    var selectedReason by remember { mutableStateOf("") }
+private fun DisputeDialog(
+    isSubmitting: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (NgoDisputeReason, String, Uri?) -> Unit
+) {
+    var selectedReason by remember { mutableStateOf<NgoDisputeReason?>(null) }
     var statement by remember { mutableStateOf("") }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
 
-    val ngoReasons = listOf(
-        stringResource(R.string.dispute_reason_poor_condition),
-        stringResource(R.string.dispute_reason_wrong_items),
-        stringResource(R.string.dispute_reason_quantity),
-        stringResource(R.string.dispute_reason_expired),
-        stringResource(R.string.dispute_reason_not_available),
-        stringResource(R.string.dispute_reason_other)
-    )
-    val groceryReasons = listOf(
-        stringResource(R.string.dispute_reason_no_show),
-        stringResource(R.string.dispute_reason_time_violation),
-        stringResource(R.string.dispute_reason_damage),
-        stringResource(R.string.dispute_reason_wrong_qty_taken),
-        stringResource(R.string.dispute_reason_behavior),
-        stringResource(R.string.dispute_reason_other)
-    )
-    val reasons = if (isGrocery) groceryReasons else ngoReasons
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) photoUri = uri
+    }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // The description is required, matching the server's check.
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.Flag,
+        title = stringResource(R.string.open_dispute),
+        message = stringResource(R.string.msg_dispute_report),
+        confirmLabel = stringResource(R.string.dispute_submit),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmEnabled = selectedReason != null && statement.isNotBlank() && !isSubmitting,
+        confirmLoading = isSubmitting,
+        dismissEnabled = !isSubmitting,
+        dismissible = !isSubmitting,
+        onConfirm = { selectedReason?.let { onSubmit(it, statement.trim(), photoUri) } }
+    ) {
+        // The form is taller than a dialog on a small screen, so it scrolls inside the dialog.
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
+            modifier = Modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.open_dispute),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
-                }
-            }
-
-            // Info banner
-            Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        Icons.Default.Info,
-                        null,
-                        Modifier.size(16.dp).padding(top = 2.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        stringResource(R.string.dispute_info_text),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-
-            // Reason selection
+            // Same label style as the text field titles below it (ClearChainTextField).
             Text(
                 stringResource(R.string.dispute_reason),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            reasons.forEach { reason ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { selectedReason = reason }
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    RadioButton(
-                        selected = selectedReason == reason,
-                        onClick = { selectedReason = reason }
-                    )
-                    Text(reason, style = MaterialTheme.typography.bodyMedium)
+            // The radio's 48dp minimum touch target is switched off here so the rows can sit close together;
+            // the whole row stays clickable.
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+                Column {
+                    NgoDisputeReason.entries.forEach { reason ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedReason = reason }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedReason == reason,
+                                onClick = { selectedReason = reason }
+                            )
+                            Text(stringResource(reason.labelRes), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
 
-            // Statement field
-            Text(
-                stringResource(R.string.dispute_statement_label),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            OutlinedTextField(
+            ClearChainTextField(
                 value = statement,
                 onValueChange = { statement = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.dispute_statement_hint)) },
+                label = stringResource(R.string.dispute_statement_label),
+                placeholder = stringResource(R.string.dispute_statement_hint),
+                singleLine = false,
                 minLines = 3,
                 maxLines = 6,
-                shape = RoundedCornerShape(12.dp)
+                enabled = !isSubmitting,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            // Submit
-            ClearChainButton(
-                text = stringResource(R.string.dispute_submit),
-                onClick = onDismiss,
-                enabled = selectedReason.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.Flag,
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            )
+            // Photo evidence (optional)
+            val photo = photoUri
+            if (photo == null) {
+                ClearChainOutlinedButton(
+                    text = stringResource(R.string.dispute_photo),
+                    onClick = {
+                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.Image
+                )
+            } else {
+                Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp))) {
+                    AsyncImage(
+                        model = photo,
+                        contentDescription = stringResource(R.string.dispute_photo_evidence),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    IconButton(onClick = { photoUri = null }, modifier = Modifier.align(Alignment.TopEnd)) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                    }
+                }
+            }
         }
     }
 }
 
-// -- Rating Sheet --
-@OptIn(ExperimentalMaterial3Api::class)
+// -- Rating dialog --
 @Composable
-private fun RatingSheet(
-    myReview: ReviewData?,
+private fun RatingDialog(
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onSubmit: (Int, String?) -> Unit
 ) {
-    var selectedRating by remember { mutableIntStateOf(myReview?.rating ?: 0) }
-    var comment by remember { mutableStateOf(myReview?.comment ?: "") }
+    var selectedRating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.StarRate,
+        title = stringResource(R.string.label_rate_experience),
+        message = stringResource(R.string.msg_rate_experience),
+        confirmLabel = stringResource(R.string.save),
+        dismissLabel = stringResource(R.string.cancel),
+        confirmEnabled = selectedRating > 0 && !isSubmitting,
+        confirmLoading = isSubmitting,
+        dismissEnabled = !isSubmitting,
+        dismissible = !isSubmitting,
+        onConfirm = { onSubmit(selectedRating, comment.ifBlank { null }) }
+    ) {
+        Text(
+            stringResource(R.string.rate_and_review),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
         ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    stringResource(R.string.label_rate_experience),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, stringResource(R.string.close))
-                }
-            }
-
-            if (myReview != null) {
-                // -- Read-only: already rated --
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            repeat(5) { i ->
+                IconButton(
+                    onClick = { selectedRating = i + 1 },
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Text(
-                        stringResource(R.string.your_rating),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        repeat(5) { i ->
-                            Icon(
-                                imageVector = if (i < myReview.rating) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = stringResource(R.string.cd_star_n, i + 1),
-                                modifier = Modifier.size(36.dp),
-                                tint = if (i < myReview.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
-                    if (!myReview.comment.isNullOrBlank()) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                myReview.comment,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-                }
-            } else {
-                // -- Interactive: not yet rated --
-                Text(
-                    stringResource(R.string.rate_and_review),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(5) { i ->
-                        IconButton(
-                            onClick = { selectedRating = i + 1 },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,
-                                contentDescription = stringResource(R.string.cd_star_n, i + 1),
-                                modifier = Modifier.size(36.dp),
-                                tint = if (i < selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
-                }
-                OutlinedTextField(
-                    value = comment,
-                    onValueChange = { comment = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = {
-                        OptionalFieldLabel(
-                            text = stringResource(R.string.label_comments_optional),
-                            isOptional = true
-                        )
-                    },
-                    placeholder = { Text(stringResource(R.string.hint_pickup_experience)) },
-                    minLines = 2,
-                    maxLines = 4,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ClearChainOutlinedButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ClearChainButton(
-                        text = stringResource(R.string.save),
-                        onClick = { onSubmit(selectedRating, comment.ifBlank { null }) },
-                        modifier = Modifier.weight(1f),
-                        enabled = selectedRating > 0,
-                        loading = isSubmitting
+                    Icon(
+                        imageVector = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = stringResource(R.string.cd_star_n, i + 1),
+                        modifier = Modifier.size(32.dp),
+                        tint = if (i < selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
                     )
                 }
             }
         }
+        ClearChainTextField(
+            value = comment,
+            onValueChange = { comment = it },
+            label = stringResource(R.string.label_comments_optional),
+            isOptional = true,
+            placeholder = stringResource(R.string.hint_pickup_experience),
+            singleLine = false,
+            minLines = 2,
+            maxLines = 4,
+            enabled = !isSubmitting,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

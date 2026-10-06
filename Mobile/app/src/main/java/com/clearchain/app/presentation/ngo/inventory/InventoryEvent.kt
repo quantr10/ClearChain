@@ -38,15 +38,5 @@ sealed class InventoryEvent {
     object DeselectAll : InventoryEvent()
     object BulkDistribute : InventoryEvent()
 
-    // Manual add
-    object ShowManualAddSheet : InventoryEvent()
-    object HideManualAddSheet : InventoryEvent()
-    data class ManualProductNameChanged(val name: String) : InventoryEvent()
-    data class ManualCategoryChanged(val category: String) : InventoryEvent()
-    data class ManualQuantityChanged(val qty: String) : InventoryEvent()
-    data class ManualUnitChanged(val unit: String) : InventoryEvent()
-    data class ManualExpiryDateChanged(val date: String) : InventoryEvent()
-    object SubmitManualAdd : InventoryEvent()
-
     object ExportCsv : InventoryEvent()
 }

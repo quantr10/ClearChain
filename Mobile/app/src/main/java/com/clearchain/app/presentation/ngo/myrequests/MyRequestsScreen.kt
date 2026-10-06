@@ -224,7 +224,6 @@ fun MyRequestsScreen(
                                             onConfirmPickup = { showChecklistForId = it },
                                             onViewPhoto = { showFullPhotoUrl = it },
                                             onReview = { viewModel.onEvent(MyRequestsEvent.ShowReviewDialog(it)) },
-                                            onDispute = { viewModel.onEvent(MyRequestsEvent.DisputeRequest(it)) },
                                             onDownloadReceipt = { viewModel.onEvent(MyRequestsEvent.GenerateReceipt(it)) }
                                         )
                                     }
@@ -241,7 +240,7 @@ fun MyRequestsScreen(
 
     // Step 1 - Checklist verification
     showChecklistForId?.let { requestId ->
-        PickupChecklistSheet(
+        PickupChecklistDialog(
             onDismiss = { showChecklistForId = null },
             onNext = {
                 showChecklistForId = null
@@ -380,7 +379,6 @@ private fun RequestCardWithExtras(
     onConfirmPickup: (String) -> Unit,
     onViewPhoto: (String) -> Unit,
     onReview: (String) -> Unit,
-    onDispute: (String) -> Unit,
     onDownloadReceipt: (String) -> Unit = {}
 ) {
     Card(
@@ -456,17 +454,14 @@ private fun ReviewDialog(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
-            OutlinedTextField(
+            ClearChainTextField(
                 value = comment,
                 onValueChange = onCommentChange,
-                label = {
-                    OptionalFieldLabel(
-                        text = stringResource(R.string.label_comments_optional),
-                        isOptional = true
-                    )
-                },
-                placeholder = { Text(stringResource(R.string.hint_pickup_experience)) },
+                label = stringResource(R.string.label_comments_optional),
+                isOptional = true,
+                placeholder = stringResource(R.string.hint_pickup_experience),
                 singleLine = false,
+                minLines = 2,
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isSubmitting

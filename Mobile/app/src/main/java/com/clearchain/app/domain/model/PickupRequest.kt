@@ -38,7 +38,12 @@ data class PickupRequest(
     val listingDescription: String? = null,
     val groceryLocation: String? = null,
     val distanceKm: Double? = null,
-    val items: List<PickupRequestItem> = emptyList()
+    val items: List<PickupRequestItem> = emptyList(),
+    // Only sent to admins; used for the call / email buttons on the admin detail screen.
+    val ngoEmail: String? = null,
+    val ngoPhone: String? = null,
+    val groceryEmail: String? = null,
+    val groceryPhone: String? = null
 )
 
 @Serializable
