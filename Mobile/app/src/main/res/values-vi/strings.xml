@@ -141,6 +141,7 @@
     <!-- ── Reviews ── -->
     <string name="rate_and_review">Đánh giá lần lấy hàng này</string>
     <string name="your_rating">Đánh giá của bạn</string>
+    <string name="cd_rated_out_of_five">Đánh giá %1$d trên 5</string>
     <string name="your_comment">Nhận xét (tùy chọn)</string>
     <string name="review_submitted">Đã gửi đánh giá. Cảm ơn!</string>
     <string name="avg_rating">TB: %1$.1f ★</string>
@@ -178,6 +179,8 @@
     <string name="notif_new_listing">Thực phẩm mới gần đây</string>
     <string name="notif_request_update">Cập nhật yêu cầu lấy hàng</string>
     <string name="notif_expiry_reminder">Nhắc nhở hết hạn</string>
+    <string name="notif_admin_registration">Đăng ký mới</string>
+    <string name="notif_admin_dispute">Cảnh báo khiếu nại</string>
     <string name="settings_general">Chung</string>
     <string name="language_english">English</string>
     <string name="language_vietnamese">Tiếng Việt</string>
@@ -299,6 +302,9 @@
     <string name="label_qty">SL</string>
     <string name="label_date">Ngày</string>
     <string name="label_time">Giờ</string>
+    <string name="msg_select_time_wheels">Cuộn các vòng quay để chọn giờ và phút.</string>
+    <string name="msg_pickup_checklist">Xác nhận từng mục bên dưới trước khi hoàn tất việc nhận hàng.</string>
+    <string name="msg_choose_location">Chọn khu vực bạn muốn tìm các tin đăng.</string>
     <string name="label_select_time">Chọn giờ</string>
     <string name="label_select_pickup_time">Chọn giờ lấy hàng</string>
     <string name="no_pickup_times_today">Không còn giờ lấy hàng nào hôm nay — hãy chọn ngày khác</string>
@@ -352,6 +358,7 @@
     <string name="nav_verify">Xác minh</string>
     <string name="nav_history">Lịch sử</string>
     <string name="nav_stats">Thống kê</string>
+    <string name="nav_disputes">Tranh chấp</string>
 
     <!-- ── Chat ── -->
     <string name="messages">Tin nhắn</string>
@@ -390,9 +397,6 @@
     <string name="status_distributed_info">Mục này đã được phân phối thành công.</string>
     <string name="status_expired_info">Mục này đã hết hạn — vui lòng xử lý đúng cách.</string>
     <string name="section_item_details">Chi tiết mục</string>
-    <string name="label_product_name">Tên sản phẩm *</string>
-    <string name="label_quantity_required">Số lượng *</string>
-    <string name="label_unit">Đơn vị</string>
     <string name="label_expiry_date_format">Ngày hết hạn * (YYYY-MM-DD)</string>
     <string name="dialog_close">Đóng</string>
     <string name="share_item_label">Chia sẻ nhãn mục</string>
@@ -400,6 +404,7 @@
     <string name="inventory_step_distributed">Đã phân phối</string>
     <string name="inventory_step_expired">Đã hết hạn</string>
     <string name="inventory_step_expires">Hết hạn</string>
+    <string name="msg_qr_label">Chia sẻ nhãn này để nhận biết mặt hàng.</string>
     <string name="qr_item_label_title">Nhãn QR mục</string>
     <string name="label_product">Sản phẩm</string>
     <string name="label_category_short">Danh mục</string>
@@ -516,20 +521,13 @@
     <string name="email_resend_label">Gửi lại mã</string>
 
     <!-- Dispute -->
-    <string name="dispute_info_text">Tranh chấp được xem xét trong vòng 48 giờ. Cung cấp càng nhiều chi tiết càng tốt.</string>
-    <string name="dispute_reason_label">Lý do *</string>
     <string name="dispute_reason_poor_condition">Tình trạng thực phẩm kém</string>
     <string name="dispute_reason_wrong_items">Nhận sai hàng</string>
     <string name="dispute_reason_quantity">Số lượng không khớp</string>
     <string name="dispute_reason_expired">Hàng đã hết hạn</string>
     <string name="dispute_reason_not_available">Hàng không có tại điểm lấy</string>
     <string name="dispute_reason_other">Khác</string>
-    <string name="dispute_reason_no_show">Tổ chức NGO không đến lấy hàng</string>
-    <string name="dispute_reason_time_violation">Không đúng giờ lấy hàng</string>
-    <string name="dispute_reason_damage">Hàng bị hư hỏng trong khi lấy</string>
-    <string name="dispute_reason_wrong_qty_taken">Lấy sai số lượng</string>
-    <string name="dispute_reason_behavior">Hành vi không phù hợp</string>
-    <string name="dispute_statement_label">Trình bày *</string>
+    <string name="dispute_statement_label">Mô tả</string>
     <string name="dispute_statement_hint">Mô tả chi tiết những gì đã xảy ra…</string>
     <string name="dispute_submit">Gửi tranh chấp</string>
 
@@ -634,9 +632,6 @@
     <string name="action_apply_ai">Áp dụng AI</string>
     <string name="action_enter_manually">Nhập thủ công</string>
     <string name="action_add">Thêm</string>
-    <string name="label_export_transactions">Xuất giao dịch</string>
-    <string name="msg_export_transactions">Xem trước bên dưới, sau đó nhấn Chia sẻ để mở trong ứng dụng khác (Ghi chú, Tệp, email, v.v.).</string>
-    <string name="label_csv_preview_rows">Xem trước CSV (%1$d dòng):</string>
     <string name="verification_checklist_title">Danh sách xác minh</string>
     <string name="verification_confirm_items">Vui lòng xác nhận tất cả trước khi duyệt:</string>
     <string name="verification_approve_org">Duyệt tổ chức</string>
@@ -705,8 +700,6 @@
 
     <!-- Shared dialog / misc -->
     <string name="action_update">Cập nhật</string>
-    <string name="add_item_manually">Thêm mặt hàng thủ công</string>
-    <string name="action_add_to_inventory">Thêm vào kho</string>
 
     <!-- Heatmap labels -->
     <string name="label_less">Ít hơn</string>
@@ -776,6 +769,10 @@
     <string name="action_mark_ready">Đánh dấu sẵn sàng</string>
     <string name="action_confirm_pickup_photo">Xác nhận lấy hàng bằng ảnh</string>
     <string name="action_file_dispute">Gửi khiếu nại</string>
+    <string name="action_view_dispute">Xem khiếu nại</string>
+    <string name="msg_dispute_report">Hãy cho chúng tôi biết đã xảy ra vấn đề gì với lần nhận hàng này. Quản trị viên sẽ xem xét báo cáo của bạn.</string>
+    <string name="hint_dispute_report">Có vấn đề với lần nhận hàng này?</string>
+    <string name="hint_dispute_view">Xem báo cáo bạn đã gửi</string>
     <string name="advanced_filters">Bộ lọc nâng cao</string>
     <string name="label_ai_food_analysis">Phân tích thực phẩm AI</string>
     <string name="label_analyzing_food">Đang phân tích thực phẩm…</string>
@@ -809,11 +806,16 @@
     <string name="dispute_parties">%1$s và %2$s</string>
     <string name="dispute_ngo_contact">NGO</string>
     <string name="dispute_grocery_contact">Cửa hàng</string>
-    <string name="dispute_ngo_statement">Lời trình bày của NGO</string>
+    <string name="dispute_ngo_statement">Mô tả</string>
     <string name="dispute_grocery_statement">Lời trình bày của cửa hàng</string>
     <string name="dispute_grocery_statement_placeholder">Cửa hàng đã nói gì khi bạn liên hệ?</string>
     <string name="dispute_admin_resolution">Ghi chú giải quyết</string>
     <string name="dispute_photo_evidence">Ảnh bằng chứng</string>
+    <string name="dispute_listing_section">Sản phẩm</string>
+    <string name="dispute_reason_section">Lý do</string>
+    <string name="dispute_start_review">Bắt đầu xem xét</string>
+    <string name="snack_dispute_review_started">Đã chuyển khiếu nại sang đang xem xét</string>
+    <string name="error_start_review_failed">Không thể bắt đầu xem xét</string>
     <string name="dispute_mark_resolved">Đánh dấu đã giải quyết</string>
     <string name="action_send_email">Gửi email</string>
     <string name="action_call">Gọi điện</string>
@@ -992,7 +994,6 @@
     <string name="cd_star_n">%1$d sao</string>
     <string name="cd_proof_of_pickup">Bằng chứng lấy hàng</string>
     <string name="cd_saved_only">Đã lưu</string>
-    <string name="label_expiry_date_field">Ngày hết hạn</string>
     <string name="greeting_hi">Xin chào, %1$s</string>
     <string name="cd_edit">Chỉnh sửa</string>
     <string name="cd_preview">Xem trước</string>
@@ -1095,6 +1096,9 @@
     <string name="snack_new_inventory_item">Nhận mặt hàng mới: %1$s</string>
     <string name="snack_no_inventory_export">Không có dữ liệu tồn kho để xuất</string>
     <string name="snack_no_listings_export">Không có danh sách để xuất</string>
+    <string name="snack_no_requests_export">Không có yêu cầu để xuất</string>
+    <string name="snack_no_transactions_export">Không có giao dịch để xuất</string>
+    <string name="snack_no_orgs_export">Không có tổ chức để xuất</string>
     <string name="snack_csv_saved">CSV đã lưu vào Tải xuống</string>
     <string name="snack_csv_failed">Lưu CSV thất bại</string>
     <string name="snack_export_failed">Xuất thất bại: %1$s</string>
@@ -1327,7 +1331,6 @@
     <string name="cd_exit_selection">Thoát chế độ chọn</string>
     <string name="cd_create_listing">Tạo niêm yết</string>
     <string name="cd_select_multiple">Chọn nhiều</string>
-    <string name="cd_add_item_manually">Thêm mục thủ công</string>
     <string name="cd_change_location">Thay đổi vị trí</string>
     <string name="cd_return_to_location">Quay lại vị trí của tôi</string>
     <string name="cd_select_time">Chọn giờ</string>
@@ -1343,7 +1346,6 @@
     <string name="error_must_be_positive">Phải lớn hơn 0</string>
     <string name="error_same_as_current">Giống với giá trị hiện tại</string>
     <string name="label_current_qty">Hiện tại: %1$d %2$s</string>
-    <string name="error_select_reason">Vui lòng chọn lý do</string>
 
     <!-- RequestPickup validation errors -->
     <string name="error_listing_not_found">Không tìm thấy niêm yết</string>
@@ -1540,7 +1542,6 @@
     <string name="label_ngo_rating">Đánh giá từ NGO</string>
     <string name="label_org_transfer">%1$s → %2$s</string>
     <string name="label_quantity_with_unit">%1$d %2$s</string>
-    <string name="label_reviewed_by">Được đánh giá bởi %1$s</string>
     <string name="label_submitted_on">Đã gửi vào %1$s</string>
     <string name="nav_cart">Giỏ hàng</string>
     <string name="not_yet_distributed">Chưa được phân phát</string>

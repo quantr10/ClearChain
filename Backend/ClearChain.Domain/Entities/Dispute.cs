@@ -5,7 +5,7 @@ public class Dispute
     public Guid Id { get; set; }
     public Guid PickupRequestId { get; set; }
     public Guid InitiatorId { get; set; }      // NGO who opens dispute
-    public string Reason { get; set; } = string.Empty;   // wrong_items, wrong_quantity, damaged, other
+    public string Reason { get; set; } = string.Empty;   // NGO reason key, see DisputeReasons
     public string? NgoStatement { get; set; }
     public string? GroceryStatement { get; set; }
     public string? PhotoEvidenceUrl { get; set; }

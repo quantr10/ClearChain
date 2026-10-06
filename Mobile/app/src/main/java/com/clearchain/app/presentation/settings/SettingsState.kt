@@ -9,5 +9,7 @@ data class SettingsState(
     val notifNewListing: Boolean = true,
     val notifRequestUpdate: Boolean = true,
     val notifExpiry: Boolean = true,
+    val notifAdminRegistration: Boolean = true,
+    val notifAdminDispute: Boolean = true,
     val currentUserType: OrganizationType? = null
 )

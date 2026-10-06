@@ -10,6 +10,11 @@ public class PickupRequestData
     public string GroceryId { get; set; } = string.Empty;
     public string GroceryName { get; set; } = string.Empty;
     public string? GroceryProfilePictureUrl { get; set; }
+    // Contact details are only filled for admins; every other caller gets null.
+    public string? NgoEmail { get; set; }
+    public string? NgoPhone { get; set; }
+    public string? GroceryEmail { get; set; }
+    public string? GroceryPhone { get; set; }
     public string Status { get; set; } = string.Empty;
     public int RequestedQuantity { get; set; }
     public string PickupDate { get; set; } = string.Empty;

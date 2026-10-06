@@ -1,13 +1,11 @@
 package com.clearchain.app.presentation.admin.transactions
 
-import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
@@ -16,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,7 +35,6 @@ fun TransactionsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -67,23 +63,6 @@ fun TransactionsScreen(
         )
     }
 
-    // Export dialog
-    if (state.showExportDialog) {
-        ExportDialog(
-            csvText = state.exportCsvText,
-            onShare = {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, state.exportCsvText)
-                    putExtra(Intent.EXTRA_SUBJECT, "ClearChain Transaction Export")
-                }
-                context.startActivity(Intent.createChooser(shareIntent, "Share transactions"))
-                viewModel.onEvent(TransactionsEvent.DismissExportDialog)
-            },
-            onDismiss = { viewModel.onEvent(TransactionsEvent.DismissExportDialog) }
-        )
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
@@ -98,7 +77,7 @@ fun TransactionsScreen(
                     ClearChainActionIconButton(
                         icon = Icons.Default.FileDownload,
                         contentDescription = stringResource(R.string.export_csv),
-                        onClick = { viewModel.onEvent(TransactionsEvent.ShowExportDialog) }
+                        onClick = { viewModel.onEvent(TransactionsEvent.ExportCsv) }
                     )
                     BadgedBox(
                         badge = {
@@ -472,45 +451,3 @@ private fun TransactionCard(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Export dialog
-// -----------------------------------------------------------------------------
-
-@Composable
-private fun ExportDialog(
-    csvText: String,
-    onShare: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    ConfirmDialog(
-        onDismiss = onDismiss,
-        onConfirm = onShare,
-        icon = Icons.Default.FileDownload,
-        title = stringResource(R.string.label_export_transactions),
-        message = stringResource(R.string.msg_export_transactions),
-        confirmLabel = stringResource(R.string.share),
-        confirmIcon = Icons.Default.Share,
-        dismissLabel = stringResource(R.string.cancel)
-    ) {
-        Text(
-            stringResource(R.string.label_csv_preview_rows, csvText.lines().size - 1),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-        ) {
-            Text(
-                text = csvText.lines().take(6).joinToString("\n"),
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .padding(10.dp)
-            )
-        }
-    }
-}

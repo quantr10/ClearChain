@@ -22,6 +22,8 @@ class SettingsStore @Inject constructor(
         val KEY_NOTIF_NEW_LISTING = booleanPreferencesKey("notif_new_listing")
         val KEY_NOTIF_REQUEST_UPDATE = booleanPreferencesKey("notif_request_update")
         val KEY_NOTIF_EXPIRY = booleanPreferencesKey("notif_expiry")
+        val KEY_NOTIF_ADMIN_REGISTRATION = booleanPreferencesKey("notif_admin_registration")
+        val KEY_NOTIF_ADMIN_DISPUTE = booleanPreferencesKey("notif_admin_dispute")
 
         const val THEME_SYSTEM = "system"
         const val THEME_LIGHT = "light"
@@ -45,12 +47,16 @@ class SettingsStore @Inject constructor(
     val notifNewListing: Flow<Boolean> = context.settingsDataStore.data.map { it[KEY_NOTIF_NEW_LISTING] ?: true }
     val notifRequestUpdate: Flow<Boolean> = context.settingsDataStore.data.map { it[KEY_NOTIF_REQUEST_UPDATE] ?: true }
     val notifExpiry: Flow<Boolean> = context.settingsDataStore.data.map { it[KEY_NOTIF_EXPIRY] ?: true }
+    val notifAdminRegistration: Flow<Boolean> = context.settingsDataStore.data.map { it[KEY_NOTIF_ADMIN_REGISTRATION] ?: true }
+    val notifAdminDispute: Flow<Boolean> = context.settingsDataStore.data.map { it[KEY_NOTIF_ADMIN_DISPUTE] ?: true }
 
     suspend fun setTheme(theme: String) = context.settingsDataStore.edit { it[KEY_THEME] = theme }
     suspend fun setLanguage(language: String) = context.settingsDataStore.edit { it[KEY_LANGUAGE] = language }
     suspend fun setNotifNewListing(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_NEW_LISTING] = enabled }
     suspend fun setNotifRequestUpdate(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_REQUEST_UPDATE] = enabled }
     suspend fun setNotifExpiry(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_EXPIRY] = enabled }
+    suspend fun setNotifAdminRegistration(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_ADMIN_REGISTRATION] = enabled }
+    suspend fun setNotifAdminDispute(enabled: Boolean) = context.settingsDataStore.edit { it[KEY_NOTIF_ADMIN_DISPUTE] = enabled }
 
     suspend fun setLanguageAndSync(language: String) {
         setLanguage(language)
@@ -81,13 +87,18 @@ class SettingsStore @Inject constructor(
         "new_listing" -> notifNewListing.first()
 
         "pickup_request_created", "pickup_approved", "pickup_ready",
-        "pickup_completed", "pickup_rejected", "pickup_cancelled" -> notifRequestUpdate.first()
+        "pickup_completed", "pickup_rejected", "pickup_cancelled",
+        "pickup_request_auto_cancelled", "dispute_resolved" -> notifRequestUpdate.first()
 
         "listing_expiring_soon", "listing_expired",
         "inventory_expiring_soon", "inventory_expired" -> notifExpiry.first()
 
-        // Account-level messages — verification decisions, the welcome mail, admin alerts —
-        // have no toggle of their own and must not be silenced by a content preference.
+        "new_registration", "organization_resubmitted" -> notifAdminRegistration.first()
+
+        "new_dispute" -> notifAdminDispute.first()
+
+        // Account-level messages — verification decisions, the welcome mail — have no toggle
+        // of their own and must not be silenced by a content preference.
         else -> true
     }
 

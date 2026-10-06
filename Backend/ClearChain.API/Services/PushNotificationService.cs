@@ -167,6 +167,18 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "grocery_requests" }
             });
 
+    public Task SendPickupRequestAutoCancelledNotification(Guid ngoId, PickupRequestData request) =>
+        SendNotificationAsync(
+            ngoId,
+            "⏰ Pickup Request Cancelled",
+            $"Your request for {request.ListingTitle} was automatically cancelled — the pickup date passed without a response from {request.GroceryName}",
+            new Dictionary<string, string>
+            {
+                { "type", "pickup_request_auto_cancelled" },
+                { "requestId", request.Id },
+                { "screen", "my_requests" }
+            });
+
     public Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit) =>
         SendNotificationAsync(
             userId,
@@ -335,6 +347,45 @@ public class PushNotificationService : IPushNotificationService
                 { "type", "verification_rejected" },
                 { "screen", "pending_review" }
             });
+
+    public Task SendNewDisputeAlertToAdmins(Guid disputeId, string reason, string initiatorName) =>
+        SendToOrganizationType(
+            "admin",
+            "⚠️ New Dispute Opened",
+            $"{initiatorName} opened a dispute: {reason}",
+            new Dictionary<string, string>
+            {
+                { "type", "new_dispute" },
+                { "disputeId", disputeId.ToString() },
+                { "screen", "admin_alerts" }
+            });
+
+    // "Favor" framing would read backwards depending on which party receives it, so the outcome
+    // is spelled out in the third person — correct for both recipients without inverting it.
+    public Task SendDisputeResolvedNotification(Guid userId, Guid pickupRequestId, string reason, string status, string? adminResolution, string screen)
+    {
+        var outcome = status switch
+        {
+            "resolved_ngo" => "Resolved in the NGO's favor",
+            "resolved_grocery" => "Resolved in the grocery's favor",
+            "dismissed" => "Dismissed",
+            _ => "Resolved"
+        };
+        var body = string.IsNullOrWhiteSpace(adminResolution)
+            ? $"Your dispute over \"{reason}\" has been closed. Outcome: {outcome}."
+            : $"Your dispute over \"{reason}\" has been closed. Outcome: {outcome}. {adminResolution}";
+
+        return SendNotificationAsync(
+            userId,
+            "⚖️ Dispute Resolved",
+            body,
+            new Dictionary<string, string>
+            {
+                { "type", "dispute_resolved" },
+                { "requestId", pickupRequestId.ToString() },
+                { "screen", screen }
+            });
+    }
 
     // ── The funnel ───────────────────────────────────────────────────────────
 

@@ -67,6 +67,10 @@ data class PickupRequestData(
     val groceryId: String,
     val groceryName: String,
     val groceryProfilePictureUrl: String? = null,
+    val ngoEmail: String? = null,
+    val ngoPhone: String? = null,
+    val groceryEmail: String? = null,
+    val groceryPhone: String? = null,
     val status: String,
     val requestedQuantity: Int,
     val pickupDate: String,
@@ -116,6 +120,10 @@ fun PickupRequestData.toDomain(): PickupRequest {
         groceryId = groceryId,
         groceryName = groceryName,
         groceryProfilePictureUrl = groceryProfilePictureUrl,
+        ngoEmail = ngoEmail,
+        ngoPhone = ngoPhone,
+        groceryEmail = groceryEmail,
+        groceryPhone = groceryPhone,
         status = when (status.lowercase()) {
             "pending" -> PickupRequestStatus.PENDING
             "approved" -> PickupRequestStatus.APPROVED

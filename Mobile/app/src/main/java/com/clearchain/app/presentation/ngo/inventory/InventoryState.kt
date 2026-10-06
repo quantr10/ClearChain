@@ -47,17 +47,7 @@ data class InventoryState(
     // Bulk selection
     val isSelectionMode: Boolean = false,
     val selectedIds: Set<String> = emptySet(),
-    val isBulkOperating: Boolean = false,
-
-    // Manual add sheet
-    val showManualAddSheet: Boolean = false,
-    val manualProductName: String = "",
-    val manualCategory: String = "",
-    val manualQuantity: String = "",
-    val manualUnit: String = "kg",
-    val manualExpiryDate: String = "",
-    val isSubmittingManual: Boolean = false
-
+    val isBulkOperating: Boolean = false
 ) {
     val selectedCount: Int get() = selectedIds.size
     val activeSelectedCount: Int get() = filteredItems.count { it.id in selectedIds && it.status == InventoryStatus.ACTIVE }

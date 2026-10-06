@@ -133,6 +133,11 @@ fun VerificationQueueScreen(
                         onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
                         placeholder = stringResource(R.string.hint_search_organizations)
                     ) {
+                        ClearChainActionIconButton(
+                            icon = Icons.Default.FileDownload,
+                            contentDescription = stringResource(R.string.export_csv),
+                            onClick = { viewModel.onEvent(VerificationQueueEvent.ExportCsv) }
+                        )
                         BadgedBox(
                             badge = {
                                 if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
@@ -683,12 +688,13 @@ private fun RejectOrgDialog(
                 }
             }
 
-            OutlinedTextField(
+            ClearChainTextField(
                 value = reason,
                 onValueChange = onReasonChange,
-                label = { Text(stringResource(R.string.label_rejection_reason)) },
-                placeholder = { Text(stringResource(R.string.hint_rejection_reason)) },
+                label = stringResource(R.string.label_rejection_reason),
+                placeholder = stringResource(R.string.hint_rejection_reason),
                 singleLine = false,
+                minLines = 2,
                 maxLines = 4,
                 modifier = Modifier.fillMaxWidth()
             )

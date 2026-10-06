@@ -55,31 +55,29 @@ fun InventoryDetailScreen(
         }
     }
 
-    // QR label bottom sheet
+    // QR label dialog
     if (state.showQrSheet) {
         state.item?.let { item ->
-            ModalBottomSheet(onDismissRequest = { viewModel.dismissQrSheet() }) {
-                QrLabelSheet(
-                    itemId = item.id,
-                    productName = item.productName,
-                    category = item.category,
-                    quantity = "${item.quantity} ${item.unit}",
-                    expiryDate = DateTimeUtils.formatDate(item.expiryDate),
-                    onShare = {
-                        val text = "ClearChain Item\nID: ${item.id}\n" +
-                            "Product: ${item.productName}\n" +
-                            "Category: ${item.category}\n" +
-                            "Qty: ${item.quantity} ${item.unit}\n" +
-                            "Expires: ${DateTimeUtils.formatDate(item.expiryDate)}"
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, text)
-                        }
-                        context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_item_label)))
-                    },
-                    onDismiss = { viewModel.dismissQrSheet() }
-                )
-            }
+            QrLabelDialog(
+                itemId = item.id,
+                productName = item.productName,
+                category = item.category,
+                quantity = "${item.quantity} ${item.unit}",
+                expiryDate = DateTimeUtils.formatDate(item.expiryDate),
+                onShare = {
+                    val text = "ClearChain Item\nID: ${item.id}\n" +
+                        "Product: ${item.productName}\n" +
+                        "Category: ${item.category}\n" +
+                        "Qty: ${item.quantity} ${item.unit}\n" +
+                        "Expires: ${DateTimeUtils.formatDate(item.expiryDate)}"
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    }
+                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_item_label)))
+                },
+                onDismiss = { viewModel.dismissQrSheet() }
+            )
         }
     }
     if (showFullPhoto) {
@@ -578,10 +576,10 @@ private fun expirySummaryColor(status: InventoryStatus, daysUntilExpiry: Long?):
     }
 }
 
-// -- QR Label Bottom Sheet -----------------------------------------------------
+// -- QR Label Dialog ----------------------------------------------------------
 
 @Composable
-private fun QrLabelSheet(
+private fun QrLabelDialog(
     itemId: String,
     productName: String,
     category: String,
@@ -594,22 +592,18 @@ private fun QrLabelSheet(
     val qrMatrix = remember(itemId) { generateQrMatrix(itemId, 21) }
     val qrColor = MaterialTheme.colorScheme.onSurface
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ConfirmDialog(
+        onDismiss = onDismiss,
+        icon = Icons.Default.QrCode,
+        title = stringResource(R.string.qr_item_label_title),
+        message = stringResource(R.string.msg_qr_label),
+        confirmLabel = stringResource(R.string.btn_share_label),
+        confirmIcon = Icons.Default.Share,
+        dismissLabel = stringResource(R.string.dialog_close),
+        onConfirm = onShare
     ) {
-        Text(
-            stringResource(R.string.qr_item_label_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
         // QR code canvas (visual pattern derived from item ID)
-        Canvas(modifier = Modifier.size(200.dp)) {
+        Canvas(modifier = Modifier.size(180.dp).align(Alignment.CenterHorizontally)) {
             val cellSize = size.width / qrMatrix.size
             qrMatrix.forEachIndexed { row, cols ->
                 cols.forEachIndexed { col, filled ->
@@ -627,6 +621,7 @@ private fun QrLabelSheet(
         // Label details card
         ClearChainSurfaceCard {
             Column(
+                modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 LabelRow(stringResource(R.string.label_product), productName)
@@ -636,25 +631,6 @@ private fun QrLabelSheet(
                 LabelRow(stringResource(R.string.label_id), itemId.take(8).uppercase())
             }
         }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ClearChainOutlinedButton(
-                text = stringResource(R.string.dialog_close),
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f)
-            )
-            ClearChainButton(
-                text = stringResource(R.string.btn_share_label),
-                onClick = onShare,
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Share
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
     }
 }
 

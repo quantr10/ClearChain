@@ -8,6 +8,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -98,34 +102,28 @@ fun BrowseListingsScreen(
     }
 
     if (showLocationSheet) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                if (state.isLocationSet) showLocationSheet = false
-            },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        // The picker has its own "choose this location" button, so the dialog only adds Cancel,
+        // and only once a location exists; before that the NGO has to pick one.
+        ConfirmDialog(
+            onDismiss = { if (state.isLocationSet) showLocationSheet = false },
+            icon = Icons.Default.Place,
+            title = stringResource(R.string.location_picker_title),
+            message = stringResource(R.string.msg_choose_location),
+            dismissLabel = stringResource(R.string.cancel),
+            showConfirmButton = false,
+            showDismissButton = state.isLocationSet,
+            dismissible = state.isLocationSet
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.92f)
-            ) {
-                Text(
-                    text = stringResource(R.string.location_picker_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
+            Box(Modifier.fillMaxWidth().height(440.dp)) {
+                LocationPickerScreen(
+                    onLocationSelected = { showLocationSheet = false },
+                    onDismiss = if (state.isLocationSet) {
+                        { showLocationSheet = false }
+                    } else {
+                        null
+                    },
+                    showTopBar = false
                 )
-                Box(Modifier.fillMaxWidth().weight(1f)) {
-                    LocationPickerScreen(
-                        onLocationSelected = { showLocationSheet = false },
-                        onDismiss = if (state.isLocationSet) {
-                            { showLocationSheet = false }
-                        } else {
-                            null
-                        },
-                        showTopBar = false
-                    )
-                }
             }
         }
     }
@@ -471,7 +469,11 @@ private fun GroceryMapView(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
-            properties = MapProperties()
+            properties = MapProperties(),
+            // Tapping empty map closes the pop-up, as tapping outside the old sheet did.
+            onMapClick = {
+                if (state.selectedGroceryKey != null) viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet)
+            }
         ) {
             // Preference location pin (distinct blue marker)
             if (state.userLat != null && state.userLng != null) {
@@ -523,9 +525,10 @@ private fun GroceryMapView(
             }
         }
 
-        // Listing count badge (top-right)
+        // Listing count badge (top-right): 8dp below the chips, and 16dp in from the right edge so
+        // it lines up with the Sort pill that takes its place in List mode.
         Surface(
-            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 16.dp),
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
             shadowElevation = 4.dp
@@ -564,30 +567,40 @@ private fun GroceryMapView(
             Icon(Icons.Default.MyLocation, stringResource(R.string.cd_return_to_location), Modifier.size(20.dp))
         }
 
+        // Pop-up card for the tapped grocery pin; it fades in over the map instead of sliding up.
+        state.selectedGroceryKey?.let { key ->
+            val listings = grouped[key] ?: emptyList()
+            if (listings.isNotEmpty()) {
+                val visibleState = remember(key) { MutableTransitionState(false).apply { targetState = true } }
+                AnimatedVisibility(
+                    visibleState = visibleState,
+                    enter = fadeIn() + scaleIn(initialScale = 0.92f),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(12.dp)
+                        .navigationBarsPadding()
+                ) {
+                    GroceryPinPopup(
+                        listings = listings,
+                        favoritedIds = state.favoritedIds,
+                        cartItemsByListingId = state.cartItemsByListingId,
+                        isUpdatingCart = state.isUpdatingCart,
+                        globalTouch = globalTouch,
+                        onNavigateToDetail = { navController.navigate(Screen.ListingDetail.createRoute(it)) },
+                        onNavigateToProfile = { navController.navigate(Screen.PublicProfile.createRoute(it)) },
+                        onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
+                        onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
+                        onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
+                        onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) },
+                        onToggleFavorite = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(it)) },
+                        onDismiss = { viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet) }
+                    )
+                }
+            }
+        }
+
         if (state.isLoadingMapListings) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
-    }
-
-    // Bottom sheet for tapped grocery pin
-    state.selectedGroceryKey?.let { key ->
-        val listings = grouped[key] ?: emptyList()
-        if (listings.isNotEmpty()) {
-            GroceryPinSheet(
-                listings = listings,
-                favoritedIds = state.favoritedIds,
-                cartItemsByListingId = state.cartItemsByListingId,
-                isUpdatingCart = state.isUpdatingCart,
-                globalTouch = globalTouch,
-                onNavigateToDetail = { navController.navigate(Screen.ListingDetail.createRoute(it)) },
-                onNavigateToProfile = { navController.navigate(Screen.PublicProfile.createRoute(it)) },
-                onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
-                onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
-                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
-                onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) },
-                onToggleFavorite = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(it)) },
-                onDismiss = { viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet) }
-            )
         }
     }
 }
@@ -643,10 +656,9 @@ private fun GroceryPinContent(name: String, avatar: Painter?, count: Int) {
     }
 }
 
-// Bottom sheet showing listings for a tapped grocery pin
-@OptIn(ExperimentalMaterial3Api::class)
+// Pop-up card showing listings for a tapped grocery pin
 @Composable
-private fun GroceryPinSheet(
+private fun GroceryPinPopup(
     listings: List<Listing>,
     favoritedIds: Set<String>,
     cartItemsByListingId: Map<String, CartItemData>,
@@ -661,28 +673,29 @@ private fun GroceryPinSheet(
     onToggleFavorite: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp)
+                .padding(bottom = 12.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     listings.first().groceryName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
                 )
                 if (listings.size > 1) {
                     Text(
@@ -690,6 +703,9 @@ private fun GroceryPinSheet(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                 }
             }
 

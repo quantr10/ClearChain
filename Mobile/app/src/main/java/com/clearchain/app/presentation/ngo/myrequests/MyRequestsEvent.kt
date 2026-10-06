@@ -29,9 +29,6 @@ sealed class MyRequestsEvent {
     data class ReviewCommentChanged(val comment: String) : MyRequestsEvent()
     object SubmitReview : MyRequestsEvent()
 
-    // Dispute
-    data class DisputeRequest(val requestId: String) : MyRequestsEvent()
-
     // PDF receipt
     data class GenerateReceipt(val requestId: String) : MyRequestsEvent()
 

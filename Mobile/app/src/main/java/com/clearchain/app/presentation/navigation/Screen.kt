@@ -33,7 +33,6 @@ sealed class Screen(val route: String) {
     object AdminDashboard : Screen("admin_dashboard")
     object Verification : Screen("admin/verification")
     object Transactions : Screen("admin/transactions")
-    object AdminDisputes : Screen("admin/disputes")
 
     /** The section argument opens the screen scrolled to one card; omit it to open at the top. */
     object AdminStatistics : Screen("admin/statistics?section={section}") {
@@ -66,8 +65,5 @@ sealed class Screen(val route: String) {
 
     object PublicProfile : Screen("public_profile/{orgId}") {
         fun createRoute(orgId: String) = "public_profile/$orgId"
-    }
-    object Dispute : Screen("dispute/{pickupRequestId}") {
-        fun createRoute(pickupRequestId: String) = "dispute/$pickupRequestId"
     }
 }

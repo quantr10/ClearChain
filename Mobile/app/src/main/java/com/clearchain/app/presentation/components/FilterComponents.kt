@@ -16,12 +16,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.HapticUtils
 
@@ -148,15 +150,14 @@ fun ListScreenHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         content = content
     )
 }
 
-// ── SORT DROPDOWN  (bottom-sheet style) ──────────────────────────────────────
+// ── SORT DROPDOWN  (tonal pill that opens a menu, as in Settings) ────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SortDropdown(
     selectedSort: SortOption,
@@ -164,7 +165,7 @@ fun SortDropdown(
     sortOptions: List<SortOption>,
     modifier: Modifier = Modifier
 ) {
-    var showSheet by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Row(
@@ -177,78 +178,73 @@ fun SortDropdown(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Row(
-            modifier = Modifier
-                .clickable {
-                    HapticUtils.tick(context)
-                    showSheet = true
-                }
-                .padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = stringResource(selectedSort.labelResId),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Icon(
-                Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.sort_by),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                sortOptions.forEach { option ->
-                    val isSelected = selectedSort == option
+        Box {
+            // A clickable Surface pads itself out to the 48.dp touch-target size, which made this row
+            // 48.dp tall and pushed the 32.dp pill 8.dp away from the rows above and below it. The
+            // header's search row switches that off for the same reason. Taps still reach the pill:
+            // Compose widens the hit area to 48.dp on its own.
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+                Surface(
+                    onClick = {
+                        HapticUtils.tick(context)
+                        expanded = true
+                    },
+                    shape = ButtonShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                HapticUtils.tick(context)
-                                onSortSelected(option)
-                                showSheet = false
-                            }
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        // Same padding, text size and arrow as the language pill in Settings.
+                        modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         Text(
-                            text = stringResource(option.labelResId),
-                            style = MaterialTheme.typography.bodyMedium
+                            text = stringResource(selectedSort.labelResId),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        RadioButton(
-                            selected = isSelected,
-                            onClick = {
-                                HapticUtils.tick(context)
-                                onSortSelected(option)
-                                showSheet = false
-                            }
+                        Icon(
+                            Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                sortOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(option.labelResId), style = MaterialTheme.typography.bodyMedium)
+                        },
+                        onClick = {
+                            expanded = false
+                            if (option != selectedSort) {
+                                HapticUtils.tick(context)
+                                onSortSelected(option)
+                            }
+                        },
+                        leadingIcon = {
+                            // Always occupies the slot, so the labels stay on one left edge
+                            // instead of shifting as the selection moves between rows.
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = if (option == selectedSort) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.Transparent
+                                }
+                            )
+                        }
+                    )
                 }
             }
         }

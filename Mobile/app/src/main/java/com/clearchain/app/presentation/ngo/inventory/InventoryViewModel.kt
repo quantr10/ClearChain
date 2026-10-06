@@ -135,15 +135,6 @@ class InventoryViewModel @Inject constructor(
                 _state.update { it.copy(selectedIds = emptySet(), isSelectionMode = false) }
             InventoryEvent.BulkDistribute -> bulkDistribute()
 
-            // Manual add
-            InventoryEvent.ShowManualAddSheet -> _state.update { it.copy(showManualAddSheet = true) }
-            InventoryEvent.HideManualAddSheet -> _state.update { it.copy(showManualAddSheet = false) }
-            is InventoryEvent.ManualProductNameChanged -> _state.update { it.copy(manualProductName = event.name) }
-            is InventoryEvent.ManualCategoryChanged -> _state.update { it.copy(manualCategory = event.category) }
-            is InventoryEvent.ManualQuantityChanged -> _state.update { it.copy(manualQuantity = event.qty) }
-            is InventoryEvent.ManualUnitChanged -> _state.update { it.copy(manualUnit = event.unit) }
-            is InventoryEvent.ManualExpiryDateChanged -> _state.update { it.copy(manualExpiryDate = event.date) }
-            InventoryEvent.SubmitManualAdd -> submitManualAdd()
 
             InventoryEvent.ExportCsv -> exportCsv()
         }
@@ -368,28 +359,6 @@ class InventoryViewModel @Inject constructor(
             }
             _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
             _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_items_distributed, succeeded)))
-            loadInventory()
-        }
-    }
-
-    private fun submitManualAdd() {
-        val s = _state.value
-        if (s.manualProductName.isBlank()) return
-        viewModelScope.launch {
-            _state.update { it.copy(isSubmittingManual = true) }
-            // Manual add API not yet implemented — show success for now
-            kotlinx.coroutines.delay(500)
-            _state.update {
-                it.copy(
-                    isSubmittingManual = false,
-                    showManualAddSheet = false,
-                    manualProductName = "",
-                    manualCategory = "",
-                    manualQuantity = "",
-                    manualExpiryDate = ""
-                )
-            }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
             loadInventory()
         }
     }

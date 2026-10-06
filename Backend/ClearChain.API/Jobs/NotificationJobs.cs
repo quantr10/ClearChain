@@ -242,7 +242,8 @@ public class NotificationJobs
                 var result = await _pickupRequestService.CancelAsync(
                     request.Id,
                     request.NgoId,
-                    "Automatically cancelled — the pickup date passed without a response");
+                    "Automatically cancelled — the pickup date passed without a response",
+                    isSystemCancelled: true);
 
                 if (result.Success) cancelled++;
                 else _logger.LogWarning(
