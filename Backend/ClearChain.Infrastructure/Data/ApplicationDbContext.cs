@@ -90,7 +90,7 @@ public class ApplicationDbContext : DbContext
 
         // ── Notification ─────────────────────────────────────────────────────
         modelBuilder.Entity<Notification>()
-            .HasOne(n => n.Recipient).WithMany().HasForeignKey(n => n.RecipientId).OnDelete(DeleteBehavior.Cascade);
+            .HasOne<Organization>().WithMany().HasForeignKey(n => n.RecipientId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Notification>().HasIndex(n => n.RecipientId);
         modelBuilder.Entity<Notification>().HasIndex(n => n.IsRead);
 
@@ -98,16 +98,16 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Message>()
             .HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Message>()
-            .HasOne(m => m.Receiver).WithMany().HasForeignKey(m => m.ReceiverId).OnDelete(DeleteBehavior.Restrict);
+            .HasOne<Organization>().WithMany().HasForeignKey(m => m.ReceiverId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Message>()
             .HasOne(m => m.PickupRequest).WithMany().HasForeignKey(m => m.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Message>().HasIndex(m => m.PickupRequestId);
 
         // ── Review ───────────────────────────────────────────────────────────
         modelBuilder.Entity<Review>()
-            .HasOne(r => r.Reviewer).WithMany().HasForeignKey(r => r.ReviewerId).OnDelete(DeleteBehavior.Restrict);
+            .HasOne<Organization>().WithMany().HasForeignKey(r => r.ReviewerId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Review>()
-            .HasOne(r => r.Reviewed).WithMany().HasForeignKey(r => r.ReviewedId).OnDelete(DeleteBehavior.Restrict);
+            .HasOne<Organization>().WithMany().HasForeignKey(r => r.ReviewedId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<Review>()
             .HasOne(r => r.PickupRequest).WithMany().HasForeignKey(r => r.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Review>().HasIndex(r => r.ReviewedId);
@@ -150,9 +150,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PickupRequestItem>()
             .HasOne(i => i.Group).WithMany().HasForeignKey(i => i.ListingGroupId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<PickupRequestItem>()
-            .HasOne(i => i.OriginalListing).WithMany().HasForeignKey(i => i.OriginalListingId).OnDelete(DeleteBehavior.SetNull);
+            .HasOne<ClearanceListing>().WithMany().HasForeignKey(i => i.OriginalListingId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<PickupRequestItem>()
-            .HasOne(i => i.ReservedListing).WithMany().HasForeignKey(i => i.ReservedListingId).OnDelete(DeleteBehavior.SetNull);
+            .HasOne<ClearanceListing>().WithMany().HasForeignKey(i => i.ReservedListingId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<PickupRequestItem>()
             .HasIndex(i => i.PickupRequestId);
         modelBuilder.Entity<PickupRequestItem>()

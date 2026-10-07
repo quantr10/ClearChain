@@ -97,7 +97,6 @@ data class RequestDetailState(
     val currentUserId: String? = null,
     val currentUserType: OrganizationType? = null,
     val isActionLoading: Boolean = false,
-    val actionError: String? = null,
     val showRejectDialog: Boolean = false,
     val checkedItems: Set<Int> = emptySet(),
     val messages: List<MessageData> = emptyList(),
@@ -106,7 +105,6 @@ data class RequestDetailState(
     val isLoadingMessages: Boolean = false,
     val myReview: ReviewData? = null,
     val ngoReview: ReviewData? = null,
-    val isLoadingReview: Boolean = false,
     val isSubmittingReview: Boolean = false,
     val showAutoRatingSheet: Boolean = false,
     val showRatingSheet: Boolean = false,
@@ -252,12 +250,11 @@ class RequestDetailViewModel @Inject constructor(
 
     fun loadMyReview(requestId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingReview = true) }
             try {
                 // Read in init, so on a fast response it may not be in the state yet.
                 val me = _state.value.currentUserId ?: getCurrentUserUseCase().first()?.id
                 val mine = reviewApi.getReviewsForPickup(requestId).data.find { it.reviewerId == me }
-                _state.update { it.copy(myReview = mine, isLoadingReview = false) }
+                _state.update { it.copy(myReview = mine) }
 
                 // Only evaluate the auto-sheet once per ViewModel instance.
                 // autoSheetShownFor acts as an in-session guard so coroutine races
@@ -272,9 +269,7 @@ class RequestDetailViewModel @Inject constructor(
                         _state.update { it.copy(showAutoRatingSheet = true) }
                     }
                 }
-            } catch (_: Exception) {
-                _state.update { it.copy(isLoadingReview = false) }
-            }
+            } catch (_: Exception) {}
         }
     }
 
@@ -505,14 +500,12 @@ class RequestDetailViewModel @Inject constructor(
 
     private fun runAction(requestId: String, block: suspend () -> Unit) {
         viewModelScope.launch {
-            _state.update { it.copy(isActionLoading = true, actionError = null) }
+            _state.update { it.copy(isActionLoading = true) }
             try {
                 block()
                 loadRequest(requestId)
             } catch (e: Exception) {
-                val msg = e.message ?: "Action failed"
-                _state.update { it.copy(actionError = msg) }
-                _uiEvent.send(UiEvent.ShowSnackbar(msg))
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: "Action failed"))
             } finally {
                 _state.update { it.copy(isActionLoading = false) }
             }
@@ -527,7 +520,6 @@ fun RequestDetailScreen(
     requestId: String,
     onNavigateBack: () -> Unit,
     onNavigateToPublicProfile: (String) -> Unit = {},
-    onNavigateToListing: (String) -> Unit = {},
     viewModel: RequestDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -726,7 +718,6 @@ fun RequestDetailScreen(
                         onCancel = { viewModel.cancel(requestId) },
                         onConfirmPickup = { showChecklistSheet = true },
                         onNavigateToPublicProfile = onNavigateToPublicProfile,
-                        onNavigateToListing = onNavigateToListing,
                         onGenerateReceipt = { viewModel.generateReceipt() },
                         onShowRatingSheet = { viewModel.openRatingSheet() },
                         groceryProfile = state.groceryProfile
@@ -758,7 +749,6 @@ private fun RequestDetailContent(
     onCancel: () -> Unit,
     onConfirmPickup: () -> Unit,
     onNavigateToPublicProfile: (String) -> Unit,
-    onNavigateToListing: (String) -> Unit,
     onGenerateReceipt: () -> Unit,
     onShowRatingSheet: () -> Unit,
     groceryProfile: PublicProfileData? = null

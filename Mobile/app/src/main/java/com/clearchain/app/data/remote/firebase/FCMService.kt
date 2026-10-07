@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.clearchain.app.MainActivity
@@ -163,17 +162,15 @@ class FCMService : FirebaseMessagingService() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Pickup requests, listings and inventory updates"
-            }
-
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Pickup requests, listings and inventory updates"
         }
+
+        getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
     }
 }

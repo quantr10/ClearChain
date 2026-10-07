@@ -34,18 +34,11 @@ data class ManageRequestsState(
     val filterCategory: String? = null,
     val filterPickupDatePreset: String? = null, // null/"today"/"this_week"/"next_30"
 
-    // Bulk selection
-    val isSelectionMode: Boolean = false,
-    val selectedIds: Set<String> = emptySet(),
-    val isBulkOperating: Boolean = false,
-
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null
 ) {
     val requests: List<PickupRequest> get() = filteredRequests
-    val selectedCount: Int get() = selectedIds.size
-    val allSelected: Boolean get() = filteredRequests.isNotEmpty() && selectedIds.containsAll(filteredRequests.map { it.id })
     val activeFilterCount: Int get() =
         (if (filterCategory != null) 1 else 0) +
             (if (filterPickupDatePreset != null) 1 else 0)

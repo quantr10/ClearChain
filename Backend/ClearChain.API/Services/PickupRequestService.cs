@@ -354,7 +354,7 @@ public class PickupRequestService : IPickupRequestService
         if (inventoryDto != null)
             await _inventoryNotificationService.NotifyInventoryItemAddedAsync(inventoryDto);
 
-        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "ready");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data);
 
         try
         {
@@ -458,40 +458,7 @@ public class PickupRequestService : IPickupRequestService
             .Take(clampedSize)
             .ToListAsync();
 
-        // Build NGO pickup-rate map for all distinct NGOs in this page
-        var ngoIds = items.Select(pr => pr.NgoId).Distinct().ToList();
-        var ngoStats = await _context.PickupRequests
-            .Where(pr => ngoIds.Contains(pr.NgoId))
-            .GroupBy(pr => pr.NgoId)
-            .Select(g => new
-            {
-                NgoId = g.Key,
-                Total = g.Count(),
-                Completed = g.Count(x => x.Status == PickupRequestStatus.Completed)
-            })
-            .ToDictionaryAsync(x => x.NgoId);
-
-        var dtos = items.Select(pr =>
-        {
-            double? rate = null;
-            int completed = 0;
-            if (ngoStats.TryGetValue(pr.NgoId, out var stats) && stats.Total > 0)
-            {
-                rate = Math.Round((double)stats.Completed / stats.Total, 2);
-                completed = stats.Completed;
-            }
-            return MapToData(pr, ngoPickupRate: rate, ngoTotalCompleted: completed);
-        }).ToList();
-
-        return new PickupRequestServiceResult(true, ListData: new PickupRequestsResponse
-        {
-            Message = "Pickup requests retrieved successfully",
-            Data = dtos,
-            Total = total,
-            Page = clampedPage,
-            PageSize = clampedSize,
-            TotalPages = (int)Math.Ceiling((double)total / clampedSize)
-        });
+        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, clampedPage, clampedSize));
     }
 
     public async Task<PickupRequestServiceResult> ApproveAsync(Guid requestId, Guid groceryId)
@@ -522,7 +489,7 @@ public class PickupRequestService : IPickupRequestService
             data.ListingCategory = listing.Category;
         }
 
-        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "pending");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data);
         await _pushNotificationService.SendPickupApprovedNotification(pr.NgoId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -557,7 +524,7 @@ public class PickupRequestService : IPickupRequestService
             data.ListingCategory = listing.Category;
         }
 
-        await _notificationService.NotifyPickupRequestStatusChangedAsync(data, "approved");
+        await _notificationService.NotifyPickupRequestStatusChangedAsync(data);
         await _pushNotificationService.SendPickupReadyNotification(pr.NgoId, data);
 
         return new PickupRequestServiceResult(true, Data: data);
@@ -573,23 +540,18 @@ public class PickupRequestService : IPickupRequestService
 
     private static PickupRequestData MapToData(
         PickupRequest pr,
-        Guid? listingId = null,
-        string? ngoName = null,
-        string? groceryName = null,
         string? proofPhotoUrl = null,
-        double? ngoPickupRate = null,
-        int ngoTotalCompleted = 0,
         bool includeContacts = false)
     {
         return new PickupRequestData
         {
             Id = pr.Id.ToString(),
-            ListingId = listingId?.ToString() ?? pr.ListingId?.ToString() ?? "",
+            ListingId = pr.ListingId?.ToString() ?? "",
             NgoId = pr.NgoId.ToString(),
-            NgoName = ngoName ?? pr.Ngo?.Name ?? "",
+            NgoName = pr.Ngo?.Name ?? "",
             NgoProfilePictureUrl = pr.Ngo?.ProfilePictureUrl,
             GroceryId = pr.GroceryId.ToString(),
-            GroceryName = groceryName ?? pr.Grocery?.Name ?? "",
+            GroceryName = pr.Grocery?.Name ?? "",
             GroceryProfilePictureUrl = pr.Grocery?.ProfilePictureUrl,
             NgoEmail = includeContacts ? pr.Ngo?.Email : null,
             NgoPhone = includeContacts ? pr.Ngo?.Phone : null,
@@ -606,8 +568,6 @@ public class PickupRequestService : IPickupRequestService
             ListingUnit = pr.ListingUnit ?? "",
             CreatedAt = pr.RequestedAt.ToString("o"),
             ProofPhotoUrl = proofPhotoUrl ?? pr.ProofPhotoUrl,
-            NgoPickupRate = ngoPickupRate,
-            NgoTotalCompleted = ngoTotalCompleted,
             MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
             MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
             ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),

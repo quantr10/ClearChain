@@ -22,16 +22,6 @@ sealed class MyRequestsEvent {
     object RetryFailedUpload : MyRequestsEvent()
     object DismissUploadError : MyRequestsEvent()
 
-    // Rate & review
-    data class ShowReviewDialog(val requestId: String) : MyRequestsEvent()
-    object DismissReviewDialog : MyRequestsEvent()
-    data class ReviewRatingChanged(val rating: Int) : MyRequestsEvent()
-    data class ReviewCommentChanged(val comment: String) : MyRequestsEvent()
-    object SubmitReview : MyRequestsEvent()
-
-    // PDF receipt
-    data class GenerateReceipt(val requestId: String) : MyRequestsEvent()
-
     // CSV export
     object ExportCsv : MyRequestsEvent()
 

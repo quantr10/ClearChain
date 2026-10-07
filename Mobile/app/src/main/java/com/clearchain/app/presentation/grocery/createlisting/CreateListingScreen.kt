@@ -90,7 +90,7 @@ fun CreateListingScreen(
                 val previewListing = remember(
                     state.title, state.description, state.category,
                     state.quantity, state.unit, state.expiryDate,
-                    state.selectedImages, state.imageUrl, state.groceryHours
+                    state.selectedImages, state.groceryHours
                 ) {
                     Listing(
                         id = "",
@@ -106,8 +106,7 @@ fun CreateListingScreen(
                         pickupTimeStart = "",
                         pickupTimeEnd = "",
                         status = ListingStatus.AVAILABLE,
-                        imageUrl = state.selectedImages.firstOrNull()?.toString()
-                            ?: state.imageUrl.ifBlank { null },
+                        imageUrl = state.selectedImages.firstOrNull()?.toString(),
                         imageUrls = state.selectedImages.map { it.toString() },
                         location = "",
                         createdAt = "",
@@ -315,15 +314,6 @@ fun CreateListingScreen(
                 }
 
                 // ── Expiry Date ──────────────────────────────────────────────
-                val futureDates = remember {
-                    object : SelectableDates {
-                        override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                            val date = java.time.Instant.ofEpochMilli(utcTimeMillis)
-                                .atZone(java.time.ZoneId.of("UTC")).toLocalDate()
-                            return !date.isBefore(java.time.LocalDate.now())
-                        }
-                    }
-                }
                 FieldCard(label = stringResource(R.string.label_expiry_date)) {
                     DatePickerField(
                         value = state.expiryDate,
@@ -331,7 +321,7 @@ fun CreateListingScreen(
                         isError = state.expiryDateError != null,
                         errorMessage = state.expiryDateError,
                         enabled = !state.isLoading && !state.isAnalyzing,
-                        selectableDates = futureDates,
+                        selectableDates = TodayOrLaterDates,
                         onClearDate = { viewModel.onEvent(CreateListingEvent.ExpiryDateChanged("")) }
                     )
                 }
@@ -479,7 +469,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                     }
 
                     state.analysisResult != null -> {
-                        val result = state.analysisResult!!
+                        val result = state.analysisResult
 
                         // Detected title
                         Row(

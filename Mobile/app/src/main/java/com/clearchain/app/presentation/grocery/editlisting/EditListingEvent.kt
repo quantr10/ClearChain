@@ -11,5 +11,4 @@ sealed class EditListingEvent {
     object ToggleCategoryDropdown : EditListingEvent()
     object ToggleUnitDropdown : EditListingEvent()
     object SaveListing : EditListingEvent()
-    object ClearError : EditListingEvent()
 }

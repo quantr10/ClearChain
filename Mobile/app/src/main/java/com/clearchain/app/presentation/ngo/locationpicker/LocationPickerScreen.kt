@@ -123,8 +123,8 @@ class LocationPickerViewModel @Inject constructor(
                 user != null && user.latitude != null && user.longitude != null -> {
                     _state.update {
                         it.copy(
-                            latitude = user.latitude!!,
-                            longitude = user.longitude!!,
+                            latitude = user.latitude,
+                            longitude = user.longitude,
                             displayName = user.location.ifBlank { user.address },
                             isInitializing = false,
                             cameraMoveId = it.cameraMoveId + 1

@@ -68,7 +68,6 @@ class EditListingViewModel @Inject constructor(
             is EditListingEvent.ExpiryDateChanged -> _state.update { it.copy(expiryDate = event.date, expiryDateError = null) }
             is EditListingEvent.ToggleCategoryDropdown -> _state.update { it.copy(showCategoryDropdown = !it.showCategoryDropdown) }
             is EditListingEvent.ToggleUnitDropdown -> _state.update { it.copy(showUnitDropdown = !it.showUnitDropdown) }
-            is EditListingEvent.ClearError -> _state.update { it.copy(error = null) }
             is EditListingEvent.SaveListing -> saveListing()
         }
     }

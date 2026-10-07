@@ -26,7 +26,6 @@ import com.clearchain.app.util.UiEvent
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ManageRequestsScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToRequestDetail: (String) -> Unit = {},
     viewModel: ManageRequestsViewModel = hiltViewModel()
 ) {

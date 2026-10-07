@@ -10,7 +10,6 @@ data class CreateListingState(
     val quantity: String = "",
     val unit: String = "kg",
     val expiryDate: String = "",
-    val imageUrl: String = "",
 
     // Grocery's operating hours (loaded from profile, not editable here)
     val groceryHours: String? = null,

@@ -16,7 +16,15 @@ import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.ShapeMedium
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+
+/** Allows today and any later day; the picker reports days as UTC midnight. */
+@OptIn(ExperimentalMaterial3Api::class)
+object TodayOrLaterDates : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+        !Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneId.of("UTC")).toLocalDate().isBefore(LocalDate.now())
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

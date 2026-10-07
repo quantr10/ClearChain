@@ -21,14 +21,6 @@ sealed class ManageRequestsEvent {
     data class RejectRequest(val requestId: String) : ManageRequestsEvent()
     data class MarkReady(val requestId: String) : ManageRequestsEvent()
 
-    // Bulk selection
-    object ToggleSelectionMode : ManageRequestsEvent()
-    data class ToggleItemSelection(val requestId: String) : ManageRequestsEvent()
-    object SelectAll : ManageRequestsEvent()
-    object DeselectAll : ManageRequestsEvent()
-    object BulkApprove : ManageRequestsEvent()
-    data class BulkReject(val reason: String? = null) : ManageRequestsEvent()
-
     // CSV export
     object ExportCsv : ManageRequestsEvent()
 

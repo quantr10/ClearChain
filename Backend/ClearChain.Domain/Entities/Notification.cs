@@ -12,6 +12,4 @@ public class Notification
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime? ReadAt { get; set; }
-
-    public Organization? Recipient { get; set; }
 }

@@ -156,7 +156,6 @@ fun NavGraph(
         composable(Screen.PickupRequests.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             ManageRequestsScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }
@@ -205,7 +204,6 @@ fun NavGraph(
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             MyRequestsScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 },
@@ -219,7 +217,6 @@ fun NavGraph(
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             InventoryScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToItemDetail = { itemId ->
                     navController.navigate(Screen.InventoryDetail.createRoute(itemId))
                 }
@@ -272,8 +269,7 @@ fun NavGraph(
             RequestDetailScreen(
                 requestId = requestId,
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToPublicProfile = { orgId -> navController.navigate(Screen.PublicProfile.createRoute(orgId)) },
-                onNavigateToListing = { listingId -> navController.navigate(Screen.ListingDetail.createRoute(listingId)) }
+                onNavigateToPublicProfile = { orgId -> navController.navigate(Screen.PublicProfile.createRoute(orgId)) }
             )
         }
 
@@ -314,7 +310,6 @@ fun NavGraph(
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
             VerificationQueueScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToPublicProfile = { orgId ->
                     navController.navigate(Screen.PublicProfile.createRoute(orgId))
                 }
@@ -327,7 +322,6 @@ fun NavGraph(
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
             TransactionsScreen(
-                onNavigateBack = { navController.navigateUp() },
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 }

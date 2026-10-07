@@ -12,6 +12,5 @@ public class Message
     public DateTime? ReadAt { get; set; }
 
     public Organization? Sender { get; set; }
-    public Organization? Receiver { get; set; }
     public PickupRequest? PickupRequest { get; set; }
 }

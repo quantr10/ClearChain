@@ -33,7 +33,6 @@ fun RequestCard(
     onMarkReady: ((String) -> Unit)? = null,
     onCancel: ((String) -> Unit)? = null,
     onConfirmPickup: ((String) -> Unit)? = null,
-    onViewPhoto: ((String) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {

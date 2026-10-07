@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using ClearChain.API.Common;
 using ClearChain.API.Services;
 using ClearChain.API.DTOs.Organizations;
-using ClearChain.API.DTOs.Common;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.Infrastructure.Data;
@@ -664,9 +663,9 @@ public class OrganizationsController : ControllerBase
 
         if (!success)
         {
-            return BadRequest(ApiResponse<object>.ErrorResponse(message));
+            return BadRequest(new { message });
         }
 
-        return Ok(ApiResponse<object>.SuccessResponse(null!, message));
+        return Ok(new { message });
     }
 }

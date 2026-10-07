@@ -18,7 +18,6 @@ data class FoodAnalysisData(
     val category: String,
     val expiryDate: String,
     val notes: String,
-    val imageUrl: String = "",
     val confidence: Double,
     val freshnessScore: Int,
     val qualityGrade: String
