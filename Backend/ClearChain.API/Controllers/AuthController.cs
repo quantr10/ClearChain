@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using ClearChain.API.Services;
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.Auth;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
@@ -181,10 +181,7 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
         var user = await _context.Organizations.FindAsync(userGuid);
@@ -226,10 +223,7 @@ public class AuthController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
         var success = await _authService.ChangePasswordAsync(userGuid, request);
@@ -256,10 +250,7 @@ public class AuthController : ControllerBase
     [HttpDelete("account")]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
         var (success, message) = await _authService.DeleteAccountAsync(userGuid, request.Password);
@@ -272,10 +263,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> RegisterFCMToken([FromBody] RegisterFCMTokenRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized(new { message = "Invalid token" });
 
         // A token identifies a device install, so the same token arriving for a different

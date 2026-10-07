@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*

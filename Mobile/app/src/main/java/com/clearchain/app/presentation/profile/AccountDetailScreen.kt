@@ -107,7 +107,7 @@ fun AccountDetailScreen(
                                 )
 
                                 if (!user.description.isNullOrBlank()) {
-                                    AccountSectionCard(stringResource(R.string.about)) {
+                                    SectionCard(stringResource(R.string.about)) {
                                         Text(
                                             text = user.description,
                                             style = MaterialTheme.typography.bodySmall,
@@ -116,7 +116,7 @@ fun AccountDetailScreen(
                                     }
                                 }
 
-                                AccountSectionCard(stringResource(R.string.section_contact)) {
+                                SectionCard(stringResource(R.string.section_contact)) {
                                     CompactAccountDetailRow(
                                         icon = Icons.Default.Email,
                                         label = "",
@@ -136,7 +136,7 @@ fun AccountDetailScreen(
                                     }
                                 }
 
-                                AccountSectionCard(stringResource(R.string.section_location_hours)) {
+                                SectionCard(stringResource(R.string.section_location_hours)) {
                                     val addressParts = listOfNotNull(
                                         user.address.substringBefore(',').trim().takeIf { it.isNotBlank() },
                                         user.location.trim().takeIf { it.isNotBlank() },
@@ -191,7 +191,7 @@ fun AccountDetailScreen(
                                 }
 
                                 if (user.type == OrganizationType.GROCERY) {
-                                    AccountSectionCard(
+                                    SectionCard(
                                         stringResource(R.string.onboarding_pickup_instructions_label)
                                     ) {
                                         Text(
@@ -445,34 +445,6 @@ private fun AccountDetailEditContent(
 }
 
 @Composable
-private fun FieldCard(
-    label: String,
-    modifier: Modifier = Modifier,
-    isOptional: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            OptionalFieldLabel(
-                text = label.replace("*", "").trim(),
-                isOptional = isOptional,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
-}
-
-@Composable
 private fun OrganizationSummaryCard(
     user: com.clearchain.app.domain.model.Organization,
     averageRating: Double,
@@ -493,31 +465,6 @@ private fun OrganizationSummaryCard(
         profilePictureUrl = user.profilePictureUrl,
         onEdit = onEdit
     )
-}
-
-@Composable
-private fun AccountSectionCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
 }
 
 @Composable
@@ -584,7 +531,7 @@ private fun CompactAccountDetailRow(
 
 @Composable
 private fun TeamMembersCard(user: com.clearchain.app.domain.model.Organization) {
-    AccountSectionCard(stringResource(R.string.section_team_members)) {
+    SectionCard(stringResource(R.string.section_team_members)) {
         if (!user.contactPerson.isNullOrBlank()) {
             MemberRow(
                 name = user.contactPerson,

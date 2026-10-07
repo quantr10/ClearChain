@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -100,7 +99,7 @@ fun RequestCard(
                 )
             }
 
-            RequestDetailRow(
+            CompactDetailRow(
                 icon = Icons.Default.CalendarToday,
                 text = stringResource(
                     R.string.label_submitted_on_at,
@@ -116,7 +115,7 @@ fun RequestCard(
                 DateTimeUtils.formatDate(request.pickupDate),
                 request.pickupTime
             )
-            RequestDetailRow(
+            CompactDetailRow(
                 icon = Icons.Default.AccessTime,
                 text = timestampText,
                 textColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -132,7 +131,7 @@ fun RequestCard(
                 request.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
             }
             if (handlingParts.isNotEmpty()) {
-                RequestDetailRow(
+                CompactDetailRow(
                     icon = Icons.Default.StickyNote2,
                     text = handlingParts.joinToString(" \u00B7 "),
                     textColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -230,7 +229,7 @@ fun ExpiryDetailRow(expiryDate: String?) {
         }
     }
 
-    RequestDetailRow(
+    CompactDetailRow(
         icon = Icons.Default.CalendarToday,
         text = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(expiry)),
         textColor = when {
@@ -325,26 +324,6 @@ fun RequestItemsPreview(request: PickupRequest) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun RequestDetailRow(
-    icon: ImageVector,
-    text: String,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor,
-            fontWeight = FontWeight.SemiBold
-        )
     }
 }
 

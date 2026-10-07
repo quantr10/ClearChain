@@ -122,16 +122,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     // Accompanist
     implementation(libs.accompanist.permissions)
-    implementation(libs.accompanist.systemuicontroller)
 
     // Lifecycle
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
     // ProcessLifecycleOwner — drives the SignalR connection off app foreground/background
     implementation(libs.lifecycle.process)
-
-    // AppCompat (per-app locale switching via AppCompatDelegate)
-    implementation(libs.androidx.appcompat)
 
     // SignalR
     implementation("com.microsoft.signalr:signalr:8.0.0")

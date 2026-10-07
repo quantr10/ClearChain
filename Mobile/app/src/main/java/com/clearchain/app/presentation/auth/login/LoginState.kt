@@ -9,6 +9,5 @@ data class LoginState(
     val error: String? = null,
     val rememberMe: Boolean = false,
     val isLockedOut: Boolean = false,
-    val lockoutMinutes: Int = 0,
-    val systemError: String? = null
+    val lockoutMinutes: Int = 0
 )

@@ -18,13 +18,7 @@ data class InventoryEntity(
     val distributedAt: String? = null,
     val pickupRequestId: String? = null,
     val notes: String? = null,
-    val photoUrl: String? = null,
-    // Deprecated: the app no longer records how many people an item fed. Column kept
-    // (always null) so the Room schema needs no migration; do not read or write it.
-    val beneficiaryCount: Int? = null,
-    val isManuallyAdded: Boolean = false,
-    val sourcePickupRequestId: String? = null,
-    val cachedAt: Long = System.currentTimeMillis()
+    val photoUrl: String? = null
 )
 
 fun InventoryEntity.toDomain(): InventoryItem = InventoryItem(

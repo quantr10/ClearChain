@@ -165,7 +165,7 @@ fun PublicProfileScreen(
 
                                     // ── Description ──────────────────────────────
                                     if (!profile.description.isNullOrBlank()) {
-                                        ProfileSectionCard(stringResource(R.string.about)) {
+                                        SectionCard(stringResource(R.string.about)) {
                                             Text(
                                                 profile.description,
                                                 style = MaterialTheme.typography.labelSmall,
@@ -182,7 +182,7 @@ fun PublicProfileScreen(
                                     if (profile.type.equals("grocery", ignoreCase = true) &&
                                         state.moreFromStore.isNotEmpty()
                                     ) {
-                                        ProfileSectionCard(stringResource(R.string.label_more_from_store)) {
+                                        SectionCard(stringResource(R.string.label_more_from_store)) {
                                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                                 items(state.moreFromStore, key = { it.id }) { listing ->
                                                     ListingCard(
@@ -227,7 +227,7 @@ private fun ProfileStatsGrid(profile: PublicProfileData) {
     val isGrocery = profile.type.equals("grocery", ignoreCase = true)
     val mealsSaved = profile.mealsEstimate
 
-    ProfileSectionCard(stringResource(R.string.profile_section_impact)) {
+    SectionCard(stringResource(R.string.profile_section_impact)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -333,7 +333,7 @@ private fun ContactInformationSection(profile: PublicProfileData) {
     ).joinToString(", ").takeIf { it.isNotBlank() }
 
     if (email != null || phone != null) {
-        ProfileSectionCard(stringResource(R.string.section_contact)) {
+        SectionCard(stringResource(R.string.section_contact)) {
             email?.let {
                 ContactLinkRow(Icons.Default.Email, it) { sendEmail(context, it) }
             }
@@ -344,7 +344,7 @@ private fun ContactInformationSection(profile: PublicProfileData) {
     }
 
     if (fullAddress != null || hours != null) {
-        ProfileSectionCard(stringResource(R.string.section_location_hours)) {
+        SectionCard(stringResource(R.string.section_location_hours)) {
             fullAddress?.let {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -379,13 +379,13 @@ private fun ContactInformationSection(profile: PublicProfileData) {
                 }
             }
             hours?.let {
-                CompactInfoRow(Icons.Default.Schedule, it)
+                CompactDetailRow(Icons.Default.Schedule, it, MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 
     contactPerson?.let {
-        ProfileSectionCard(stringResource(R.string.section_team_members)) {
+        SectionCard(stringResource(R.string.section_team_members)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -446,47 +446,6 @@ private fun ContactLinkRow(icon: ImageVector, text: String, onClick: () -> Unit)
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
             modifier = Modifier.size(14.dp)
-        )
-    }
-}
-
-@Composable
-private fun ProfileSectionCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun CompactInfoRow(icon: ImageVector, text: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
-        Text(
-            text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold
         )
     }
 }

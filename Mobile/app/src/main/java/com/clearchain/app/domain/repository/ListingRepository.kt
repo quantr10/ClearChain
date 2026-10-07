@@ -52,7 +52,5 @@ interface ListingRepository {
 
     suspend fun analyzeImage(imageUri: Uri): Result<FoodAnalysisData>
 
-    suspend fun saveAnalysis(analysisData: FoodAnalysisData): Result<Unit>
-
     suspend fun uploadFoodImage(imageUri: Uri): Result<String>
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
@@ -798,76 +796,6 @@ private fun ListingDetailCartAction(
     }
 }
 
-@Composable
-private fun ImageActionButton(
-    icon: ImageVector,
-    label: String,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    loading: Boolean = false,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.size(24.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (loading) {
-                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = tint)
-            } else {
-                Icon(icon, label, Modifier.size(18.dp), tint = tint)
-            }
-        }
-    }
-}
-
 // ── Section card ─────────────────────────────────────────────────────────────
 
-@Composable
-private fun SectionCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
-}
-
 // ── Compact detail row — same visual as ListingCard rows ─────────────────────
-
-@Composable
-private fun CompactDetailRow(
-    icon: ImageVector,
-    text: String,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
-    bold: Boolean = true
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
-        Text(
-            text,
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor,
-            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
-        )
-    }
-}

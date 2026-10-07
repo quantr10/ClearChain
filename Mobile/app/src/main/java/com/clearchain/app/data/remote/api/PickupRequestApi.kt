@@ -6,11 +6,6 @@ import retrofit2.http.*
 
 interface PickupRequestApi {
 
-    @POST("pickuprequests")
-    suspend fun createPickupRequest(
-        @Body request: CreatePickupRequestRequest
-    ): PickupRequestResponse
-
     @GET("pickuprequests/ngo/my")
     suspend fun getMyPickupRequests(
         @Query("page") page: Int = 1,

@@ -22,12 +22,9 @@ data class PickupRequestEntity(
     val listingCategory: String,
     val createdAt: String,
     val proofPhotoUrl: String? = null,
-    val cancellationReason: String? = null,
-    val licensePlate: String? = null,
     val requiresRefrigeration: Boolean = false,
     val isFragile: Boolean = false,
-    val isHeavy: Boolean = false,
-    val cachedAt: Long = System.currentTimeMillis()
+    val isHeavy: Boolean = false
 )
 
 fun PickupRequestEntity.toDomain(): PickupRequest = PickupRequest(

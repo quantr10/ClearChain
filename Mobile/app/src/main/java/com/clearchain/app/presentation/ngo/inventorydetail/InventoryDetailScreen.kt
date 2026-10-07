@@ -5,7 +5,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -130,7 +129,7 @@ fun InventoryDetailScreen(
                                 onShowQr = { viewModel.showQrSheet() }
                             )
 
-                            InventorySectionCard(stringResource(R.string.section_item_details)) {
+                            SectionCard(stringResource(R.string.section_item_details), contentSpacing = 8.dp) {
                                 InventoryDetailRow(
                                     icon = Icons.Default.Scale,
                                     label = stringResource(R.string.section_quantity),
@@ -160,7 +159,7 @@ fun InventoryDetailScreen(
                                 }
                             }
 
-                            InventorySectionCard(stringResource(R.string.section_lifecycle)) {
+                            SectionCard(stringResource(R.string.section_lifecycle), contentSpacing = 8.dp) {
                                 LifecycleStep(
                                     icon = Icons.Default.Inventory,
                                     title = stringResource(R.string.inventory_step_received),
@@ -188,7 +187,7 @@ fun InventoryDetailScreen(
 
                             // -- Source Traceability ----------------
                             state.relatedRequest?.let { request ->
-                                InventorySectionCard(stringResource(R.string.section_source)) {
+                                SectionCard(stringResource(R.string.section_source), contentSpacing = 8.dp) {
                                     InventoryDetailRow(
                                         icon = Icons.Default.Store,
                                         label = stringResource(R.string.donated_by),
@@ -237,7 +236,7 @@ fun InventoryDetailScreen(
                             }
 
                             if (state.isLoadingRequest) {
-                                InventorySectionCard(stringResource(R.string.section_source)) {
+                                SectionCard(stringResource(R.string.section_source), contentSpacing = 8.dp) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.Center,
@@ -255,7 +254,7 @@ fun InventoryDetailScreen(
                             }
 
                             if (state.moreFromStore.isNotEmpty()) {
-                                InventorySectionCard(stringResource(R.string.label_more_from_store)) {
+                                SectionCard(stringResource(R.string.label_more_from_store), contentSpacing = 8.dp) {
                                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                         items(state.moreFromStore, key = { it.id }) { listing ->
                                             ListingCard(
@@ -323,7 +322,7 @@ private fun InventoryHeroCard(
 
                 if (item.status == InventoryStatus.ACTIVE) {
                     Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                        InventoryImageActionButton(
+                        ImageActionButton(
                             icon = Icons.Default.QrCode,
                             label = stringResource(R.string.generate_qr_label),
                             onClick = onShowQr
@@ -396,50 +395,6 @@ private fun InventoryHeroCard(
             color = expirySummaryColor(item.status, daysUntilExpiry),
             fontWeight = FontWeight.SemiBold
         )
-    }
-}
-
-@Composable
-private fun InventoryImageActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.size(24.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(
-                icon,
-                contentDescription = label,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun InventorySectionCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    ClearChainCard {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
     }
 }
 

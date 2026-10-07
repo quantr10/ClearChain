@@ -131,9 +131,6 @@ class SignalRService @Inject constructor(
     private val _inventoryItemExpired = eventFlow<InventoryItemData>()
     val inventoryItemExpired: SharedFlow<InventoryItemData> = _inventoryItemExpired.asSharedFlow()
 
-    private val _inventoryItemUpdated = eventFlow<InventoryItemData>()
-    val inventoryItemUpdated: SharedFlow<InventoryItemData> = _inventoryItemUpdated.asSharedFlow()
-
     // Admin Events
     private val _newOrganizationRegistered = eventFlow<OrganizationRegisteredNotification>()
     val newOrganizationRegistered: SharedFlow<OrganizationRegisteredNotification> = _newOrganizationRegistered.asSharedFlow()
@@ -150,13 +147,6 @@ class SignalRService @Inject constructor(
     // Notification inbox
     private val _notificationReceived = eventFlow<NotificationData>()
     val notificationReceived: SharedFlow<NotificationData> = _notificationReceived.asSharedFlow()
-
-    /**
-     * Latest connection state. A [StateFlow] rather than an event stream so a screen that
-     * subscribes late still learns the current state instead of waiting for the next change.
-     */
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -186,7 +176,6 @@ class SignalRService @Inject constructor(
     private fun openAll() {
         if (currentAccessTokenBlocking() == null) {
             Log.d(TAG, "No session — skipping SignalR connect")
-            _connectionState.value = ConnectionState.Disconnected
             return
         }
 
@@ -216,14 +205,12 @@ class SignalRService @Inject constructor(
         )
 
         if (isConnected()) {
-            _connectionState.value = ConnectionState.Connected
             return
         }
 
         // A failed *first* attempt needs the retry loop too. onClosed only fires for a
         // connection that was once open, so without this a server that was down at launch left
         // the app offline until the user happened to background and foreground it.
-        _connectionState.value = ConnectionState.Reconnecting
         scheduleReconnect()
     }
 
@@ -245,7 +232,6 @@ class SignalRService @Inject constructor(
         adminHubConnection = null
         notificationHubConnection = null
 
-        _connectionState.value = ConnectionState.Disconnected
         Log.d(TAG, "Disconnected from all hubs")
     }
 
@@ -273,7 +259,6 @@ class SignalRService @Inject constructor(
             val wait = RECONNECT_DELAYS_MS[min(attempt, RECONNECT_DELAYS_MS.lastIndex)]
             attempt++
 
-            _connectionState.value = ConnectionState.Reconnecting
             Log.d(TAG, "Reconnecting in ${wait}ms (attempt $attempt)")
             delay(wait)
 
@@ -341,7 +326,6 @@ class SignalRService @Inject constructor(
                     configure(built)
                     built.onClosed { error ->
                         Log.w(TAG, "$name hub closed", error)
-                        _connectionState.value = ConnectionState.Disconnected
                         scheduleReconnect()
                     }
                 }
@@ -460,11 +444,6 @@ class SignalRService @Inject constructor(
             Log.d(TAG, "📢 InventoryItemExpired: ${data.id}")
             _inventoryItemExpired.tryEmit(data)
         }, InventoryItemData::class.java)
-
-        on("InventoryItemUpdated", { data: InventoryItemData ->
-            Log.d(TAG, "📢 InventoryItemUpdated: ${data.id}")
-            _inventoryItemUpdated.tryEmit(data)
-        }, InventoryItemData::class.java)
     }
 
     private fun setupAdminEventHandlers(connection: HubConnection) = with(connection) {
@@ -551,7 +530,6 @@ class SignalRService @Inject constructor(
 // Pickup Request notifications
 data class StatusChangeNotification(
     val request: PickupRequestData,
-    val oldStatus: String,
     val newStatus: String,
     val timestamp: String
 )
@@ -613,21 +591,3 @@ data class SystemAlertNotification(
     val details: String?,
     val timestamp: String
 )
-
-/**
- * What the app can usefully say about real-time delivery.
- *
- * There is no error state: every failure path now schedules a retry, so "failed" and "trying
- * again" are the same situation from a caller's point of view, and a distinct error value was
- * only ever written and overwritten without being observed.
- */
-sealed class ConnectionState {
-    /** Live. Events are arriving. */
-    object Connected : ConnectionState()
-
-    /** Deliberately closed — backgrounded, or signed out. Not a problem; show nothing. */
-    object Disconnected : ConnectionState()
-
-    /** Dropped or unreachable, with the retry loop running. Data on screen may be stale. */
-    object Reconnecting : ConnectionState()
-}

@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.grocery.managerequests
 
 import com.clearchain.app.R
-import com.clearchain.app.data.remote.api.NgoReputationData
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.presentation.components.CommonSortOptions
@@ -40,15 +39,12 @@ data class ManageRequestsState(
     val selectedIds: Set<String> = emptySet(),
     val isBulkOperating: Boolean = false,
 
-    val ngoReputations: Map<String, NgoReputationData> = emptyMap(),
-
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null
 ) {
     val requests: List<PickupRequest> get() = filteredRequests
     val selectedCount: Int get() = selectedIds.size
-    val pendingSelectedCount: Int get() = filteredRequests.count { it.id in selectedIds && it.status.name == "PENDING" }
     val allSelected: Boolean get() = filteredRequests.isNotEmpty() && selectedIds.containsAll(filteredRequests.map { it.id })
     val activeFilterCount: Int get() =
         (if (filterCategory != null) 1 else 0) +

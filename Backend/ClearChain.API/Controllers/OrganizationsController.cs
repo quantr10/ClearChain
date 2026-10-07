@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using ClearChain.API.Common;
 using ClearChain.API.Services;
@@ -43,10 +42,7 @@ public class OrganizationsController : ControllerBase
     [HttpGet("my/stats")]
     public async Task<IActionResult> GetMyStats()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
 
         var org = await _context.Organizations.FindAsync(userGuid);
@@ -237,10 +233,7 @@ public class OrganizationsController : ControllerBase
     [HttpGet("my/activity")]
     public async Task<IActionResult> GetMyActivity([FromQuery] int days = 7)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
 
         var org = await _context.Organizations.FindAsync(userGuid);
@@ -511,10 +504,7 @@ public class OrganizationsController : ControllerBase
     [HttpGet("my/today-summary")]
     public async Task<IActionResult> GetTodaySummary()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
 
         var org = await _context.Organizations.FindAsync(userGuid);
@@ -630,9 +620,7 @@ public class OrganizationsController : ControllerBase
         if (avatar.Length > StorageBucketPolicy.ImageMaxBytes)
             return BadRequest(new { message = $"File must be under {StorageBucketPolicy.ImageMaxBytes / 1024 / 1024} MB" });
 
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
 
         var org = await _context.Organizations.FindAsync(userGuid);
@@ -664,9 +652,7 @@ public class OrganizationsController : ControllerBase
         if (document.Length > StorageBucketPolicy.DocumentMaxBytes)
             return BadRequest(new { message = $"File must be under {StorageBucketPolicy.DocumentMaxBytes / 1024 / 1024} MB" });
 
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
 
         var org = await _context.Organizations.FindAsync(userGuid);
@@ -725,10 +711,7 @@ public class OrganizationsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                  ?? User.FindFirst("sub")?.Value;
-
-        if (userId == null || !Guid.TryParse(userId, out var userGuid))
+        if (!this.TryGetUserId(out var userGuid))
         {
             return Unauthorized();
         }

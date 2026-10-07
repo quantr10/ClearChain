@@ -31,7 +31,6 @@ public interface ICartService
     Task<CartServiceResult> GetCartAsync(Guid ngoId);
     Task<CartServiceResult> AddItemAsync(Guid ngoId, AddCartItemRequest request);
     Task<CartServiceResult> UpdateItemAsync(Guid ngoId, Guid itemId, UpdateCartItemRequest request);
-    Task<CartServiceResult> RemoveItemAsync(Guid ngoId, Guid itemId);
     Task<CartServiceResult> CheckoutGroupAsync(Guid ngoId, CheckoutCartGroupRequest request);
 }
 
@@ -120,19 +119,6 @@ public class CartService : ICartService
             item.UpdatedAt = DateTime.UtcNow;
         }
 
-        cart.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-        return new CartServiceResult(true, Cart: await MapCartAsync(cart.Id));
-    }
-
-    public async Task<CartServiceResult> RemoveItemAsync(Guid ngoId, Guid itemId)
-    {
-        var cart = await GetOrCreateCartAsync(ngoId);
-        var item = await _context.CartItems.FirstOrDefaultAsync(i => i.Id == itemId && i.CartId == cart.Id);
-        if (item == null)
-            return Fail(CartServiceError.NotFound, "Cart item not found");
-
-        _context.CartItems.Remove(item);
         cart.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return new CartServiceResult(true, Cart: await MapCartAsync(cart.Id));

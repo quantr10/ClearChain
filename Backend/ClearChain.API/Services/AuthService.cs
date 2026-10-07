@@ -89,7 +89,6 @@ public class AuthService : IAuthService
             Type = type,
             Email = request.Email.ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            AuthProvider = "local",
             EmailVerified = false,
             EmailVerificationToken = BCrypt.Net.BCrypt.HashPassword(verificationCode),
             EmailVerificationTokenExpiry = DateTime.UtcNow.AddMinutes(15),

@@ -393,34 +393,6 @@ private fun PickupTimeDialog(
 }
 
 @Composable
-private fun FieldCard(
-    label: String,
-    modifier: Modifier = Modifier,
-    isOptional: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            OptionalFieldLabel(
-                text = label,
-                isOptional = isOptional,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
-}
-
-@Composable
 private fun SpecialHandlingRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,

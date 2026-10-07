@@ -39,6 +39,5 @@ data class CreateListingState(
     val selectedImages: List<Uri> = emptyList(), // first image is primary for upload
 
     // Draft & Preview
-    val isPreviewMode: Boolean = false,
-    val draftSavedAt: Long? = null
+    val isPreviewMode: Boolean = false
 )

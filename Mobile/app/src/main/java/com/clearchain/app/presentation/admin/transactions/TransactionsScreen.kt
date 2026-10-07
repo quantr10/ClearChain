@@ -415,21 +415,23 @@ private fun TransactionCard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
 
-            RequestDetailRow(
+            CompactDetailRow(
                 icon = Icons.Default.CalendarToday,
                 text = stringResource(
                     R.string.label_submitted_on_at,
                     DateTimeUtils.formatDate(transaction.createdAt),
                     DateTimeUtils.formatTime(transaction.createdAt)
-                )
+                ),
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            RequestDetailRow(
+            CompactDetailRow(
                 icon = Icons.Default.AccessTime,
                 text = stringResource(
                     R.string.label_pickup_on_at,
                     DateTimeUtils.formatDate(transaction.pickupDate),
                     transaction.pickupTime
-                )
+                ),
+                textColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Earliest expiry across the request's items (null on older records)
@@ -442,12 +444,12 @@ private fun TransactionCard(
                 transaction.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
             }
             if (handlingParts.isNotEmpty()) {
-                RequestDetailRow(
+                CompactDetailRow(
                     icon = Icons.AutoMirrored.Filled.StickyNote2,
-                    text = handlingParts.joinToString(" \u00B7 ")
+                    text = handlingParts.joinToString(" \u00B7 "),
+                    textColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
-

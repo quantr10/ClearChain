@@ -13,12 +13,9 @@ data class ProfileState(
 
     // ── Stats ────────────────────────────────────────────────────────────────
     val stats: OrgStats? = null,
-    val isLoadingStats: Boolean = false,
 
     // ── Activity feed ────────────────────────────────────────────────────────
     val activity: List<ActivityItem> = emptyList(),
-    val isLoadingActivity: Boolean = false,
-    val activityError: String? = null,
 
     // ── Password change ──────────────────────────────────────────────────────
     val isChangingPassword: Boolean = false,
@@ -58,6 +55,5 @@ data class ProfileState(
     val isDeletingAccount: Boolean = false,
 
     // Avatar upload
-    val isUploadingAvatar: Boolean = false,
-    val avatarUploadError: String? = null
+    val isUploadingAvatar: Boolean = false
 )

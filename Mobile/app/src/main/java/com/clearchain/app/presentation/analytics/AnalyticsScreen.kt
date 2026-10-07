@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -162,7 +161,7 @@ private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityIte
     // Collected listings are deleted on pickup, so this ring covers what has *not* moved
     // rather than everything the store ever offered.
     val listingRing = s.listingStatus
-    AnalyticsSectionCard(stringResource(R.string.analytics_listings_overview)) {
+    SectionCard(stringResource(R.string.analytics_listings_overview)) {
         DonutChart(
             slices = listOf(
                 BarData(stringResource(R.string.status_active), listingRing.open, StatusColors.Available),
@@ -178,7 +177,7 @@ private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityIte
 
     val pickupTotal = s.completed + s.pendingRequests
     val pickupCompletionRate = if (pickupTotal > 0) (s.completed.toFloat() / pickupTotal * 100).toInt() else 0
-    AnalyticsSectionCard(
+    SectionCard(
         title = stringResource(R.string.analytics_pickup_completion_rate),
         action = {
             Text(
@@ -204,7 +203,7 @@ private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityIte
 /** The 30-day activity sparkline, shared by both roles. */
 @Composable
 private fun ActivityTrendSection(activities: List<ActivityItemData>) {
-    AnalyticsSectionCard(title = "") {
+    SectionCard(title = "") {
         ActivitySparklineCard(
             title = stringResource(R.string.analytics_activity_trend),
             data = buildDailyActivityCounts(activities, days = 30, labelPattern = "MMM d"),
@@ -230,7 +229,7 @@ private fun NgoAnalytics(
     // not even part of it - "Available" counted every open listing on the platform, which
     // is a marketplace figure, not something this NGO holds.
     val inventory = s.inventoryStatus
-    AnalyticsSectionCard(stringResource(R.string.analytics_inventory_status)) {
+    SectionCard(stringResource(R.string.analytics_inventory_status)) {
         DonutChart(
             slices = listOf(
                 BarData(stringResource(R.string.status_in_stock), inventory.active, StatusColors.Available),
@@ -252,7 +251,7 @@ private fun NgoAnalytics(
     val totalRequests = reputation?.totalRequests ?: fallbackTotal
     val completedRequests = reputation?.completedPickups ?: s.totalCompleted
 
-    AnalyticsSectionCard(
+    SectionCard(
         title = stringResource(R.string.analytics_pickup_completion_rate),
         action = {
             Text(
@@ -282,7 +281,7 @@ private fun NgoAnalytics(
 private fun RequestStatusSection(status: RequestStatusCounts) {
     if (status.total == 0) return
 
-    AnalyticsSectionCard(stringResource(R.string.section_request_status_breakdown)) {
+    SectionCard(stringResource(R.string.section_request_status_breakdown)) {
         ColumnBarChart(
             bars = requestStatusBars(
                 pending = status.pending,
@@ -301,7 +300,7 @@ private fun RequestStatusSection(status: RequestStatusCounts) {
 
 @Composable
 private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate: Int) {
-    AnalyticsSectionCard(stringResource(R.string.analytics_impact)) {
+    SectionCard(stringResource(R.string.analytics_impact)) {
         ImpactSummaryRow(
             kgSaved = kgSaved,
             mealsEstimate = mealsEstimate,
@@ -315,41 +314,3 @@ private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate
 
 /** Matches the rhythm of [WeeklyGoalCard], which the rate cards sit alongside. */
 private val RATE_CARD_SPACING = 12.dp
-
-@Composable
-private fun AnalyticsSectionCard(
-    title: String,
-    action: (@Composable () -> Unit)? = null,
-    contentSpacing: Dp = 6.dp,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(contentSpacing)
-        ) {
-            if (title.isNotBlank() || action != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (title.isNotBlank()) {
-                        Text(
-                            title,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    action?.invoke()
-                }
-            }
-            content()
-        }
-    }
-}

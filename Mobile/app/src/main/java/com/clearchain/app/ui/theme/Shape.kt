@@ -14,7 +14,6 @@ val Shapes = Shapes(
 
 // Convenience aliases used across the codebase
 val ShapeMedium = RoundedCornerShape(14.dp)
-val ShapeCircle = RoundedCornerShape(50)
 
 // Card-specific shapes
 val CardShape = RoundedCornerShape(12.dp)

@@ -6,6 +6,7 @@ import com.clearchain.app.domain.model.AuthTokens
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.repository.AuthRepository
 import com.clearchain.app.domain.usecase.fcm.RegisterFCMTokenUseCase
+import com.clearchain.app.util.ValidationUtils
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
@@ -25,7 +26,7 @@ class LoginUseCase @Inject constructor(
             return Result.failure(Exception("Password cannot be empty"))
         }
 
-        if (!isValidEmail(email)) {
+        if (!ValidationUtils.isValidEmail(email)) {
             return Result.failure(Exception("Invalid email format"))
         }
 
@@ -46,10 +47,6 @@ class LoginUseCase @Inject constructor(
         }
 
         return result
-    }
-
-    private fun isValidEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 
     private companion object {

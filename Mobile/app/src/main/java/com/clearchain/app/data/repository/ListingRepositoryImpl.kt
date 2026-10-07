@@ -221,15 +221,6 @@ class ListingRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveAnalysis(analysisData: FoodAnalysisData): Result<Unit> {
-        return try {
-            imageAnalysisApi.saveAnalysis(analysisData)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     override suspend fun uploadFoodImage(imageUri: Uri): Result<String> {
         return try {
             val file = ImageUtils.compressImage(context, imageUri)

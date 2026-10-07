@@ -28,8 +28,7 @@ data class ListingEntity(
     val splitReason: String = "new_listing",
     val relatedRequestId: String? = null,
     val splitIndex: Int = 0,
-    val distanceKm: Double? = null,
-    val cachedAt: Long = System.currentTimeMillis()
+    val distanceKm: Double? = null
 )
 
 fun ListingEntity.toDomain(): Listing = Listing(

@@ -29,10 +29,7 @@ data class UserEntity(
     val pickupInstructions: String? = null,
     val description: String? = null,
     // ── Onboarding verification document ─────────────────────────────────────
-    val documentUrl: String? = null,
-    // Deprecated: the app only supports a single verification document. Column kept
-    // (always null) so no Room migration is needed; do not read or write it.
-    val documentUrl2: String? = null
+    val documentUrl: String? = null
 )
 
 // CANONICAL mapping functions — used everywhere, no duplicates

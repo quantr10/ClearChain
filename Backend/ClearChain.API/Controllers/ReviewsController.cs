@@ -63,45 +63,9 @@ public class ReviewsController : ControllerBase
         return Ok(new { message = "Review submitted successfully", data = MapToDto(review) });
     }
 
-    // GET api/reviews/organization/{id} — Get reviews for a grocery store
-    [HttpGet("organization/{id}")]
-    public async Task<IActionResult> GetReviewsForOrganization(Guid id,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 50);
-
-        var query = _context.Reviews
-            .Include(r => r.Reviewer)
-            .Where(r => r.ReviewedId == id)
-            .OrderByDescending(r => r.CreatedAt);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
-            .ToListAsync();
-
-        var avgRating = total > 0
-            ? await _context.Reviews.Where(r => r.ReviewedId == id).AverageAsync(r => r.Rating)
-            : 0.0;
-
-        return Ok(new
-        {
-            message = "Reviews retrieved",
-            data = items.Select(MapToDto).ToList(),
-            averageRating = Math.Round(avgRating, 1),
-            total,
-            page = clampedPage,
-            pageSize = clampedSize,
-            totalPages = (int)Math.Ceiling((double)total / clampedSize)
-        });
-    }
-
     // GET api/reviews/pickup/{pickupRequestId} — the reviews left on one pickup (at most one per
-    // side). Looked up by pickup rather than through an organization's review list, which is paged
-    // and would miss an older pickup's review. Readable by admins and by the two organizations on
-    // the pickup; anyone else gets the same "not found" as for a pickup that does not exist.
+    // side). Readable by admins and by the two organizations on the pickup; anyone else gets the
+    // same "not found" as for a pickup that does not exist.
     [HttpGet("pickup/{pickupRequestId}")]
     public async Task<IActionResult> GetReviewsForPickup(Guid pickupRequestId)
     {

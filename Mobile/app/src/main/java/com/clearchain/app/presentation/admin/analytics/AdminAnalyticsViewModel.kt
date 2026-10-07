@@ -1,14 +1,9 @@
 package com.clearchain.app.presentation.admin.analytics
 
-import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,11 +11,10 @@ import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.AdminDetailedStatsData
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -156,15 +150,7 @@ class AdminAnalyticsViewModel @Inject constructor(
             }
 
             runCatching {
-                val share = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(
-                    Intent.createChooser(share, string(R.string.pdf_stats_title))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
+                DownloadsExport.share(context, uri, "application/pdf", string(R.string.pdf_stats_title))
             }
             _uiEvent.send(UiEvent.ShowSnackbar(string(R.string.snack_pdf_saved)))
         }
@@ -292,21 +278,8 @@ class AdminAnalyticsViewModel @Inject constructor(
 
         doc.finishPage(page)
 
-        val fileName = "clearchain_stats_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.pdf"
-        val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, "application/pdf")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-            context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)?.also { u ->
-                context.contentResolver.openOutputStream(u)?.use { doc.writeTo(it) }
-            }
-        } else {
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
-            FileOutputStream(file).use { doc.writeTo(it) }
-            Uri.fromFile(file)
-        }
+        val fileName = "clearchain_stats_${DownloadsExport.timestamp()}.pdf"
+        val uri = DownloadsExport.save(context, fileName, "application/pdf") { doc.writeTo(it) }
         doc.close()
         return uri
     }

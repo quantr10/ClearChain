@@ -142,7 +142,6 @@ class ProfileViewModel @Inject constructor(
     }
 
     private suspend fun loadStatsSuspend() {
-        _state.update { it.copy(isLoadingStats = true) }
         val dto = organizationApi.getMyStats().data
         val stats = OrgStats(
             inStock = dto.inStock,
@@ -156,20 +155,16 @@ class ProfileViewModel @Inject constructor(
             foodSaved = dto.foodSaved,
             totalListings = dto.totalListings
         )
-        _state.update { it.copy(stats = stats, isLoadingStats = false) }
+        _state.update { it.copy(stats = stats) }
     }
 
     private fun loadActivity() {
         viewModelScope.launch {
             runCatching { loadActivitySuspend() }
-                .onFailure { e ->
-                    _state.update { it.copy(isLoadingActivity = false, activityError = e.message) }
-                }
         }
     }
 
     private suspend fun loadActivitySuspend() {
-        _state.update { it.copy(isLoadingActivity = true, activityError = null) }
         val items = organizationApi.getMyActivity().data.map { dto ->
             ActivityItem(
                 id = dto.id,
@@ -180,7 +175,7 @@ class ProfileViewModel @Inject constructor(
                 relatedId = dto.relatedId
             )
         }
-        _state.update { it.copy(activity = items, isLoadingActivity = false) }
+        _state.update { it.copy(activity = items) }
     }
 
     // ── Edit profile ─────────────────────────────────────────────────────────
@@ -375,7 +370,7 @@ class ProfileViewModel @Inject constructor(
 
     private fun uploadAvatar(uri: Uri) {
         viewModelScope.launch {
-            _state.update { it.copy(isUploadingAvatar = true, avatarUploadError = null) }
+            _state.update { it.copy(isUploadingAvatar = true) }
             try {
                 val bytes = ImageUtils.compressToBytes(context, uri)
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
@@ -388,7 +383,6 @@ class ProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 val msg = e.message
                     ?: context.getString(R.string.error_avatar_upload_failed)
-                _state.update { it.copy(avatarUploadError = msg) }
                 _uiEvent.send(UiEvent.ShowSnackbar(msg))
             } finally {
                 _state.update { it.copy(isUploadingAvatar = false) }

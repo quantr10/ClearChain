@@ -3,8 +3,6 @@ package com.clearchain.app.di
 import android.content.Context
 import androidx.room.Room
 import com.clearchain.app.data.local.database.ClearChainDatabase
-import com.clearchain.app.data.local.database.MIGRATION_7_8
-import com.clearchain.app.data.local.database.MIGRATION_8_9
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,8 +24,9 @@ object AppModule {
             ClearChainDatabase::class.java,
             ClearChainDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
-            .fallbackToDestructiveMigration() // last resort for versions without an explicit path
+            // Every table is a cache of server data, so a schema change rebuilds the database
+            // instead of migrating it. The cached session goes with it: users sign in again.
+            .fallbackToDestructiveMigration()
             .build()
     }
 

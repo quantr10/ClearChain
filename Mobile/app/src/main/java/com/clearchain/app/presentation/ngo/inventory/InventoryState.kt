@@ -1,11 +1,8 @@
 package com.clearchain.app.presentation.ngo.inventory
 
-import com.clearchain.app.R
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.InventoryItem
 import com.clearchain.app.domain.model.InventoryStatus
 import com.clearchain.app.presentation.components.CommonSortOptions
-import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
 
 data class InventoryState(
@@ -28,11 +25,6 @@ data class InventoryState(
 
     // Category as CHIPS (food categories)
     val selectedCategory: String? = null,
-    val availableCategoryFilters: List<FilterChipData> = listOf(
-        FilterChipData(null, labelResId = R.string.filter_all)
-    ) + FoodCategory.entries.map {
-        FilterChipData(it.name, labelResId = it.labelResId)
-    },
 
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -57,11 +49,4 @@ data class InventoryState(
             (if (filterExpiryWithinDays != null) 1 else 0) +
             (if (filterMinQty > 0.0) 1 else 0) +
             (if (filterMaxQty != null) 1 else 0)
-
-    val categoryBreakdown: List<Pair<String, Int>> get() =
-        allItems.filter { it.status == InventoryStatus.ACTIVE }
-            .groupBy { it.category }
-            .map { (cat, items) -> cat to items.size }
-            .sortedByDescending { it.second }
-            .take(5)
 }

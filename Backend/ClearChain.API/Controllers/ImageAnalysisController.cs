@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using ClearChain.API.Common;
 using ClearChain.API.Services;
 using ClearChain.API.DTOs.ImageAnalysis;
@@ -79,8 +78,7 @@ public class ImageAnalysisController : ControllerBase
         try
         {
             // Get grocery ID from JWT
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
+            if (!this.TryGetUserId(out var groceryId))
             {
                 return Unauthorized(new AnalyzeImageResponse
                 {
@@ -146,41 +144,6 @@ public class ImageAnalysisController : ControllerBase
     }
 
     /// <summary>
-    /// Save analysis result to database (called after listing created successfully)
-    /// </summary>
-    [HttpPost("save")]
-    [Authorize]
-    [ProducesResponseType(200)]
-    [ProducesResponseType(400)]
-    [ProducesResponseType(401)]
-    public async Task<IActionResult> SaveAnalysis([FromBody] FoodAnalysisData analysisData)
-    {
-        // Get grocery ID from JWT
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
-        {
-            return Unauthorized(new { success = false, message = "User not authenticated" });
-        }
-
-        // Validate data
-        if (analysisData == null || string.IsNullOrEmpty(analysisData.ImageUrl))
-        {
-            return BadRequest(new { success = false, message = "Invalid analysis data" });
-        }
-
-        _logger.LogInformation($"💾 Saving AI analysis for grocery {groceryId}: {analysisData.Title}");
-
-        // Save to database
-        await _analysisService.SaveAnalysisAsync(analysisData, groceryId);
-
-        return Ok(new
-        {
-            success = true,
-            message = "Analysis saved successfully"
-        });
-    }
-
-    /// <summary>
     /// Upload food image to Supabase storage (called before creating listing)
     /// </summary>
     [HttpPost("upload")]
@@ -190,8 +153,7 @@ public class ImageAnalysisController : ControllerBase
     [ProducesResponseType(401)]
     public async Task<ActionResult<UploadImageResponse>> UploadImage(IFormFile image)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var groceryId))
+        if (!this.TryGetUserId(out var groceryId))
         {
             return Unauthorized(new UploadImageResponse
             {
