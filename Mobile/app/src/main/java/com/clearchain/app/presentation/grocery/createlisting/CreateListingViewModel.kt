@@ -108,20 +108,6 @@ class CreateListingViewModel @Inject constructor(
                 _state.update { it.copy(expiryDate = event.date, expiryDateError = null) }
             }
 
-            is CreateListingEvent.ImageUrlChanged -> {
-                _state.update { it.copy(imageUrl = event.url) }
-            }
-
-            is CreateListingEvent.ImageSelected -> {
-                _state.update {
-                    it.copy(
-                        selectedImageUri = event.uri,
-                        showImagePicker = false
-                    )
-                }
-                analyzeImage()
-            }
-
             CreateListingEvent.ToggleCategoryDropdown -> {
                 _state.update { it.copy(showCategoryDropdown = !it.showCategoryDropdown) }
             }
@@ -156,8 +142,7 @@ class CreateListingViewModel @Inject constructor(
                         selectedImageUri = null,
                         selectedImages = emptyList(),
                         analysisResult = null,
-                        analysisError = null,
-                        imageUrl = ""
+                        analysisError = null
                     )
                 }
             }
@@ -179,29 +164,6 @@ class CreateListingViewModel @Inject constructor(
                     )
                 }
                 analyzeImage()
-            }
-
-            is CreateListingEvent.RemoveImage -> {
-                val updated = _state.value.selectedImages.toMutableList()
-                    .also { it.removeAt(event.index) }
-                _state.update {
-                    it.copy(
-                        selectedImages = updated,
-                        selectedImageUri = updated.firstOrNull()
-                    )
-                }
-            }
-
-            is CreateListingEvent.ReorderImages -> {
-                val list = _state.value.selectedImages.toMutableList()
-                val item = list.removeAt(event.fromIndex)
-                list.add(event.toIndex, item)
-                _state.update {
-                    it.copy(
-                        selectedImages = list,
-                        selectedImageUri = list.firstOrNull()
-                    )
-                }
             }
 
             CreateListingEvent.TogglePreview -> {
@@ -243,10 +205,10 @@ class CreateListingViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             // Upload image first if user selected one
-            var finalImageUrl = currentState.imageUrl
+            var finalImageUrl: String? = null
 
             val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
-            if (primaryUri != null && finalImageUrl.isEmpty()) {
+            if (primaryUri != null) {
                 val uploadResult = listingRepository.uploadFoodImage(primaryUri)
 
                 uploadResult.fold(
@@ -275,11 +237,11 @@ class CreateListingViewModel @Inject constructor(
                 quantity = currentState.quantity.toInt(),
                 unit = currentState.unit,
                 expiryDate = currentState.expiryDate,
-                imageUrl = finalImageUrl.ifBlank { null }
+                imageUrl = finalImageUrl
             )
 
             result.fold(
-                onSuccess = { listing ->
+                onSuccess = {
                     _state.update { it.copy(isLoading = false) }
 
                     // Clear draft on success
@@ -360,8 +322,7 @@ class CreateListingViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isAnalyzing = false,
-                            analysisResult = analysisData,
-                            imageUrl = analysisData.imageUrl
+                            analysisResult = analysisData
                         )
                     }
                     _uiEvent.send(
@@ -391,8 +352,7 @@ class CreateListingViewModel @Inject constructor(
                 title = analysis.title,
                 description = analysis.notes,
                 category = analysis.category.uppercase(),
-                expiryDate = analysis.expiryDate.take(10),
-                imageUrl = analysis.imageUrl
+                expiryDate = analysis.expiryDate.take(10)
             )
         }
 

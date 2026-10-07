@@ -11,7 +11,6 @@ namespace ClearChain.API.Services;
 public class AzureVisionService : IImageAnalysisService
 {
     private readonly ComputerVisionClient _visionClient;
-    private readonly IStorageService _storageService;
     private readonly ILogger<AzureVisionService> _logger;
 
     // ====================================================================
@@ -141,7 +140,6 @@ public class AzureVisionService : IImageAnalysisService
 
     public AzureVisionService(
         IConfiguration config,
-        IStorageService storageService,
         ILogger<AzureVisionService> logger)
     {
         var endpoint = config["AZURE_VISION_ENDPOINT"]
@@ -154,7 +152,6 @@ public class AzureVisionService : IImageAnalysisService
             Endpoint = endpoint
         };
 
-        _storageService = storageService;
         _logger = logger;
     }
 
@@ -178,7 +175,7 @@ public class AzureVisionService : IImageAnalysisService
             var analysis = await _visionClient.AnalyzeImageInStreamAsync(stream, features);
             _logger.LogInformation($"✅ Azure AI complete - {analysis.Tags.Count} tags, {analysis.Objects.Count} objects");
 
-            var result = ProcessAzureResultsEnhanced(analysis, string.Empty, groceryId);
+            var result = ProcessAzureResultsEnhanced(analysis);
 
             _logger.LogInformation($"✅ ENHANCED Analysis: {result.Title} ({result.Category}) - {result.QualityGrade} grade, {result.FreshnessScore}% fresh");
 
@@ -199,7 +196,7 @@ public class AzureVisionService : IImageAnalysisService
     // ====================================================================
     // 🚀 ENHANCED PROCESSING - Multi-factor Analysis
     // ====================================================================
-    private FoodAnalysisData ProcessAzureResultsEnhanced(ImageAnalysis analysis, string imageUrl, Guid groceryId)
+    private FoodAnalysisData ProcessAzureResultsEnhanced(ImageAnalysis analysis)
     {
         // Extract high-confidence tags
         var tags = analysis.Tags
@@ -231,7 +228,7 @@ public class AzureVisionService : IImageAnalysisService
         var expiryDate = DateTime.UtcNow.AddDays(expiryDays);
 
         // 🎯 STEP 6: Detailed condition notes with storage tips
-        var notes = GenerateDetailedNotes(tags, objects, description, freshnessScore, qualityGrade, category);
+        var notes = GenerateDetailedNotes(tags, freshnessScore, qualityGrade, category);
 
         return new FoodAnalysisData
         {
@@ -239,7 +236,6 @@ public class AzureVisionService : IImageAnalysisService
             Category = category,
             ExpiryDate = expiryDate.ToString("yyyy-MM-dd"),
             Notes = notes,
-            ImageUrl = imageUrl,
             Confidence = categoryConfidence,
             FreshnessScore = freshnessScore,
             QualityGrade = qualityGrade
@@ -539,8 +535,6 @@ public class AzureVisionService : IImageAnalysisService
     // ====================================================================
     private string GenerateDetailedNotes(
         List<ImageTag> tags,
-        List<DetectedObject> objects,
-        string description,
         double freshnessScore,
         string qualityGrade,
         string category)

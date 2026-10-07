@@ -39,8 +39,7 @@ public class SavedListingsController : ControllerBase
         {
             Id = Guid.NewGuid(),
             NgoId = userId,
-            ListingId = listingId,
-            SavedAt = DateTime.UtcNow
+            ListingId = listingId
         });
         await _context.SaveChangesAsync();
 

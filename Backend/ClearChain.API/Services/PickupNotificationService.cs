@@ -35,14 +35,13 @@ public class PickupNotificationService : IPickupNotificationService
         }
     }
 
-    public async Task NotifyPickupRequestStatusChangedAsync(PickupRequestData request, string oldStatus)
+    public async Task NotifyPickupRequestStatusChangedAsync(PickupRequestData request)
     {
         try
         {
             var notification = new
             {
                 Request = request,
-                OldStatus = oldStatus,
                 NewStatus = request.Status,
                 Timestamp = DateTime.UtcNow
             };
@@ -58,7 +57,7 @@ public class PickupNotificationService : IPickupNotificationService
                 .SendAsync("PickupRequestUpdated", request);
 
             _logger.LogInformation(
-                $"Notified status change for request {request.Id}: {oldStatus} → {request.Status}");
+                $"Notified status change for request {request.Id} → {request.Status}");
         }
         catch (Exception ex)
         {

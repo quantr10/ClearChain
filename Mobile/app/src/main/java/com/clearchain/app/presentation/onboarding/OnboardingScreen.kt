@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -35,6 +36,7 @@ import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.delay
 
@@ -107,7 +109,7 @@ fun OnboardingScreen(
                 when (step) {
                     1 -> Step1Content(state, viewModel)
                     2 -> Step2Content(state, viewModel)
-                    else -> Step3Content(state)
+                    else -> Step3Content()
                 }
             }
 
@@ -443,7 +445,8 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             if (hasDoc) {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    shape = MaterialTheme.shapes.small,
+                    shape = ShapeMedium,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -517,7 +520,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
 // ── Step 3: Celebration ──────────────────────────────────────────────────────
 
 @Composable
-private fun Step3Content(state: OnboardingState) {
+private fun Step3Content() {
     var revealed by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(100)

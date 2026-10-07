@@ -29,8 +29,6 @@ public class PickupRequestData
     public string? MarkedPickedUpAt { get; set; }
     public string? ConfirmedReceivedAt { get; set; }
     public string? ProofPhotoUrl { get; set; }
-    public double? NgoPickupRate { get; set; }
-    public int NgoTotalCompleted { get; set; }
     public bool RequiresRefrigeration { get; set; } = false;
     public bool IsFragile { get; set; } = false;
     public bool IsHeavy { get; set; } = false;

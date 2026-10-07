@@ -487,7 +487,6 @@
     <string name="action_confirm_upload">Upload</string>
 
     <!-- My Requests -->
-    <string name="action_submit_review">Submit Review</string>
     <string name="action_show">Show</string>
     <string name="cd_download_receipt">Download receipt</string>
     <string name="label_expires_date">Expires %1$s</string>
@@ -703,8 +702,6 @@
     <string name="snack_pickup_confirmed">Pickup confirmed!</string>
     <string name="snack_new_request_from">New pickup request from %1$s</string>
     <string name="snack_request_cancelled_by">Request cancelled by %1$s</string>
-    <string name="snack_n_requests_approved">%1$d request(s) approved</string>
-    <string name="snack_n_requests_rejected">%1$d request(s) rejected</string>
     <string name="snack_new_listing">New listing available: %1$s</string>
     <string name="snack_listings_refreshed">Listings refreshed</string>
     <string name="snack_listing_deleted">Listing deleted</string>
@@ -883,8 +880,6 @@
     <string name="cd_org_type">%1$s organization</string>
     <string name="error_delete_listing_failed">Failed to delete listing</string>
 
-    <string name="error_bulk_approve_failed">Bulk approve failed</string>
-    <string name="error_bulk_reject_failed">Bulk reject failed</string>
     <string name="error_load_inventory">Failed to load inventory</string>
     <string name="error_refresh_inventory">Failed to refresh inventory</string>
     <string name="error_load_requests">Failed to load requests</string>

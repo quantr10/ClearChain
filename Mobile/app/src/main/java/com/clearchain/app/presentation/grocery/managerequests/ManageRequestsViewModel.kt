@@ -8,8 +8,6 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
-import com.clearchain.app.domain.usecase.pickuprequest.BulkApprovePickupRequestsUseCase
-import com.clearchain.app.domain.usecase.pickuprequest.BulkRejectPickupRequestsUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
@@ -29,8 +27,6 @@ class ManageRequestsViewModel @Inject constructor(
     private val approvePickupRequestUseCase: ApprovePickupRequestUseCase,
     private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
     private val markReadyForPickupUseCase: MarkReadyForPickupUseCase,
-    private val bulkApprovePickupRequestsUseCase: BulkApprovePickupRequestsUseCase,
-    private val bulkRejectPickupRequestsUseCase: BulkRejectPickupRequestsUseCase,
     private val signalRService: SignalRService
 ) : ViewModel() {
 
@@ -100,25 +96,6 @@ class ManageRequestsViewModel @Inject constructor(
             is ManageRequestsEvent.ApproveRequest -> approveRequest(event.requestId)
             is ManageRequestsEvent.RejectRequest -> rejectRequest(event.requestId)
             is ManageRequestsEvent.MarkReady -> markReadyForPickup(event.requestId)
-
-            // Bulk selection
-            ManageRequestsEvent.ToggleSelectionMode ->
-                _state.update { it.copy(isSelectionMode = !it.isSelectionMode, selectedIds = emptySet()) }
-            is ManageRequestsEvent.ToggleItemSelection ->
-                _state.update {
-                    val updated = if (event.requestId in it.selectedIds) {
-                        it.selectedIds - event.requestId
-                    } else {
-                        it.selectedIds + event.requestId
-                    }
-                    it.copy(selectedIds = updated)
-                }
-            ManageRequestsEvent.SelectAll ->
-                _state.update { it.copy(selectedIds = it.filteredRequests.map { r -> r.id }.toSet()) }
-            ManageRequestsEvent.DeselectAll ->
-                _state.update { it.copy(selectedIds = emptySet()) }
-            ManageRequestsEvent.BulkApprove -> bulkApprove()
-            is ManageRequestsEvent.BulkReject -> bulkReject(event.reason)
 
             ManageRequestsEvent.ExportCsv -> exportCsv()
 
@@ -238,42 +215,6 @@ class ManageRequestsViewModel @Inject constructor(
                 },
                 onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to mark as ready") } }
             )
-        }
-    }
-
-    private fun bulkApprove() {
-        val ids = _state.value.selectedIds.toList()
-        if (ids.isEmpty()) return
-        viewModelScope.launch {
-            _state.update { it.copy(isBulkOperating = true) }
-            bulkApprovePickupRequestsUseCase(ids).fold(
-                onSuccess = { outcome ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_requests_approved, outcome.succeeded)))
-                },
-                onFailure = { e ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_bulk_approve_failed)))
-                }
-            )
-            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
-            loadRequests()
-        }
-    }
-
-    private fun bulkReject(reason: String?) {
-        val ids = _state.value.selectedIds.toList()
-        if (ids.isEmpty()) return
-        viewModelScope.launch {
-            _state.update { it.copy(isBulkOperating = true) }
-            bulkRejectPickupRequestsUseCase(ids, reason).fold(
-                onSuccess = { outcome ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_requests_rejected, outcome.succeeded)))
-                },
-                onFailure = { e ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_bulk_reject_failed)))
-                }
-            )
-            _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
-            loadRequests()
         }
     }
 

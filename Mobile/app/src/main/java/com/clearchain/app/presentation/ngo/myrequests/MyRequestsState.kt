@@ -42,15 +42,6 @@ data class MyRequestsState(
     val failedUploadPhotoUri: Uri? = null,
     val uploadAttempts: Int = 0,
 
-    // Rate & review
-    val showReviewDialogForId: String? = null,
-    val reviewRating: Int = 5,
-    val reviewComment: String = "",
-    val isSubmittingReview: Boolean = false,
-
-    // PDF receipt
-    val isGeneratingReceipt: Boolean = false,
-
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
     val filterCategory: String? = null,

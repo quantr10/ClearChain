@@ -11,7 +11,6 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,8 +36,7 @@ data class NgoDashboardState(
     val weeklyCompleted: Int = 0,
     val userLatitude: Double? = null,
     val userLongitude: Double? = null,
-    val availableListings: List<Listing> = emptyList(),
-    val nearbyExpiringListings: List<Listing> = emptyList()
+    val availableListings: List<Listing> = emptyList()
 ) {
     val impact: ImpactMetrics get() {
         return ImpactMetrics(
@@ -150,20 +148,7 @@ class NgoDashboardViewModel @Inject constructor(
     private suspend fun loadNearbyListings() {
         try {
             listingRepository.getAllListings(status = "open", pageSize = 50).onSuccess { listings ->
-                val today = LocalDate.now()
-                val cutoff = today.plusDays(3)
-                val expiring = listings.filter { listing ->
-                    runCatching {
-                        val date = LocalDate.parse(listing.expiryDate.take(10))
-                        !date.isBefore(today) && !date.isAfter(cutoff)
-                    }.getOrDefault(false)
-                }
-                _state.update {
-                    it.copy(
-                        nearbyExpiringListings = expiring,
-                        availableListings = listings
-                    )
-                }
+                _state.update { it.copy(availableListings = listings) }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load nearby listings", e)

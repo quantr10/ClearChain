@@ -45,9 +45,4 @@ interface PickupRequestApi {
         @Part proofPhoto: MultipartBody.Part
     ): PickupRequestResponse
 
-    @PUT("pickuprequests/bulk-approve")
-    suspend fun bulkApprove(@Body request: BulkActionRequest): BulkActionResponse
-
-    @PUT("pickuprequests/bulk-reject")
-    suspend fun bulkReject(@Body request: BulkRejectRequest): BulkActionResponse
 }

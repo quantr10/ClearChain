@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using ClearChain.API.DTOs.Common;
 
 namespace ClearChain.API.Middleware;
 

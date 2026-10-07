@@ -5,26 +5,20 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
-import com.clearchain.app.data.remote.api.ReviewApi
-import com.clearchain.app.data.remote.dto.SubmitReviewRequest
 import com.clearchain.app.data.remote.signalr.SignalRService
-import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
 import com.clearchain.app.util.DownloadsExport
-import com.clearchain.app.util.PickupReceiptPdf
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class MyRequestsViewModel @Inject constructor(
@@ -32,8 +26,7 @@ class MyRequestsViewModel @Inject constructor(
     private val getMyPickupRequestsUseCase: GetMyPickupRequestsUseCase,
     private val cancelPickupRequestUseCase: CancelPickupRequestUseCase,
     private val confirmPickupUseCase: ConfirmPickupUseCase,
-    private val signalRService: SignalRService,
-    private val reviewApi: ReviewApi
+    private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MyRequestsState())
@@ -74,7 +67,7 @@ class MyRequestsViewModel @Inject constructor(
 
         // Listen for cancellations
         viewModelScope.launch {
-            signalRService.pickupRequestCancelled.collect { request ->
+            signalRService.pickupRequestCancelled.collect {
                 loadRequests()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled)))
             }
@@ -106,23 +99,6 @@ class MyRequestsViewModel @Inject constructor(
 
             MyRequestsEvent.RetryFailedUpload -> retryFailedUpload()
             MyRequestsEvent.DismissUploadError -> dismissUploadError()
-
-            // Rate & review
-            is MyRequestsEvent.ShowReviewDialog ->
-                _state.update { it.copy(showReviewDialogForId = event.requestId, reviewRating = 5, reviewComment = "") }
-            MyRequestsEvent.DismissReviewDialog ->
-                _state.update { it.copy(showReviewDialogForId = null) }
-            is MyRequestsEvent.ReviewRatingChanged ->
-                _state.update { it.copy(reviewRating = event.rating) }
-            is MyRequestsEvent.ReviewCommentChanged ->
-                _state.update { it.copy(reviewComment = event.comment) }
-            MyRequestsEvent.SubmitReview -> submitReview()
-
-            // PDF receipt
-            is MyRequestsEvent.GenerateReceipt -> {
-                val request = _state.value.allRequests.find { it.id == event.requestId }
-                if (request != null) generateReceipt(request)
-            }
 
             MyRequestsEvent.ExportCsv -> exportCsv()
 
@@ -354,20 +330,6 @@ class MyRequestsViewModel @Inject constructor(
         }
     }
 
-    private fun generateReceipt(request: PickupRequest) {
-        viewModelScope.launch {
-            _state.update { it.copy(isGeneratingReceipt = true) }
-            try {
-                val uri = withContext(Dispatchers.IO) { PickupReceiptPdf.build(context, request) }
-                _uiEvent.send(UiEvent.ShareFile(uri, title = context.getString(R.string.snack_receipt_title, request.listingTitle)))
-            } catch (e: Exception) {
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_receipt_failed)))
-            } finally {
-                _state.update { it.copy(isGeneratingReceipt = false) }
-            }
-        }
-    }
-
     private fun exportCsv() {
         val current = _state.value
         val requests = current.filteredRequests
@@ -398,28 +360,6 @@ class MyRequestsViewModel @Inject constructor(
                 }
             )
             _uiEvent.send(UiEvent.ShowSnackbar(message))
-        }
-    }
-
-    private fun submitReview() {
-        val s = _state.value
-        if (s.showReviewDialogForId == null) return
-        viewModelScope.launch {
-            _state.update { it.copy(isSubmittingReview = true) }
-            try {
-                reviewApi.submitReview(
-                    SubmitReviewRequest(
-                        pickupRequestId = s.showReviewDialogForId!!,
-                        rating = s.reviewRating,
-                        comment = s.reviewComment.ifBlank { null }
-                    )
-                )
-                _state.update { it.copy(isSubmittingReview = false, showReviewDialogForId = null) }
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_review_submitted)))
-            } catch (e: Exception) {
-                _state.update { it.copy(isSubmittingReview = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_submit_review_failed)))
-            }
         }
     }
 }

@@ -29,7 +29,6 @@ import com.clearchain.app.util.UiEvent
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TransactionsScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToRequestDetail: (String) -> Unit = {},
     viewModel: TransactionsViewModel = hiltViewModel()
 ) {
@@ -253,9 +252,9 @@ private fun DateRangeFilterRow(
                     label = {
                         val label2 = when {
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
-                                "${state.filterStartDate!!.takeLast(5)} \u2013 ${state.filterEndDate!!.takeLast(5)}"
+                                "${state.filterStartDate.takeLast(5)} \u2013 ${state.filterEndDate.takeLast(5)}"
                             state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null ->
-                                stringResource(R.string.label_from_date, state.filterStartDate!!.takeLast(5))
+                                stringResource(R.string.label_from_date, state.filterStartDate.takeLast(5))
                             else -> label
                         }
                         Text(label2)

@@ -5,7 +5,6 @@ import com.clearchain.app.presentation.components.SortOption
 sealed class MyListingsEvent {
     object LoadListings : MyListingsEvent()
     object RefreshListings : MyListingsEvent()
-    data class DeleteListing(val listingId: String) : MyListingsEvent()
 
     // Search & Sort
     data class SearchQueryChanged(val query: String) : MyListingsEvent()

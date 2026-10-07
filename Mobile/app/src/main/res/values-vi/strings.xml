@@ -467,7 +467,6 @@
     <string name="action_confirm_upload">Tải lên</string>
 
     <!-- My Requests -->
-    <string name="action_submit_review">Gửi đánh giá</string>
     <string name="action_show">Hiển thị</string>
     <string name="cd_download_receipt">Tải biên lai</string>
     <string name="label_expires_date">Hết hạn %1$s</string>
@@ -674,8 +673,6 @@
     <string name="snack_pickup_confirmed">Đã xác nhận lấy hàng!</string>
     <string name="snack_new_request_from">Yêu cầu lấy hàng mới từ %1$s</string>
     <string name="snack_request_cancelled_by">Yêu cầu bị hủy bởi %1$s</string>
-    <string name="snack_n_requests_approved">Đã duyệt %1$d yêu cầu</string>
-    <string name="snack_n_requests_rejected">Đã từ chối %1$d yêu cầu</string>
     <string name="snack_new_listing">Có danh sách mới: %1$s</string>
     <string name="snack_listings_refreshed">Đã làm mới danh sách</string>
     <string name="snack_listing_deleted">Đã xóa danh sách</string>
@@ -845,8 +842,6 @@
     <string name="cd_org_type">Tổ chức %1$s</string>
     <string name="error_delete_listing_failed">Không thể xóa danh sách</string>
 
-    <string name="error_bulk_approve_failed">Duyệt hàng loạt thất bại</string>
-    <string name="error_bulk_reject_failed">Từ chối hàng loạt thất bại</string>
     <string name="error_load_inventory">Không thể tải tồn kho</string>
     <string name="error_refresh_inventory">Không thể làm mới tồn kho</string>
     <string name="error_load_requests">Không thể tải yêu cầu</string>

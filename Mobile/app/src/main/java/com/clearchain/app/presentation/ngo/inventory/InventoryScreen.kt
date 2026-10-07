@@ -28,7 +28,6 @@ import com.clearchain.app.util.UiEvent
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun InventoryScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToItemDetail: (String) -> Unit = {},
     viewModel: InventoryViewModel = hiltViewModel()
 ) {

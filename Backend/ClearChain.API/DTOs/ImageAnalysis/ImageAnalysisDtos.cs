@@ -40,11 +40,6 @@ public class FoodAnalysisData
     public string Notes { get; set; } = string.Empty;
 
     /// <summary>
-    /// Uploaded image URL in Supabase (for ImageUrl field)
-    /// </summary>
-    public string ImageUrl { get; set; } = string.Empty;
-
-    /// <summary>
     /// AI confidence score (0.0 - 1.0)
     /// </summary>
     public double Confidence { get; set; }

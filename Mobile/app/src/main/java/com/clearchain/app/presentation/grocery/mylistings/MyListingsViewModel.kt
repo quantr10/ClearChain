@@ -65,7 +65,6 @@ class MyListingsViewModel @Inject constructor(
         when (event) {
             MyListingsEvent.LoadListings -> loadListings()
             MyListingsEvent.RefreshListings -> refreshListings()
-            is MyListingsEvent.DeleteListing -> deleteListing(event.listingId)
 
             is MyListingsEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
@@ -188,20 +187,6 @@ class MyListingsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listings_refreshed)))
                 },
                 onFailure = { _state.update { it.copy(isRefreshing = false) } }
-            )
-        }
-    }
-
-    private fun deleteListing(listingId: String) {
-        viewModelScope.launch {
-            deleteListingUseCase(listingId).fold(
-                onSuccess = {
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_deleted)))
-                    loadListings()
-                },
-                onFailure = { error ->
-                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_delete_listing_failed)))
-                }
             )
         }
     }

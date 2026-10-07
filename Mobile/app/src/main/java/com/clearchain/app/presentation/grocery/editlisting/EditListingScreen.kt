@@ -27,9 +27,6 @@ import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -282,15 +279,6 @@ fun EditListingScreen(
                     }
 
                     // ── Expiry Date ──────────────────────────────────────────────
-                    val futureDates = remember {
-                        object : SelectableDates {
-                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                                val date = Instant.ofEpochMilli(utcTimeMillis)
-                                    .atZone(ZoneId.of("UTC")).toLocalDate()
-                                return !date.isBefore(LocalDate.now())
-                            }
-                        }
-                    }
                     FieldCard(label = stringResource(R.string.label_expiry_date)) {
                         DatePickerField(
                             value = state.expiryDate,
@@ -298,7 +286,7 @@ fun EditListingScreen(
                             isError = state.expiryDateError != null,
                             errorMessage = state.expiryDateError,
                             enabled = !busy,
-                            selectableDates = futureDates,
+                            selectableDates = TodayOrLaterDates,
                             onClearDate = { viewModel.onEvent(EditListingEvent.ExpiryDateChanged("")) }
                         )
                     }

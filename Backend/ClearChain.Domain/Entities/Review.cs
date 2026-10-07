@@ -10,7 +10,5 @@ public class Review
     public string? Comment { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    public Organization? Reviewer { get; set; }
-    public Organization? Reviewed { get; set; }
     public PickupRequest? PickupRequest { get; set; }
 }

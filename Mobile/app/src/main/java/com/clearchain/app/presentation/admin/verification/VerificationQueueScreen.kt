@@ -32,7 +32,6 @@ import com.clearchain.app.util.UiEvent
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun VerificationQueueScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToPublicProfile: (String) -> Unit = {},
     viewModel: VerificationQueueViewModel = hiltViewModel()
 ) {

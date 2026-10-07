@@ -17,6 +17,4 @@ public class PickupRequestItem
 
     public PickupRequest? PickupRequest { get; set; }
     public ListingGroup? Group { get; set; }
-    public ClearanceListing? OriginalListing { get; set; }
-    public ClearanceListing? ReservedListing { get; set; }
 }

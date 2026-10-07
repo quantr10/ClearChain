@@ -32,7 +32,6 @@ import com.clearchain.app.util.UiEvent
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MyRequestsScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToRequestDetail: (String) -> Unit = {},
     onNavigateToRoute: (String) -> Unit = {},
     viewModel: MyRequestsViewModel = hiltViewModel()
@@ -42,7 +41,6 @@ fun MyRequestsScreen(
     val context = LocalContext.current
     var showChecklistForId by remember { mutableStateOf<String?>(null) }
     var showPhotoPickerForId by remember { mutableStateOf<String?>(null) }
-    var showFullPhotoUrl by remember { mutableStateOf<String?>(null) }
     val uploadMessage = if (state.isUploading) {
         if (state.uploadAttempts > 1) {
             stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
@@ -70,26 +68,6 @@ fun MyRequestsScreen(
                 else -> {}
             }
         }
-    }
-
-    showFullPhotoUrl?.let { url ->
-        FullPhotoDialog(
-            photoUrl = url,
-            onDismiss = { showFullPhotoUrl = null }
-        )
-    }
-
-    // Rate & Review dialog
-    state.showReviewDialogForId?.let { requestId ->
-        ReviewDialog(
-            rating = state.reviewRating,
-            comment = state.reviewComment,
-            isSubmitting = state.isSubmittingReview,
-            onRatingChange = { viewModel.onEvent(MyRequestsEvent.ReviewRatingChanged(it)) },
-            onCommentChange = { viewModel.onEvent(MyRequestsEvent.ReviewCommentChanged(it)) },
-            onSubmit = { viewModel.onEvent(MyRequestsEvent.SubmitReview) },
-            onDismiss = { viewModel.onEvent(MyRequestsEvent.DismissReviewDialog) }
-        )
     }
 
     if (state.showFilterSheet) {
@@ -221,10 +199,7 @@ fun MyRequestsScreen(
                                             request = request,
                                             onCardClick = { onNavigateToRequestDetail(request.id) },
                                             onCancel = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
-                                            onConfirmPickup = { showChecklistForId = it },
-                                            onViewPhoto = { showFullPhotoUrl = it },
-                                            onReview = { viewModel.onEvent(MyRequestsEvent.ShowReviewDialog(it)) },
-                                            onDownloadReceipt = { viewModel.onEvent(MyRequestsEvent.GenerateReceipt(it)) }
+                                            onConfirmPickup = { showChecklistForId = it }
                                         )
                                     }
 
@@ -368,7 +343,7 @@ private fun MyRequestsFilterSheet(
 }
 
 // -----------------------------------------------------------------------------
-// Request card with status timeline + review/dispute actions
+// Request card on its own surface
 // -----------------------------------------------------------------------------
 
 @Composable
@@ -376,10 +351,7 @@ private fun RequestCardWithExtras(
     request: PickupRequest,
     onCardClick: () -> Unit,
     onCancel: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit,
-    onViewPhoto: (String) -> Unit,
-    onReview: (String) -> Unit,
-    onDownloadReceipt: (String) -> Unit = {}
+    onConfirmPickup: (String) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -390,82 +362,7 @@ private fun RequestCardWithExtras(
             modifier = Modifier.clickable { onCardClick() },
             viewMode = RequestViewMode.NGO,
             onCancel = onCancel,
-            onConfirmPickup = onConfirmPickup,
-            onViewPhoto = onViewPhoto
+            onConfirmPickup = onConfirmPickup
         )
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Rate & Review dialog
-// -----------------------------------------------------------------------------
-
-@Composable
-private fun ReviewDialog(
-    rating: Int,
-    comment: String,
-    isSubmitting: Boolean,
-    onRatingChange: (Int) -> Unit,
-    onCommentChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    ConfirmDialog(
-        onDismiss = onDismiss,
-        onConfirm = onSubmit,
-        icon = Icons.Default.StarRate,
-        title = stringResource(R.string.label_rate_experience),
-        message = stringResource(R.string.msg_rate_experience),
-        confirmLabel = stringResource(R.string.action_submit_review),
-        dismissLabel = stringResource(R.string.cancel),
-        confirmLoading = isSubmitting,
-        dismissEnabled = !isSubmitting,
-        dismissible = !isSubmitting
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Star rating row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                (1..5).forEach { star ->
-                    IconButton(onClick = { onRatingChange(star) }) {
-                        Icon(
-                            imageVector = if (star <= rating) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = stringResource(R.string.cd_star_n, star),
-                            tint = if (star <= rating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-            }
-            Text(
-                text = when (rating) {
-                    1 -> stringResource(R.string.review_rating_poor)
-                    2 -> stringResource(R.string.review_rating_below_avg)
-                    3 -> stringResource(R.string.review_rating_average)
-                    4 -> stringResource(R.string.review_rating_good)
-                    5 -> stringResource(R.string.review_rating_excellent)
-                    else -> ""
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-            ClearChainTextField(
-                value = comment,
-                onValueChange = onCommentChange,
-                label = stringResource(R.string.label_comments_optional),
-                isOptional = true,
-                placeholder = stringResource(R.string.hint_pickup_experience),
-                singleLine = false,
-                minLines = 2,
-                maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isSubmitting
-            )
-        }
     }
 }
