@@ -79,8 +79,6 @@ public class ReviewsController : ControllerBase
             return NotFound(new { message = "Pickup request not found" });
 
         var reviews = await _context.Reviews
-            .Include(r => r.Reviewer)
-            .Include(r => r.Reviewed)
             .Where(r => r.PickupRequestId == pickupRequestId)
             .OrderBy(r => r.CreatedAt)
             .ToListAsync();
@@ -88,30 +86,11 @@ public class ReviewsController : ControllerBase
         return Ok(new { message = "Reviews retrieved", data = reviews.Select(MapToDto).ToList() });
     }
 
-    // GET api/reviews/my — Get reviews I submitted as NGO
-    [HttpGet("my")]
-    public async Task<IActionResult> GetMyReviews()
-    {
-        if (!this.TryGetUserId(out var userId)) return Unauthorized();
-
-        var reviews = await _context.Reviews
-            .Include(r => r.Reviewer)
-            .Include(r => r.Reviewed)
-            .Where(r => r.ReviewerId == userId)
-            .OrderByDescending(r => r.CreatedAt)
-            .ToListAsync();
-
-        return Ok(new { message = "Your reviews retrieved", data = reviews.Select(MapToDto).ToList() });
-    }
-
     private static object MapToDto(Review r) => new
     {
         id = r.Id.ToString(),
         pickupRequestId = r.PickupRequestId.ToString(),
         reviewerId = r.ReviewerId.ToString(),
-        reviewerName = r.Reviewer?.Name ?? "",
-        reviewedId = r.ReviewedId.ToString(),
-        reviewedName = r.Reviewed?.Name ?? "",
         rating = r.Rating,
         comment = r.Comment,
         createdAt = r.CreatedAt.ToString("o")

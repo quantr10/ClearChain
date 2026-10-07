@@ -59,7 +59,6 @@ public class StatsBacklogDto
     public int OpenListings { get; set; }
     public int ReservedListings { get; set; }
     public int ExpiredListings { get; set; }
-    public int ArchivedListings { get; set; }
     /// <summary>Open listings whose collection deadline falls inside the next 24 hours.</summary>
     public int ExpiringWithin24h { get; set; }
 

@@ -21,16 +21,7 @@ data class FoodAnalysisData(
     val imageUrl: String = "",
     val confidence: Double,
     val freshnessScore: Int,
-    val qualityGrade: String,
-    val detectedItems: List<DetectedItem>,
-    val analyzedAt: String
-)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class DetectedItem(
-    val name: String,
-    val confidence: Double
+    val qualityGrade: String
 )
 
 @SuppressLint("UnsafeOptInUsageError")

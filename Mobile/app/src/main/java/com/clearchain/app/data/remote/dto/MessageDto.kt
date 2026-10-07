@@ -8,7 +8,6 @@ data class MessageData(
     val pickupRequestId: String,
     val senderId: String,
     val senderName: String,
-    val receiverId: String,
     val content: String,
     val isRead: Boolean = false,
     val sentAt: String,

@@ -1,6 +1,7 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.Admin;
+using ClearChain.API.DTOs.Disputes;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -411,7 +412,6 @@ public class AdminController : ControllerBase
         var openListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
         var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
         var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
-        var archivedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Archived);
         var expiringSoon = await _context.ClearanceListings
             .CountAsync(l => l.Status == ListingStatus.Open
                           && l.ClearanceDeadline > now && l.ClearanceDeadline <= soon);
@@ -431,7 +431,6 @@ public class AdminController : ControllerBase
             OpenListings = openListings,
             ReservedListings = reservedListings,
             ExpiredListings = expiredListings,
-            ArchivedListings = archivedListings,
             ExpiringWithin24h = expiringSoon,
             PendingRequests = pendingLive?.Count ?? 0,
             ApprovedRequests = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Approved)?.Count ?? 0,
@@ -535,23 +534,23 @@ public class AdminController : ControllerBase
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
     {
-        var feed = await _context.Disputes
-            .Include(d => d.Initiator)
+        var disputes = await _context.Disputes
             .Where(d => d.Status == "open" || d.Status == "under_review")
             .OrderByDescending(d => d.CreatedAt)
             .Take(30)
-            .Select(d => new
-            {
-                type = "dispute",
-                severity = "high",
-                id = d.Id.ToString(),
-                title = $"Dispute: {d.Reason}",
-                body = d.NgoStatement ?? "",
-                initiator = d.Initiator!.Name,
-                status = d.Status,
-                createdAt = d.CreatedAt.ToString("o")
-            })
             .ToListAsync();
+
+        // Reason is stored as a key; the label is what an admin should read.
+        var feed = disputes.Select(d => new
+        {
+            type = "dispute",
+            severity = "high",
+            id = d.Id.ToString(),
+            title = $"Dispute: {DisputeReasons.Label(d.Reason)}",
+            body = d.NgoStatement ?? "",
+            status = d.Status,
+            createdAt = d.CreatedAt.ToString("o")
+        }).ToList();
 
         return Ok(new { data = feed, total = feed.Count });
     }

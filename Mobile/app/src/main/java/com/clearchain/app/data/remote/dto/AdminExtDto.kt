@@ -56,7 +56,6 @@ data class StatsBacklog(
     val openListings: Int = 0,
     val reservedListings: Int = 0,
     val expiredListings: Int = 0,
-    val archivedListings: Int = 0,
     val expiringWithin24h: Int = 0,
     val pendingRequests: Int = 0,
     val approvedRequests: Int = 0,
@@ -135,7 +134,6 @@ data class AdminAlertItem(
     val id: String,
     val title: String,
     val body: String,
-    val initiator: String,
     val status: String,
     val createdAt: String
 )
