@@ -198,42 +198,42 @@ class ListingDetailViewModel @Inject constructor(
 
     private fun addToCart(listingId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.addItem(AddCartItemRequest(listingId = listingId, quantity = 1)) }
                 .onSuccess { response ->
                     updateCartState(response.data)
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
     private fun decrementCartItem(listingId: String) {
         val item = _state.value.cartItemsByListingId[listingId] ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = item.requestedQuantity - 1)) }
                 .onSuccess { response -> updateCartState(response.data) }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
     private fun removeCartItem(listingId: String) {
         val item = _state.value.cartItemsByListingId[listingId] ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = 0)) }
                 .onSuccess { response -> updateCartState(response.data) }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
@@ -298,14 +298,14 @@ class ListingDetailViewModel @Inject constructor(
     private fun deleteListing() {
         val listing = _state.value.listing ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isDeleting = true, showDeleteConfirm = false) }
+            _state.update { it.copy(isDeleting = true) }
             deleteListingUseCase(listing.id).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_deleted)))
                     _uiEvent.send(UiEvent.NavigateUp)
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isDeleting = false) }
+                    _state.update { it.copy(isDeleting = false, showDeleteConfirm = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_delete_listing_failed)))
                 }
             )
@@ -315,15 +315,15 @@ class ListingDetailViewModel @Inject constructor(
     private fun archiveListing() {
         val listing = _state.value.listing ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isArchiving = true, showArchiveConfirm = false) }
+            _state.update { it.copy(isArchiving = true) }
             archiveListingUseCase(listing.id).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_archived)))
-                    _state.update { it.copy(isArchiving = false) }
+                    _state.update { it.copy(isArchiving = false, showArchiveConfirm = false) }
                     loadListing(listing.id)
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isArchiving = false) }
+                    _state.update { it.copy(isArchiving = false, showArchiveConfirm = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_generic)))
                 }
             )
@@ -333,15 +333,15 @@ class ListingDetailViewModel @Inject constructor(
     private fun restoreListing() {
         val listing = _state.value.listing ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isRestoring = true, showRestoreConfirm = false) }
+            _state.update { it.copy(isRestoring = true) }
             restoreListingUseCase(listing.id).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_restored)))
-                    _state.update { it.copy(isRestoring = false) }
+                    _state.update { it.copy(isRestoring = false, showRestoreConfirm = false) }
                     loadListing(listing.id)
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isRestoring = false) }
+                    _state.update { it.copy(isRestoring = false, showRestoreConfirm = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_generic)))
                 }
             )

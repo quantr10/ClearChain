@@ -85,11 +85,11 @@ class OnboardingViewModel @Inject constructor(
     fun onEvent(event: OnboardingEvent) {
         when (event) {
             is OnboardingEvent.PhoneChanged ->
-                _state.update { it.copy(phone = event.value, phoneError = null, error = null) }
+                _state.update { it.copy(phone = event.value, phoneError = null) }
             is OnboardingEvent.DescriptionChanged ->
                 _state.update { it.copy(description = event.value) }
             is OnboardingEvent.ContactPersonChanged ->
-                _state.update { it.copy(contactPerson = event.value, contactPersonError = null, error = null) }
+                _state.update { it.copy(contactPerson = event.value, contactPersonError = null) }
             is OnboardingEvent.AddressChanged ->
                 _state.update { it.copy(address = event.value, addressError = null) }
             is OnboardingEvent.CityChanged ->
@@ -99,9 +99,9 @@ class OnboardingViewModel @Inject constructor(
             is OnboardingEvent.ZipCodeChanged ->
                 _state.update { it.copy(zipCode = event.value, zipCodeError = null) }
             is OnboardingEvent.OpenTimeChanged ->
-                _state.update { it.copy(openTime = event.value, openTimeError = null, error = null) }
+                _state.update { it.copy(openTime = event.value, openTimeError = null) }
             is OnboardingEvent.CloseTimeChanged ->
-                _state.update { it.copy(closeTime = event.value, closeTimeError = null, error = null) }
+                _state.update { it.copy(closeTime = event.value, closeTimeError = null) }
             is OnboardingEvent.PickupInstructionsChanged ->
                 _state.update { it.copy(pickupInstructions = event.value) }
             is OnboardingEvent.AddressSelected -> {
@@ -156,7 +156,6 @@ class OnboardingViewModel @Inject constructor(
         val s = _state.value
         when (s.currentStep) {
             1 -> {
-                _state.update { it.copy(error = null) }
                 var valid = true
                 val phoneError = when {
                     s.phone.isBlank() -> context.getString(R.string.error_phone_required)
@@ -164,7 +163,7 @@ class OnboardingViewModel @Inject constructor(
                     else -> null
                 }
                 if (phoneError != null) {
-                    _state.update { it.copy(phoneError = phoneError, error = null) }
+                    _state.update { it.copy(phoneError = phoneError) }
                     viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(phoneError)) }
                     valid = false
                 }
@@ -175,7 +174,7 @@ class OnboardingViewModel @Inject constructor(
                         else -> null
                     }
                     if (contactError != null) {
-                        _state.update { it.copy(contactPersonError = contactError, error = null) }
+                        _state.update { it.copy(contactPersonError = contactError) }
                         viewModelScope.launch { _uiEvent.send(UiEvent.ShowSnackbar(contactError)) }
                         valid = false
                     }
@@ -232,7 +231,7 @@ class OnboardingViewModel @Inject constructor(
     private fun saveAndAdvance() {
         val s = _state.value
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true, error = null) }
+            _state.update { it.copy(isSaving = true) }
 
             val result = updateProfileUseCase(
                 name = s.userName,
@@ -259,7 +258,8 @@ class OnboardingViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     val msg = error.message ?: context.getString(R.string.error_onboarding_save_failed)
-                    _state.update { it.copy(isSaving = false, error = msg) }
+                    _state.update { it.copy(isSaving = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }

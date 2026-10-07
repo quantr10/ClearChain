@@ -7,12 +7,13 @@ import com.clearchain.app.presentation.components.SortOption
 
 const val VERIFICATION_CHECKLIST_SIZE = 6
 
+enum class VerificationBatchOperation { APPROVE, REJECT }
+
 data class VerificationQueueState(
     val organizations: List<Organization> = emptyList(),
 
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null,
 
     // Search + filter
     val searchQuery: String = "",
@@ -40,6 +41,8 @@ data class VerificationQueueState(
     val rejectionReason: String = "",
 
     val isProcessing: Boolean = false,
+    /** Which batch call is in flight, so only that button in the batch bar spins. */
+    val batchOperation: VerificationBatchOperation? = null,
 
     // Batch selection mode
     val isBatchMode: Boolean = false,

@@ -15,7 +15,6 @@ sealed class BrowseListingsEvent {
     data class DecrementCartItem(val listingId: String) : BrowseListingsEvent()
     data class RemoveCartItem(val listingId: String) : BrowseListingsEvent()
     object OpenCart : BrowseListingsEvent()
-    object ClearError : BrowseListingsEvent()
 
     // Favorites
     data class ToggleFavorite(val listingId: String) : BrowseListingsEvent()

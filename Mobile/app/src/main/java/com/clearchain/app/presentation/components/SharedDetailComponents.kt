@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.presentation.components.InlineSpinner
 
 @Composable
 fun DashboardSection(
@@ -143,7 +144,7 @@ fun ImageActionButton(
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (loading) {
-                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = tint)
+                InlineSpinner(color = tint)
             } else {
                 Icon(icon, label, Modifier.size(18.dp), tint = tint)
             }

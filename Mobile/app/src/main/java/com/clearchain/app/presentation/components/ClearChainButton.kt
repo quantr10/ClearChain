@@ -21,11 +21,22 @@ object ClearChainButtonDefaults {
     val IconSize = 18.dp
     val Spacing = 6.dp
     val HorizontalPadding = 8.dp
+
+    /** Disabled buttons keep their own hue at this opacity so a red action still reads as red. */
+    const val DisabledAlpha = 0.38f
 }
 
 @Composable
 private fun clearChainButtonTextStyle(): TextStyle = MaterialTheme.typography.labelSmall
 
+/**
+ * Filled button: the one primary action of a screen, section, sheet or dialog
+ * (submit, save, approve, apply filters, confirm). Pass `containerColor = error` only
+ * when that primary action is itself destructive (delete).
+ *
+ * Everything else — cancel/back, navigation ("view more", "view document"), alternatives
+ * that sit beside the primary action — uses [ClearChainOutlinedButton].
+ */
 @Composable
 fun ClearChainButton(
     text: String,
@@ -55,16 +66,14 @@ fun ClearChainButton(
         contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
-            contentColor = contentColor
+            contentColor = contentColor,
+            disabledContainerColor = containerColor.copy(alpha = ClearChainButtonDefaults.DisabledAlpha),
+            disabledContentColor = contentColor
         ),
         border = border
     ) {
         if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(iconSize),
-                color = contentColor,
-                strokeWidth = 2.dp
-            )
+            InlineSpinner(color = contentColor)
         } else {
             if (icon != null) {
                 Icon(
@@ -82,6 +91,11 @@ fun ClearChainButton(
     }
 }
 
+/**
+ * Outlined button: secondary actions. Use `contentColor = error` (border stays neutral)
+ * for destructive secondaries such as reject, cancel request, clear notifications or log out
+ * (resetting filters is not destructive and stays primary-coloured).
+ */
 @Composable
 fun ClearChainOutlinedButton(
     text: String,
@@ -91,7 +105,7 @@ fun ClearChainOutlinedButton(
     loading: Boolean = false,
     icon: ImageVector? = null,
     contentColor: Color = MaterialTheme.colorScheme.primary,
-    containerColor: Color = Color.White,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
     fillMaxWidth: Boolean = false,
     border: BorderStroke? = null,
     iconSize: Dp = ClearChainButtonDefaults.IconSize
@@ -109,15 +123,16 @@ fun ClearChainOutlinedButton(
         enabled = enabled || loading,
         shape = ButtonShape,
         contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = containerColor, contentColor = contentColor),
-        border = border ?: ButtonDefaults.outlinedButtonBorder(enabled)
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            disabledContainerColor = containerColor,
+            disabledContentColor = contentColor.copy(alpha = ClearChainButtonDefaults.DisabledAlpha)
+        ),
+        border = border ?: ButtonDefaults.outlinedButtonBorder(enabled || loading)
     ) {
         if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(iconSize),
-                color = contentColor,
-                strokeWidth = 2.dp
-            )
+            InlineSpinner(color = contentColor)
         } else {
             if (icon != null) {
                 Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(iconSize))
@@ -136,12 +151,14 @@ fun ClearChainActionIconButton(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    /** Its action is in flight: the icon becomes a spinner and taps are ignored. */
+    loading: Boolean = false
 ) {
     val context = LocalContext.current
     Surface(
         onClick = {
-            if (enabled) {
+            if (enabled && !loading) {
                 HapticUtils.tick(context)
                 onClick()
             }
@@ -151,12 +168,16 @@ fun ClearChainActionIconButton(
         color = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(
-                icon,
-                contentDescription,
-                Modifier.size(18.dp),
-                tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
+            if (loading) {
+                InlineSpinner(color = tint)
+            } else {
+                Icon(
+                    icon,
+                    contentDescription,
+                    Modifier.size(18.dp),
+                    tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }

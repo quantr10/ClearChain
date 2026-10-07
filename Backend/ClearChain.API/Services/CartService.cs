@@ -1,10 +1,10 @@
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.Cart;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace ClearChain.API.Services;
 
@@ -203,7 +203,7 @@ public class CartService : ICartService
                     ListingCategory = listing.Category,
                     ListingExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd"),
                     ListingUnit = listing.Unit,
-                    ListingPhotoUrl = FirstImageUrl(listing.PhotoUrl),
+                    ListingPhotoUrl = ListingFields.FirstImageUrl(listing.PhotoUrl),
                     CreatedAt = DateTime.UtcNow
                 });
             }
@@ -347,9 +347,9 @@ public class CartService : ICartService
                 RequestedQuantity = item.RequestedQuantity,
                 MaxQuantity = listing?.Quantity ?? 0,
                 ExpiryDate = listing?.ExpirationDate?.ToString("yyyy-MM-dd"),
-                ImageUrl = FirstImageUrl(listing?.PhotoUrl),
-                PickupTimeStart = (listing?.PickupTimeStart ?? ParseHoursWindow(item.Grocery?.Hours)?.Start)?.ToString(@"hh\:mm"),
-                PickupTimeEnd = (listing?.PickupTimeEnd ?? ParseHoursWindow(item.Grocery?.Hours)?.End)?.ToString(@"hh\:mm"),
+                ImageUrl = ListingFields.FirstImageUrl(listing?.PhotoUrl),
+                PickupTimeStart = (listing?.PickupTimeStart ?? ListingFields.ParseHoursWindow(item.Grocery?.Hours)?.Start)?.ToString(@"hh\:mm"),
+                PickupTimeEnd = (listing?.PickupTimeEnd ?? ListingFields.ParseHoursWindow(item.Grocery?.Hours)?.End)?.ToString(@"hh\:mm"),
                 Status = listing?.Status.ToString().ToLower() ?? "missing",
                 IsValid = isValid,
                 InvalidReason = invalidReason
@@ -360,12 +360,12 @@ public class CartService : ICartService
     private static (TimeSpan Start, TimeSpan End)? GetPickupWindow(List<CartItem> items)
     {
         var starts = items
-            .Select(i => i.Listing?.PickupTimeStart ?? ParseHoursWindow(i.Grocery?.Hours)?.Start)
+            .Select(i => i.Listing?.PickupTimeStart ?? ListingFields.ParseHoursWindow(i.Grocery?.Hours)?.Start)
             .Where(t => t.HasValue)
             .Select(t => t!.Value)
             .ToList();
         var ends = items
-            .Select(i => i.Listing?.PickupTimeEnd ?? ParseHoursWindow(i.Grocery?.Hours)?.End)
+            .Select(i => i.Listing?.PickupTimeEnd ?? ListingFields.ParseHoursWindow(i.Grocery?.Hours)?.End)
             .Where(t => t.HasValue)
             .Select(t => t!.Value)
             .ToList();
@@ -374,22 +374,6 @@ public class CartService : ICartService
             return null;
 
         return (starts.Max(), ends.Min());
-    }
-
-    private static (TimeSpan Start, TimeSpan End)? ParseHoursWindow(string? hours)
-    {
-        if (string.IsNullOrWhiteSpace(hours)) return null;
-
-        var parts = hours
-            .Replace("–", "-")
-            .Replace("—", "-")
-            .Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length < 2) return null;
-        if (!TimeSpan.TryParse(parts[0], out var start)) return null;
-        if (!TimeSpan.TryParse(parts[1], out var end)) return null;
-
-        return start <= end ? (start, end) : null;
     }
 
     private ClearanceListing ReserveListing(ClearanceListing sourceListing, ListingGroup group, int requestedQuantity, Guid requestId)
@@ -462,40 +446,8 @@ public class CartService : ICartService
             RequiresRefrigeration = request.RequiresRefrigeration,
             IsFragile = request.IsFragile,
             IsHeavy = request.IsHeavy,
-            Items = request.Items.Select(i => new PickupRequestItemData
-            {
-                Id = i.Id.ToString(),
-                ListingGroupId = i.ListingGroupId?.ToString(),
-                OriginalListingId = i.OriginalListingId?.ToString(),
-                ReservedListingId = i.ReservedListingId?.ToString(),
-                RequestedQuantity = i.RequestedQuantity,
-                ListingTitle = i.ListingTitle,
-                ListingCategory = i.ListingCategory,
-                ListingExpiryDate = i.ListingExpiryDate,
-                ListingUnit = i.ListingUnit,
-                ListingPhotoUrl = i.ListingPhotoUrl
-            }).ToList()
+            Items = request.Items.Select(PickupRequestItemData.From).ToList()
         };
-
-    private static string? FirstImageUrl(string? photoUrl)
-    {
-        if (string.IsNullOrWhiteSpace(photoUrl))
-            return null;
-
-        var trimmed = photoUrl.Trim();
-        if (!trimmed.StartsWith("["))
-            return trimmed;
-
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(trimmed)
-                ?.FirstOrDefault(url => !string.IsNullOrWhiteSpace(url));
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     private static CartServiceResult Fail(CartServiceError error, string message) =>
         new(false, error, message);

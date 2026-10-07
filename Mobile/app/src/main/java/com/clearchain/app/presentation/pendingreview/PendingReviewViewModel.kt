@@ -20,8 +20,12 @@ import kotlinx.coroutines.launch
 
 data class PendingReviewState(
     val user: Organization? = null,
-    val isRefreshing: Boolean = false
-)
+    val isRefreshing: Boolean = false,
+    val isLoggingOut: Boolean = false
+) {
+    /** Any call in flight — every action button on the screen waits for it. */
+    val isBusy: Boolean get() = isRefreshing || isLoggingOut
+}
 
 @HiltViewModel
 class PendingReviewViewModel @Inject constructor(
@@ -72,7 +76,10 @@ class PendingReviewViewModel @Inject constructor(
     }
 
     fun logout() {
+        if (_state.value.isLoggingOut) return
         viewModelScope.launch {
+            // No reset afterwards: on completion the screen navigates away.
+            _state.update { it.copy(isLoggingOut = true) }
             logoutUseCase()
             _uiEvent.send(UiEvent.Navigate("login"))
         }

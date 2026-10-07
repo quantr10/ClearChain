@@ -10,7 +10,6 @@ sealed class CartEvent {
     data class DecrementItem(val itemId: String, val quantity: Int) : CartEvent()
     data class RemoveItem(val itemId: String) : CartEvent()
     data class ShowCheckout(val groceryId: String) : CartEvent()
-    object DismissCheckout : CartEvent()
     data class PickupDateChanged(val value: String) : CartEvent()
     data class PickupTimeChanged(val value: String) : CartEvent()
     data class NotesChanged(val value: String) : CartEvent()
@@ -18,5 +17,4 @@ sealed class CartEvent {
     object ToggleFragile : CartEvent()
     object ToggleHeavy : CartEvent()
     object SubmitCheckout : CartEvent()
-    object ClearError : CartEvent()
 }

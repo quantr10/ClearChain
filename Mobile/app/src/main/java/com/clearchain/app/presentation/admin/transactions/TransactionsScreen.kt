@@ -113,11 +113,7 @@ fun TransactionsScreen(
             )
 
             when {
-                state.isLoading && state.allTransactions.isEmpty() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
+                state.isLoading && state.allTransactions.isEmpty() -> LoadingState()
                 state.allTransactions.isEmpty() -> {
                     EmptyState(
                         icon = Icons.Default.Receipt,
@@ -325,8 +321,9 @@ private fun DatePickerForTransaction(
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            ClearChainOutlinedButton(
+            ClearChainButton(
                 text = stringResource(R.string.ok),
+                fillMaxWidth = false,
                 onClick = {
                     pickerState.selectedDateMillis?.let { ms ->
                         val date = java.time.Instant.ofEpochMilli(ms)

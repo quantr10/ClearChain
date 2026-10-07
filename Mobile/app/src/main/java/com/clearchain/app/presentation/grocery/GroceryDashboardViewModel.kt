@@ -18,8 +18,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 
 data class GroceryDashboardState(
+    /** Until the first load settles; refreshes keep the sections on screen. */
+    val isLoading: Boolean = true,
     val userName: String = "",
     val profilePictureUrl: String? = null,
     val stats: DashboardStatsData? = null,
@@ -50,16 +57,23 @@ class GroceryDashboardViewModel @Inject constructor(
     )
     val state = _state.asStateFlow()
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     init {
         observeUser()
-        viewModelScope.launch { loadAll() }
+        viewModelScope.launch {
+            loadAll()
+            _state.update { it.copy(isLoading = false) }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            loadAll()
+            val ok = loadAll()
             _state.update { it.copy(isRefreshing = false) }
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dashboard_refreshed)))
         }
     }
 
@@ -70,10 +84,20 @@ class GroceryDashboardViewModel @Inject constructor(
      *  Every section writes through [MutableStateFlow.update]: these loaders run in
      *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
      *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
-    private suspend fun loadAll(): Unit = coroutineScope {
-        launch { loadStats() }
-        launch { loadTodaySummary() }
-        launch { loadActivity() }
+    private suspend fun loadAll(): Boolean {
+        val results = coroutineScope {
+            listOf(
+            async { loadStats() },
+            async { loadTodaySummary() },
+            async { loadActivity() },
+            ).awaitAll()
+        }
+        // Sections fail independently and each keeps whatever it showed before;
+        // one snackbar says something is missing instead of failing silently.
+        if (false in results) {
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_dashboard_partial)))
+        }
+        return false !in results
     }
 
     // Collected rather than read once, so a new avatar or a renamed store shows
@@ -97,30 +121,36 @@ class GroceryDashboardViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadStats() {
+    private suspend fun loadStats(): Boolean {
         try {
             val stats = organizationApi.getMyStats().data
             _state.update { it.copy(stats = stats) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load stats", e)
+            return false
         }
+        return true
     }
 
-    private suspend fun loadTodaySummary() {
+    private suspend fun loadTodaySummary(): Boolean {
         try {
             val summary = organizationApi.getTodaySummary().data
             _state.update { it.copy(todaySummary = summary) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load today's summary", e)
+            return false
         }
+        return true
     }
 
-    private suspend fun loadActivity() {
+    private suspend fun loadActivity(): Boolean {
         try {
             val activities = organizationApi.getMyActivity().data
             _state.update { it.copy(activities = activities) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load activity", e)
+            return false
         }
+        return true
     }
 }

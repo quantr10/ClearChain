@@ -470,6 +470,7 @@
     <string name="label_add_photo">Add Photo</string>
     <string name="msg_photo_source">Take a photo or choose one from your gallery.</string>
     <string name="msg_use_this_photo">Use this photo?</string>
+    <string name="action_use_photo">Use photo</string>
     <string name="action_take_photo_camera">Take Photo</string>
     <string name="action_choose_gallery">Choose from Gallery</string>
     <string name="label_add_photo_proof">Add Photo Proof</string>
@@ -749,7 +750,6 @@
     </plurals>
 
     <string name="snack_quantity_updated">Quantity updated</string>
-    <string name="snack_draft_restored">Draft restored</string>
     <string name="snack_image_upload_failed">Image upload failed: %1$s</string>
     <string name="snack_listing_created">Listing created successfully!</string>
     <string name="snack_listing_updated">Listing updated successfully!</string>
@@ -775,20 +775,28 @@
         <item quantity="one">%1$d item distributed</item>
         <item quantity="other">%1$d items distributed</item>
     </plurals>
+    <plurals name="snack_n_orgs_approved">
+        <item quantity="one">%1$d organization approved</item>
+        <item quantity="other">%1$d organizations approved</item>
+    </plurals>
+    <plurals name="snack_n_orgs_rejected">
+        <item quantity="one">%1$d organization rejected</item>
+        <item quantity="other">%1$d organizations rejected</item>
+    </plurals>
+    <plurals name="snack_bulk_n_failed">
+        <item quantity="one">%1$d failed</item>
+        <item quantity="other">%1$d failed</item>
+    </plurals>
+    <string name="snack_bulk_partial">%1$s · %2$s</string>
+    <string name="error_bulk_all_failed">Couldn\'t complete the action. Please try again.</string>
     <string name="snack_item_distributed">Item marked as distributed</string>
     <string name="snack_item_added">Item added to inventory</string>
     <string name="snack_new_admin_notification">New %1$s: %2$s</string>
     <string name="snack_new_transaction">Transaction: %1$s</string>
     <string name="snack_stats_refreshed">Statistics refreshed</string>
+    <string name="snack_dashboard_refreshed">Dashboard refreshed</string>
+    <string name="snack_profile_refreshed">Profile refreshed</string>
     <string name="snack_new_registration">New %1$s registered: %2$s</string>
-    <plurals name="snack_approved_orgs">
-        <item quantity="one">Approved %1$d of %2$d organization</item>
-        <item quantity="other">Approved %1$d of %2$d organizations</item>
-    </plurals>
-    <plurals name="snack_rejected_orgs">
-        <item quantity="one">Rejected %1$d of %2$d organization</item>
-        <item quantity="other">Rejected %1$d of %2$d organizations</item>
-    </plurals>
     <string name="snack_org_approved">Organization approved</string>
     <string name="snack_org_rejected">Organization rejected</string>
     <string name="snack_orgs_refreshed">Organizations refreshed</string>
@@ -930,6 +938,18 @@
     <string name="error_load_requests">Failed to load requests</string>
     <string name="error_refresh_requests">Failed to refresh requests</string>
     <string name="error_cancel_request_failed">Failed to cancel request</string>
+    <string name="error_mark_all_read_failed">Couldn\'t mark notifications as read. Please try again.</string>
+    <string name="error_clear_notifications_failed">Couldn\'t clear notifications. Please try again.</string>
+    <string name="error_details_partial">Some details couldn\'t be loaded.</string>
+    <string name="error_location_autodetect_failed">Couldn\'t detect your location. Search or pick a spot on the map.</string>
+    <string name="error_location_gps_unavailable">Couldn\'t get your location. Make sure GPS is on.</string>
+    <string name="error_mark_ready_failed">Failed to mark as ready</string>
+    <string name="error_update_cart_failed">Couldn\'t update your cart. Please try again.</string>
+    <string name="error_checkout_failed">Couldn\'t submit the pickup request. Please try again.</string>
+    <string name="error_send_message_failed">Message not sent. Please try again.</string>
+    <string name="error_dashboard_partial">Some data couldn\'t be loaded. Pull down to try again.</string>
+    <string name="error_pickup_date_required">Pickup date is required</string>
+    <string name="error_pickup_time_required">Pickup time is required</string>
     <string name="error_upload_photo_failed">Failed to upload photo</string>
     <string name="error_submit_review_failed">Failed to submit review</string>
     <string name="error_analysis_failed">Analysis failed</string>

@@ -3,12 +3,7 @@ package com.clearchain.app.presentation.profile
 import android.net.Uri
 
 sealed class ProfileEvent {
-    object LoadProfile : ProfileEvent()
-    object LoadStats : ProfileEvent()
-    object LoadActivity : ProfileEvent()
     object Refresh : ProfileEvent()
-    object ClearError : ProfileEvent()
-
     data class ChangePassword(val currentPassword: String, val newPassword: String) : ProfileEvent()
     data class DeleteAccount(val password: String) : ProfileEvent()
 

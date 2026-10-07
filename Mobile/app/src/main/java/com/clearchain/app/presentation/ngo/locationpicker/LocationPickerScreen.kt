@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +45,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.channels.Channel
+import com.clearchain.app.util.UiEvent
 
 data class PlaceSuggestion(
     val name: String,
@@ -68,7 +69,6 @@ data class LocationPickerState(
     val isReverseGeocoding: Boolean = false,
     val isInitializing: Boolean = true, // True until first position resolved
     val needsGpsAutoDetect: Boolean = false, // True if no saved/profile location
-    val error: String? = null,
     val profileLat: Double? = null,
     val profileLng: Double? = null,
     val profileCity: String? = null,
@@ -84,6 +84,9 @@ class LocationPickerViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(LocationPickerState())
     val state: StateFlow<LocationPickerState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
     private var searchJob: Job? = null
 
     init {
@@ -172,19 +175,19 @@ class LocationPickerViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoadingGps = false,
-                            isInitializing = false,
-                            error = "Could not detect location. Use search or buttons below."
+                            isInitializing = false
                         )
                     }
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_location_autodetect_failed)))
                 }
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
                         isLoadingGps = false,
-                        isInitializing = false,
-                        error = "Location error. Use search or buttons below."
+                        isInitializing = false
                     )
                 }
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_location_autodetect_failed)))
             }
         }
     }
@@ -263,7 +266,7 @@ class LocationPickerViewModel @Inject constructor(
     @SuppressLint("MissingPermission")
     fun useCurrentLocation(ctx: android.content.Context, geocoder: Geocoder) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingGps = true, error = null) }
+            _state.update { it.copy(isLoadingGps = true) }
             try {
                 val loc = LocationServices.getFusedLocationProviderClient(ctx).lastLocation.await()
                 if (loc != null) {
@@ -278,10 +281,12 @@ class LocationPickerViewModel @Inject constructor(
                         )
                     }
                 } else {
-                    _state.update { it.copy(isLoadingGps = false, error = "Could not get location. Enable GPS.") }
+                    _state.update { it.copy(isLoadingGps = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_location_gps_unavailable)))
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoadingGps = false, error = "Error: ${e.message}") }
+                _state.update { it.copy(isLoadingGps = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_location_gps_unavailable)))
             }
         }
     }
@@ -289,12 +294,13 @@ class LocationPickerViewModel @Inject constructor(
     fun saveAndFinish(onDone: () -> Unit) {
         val s = _state.value
         viewModelScope.launch {
-            _state.update { it.copy(isSavingLocation = true, error = null) }
+            _state.update { it.copy(isSavingLocation = true) }
             try {
                 locationPreferenceStore.save(LocationPreference(s.latitude, s.longitude, s.radiusKm, s.displayName.ifBlank { context.getString(R.string.label_selected_location) }))
                 onDone()
             } catch (e: Exception) {
-                _state.update { it.copy(isSavingLocation = false, error = e.message ?: context.getString(R.string.error_save_location_failed)) }
+                _state.update { it.copy(isSavingLocation = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_save_location_failed)))
             }
         }
     }
@@ -336,6 +342,13 @@ fun LocationPickerScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
+
     // After permission granted → retry auto-detect
     var pendingGps by remember { mutableStateOf(false) }
     LaunchedEffect(locationPermission.status.isGranted) {
@@ -346,24 +359,15 @@ fun LocationPickerScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         // Show loading while initializing
         if (state.isInitializing) {
-            Box(
-                Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        stringResource(R.string.location_detecting),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            LoadingState(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                message = stringResource(R.string.location_detecting)
+            )
             return@Scaffold
         }
 
@@ -397,6 +401,7 @@ fun LocationPickerScreen(
             if (showTopBar) {
                 ScreenTitleRow(
                     title = stringResource(R.string.location_picker_title),
+                    backEnabled = !state.isSavingLocation,
                     onBack = onDismiss,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -423,7 +428,7 @@ fun LocationPickerScreen(
                 Surface(Modifier.align(Alignment.TopCenter).padding(top = 8.dp), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), shadowElevation = 3.dp) {
                     Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (state.isReverseGeocoding) {
-                            CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                            InlineSpinner()
                         } else {
                             Icon(Icons.Default.Place, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                         }
@@ -471,17 +476,8 @@ fun LocationPickerScreen(
                         onQueryChange = { viewModel.onSearchQueryChanged(it, geocoder) },
                         placeholder = stringResource(R.string.location_search_hint),
                         modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = if (state.isSearching) {
-                            {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                        } else {
-                            null
-                        }
                     )
+                    UpdatingBar(visible = state.isSearching)
 
                     if (state.showSuggestions) {
                         state.searchSuggestions.forEachIndexed { index, suggestion ->
@@ -506,7 +502,7 @@ fun LocationPickerScreen(
 
                 // Quick buttons
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ClearChainButton(
+                    ClearChainOutlinedButton(
                         text = stringResource(R.string.location_current),
                         onClick = {
                             if (locationPermission.status.isGranted) {
@@ -519,29 +515,16 @@ fun LocationPickerScreen(
                         modifier = Modifier.weight(1f).height(44.dp),
                         enabled = !state.isSavingLocation,
                         loading = state.isLoadingGps,
-                        icon = Icons.Default.MyLocation,
-                        containerColor = Color.White,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                        icon = Icons.Default.MyLocation
                     )
                     if (state.hasProfileLocation) {
-                        ClearChainButton(
+                        ClearChainOutlinedButton(
                             text = stringResource(R.string.location_profile),
                             onClick = { viewModel.useProfileLocation() },
                             modifier = Modifier.weight(1f).height(44.dp),
                             enabled = !state.isLoadingGps && !state.isSavingLocation,
                             icon = Icons.Default.Person
                         )
-                    }
-                }
-
-                // Error
-                state.error?.let {
-                    Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.ErrorOutline, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                        }
                     }
                 }
 

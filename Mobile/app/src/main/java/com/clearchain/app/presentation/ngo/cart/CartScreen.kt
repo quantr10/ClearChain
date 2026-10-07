@@ -35,6 +35,7 @@ fun CartScreen(
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.updatingItemId != null || state.removingItemId != null)
     val snackbarHostState = remember { SnackbarHostState() }
     val visibleGroups = remember(state.groups, state.searchQuery, state.selectedSort) {
         state.groups
@@ -86,7 +87,7 @@ fun CartScreen(
                                 onAction = { viewModel.onEvent(CartEvent.LoadCart) }
                             )
                         }
-                        state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        state.isLoading -> LoadingState()
                         visibleGroups.isEmpty() -> {
                             EmptyState(
                                 icon = Icons.Default.ShoppingCart,
@@ -160,6 +161,8 @@ private fun CartGroupCard(
                 CartItemRow(
                     item = item,
                     showDivider = index != group.items.lastIndex,
+                    updatingItemId = state.updatingItemId,
+                    removingItemId = state.removingItemId,
                     onEvent = onEvent,
                     onListingClick = { onListingClick(item.listingId) }
                 )
@@ -178,6 +181,8 @@ private fun CartGroupCard(
 private fun CartItemRow(
     item: CartItemData,
     showDivider: Boolean,
+    updatingItemId: String?,
+    removingItemId: String?,
     onEvent: (CartEvent) -> Unit,
     onListingClick: () -> Unit
 ) {
@@ -250,7 +255,9 @@ private fun CartItemRow(
                 quantity = item.requestedQuantity,
                 unit = item.unit,
                 canIncrement = item.requestedQuantity.toDouble() < item.maxQuantity,
-                enabled = item.isValid,
+                // One cart call at a time: the item being changed spins, the rest wait.
+                enabled = item.isValid && updatingItemId == null && removingItemId == null,
+                loading = updatingItemId == item.id,
                 onDecrement = { onEvent(CartEvent.DecrementItem(item.id, item.requestedQuantity)) },
                 onIncrement = { onEvent(CartEvent.IncrementItem(item.id, item.requestedQuantity)) },
                 expanded = false,
@@ -261,7 +268,9 @@ private fun CartItemRow(
                 contentDescription = stringResource(R.string.cart_remove),
                 onClick = { onEvent(CartEvent.RemoveItem(item.id)) },
                 tint = MaterialTheme.colorScheme.error,
-                containerColor = MaterialTheme.colorScheme.errorContainer
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                enabled = updatingItemId == null && removingItemId == null,
+                loading = removingItemId == item.id
             )
         }
         if (showDivider) {

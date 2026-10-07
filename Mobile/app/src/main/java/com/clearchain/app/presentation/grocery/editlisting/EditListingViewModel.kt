@@ -29,7 +29,7 @@ class EditListingViewModel @Inject constructor(
 
     fun loadListing(listingId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             getCurrentUserUseCase().first()?.let { user ->
                 _state.update { it.copy(groceryHours = user.hours) }
             }
@@ -51,7 +51,7 @@ class EditListingViewModel @Inject constructor(
                 },
                 onFailure = { e ->
                     val msg = e.message ?: context.getString(R.string.error_generic)
-                    _state.update { it.copy(isLoading = false, error = msg) }
+                    _state.update { it.copy(isLoading = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
@@ -76,7 +76,7 @@ class EditListingViewModel @Inject constructor(
         if (!validate()) return
         val s = _state.value
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true, error = null) }
+            _state.update { it.copy(isSaving = true) }
             listingRepository.updateListing(
                 id = s.listingId,
                 title = s.title,
@@ -94,7 +94,7 @@ class EditListingViewModel @Inject constructor(
                 },
                 onFailure = { e ->
                     val msg = e.message ?: context.getString(R.string.error_generic)
-                    _state.update { it.copy(isSaving = false, error = msg) }
+                    _state.update { it.copy(isSaving = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )

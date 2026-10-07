@@ -23,7 +23,6 @@ data class CreateListingState(
 
     // UI State
     val isLoading: Boolean = false,
-    val error: String? = null,
     val showCategoryDropdown: Boolean = false,
     val showUnitDropdown: Boolean = false,
 
@@ -34,9 +33,6 @@ data class CreateListingState(
     val showImagePicker: Boolean = false,
     val analysisError: String? = null,
 
-    // Multi-image
-    val selectedImages: List<Uri> = emptyList(), // first image is primary for upload
-
-    // Draft & Preview
+    // Preview
     val isPreviewMode: Boolean = false
 )

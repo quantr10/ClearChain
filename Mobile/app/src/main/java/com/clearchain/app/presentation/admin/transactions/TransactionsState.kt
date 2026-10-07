@@ -30,7 +30,6 @@ data class TransactionsState(
 
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val error: String? = null,
 
     // Flagged: PENDING transactions older than 3 days
     val flaggedIds: Set<String> = emptySet()

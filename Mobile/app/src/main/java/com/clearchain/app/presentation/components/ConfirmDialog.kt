@@ -33,6 +33,22 @@ import com.google.accompanist.permissions.rememberPermissionState
 import java.io.File
 
 /**
+ * Calls [onFinished] when [inProgress] flips from true back to false — i.e. when the
+ * backend action a confirm dialog started has completed (success or failure). Lets a
+ * screen keep its [ConfirmDialog] open with `confirmLoading = inProgress` and close it
+ * afterwards, instead of closing it the moment the user taps confirm.
+ */
+@Composable
+fun DismissWhenFinished(inProgress: Boolean, onFinished: () -> Unit) {
+    var wasInProgress by remember { mutableStateOf(inProgress) }
+    val latestOnFinished by rememberUpdatedState(onFinished)
+    LaunchedEffect(inProgress) {
+        if (wasInProgress && !inProgress) latestOnFinished()
+        wasInProgress = inProgress
+    }
+}
+
+/**
  * The single dialog shell for the whole app. Every [AlertDialog] routes through
  * here so the container colour, title treatment, button styling and haptics stay
  * identical everywhere.
@@ -42,6 +58,9 @@ import java.io.File
  *   laid out in a column with 12.dp spacing directly under the optional [message].
  * - Info / picker dialogs with no confirm action: set [showConfirmButton] = false.
  * - Blocking progress dialogs: set [dismissible] = false and hide both buttons.
+ * - Confirm starts backend work: keep the dialog open with [confirmLoading] while it
+ *   runs (the spinner lives here, not on the button that opened the dialog) and close
+ *   it with [DismissWhenFinished].
  */
 @Composable
 fun ConfirmDialog(
@@ -113,18 +132,22 @@ fun ConfirmDialog(
                 ClearChainOutlinedButton(
                     text = resolvedDismiss,
                     onClick = onDismiss,
-                    enabled = dismissEnabled
+                    enabled = dismissEnabled && !confirmLoading
                 )
             }
         }
 
+    // While the confirm action is in flight the dialog stays put: no cancel, no
+    // back press, no tap-outside — it closes once the caller's action finishes.
+    val canDismiss = dismissible && !confirmLoading
+
     AlertDialog(
-        onDismissRequest = { if (dismissible) onDismiss() },
+        onDismissRequest = { if (canDismiss) onDismiss() },
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         properties = DialogProperties(
-            dismissOnBackPress = dismissible,
-            dismissOnClickOutside = dismissible
+            dismissOnBackPress = canDismiss,
+            dismissOnClickOutside = canDismiss
         ),
         icon = iconSlot,
         title = titleSlot,
@@ -162,7 +185,8 @@ fun PhotoPickerDialog(
     title: String = stringResource(R.string.label_add_photo),
     message: String = stringResource(R.string.msg_photo_source),
     previewMessage: String = stringResource(R.string.msg_use_this_photo),
-    confirmLabel: String = stringResource(R.string.action_confirm_upload)
+    confirmLabel: String = stringResource(R.string.action_confirm_upload),
+    confirmLoading: Boolean = false
 ) {
     val context = LocalContext.current
 
@@ -231,7 +255,8 @@ fun PhotoPickerDialog(
             title = stringResource(R.string.label_photo_preview),
             message = previewMessage,
             confirmLabel = confirmLabel,
-            dismissLabel = stringResource(R.string.cancel)
+            dismissLabel = stringResource(R.string.cancel),
+            confirmLoading = confirmLoading
         ) {
             Card(
                 shape = RoundedCornerShape(12.dp),
@@ -247,7 +272,8 @@ fun PhotoPickerDialog(
             ClearChainOutlinedButton(
                 text = stringResource(R.string.action_retake),
                 onClick = { pickedUri = null },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !confirmLoading
             )
         }
     }

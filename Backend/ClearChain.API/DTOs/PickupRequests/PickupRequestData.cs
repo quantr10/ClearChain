@@ -1,3 +1,5 @@
+using ClearChain.Domain.Entities;
+
 namespace ClearChain.API.DTOs.PickupRequests;
 
 public class PickupRequestData
@@ -51,4 +53,18 @@ public class PickupRequestItemData
     public string? ListingExpiryDate { get; set; }
     public string ListingUnit { get; set; } = string.Empty;
     public string? ListingPhotoUrl { get; set; }
+
+    public static PickupRequestItemData From(PickupRequestItem item) => new()
+    {
+        Id = item.Id.ToString(),
+        ListingGroupId = item.ListingGroupId?.ToString(),
+        OriginalListingId = item.OriginalListingId?.ToString(),
+        ReservedListingId = item.ReservedListingId?.ToString(),
+        RequestedQuantity = item.RequestedQuantity,
+        ListingTitle = item.ListingTitle,
+        ListingCategory = item.ListingCategory,
+        ListingExpiryDate = item.ListingExpiryDate,
+        ListingUnit = item.ListingUnit,
+        ListingPhotoUrl = item.ListingPhotoUrl
+    };
 }

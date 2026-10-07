@@ -9,8 +9,7 @@ data class AdminDashboardState(
     val recentAlerts: List<SystemAlert> = emptyList(),
     val alertFeedItems: List<AdminAlertItem> = emptyList(),
     val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false,
-    val error: String? = null
+    val isRefreshing: Boolean = false
 )
 
 data class AdminActivity(

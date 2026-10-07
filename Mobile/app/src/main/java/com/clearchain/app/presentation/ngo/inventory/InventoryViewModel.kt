@@ -9,6 +9,7 @@ import com.clearchain.app.domain.usecase.inventory.DistributeItemUseCase
 import com.clearchain.app.domain.usecase.inventory.GetMyInventoryUseCase
 import com.clearchain.app.domain.usecase.inventory.UpdateExpiredItemsUseCase
 import com.clearchain.app.util.DownloadsExport
+import com.clearchain.app.util.BulkResult
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,10 +50,11 @@ class InventoryViewModel @Inject constructor(
     }
 
     fun onEvent(event: InventoryEvent) {
+        // While an action is in flight, the list and the selection it started from stay put.
+        if (_state.value.isBulkOperating && event.isLockedWhileBusy()) return
         when (event) {
             InventoryEvent.LoadInventory -> loadInventory()
             InventoryEvent.RefreshInventory -> refreshInventory()
-            InventoryEvent.UpdateExpired -> updateExpiredItems()
 
             // Search & Sort
             is InventoryEvent.SearchQueryChanged -> {
@@ -77,8 +79,6 @@ class InventoryViewModel @Inject constructor(
             }
 
             is InventoryEvent.DistributeItem -> distributeItem(event.itemId)
-
-            InventoryEvent.ClearError -> _state.update { it.copy(error = null) }
 
             // Advanced filter sheet
             InventoryEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
@@ -176,12 +176,10 @@ class InventoryViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: context.getString(R.string.error_load_inventory)
-                        )
-                    }
+                    val msg = error.message ?: context.getString(R.string.error_load_inventory)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.allItems.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -208,21 +206,10 @@ class InventoryViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_inventory_refreshed)))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = error.message ?: context.getString(R.string.error_refresh_inventory)
-                        )
-                    }
+                    _state.update { it.copy(isRefreshing = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_refresh_inventory)))
                 }
             )
-        }
-    }
-
-    private fun updateExpiredItems() {
-        viewModelScope.launch {
-            updateExpiredItemsUseCase()
-            loadInventory()
         }
     }
 
@@ -288,17 +275,19 @@ class InventoryViewModel @Inject constructor(
     }
 
     private fun distributeItem(itemId: String) {
+        if (_state.value.distributingItemId != null) return
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            // Only this item's dialog spins; the list stays on screen.
+            _state.update { it.copy(distributingItemId = itemId) }
             val result = distributeInventoryItemUseCase(itemId)
+            _state.update { it.copy(distributingItemId = null) }
             result.fold(
                 onSuccess = {
-                    val msg = context.getString(R.string.snack_item_distributed)
-                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_distributed)))
                     loadInventory()
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_distribute_item_failed), isLoading = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_distribute_item_failed)))
                 }
             )
         }
@@ -315,8 +304,29 @@ class InventoryViewModel @Inject constructor(
                 distributeInventoryItemUseCase(id).onSuccess { succeeded++ }
             }
             _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_items_distributed, succeeded, succeeded)))
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, succeeded, ids.size, R.plurals.snack_n_items_distributed)))
             loadInventory()
         }
+    }
+
+    private fun InventoryEvent.isLockedWhileBusy(): Boolean = when (this) {
+            is InventoryEvent.ToggleItemSelection,
+            is InventoryEvent.SelectAll,
+            is InventoryEvent.DeselectAll,
+            is InventoryEvent.ToggleSelectionMode,
+            is InventoryEvent.StatusTabChanged,
+            is InventoryEvent.SearchQueryChanged,
+            is InventoryEvent.SortOptionChanged,
+            is InventoryEvent.CategoryFilterChanged,
+            is InventoryEvent.FilterExpiryWithinDaysChanged,
+            is InventoryEvent.FilterMinQtyChanged,
+            is InventoryEvent.FilterMaxQtyChanged,
+            is InventoryEvent.ClearAdvancedFilters,
+            is InventoryEvent.ShowFilterSheet,
+            is InventoryEvent.RefreshInventory,
+            is InventoryEvent.LoadInventory,
+            is InventoryEvent.DistributeItem,
+            is InventoryEvent.BulkDistribute -> true
+        else -> false
     }
 }

@@ -3,10 +3,7 @@ package com.clearchain.app.presentation.admin.verification
 import com.clearchain.app.presentation.components.SortOption
 
 sealed class VerificationQueueEvent {
-    object LoadOrganizations : VerificationQueueEvent()
     object RefreshOrganizations : VerificationQueueEvent()
-    object ClearError : VerificationQueueEvent()
-
     data class SearchQueryChanged(val query: String) : VerificationQueueEvent()
     data class StatusFilterChanged(val status: String?) : VerificationQueueEvent()
     data class SortOptionChanged(val option: SortOption) : VerificationQueueEvent()

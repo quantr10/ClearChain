@@ -31,6 +31,5 @@ sealed class MyListingsEvent {
     object BulkRestore : MyListingsEvent()
 
     data class UpdateListingQuantity(val listingId: String, val newQuantity: Int) : MyListingsEvent()
-    object ClearError : MyListingsEvent()
     object ExportCsv : MyListingsEvent()
 }

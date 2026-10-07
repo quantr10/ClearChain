@@ -98,7 +98,7 @@ data class RequestDetailState(
     val error: String? = null,
     val currentUserId: String? = null,
     val currentUserType: OrganizationType? = null,
-    val isActionLoading: Boolean = false,
+    val pendingAction: RequestAction? = null,
     val showRejectDialog: Boolean = false,
     val checkedItems: Set<Int> = emptySet(),
     val messages: List<MessageData> = emptyList(),
@@ -107,6 +107,8 @@ data class RequestDetailState(
     val isLoadingMessages: Boolean = false,
     val myReview: ReviewData? = null,
     val ngoReview: ReviewData? = null,
+    /** The review lookup failed: hide the rating prompt / "not rated yet" rather than guess. */
+    val reviewLoadFailed: Boolean = false,
     val isSubmittingReview: Boolean = false,
     val showAutoRatingSheet: Boolean = false,
     val showRatingSheet: Boolean = false,
@@ -216,8 +218,10 @@ class RequestDetailViewModel @Inject constructor(
 
     fun loadRequest(requestId: String) {
         observeSignalR(requestId)
+        partialFailureReported = false
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            // A reload (after an action, or a live update) keeps the current request on screen.
+            _state.update { it.copy(isLoading = it.request == null, error = null) }
             try {
                 val response = pickupRequestApi.getPickupRequestById(requestId)
                 val req = response.data.toDomain()
@@ -244,7 +248,13 @@ class RequestDetailViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_failed_load_request), isLoading = false) }
+                val msg = e.message ?: context.getString(R.string.error_failed_load_request)
+                if (_state.value.request == null) {
+                    _state.update { it.copy(error = msg, isLoading = false) }
+                } else {
+                    _state.update { it.copy(isLoading = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
+                }
             }
         }
     }
@@ -255,7 +265,7 @@ class RequestDetailViewModel @Inject constructor(
                 // Read in init, so on a fast response it may not be in the state yet.
                 val me = _state.value.currentUserId ?: getCurrentUserUseCase().first()?.id
                 val mine = reviewApi.getReviewsForPickup(requestId).data.find { it.reviewerId == me }
-                _state.update { it.copy(myReview = mine) }
+                _state.update { it.copy(myReview = mine, reviewLoadFailed = false) }
 
                 // Only evaluate the auto-sheet once per ViewModel instance.
                 // autoSheetShownFor acts as an in-session guard so coroutine races
@@ -270,7 +280,10 @@ class RequestDetailViewModel @Inject constructor(
                         _state.update { it.copy(showAutoRatingSheet = true) }
                     }
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                _state.update { it.copy(reviewLoadFailed = true) }
+                reportPartialFailure()
+            }
         }
     }
 
@@ -281,8 +294,11 @@ class RequestDetailViewModel @Inject constructor(
                 val response = reviewApi.getReviewsForPickup(requestId)
                 // A pickup can carry a review from each side; this is the one the NGO wrote.
                 val review = response.data.find { it.reviewerId == ngoId }
-                _state.update { it.copy(ngoReview = review) }
-            } catch (_: Exception) {}
+                _state.update { it.copy(ngoReview = review, reviewLoadFailed = false) }
+            } catch (_: Exception) {
+                _state.update { it.copy(reviewLoadFailed = true) }
+                reportPartialFailure()
+            }
         }
     }
 
@@ -329,6 +345,7 @@ class RequestDetailViewModel @Inject constructor(
                     val mine = response.data.find { it.pickupRequestId == requestId }
                     _state.update { it.copy(myDispute = mine, disputeChecked = true) }
                 }
+                .onFailure { reportPartialFailure() }
         }
     }
 
@@ -338,6 +355,7 @@ class RequestDetailViewModel @Inject constructor(
                 .onSuccess { response ->
                     _state.update { it.copy(adminDispute = response.data.firstOrNull()) }
                 }
+                .onFailure { reportPartialFailure() }
         }
     }
 
@@ -436,35 +454,33 @@ class RequestDetailViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { organizationApi.getPublicProfile(groceryId).data }
                 .onSuccess { profile -> _state.update { it.copy(groceryProfile = profile) } }
+                .onFailure { reportPartialFailure() }
         }
     }
 
-    fun approve(requestId: String) = runAction(requestId) {
+    fun approve(requestId: String) = runAction(requestId, RequestAction.APPROVE) {
         pickupRequestApi.approvePickupRequest(requestId)
         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved)))
     }
 
-    fun markReady(requestId: String) = runAction(requestId) {
+    fun markReady(requestId: String) = runAction(requestId, RequestAction.MARK_READY) {
         pickupRequestApi.markReadyForPickup(requestId)
         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_marked_ready)))
     }
 
-    fun reject(requestId: String) {
-        _state.update { it.copy(showRejectDialog = false) }
-        runAction(requestId) {
-            // Same endpoint as cancel() — the backend tells reject and cancel apart by
-            // whether the caller is the request's grocery or its NGO.
-            pickupRequestApi.cancelPickupRequest(requestId)
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected)))
-        }
+    fun reject(requestId: String) = runAction(requestId, RequestAction.REJECT) {
+        // Same endpoint as cancel() — the backend tells reject and cancel apart by
+        // whether the caller is the request's grocery or its NGO.
+        pickupRequestApi.cancelPickupRequest(requestId)
+        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected)))
     }
 
-    fun cancel(requestId: String) = runAction(requestId) {
+    fun cancel(requestId: String) = runAction(requestId, RequestAction.CANCEL) {
         pickupRequestApi.cancelPickupRequest(requestId)
         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled)))
     }
 
-    fun confirmPickup(requestId: String, photoUri: Uri) = runAction(requestId) {
+    fun confirmPickup(requestId: String, photoUri: Uri) = runAction(requestId, RequestAction.CONFIRM_PICKUP) {
         confirmPickupUseCase(requestId, photoUri).getOrThrow()
         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_pickup_confirmed)))
     }
@@ -480,6 +496,7 @@ class RequestDetailViewModel @Inject constructor(
                 _state.update { it.copy(messages = response.data, isLoadingMessages = false) }
             } catch (_: Exception) {
                 _state.update { it.copy(isLoadingMessages = false) }
+                reportPartialFailure()
             }
         }
     }
@@ -494,21 +511,41 @@ class RequestDetailViewModel @Inject constructor(
             try {
                 messageApi.sendMessage(requestId, SendMessageRequest(content))
                 loadMessages(requestId)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                // Put the text back so the user can retry without retyping it.
+                _state.update { it.copy(messageInput = it.messageInput.ifBlank { content }) }
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_send_message_failed)))
+            }
             _state.update { it.copy(isSendingMessage = false) }
         }
     }
 
-    private fun runAction(requestId: String, block: suspend () -> Unit) {
+    /** Set per loadRequest, so several failed sections still produce a single snackbar. */
+    private var partialFailureReported = false
+
+    /**
+     * A secondary section (reviews, dispute, grocery contact, chat) failed to load. Its UI
+     * stays hidden rather than showing a wrong state ("not rated yet", "no dispute"), and
+     * the user is told once that something is missing.
+     */
+    private suspend fun reportPartialFailure() {
+        if (partialFailureReported) return
+        partialFailureReported = true
+        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_details_partial)))
+    }
+
+    private fun runAction(requestId: String, action: RequestAction, block: suspend () -> Unit) {
+        if (_state.value.pendingAction != null) return
         viewModelScope.launch {
-            _state.update { it.copy(isActionLoading = true) }
+            _state.update { it.copy(pendingAction = action) }
             try {
                 block()
                 loadRequest(requestId)
             } catch (e: Exception) {
                 _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: "Action failed"))
             } finally {
-                _state.update { it.copy(isActionLoading = false) }
+                // The reject dialog stays open (spinning) until the call settles.
+                _state.update { it.copy(pendingAction = null, showRejectDialog = false) }
             }
         }
     }
@@ -593,12 +630,12 @@ fun RequestDetailScreen(
     }
 
     // Steps 2 and 3 - photo source picker + preview
+    val isConfirmingPickup = state.pendingAction == RequestAction.CONFIRM_PICKUP
+    DismissWhenFinished(isConfirmingPickup) { showPhotoPicker = false }
     if (showPhotoPicker) {
         PhotoPickerDialog(
-            onPhotoSelected = { uri ->
-                viewModel.confirmPickup(requestId, uri)
-                showPhotoPicker = false
-            },
+            onPhotoSelected = { uri -> viewModel.confirmPickup(requestId, uri) },
+            confirmLoading = isConfirmingPickup,
             onDismiss = { showPhotoPicker = false },
             title = stringResource(R.string.label_add_photo_proof),
             message = stringResource(R.string.msg_choose_photo_source),
@@ -616,7 +653,8 @@ fun RequestDetailScreen(
             message = stringResource(R.string.msg_reject_request_notice),
             confirmLabel = stringResource(R.string.reject),
             dismissLabel = stringResource(R.string.cancel),
-            isDestructive = true
+            isDestructive = true,
+            confirmLoading = state.pendingAction == RequestAction.REJECT
         )
     }
 
@@ -681,12 +719,13 @@ fun RequestDetailScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitleRow(
                 title = stringResource(R.string.title_request_details),
+                backEnabled = state.pendingAction == null && !state.isSendingMessage,
                 onBack = onNavigateBack,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    state.isLoading -> LoadingState()
                     state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
                         title = stringResource(R.string.error_generic),
@@ -1043,15 +1082,16 @@ private fun RequestDetailContent(
         }
 
         // -- 7. Action buttons --
+        // Only the button whose call is in flight spins; its siblings are disabled.
+        val busy = state.pendingAction != null
         if (isMyRequest) {
             if (isNgo && req.status == PickupRequestStatus.READY) {
                 ClearChainButton(
                     text = stringResource(R.string.action_confirm_pickup_photo),
                     onClick = onConfirmPickup,
                     modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.PhotoCamera,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    enabled = !busy,
+                    icon = Icons.Default.PhotoCamera
                 )
             }
 
@@ -1061,6 +1101,7 @@ private fun RequestDetailContent(
                         text = stringResource(R.string.reject),
                         onClick = onReject,
                         modifier = Modifier.weight(1f),
+                        enabled = !busy,
                         icon = Icons.Default.Close,
                         contentColor = MaterialTheme.colorScheme.error
                     )
@@ -1068,6 +1109,8 @@ private fun RequestDetailContent(
                         text = stringResource(R.string.approve),
                         onClick = onApprove,
                         modifier = Modifier.weight(1f),
+                        enabled = !busy,
+                        loading = state.pendingAction == RequestAction.APPROVE,
                         icon = Icons.Default.Check
                     )
                 }
@@ -1078,6 +1121,8 @@ private fun RequestDetailContent(
                     text = stringResource(R.string.action_mark_ready),
                     onClick = onMarkReady,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !busy,
+                    loading = state.pendingAction == RequestAction.MARK_READY,
                     icon = Icons.Default.Check
                 )
             }
@@ -1087,16 +1132,13 @@ private fun RequestDetailContent(
                     text = stringResource(R.string.cancel_request),
                     onClick = onCancel,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !busy,
+                    loading = state.pendingAction == RequestAction.CANCEL,
                     icon = Icons.Default.Cancel,
                     contentColor = MaterialTheme.colorScheme.error,
-                    fillMaxWidth = true,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    fillMaxWidth = true
                 )
             }
-        }
-
-        if (state.isActionLoading) {
-            LinearProgressIndicator(Modifier.fillMaxWidth())
         }
 
         // -- 8. Rating card (NGO: submit rating; Grocery and admin: view the received rating) --
@@ -1110,7 +1152,7 @@ private fun RequestDetailContent(
                     comment = myReview.comment,
                     createdAt = myReview.createdAt
                 )
-            } else {
+            } else if (!state.reviewLoadFailed) {
                 SectionCard(stringResource(R.string.label_rate_experience)) {
                     Row(
                         modifier = Modifier
@@ -1147,7 +1189,7 @@ private fun RequestDetailContent(
                     comment = review.comment,
                     createdAt = review.createdAt
                 )
-            } else if (isGrocery) {
+            } else if (isGrocery && !state.reviewLoadFailed) {
                 SectionCard(stringResource(R.string.label_ngo_rating)) {
                     NoReviewYet(stringResource(R.string.hint_not_yet_rated))
                 }
@@ -1461,9 +1503,12 @@ private fun ChatSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (isLoading) LinearProgressIndicator(Modifier.fillMaxWidth())
+        // First open: nothing yet (B). Reload after a send: thread stays, bar on top (C).
+        UpdatingBar(visible = isLoading && messages.isNotEmpty())
 
-        if (messages.isEmpty() && !isLoading) {
+        if (messages.isEmpty() && isLoading) {
+            LoadingState(Modifier.fillMaxWidth().height(80.dp))
+        } else if (messages.isEmpty()) {
             Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
                 Text(
                     stringResource(R.string.msg_no_messages),
@@ -1535,7 +1580,7 @@ private fun ChatSection(
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (isSending) {
-                        CircularProgressIndicator(Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                        InlineSpinner(color = Color.White)
                     } else {
                         Icon(
                             Icons.AutoMirrored.Filled.Send,

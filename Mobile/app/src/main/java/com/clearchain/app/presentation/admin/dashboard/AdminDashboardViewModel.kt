@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
@@ -129,15 +130,13 @@ class AdminDashboardViewModel @Inject constructor(
 
     fun onEvent(event: AdminDashboardEvent) {
         when (event) {
-            AdminDashboardEvent.LoadStats -> loadStats()
             AdminDashboardEvent.RefreshStats -> refreshStats()
-            AdminDashboardEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
     private fun loadStats() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             loadAll()
             _state.update { it.copy(isLoading = false) }
         }
@@ -145,25 +144,34 @@ class AdminDashboardViewModel @Inject constructor(
 
     private fun refreshStats() {
         viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
+            _state.update { it.copy(isRefreshing = true) }
             val ok = loadAll()
             _state.update { it.copy(isRefreshing = false) }
-            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_stats_refreshed)))
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dashboard_refreshed)))
         }
     }
 
     /** Reloads every dashboard section concurrently and suspends until all have settled,
      *  so pull-to-refresh keeps its spinner until the statistics, alert feed and user
-     *  growth chart are actually up to date. Returns whether the headline statistics
-     *  loaded — the alert feed and growth chart are auxiliary and fail silently.
+     *  growth chart are actually up to date. Returns whether every section loaded; any
+     *  failure is reported once, the same way the NGO and grocery dashboards do it — an
+     *  empty alert feed must not pass for "no alerts".
      *
      *  Every section writes through [MutableStateFlow.update]: these loaders run in
      *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
      *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
-    private suspend fun loadAll(): Boolean = coroutineScope {
-        val statsOk = async { loadStatistics() }
-        launch { loadAlertFeed() }
-        statsOk.await()
+    private suspend fun loadAll(): Boolean {
+        val results = coroutineScope {
+            listOf(
+                async { loadStatistics() },
+                async { loadAlertFeed() },
+            ).awaitAll()
+        }
+        val allOk = false !in results
+        if (!allOk) {
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_dashboard_partial)))
+        }
+        return allOk
     }
 
     private suspend fun loadStatistics(): Boolean =
@@ -171,17 +179,16 @@ class AdminDashboardViewModel @Inject constructor(
             val stats = adminApi.getStatistics().data.toDomain()
             _state.update { it.copy(stats = stats) }
             true
-        } catch (e: Exception) {
-            val msg = e.message ?: context.getString(R.string.error_load_statistics)
-            _state.update { it.copy(error = msg) }
-            _uiEvent.send(UiEvent.ShowSnackbar(msg))
+        } catch (_: Exception) {
             false
         }
 
-    private suspend fun loadAlertFeed() {
+    private suspend fun loadAlertFeed(): Boolean =
         try {
             val alerts = adminApi.getAlertFeed().data
             _state.update { it.copy(alertFeedItems = alerts) }
-        } catch (_: Exception) {}
-    }
+            true
+        } catch (_: Exception) {
+            false
+        }
 }

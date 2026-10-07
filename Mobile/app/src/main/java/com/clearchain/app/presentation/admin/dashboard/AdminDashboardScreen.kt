@@ -102,12 +102,7 @@ fun AdminDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (state.isLoading && state.stats == null) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                        LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
                     } else {
                         // ── Platform stats ───────────────────────────────────────
                         state.stats?.let { stats ->

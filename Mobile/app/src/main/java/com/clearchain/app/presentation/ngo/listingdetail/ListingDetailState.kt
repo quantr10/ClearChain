@@ -26,7 +26,8 @@ data class ListingDetailState(
 
     // NGO: cart state
     val cartItemsByListingId: Map<String, CartItemData> = emptyMap(),
-    val isUpdatingCart: Boolean = false,
+    /** The listing whose cart call is in flight. */
+    val updatingCartListingId: String? = null,
 
     // Grocery: action states
     val isDeleting: Boolean = false,
@@ -35,4 +36,6 @@ data class ListingDetailState(
     val showArchiveConfirm: Boolean = false,
     val isRestoring: Boolean = false,
     val showRestoreConfirm: Boolean = false
-)
+) {
+    val isUpdatingCart: Boolean get() = updatingCartListingId != null
+}

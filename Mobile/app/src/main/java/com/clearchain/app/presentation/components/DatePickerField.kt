@@ -117,8 +117,9 @@ fun DatePickerField(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                ClearChainOutlinedButton(
+                ClearChainButton(
                     text = stringResource(R.string.ok),
+                    fillMaxWidth = false,
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
                             val date = Instant.ofEpochMilli(millis)

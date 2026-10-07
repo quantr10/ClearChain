@@ -54,6 +54,7 @@ fun CreateListingScreen(
     }
 
     BackHandler(state.isPreviewMode) { viewModel.onEvent(CreateListingEvent.TogglePreview) }
+    BlockBackWhile(state.isLoading)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -89,9 +90,14 @@ fun CreateListingScreen(
             if (state.isPreviewMode) {
                 // ── Preview Mode ─────────────────────────────────────────────
                 val previewListing = remember(
-                    state.title, state.description, state.category,
-                    state.quantity, state.unit, state.expiryDate,
-                    state.selectedImages, state.groceryHours
+                    state.title,
+                    state.description,
+                    state.category,
+                    state.quantity,
+                    state.unit,
+                    state.expiryDate,
+                    state.selectedImageUri,
+                    state.groceryHours
                 ) {
                     Listing(
                         id = "",
@@ -107,8 +113,8 @@ fun CreateListingScreen(
                         pickupTimeStart = "",
                         pickupTimeEnd = "",
                         status = ListingStatus.AVAILABLE,
-                        imageUrl = state.selectedImages.firstOrNull()?.toString(),
-                        imageUrls = state.selectedImages.map { it.toString() },
+                        imageUrl = state.selectedImageUri?.toString(),
+                        imageUrls = listOfNotNull(state.selectedImageUri?.toString()),
                         location = "",
                         createdAt = "",
                         groceryHours = state.groceryHours
@@ -376,7 +382,9 @@ fun CreateListingScreen(
     if (state.showImagePicker) {
         PhotoPickerDialog(
             onPhotoSelected = { uri -> viewModel.onEvent(CreateListingEvent.AddImage(uri)) },
-            onDismiss = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) }
+            onDismiss = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) },
+            // Choosing a photo only starts the AI analysis; it is uploaded with the listing.
+            confirmLabel = stringResource(R.string.action_use_photo)
         )
     }
 }
@@ -449,7 +457,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            UpdatingBar(visible = true)
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically

@@ -292,7 +292,7 @@ public class ListingsController : ControllerBase
         var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
         var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
 
-        var profilePickupWindow = ParseHoursWindow(grocery.Hours);
+        var profilePickupWindow = ListingFields.ParseHoursWindow(grocery.Hours);
         TimeSpan? pickupTimeStart = profilePickupWindow?.Start;
         TimeSpan? pickupTimeEnd = profilePickupWindow?.End;
 
@@ -586,22 +586,6 @@ public class ListingsController : ControllerBase
             Message = "Listing restored successfully",
             Data = listingDto
         });
-    }
-
-    private static (TimeSpan Start, TimeSpan End)? ParseHoursWindow(string? hours)
-    {
-        if (string.IsNullOrWhiteSpace(hours)) return null;
-
-        var parts = hours
-            .Replace("–", "-")
-            .Replace("—", "-")
-            .Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length < 2) return null;
-        if (!TimeSpan.TryParse(parts[0], out var start)) return null;
-        if (!TimeSpan.TryParse(parts[1], out var end)) return null;
-
-        return start <= end ? (start, end) : null;
     }
 
     [HttpPut("{id}")]

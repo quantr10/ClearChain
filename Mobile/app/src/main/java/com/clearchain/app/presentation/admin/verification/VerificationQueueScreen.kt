@@ -54,7 +54,8 @@ fun VerificationQueueScreen(
             onToggle = { idx -> viewModel.onEvent(VerificationQueueEvent.ToggleChecklistItem(idx)) },
             onConfirm = { viewModel.onEvent(VerificationQueueEvent.ConfirmApprove) },
             onDismiss = { viewModel.onEvent(VerificationQueueEvent.DismissChecklist) },
-            checklistComplete = state.checklistComplete
+            checklistComplete = state.checklistComplete,
+            isSubmitting = state.isProcessing
         )
     }
 
@@ -65,11 +66,13 @@ fun VerificationQueueScreen(
             onReasonChange = { viewModel.onEvent(VerificationQueueEvent.RejectionReasonChanged(it)) },
             onSelectTemplate = { viewModel.onEvent(VerificationQueueEvent.SelectRejectionTemplate(it)) },
             onConfirm = { viewModel.onEvent(VerificationQueueEvent.ConfirmReject) },
-            onDismiss = { viewModel.onEvent(VerificationQueueEvent.DismissRejectDialog) }
+            onDismiss = { viewModel.onEvent(VerificationQueueEvent.DismissRejectDialog) },
+            isSubmitting = state.isProcessing
         )
     }
 
     BackHandler(state.isBatchMode) { viewModel.onEvent(VerificationQueueEvent.ToggleBatchMode) }
+    BlockBackWhile(state.isProcessing)
 
     if (state.showFilterSheet) {
         VerificationFilterSheet(
@@ -99,21 +102,21 @@ fun VerificationQueueScreen(
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
-                        ClearChainButton(
+                        ClearChainOutlinedButton(
                             text = stringResource(R.string.action_reject_all_batch),
                             onClick = { viewModel.onEvent(VerificationQueueEvent.BatchReject) },
                             enabled = !state.isProcessing,
-                            fillMaxWidth = false,
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError,
-                            icon = Icons.Default.Cancel
+                            loading = state.batchOperation == VerificationBatchOperation.REJECT,
+                            icon = Icons.Default.Close,
+                            contentColor = MaterialTheme.colorScheme.error
                         )
                         ClearChainButton(
                             text = stringResource(R.string.action_approve_all_batch),
                             onClick = { viewModel.onEvent(VerificationQueueEvent.BatchApprove) },
                             enabled = !state.isProcessing,
+                            loading = state.batchOperation == VerificationBatchOperation.APPROVE,
                             fillMaxWidth = false,
-                            icon = Icons.Default.CheckCircle
+                            icon = Icons.Default.Check
                         )
                     }
                 }
@@ -201,12 +204,7 @@ fun VerificationQueueScreen(
                     ) {
                         if (state.isLoading && state.organizations.isEmpty()) {
                             item {
-                                Box(
-                                    modifier = Modifier.fillParentMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
+                                LoadingState(Modifier.fillParentMaxSize())
                             }
                         } else if (state.organizations.isEmpty()) {
                             item {
@@ -521,7 +519,7 @@ private fun OrganizationCard(
                         onClick = onReject,
                         modifier = Modifier.weight(1f),
                         enabled = !isProcessing,
-                        icon = Icons.Default.Cancel,
+                        icon = Icons.Default.Close,
                         contentColor = MaterialTheme.colorScheme.error
                     )
                     ClearChainButton(
@@ -529,7 +527,7 @@ private fun OrganizationCard(
                         onClick = onApprove,
                         modifier = Modifier.weight(1f),
                         enabled = !isProcessing,
-                        icon = Icons.Default.CheckCircle
+                        icon = Icons.Default.Check
                     )
                 }
             }
@@ -547,7 +545,8 @@ private fun ApprovalChecklistDialog(
     onToggle: (Int) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    checklistComplete: Boolean
+    checklistComplete: Boolean,
+    isSubmitting: Boolean
 ) {
     val checklistItems = listOf(
         stringResource(R.string.verify_check_1),
@@ -565,7 +564,8 @@ private fun ApprovalChecklistDialog(
         message = stringResource(R.string.verification_confirm_items),
         confirmLabel = stringResource(R.string.verification_approve_org),
         dismissLabel = stringResource(R.string.cancel),
-        confirmEnabled = checklistComplete
+        confirmEnabled = checklistComplete,
+        confirmLoading = isSubmitting
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -583,6 +583,7 @@ private fun ApprovalChecklistDialog(
                     Checkbox(
                         checked = idx in checkedItems,
                         onCheckedChange = { onToggle(idx) },
+                        enabled = !isSubmitting,
                         modifier = Modifier.size(24.dp)
                     )
                     Text(item, style = MaterialTheme.typography.bodySmall)
@@ -602,7 +603,8 @@ private fun RejectOrgDialog(
     onReasonChange: (String) -> Unit,
     onSelectTemplate: (String) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isSubmitting: Boolean
 ) {
     val rejectionTemplates = listOf(
         stringResource(R.string.reject_template_1),
@@ -621,7 +623,8 @@ private fun RejectOrgDialog(
         confirmLabel = stringResource(R.string.reject),
         dismissLabel = stringResource(R.string.cancel),
         isDestructive = true,
-        confirmEnabled = reason.isNotBlank()
+        confirmEnabled = reason.isNotBlank(),
+        confirmLoading = isSubmitting
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -632,6 +635,7 @@ private fun RejectOrgDialog(
                 rejectionTemplates.forEach { template ->
                     SuggestionChip(
                         onClick = { onSelectTemplate(template) },
+                        enabled = !isSubmitting,
                         label = { Text(template, style = MaterialTheme.typography.labelSmall) },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -643,6 +647,7 @@ private fun RejectOrgDialog(
                 onValueChange = onReasonChange,
                 label = stringResource(R.string.label_rejection_reason),
                 placeholder = stringResource(R.string.hint_rejection_reason),
+                enabled = !isSubmitting,
                 singleLine = false,
                 minLines = 2,
                 maxLines = 4,

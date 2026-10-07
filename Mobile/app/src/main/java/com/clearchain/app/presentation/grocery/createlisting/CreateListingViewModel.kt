@@ -5,8 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
-import com.clearchain.app.data.local.ListingDraft
-import com.clearchain.app.data.local.ListingDraftStore
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.listing.CreateListingUseCase
@@ -15,7 +13,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -24,7 +21,6 @@ class CreateListingViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val createListingUseCase: CreateListingUseCase,
     private val listingRepository: ListingRepository,
-    private val draftStore: ListingDraftStore,
     private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
@@ -35,7 +31,6 @@ class CreateListingViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
-        startAutoSave()
         loadGroceryHours()
     }
 
@@ -45,29 +40,6 @@ class CreateListingViewModel @Inject constructor(
                 _state.update { it.copy(groceryHours = org.hours) }
             }
         }
-    }
-
-    private fun startAutoSave() {
-        viewModelScope.launch {
-            while (true) {
-                delay(30_000L)
-                saveDraft()
-            }
-        }
-    }
-
-    private suspend fun saveDraft() {
-        val s = _state.value
-        if (s.title.isBlank() && s.description.isBlank() && s.quantity.isBlank()) return
-        val draft = ListingDraft(
-            title = s.title,
-            description = s.description,
-            category = s.category,
-            quantity = s.quantity,
-            unit = s.unit,
-            expiryDate = s.expiryDate
-        )
-        draftStore.save(draft)
     }
 
     fun onEvent(event: CreateListingEvent) {
@@ -120,14 +92,6 @@ class CreateListingViewModel @Inject constructor(
                 createListing()
             }
 
-            CreateListingEvent.ClearError -> {
-                _state.update { it.copy(error = null) }
-            }
-
-            CreateListingEvent.AnalyzeImage -> {
-                analyzeImage()
-            }
-
             CreateListingEvent.ApplyAISuggestions -> {
                 applyAISuggestions()
             }
@@ -140,7 +104,6 @@ class CreateListingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         selectedImageUri = null,
-                        selectedImages = emptyList(),
                         analysisResult = null,
                         analysisError = null
                     )
@@ -156,7 +119,6 @@ class CreateListingViewModel @Inject constructor(
             is CreateListingEvent.AddImage -> {
                 _state.update {
                     it.copy(
-                        selectedImages = listOf(event.uri),
                         selectedImageUri = event.uri,
                         showImagePicker = false,
                         analysisResult = null,
@@ -169,28 +131,6 @@ class CreateListingViewModel @Inject constructor(
             CreateListingEvent.TogglePreview -> {
                 _state.update { it.copy(isPreviewMode = !it.isPreviewMode) }
             }
-
-            CreateListingEvent.RestoreDraft -> {
-                viewModelScope.launch {
-                    draftStore.draft.first()?.let { draft ->
-                        _state.update {
-                            it.copy(
-                                title = draft.title,
-                                description = draft.description,
-                                category = draft.category,
-                                quantity = draft.quantity,
-                                unit = draft.unit,
-                                expiryDate = draft.expiryDate
-                            )
-                        }
-                        _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_draft_restored)))
-                    }
-                }
-            }
-
-            CreateListingEvent.ClearDraft -> {
-                viewModelScope.launch { draftStore.clear() }
-            }
         }
     }
 
@@ -202,14 +142,14 @@ class CreateListingViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
 
             // Upload image first if user selected one
             var finalImageUrl: String? = null
 
-            val primaryUri = currentState.selectedImages.firstOrNull() ?: currentState.selectedImageUri
-            if (primaryUri != null) {
-                val uploadResult = listingRepository.uploadFoodImage(primaryUri)
+            val imageUri = currentState.selectedImageUri
+            if (imageUri != null) {
+                val uploadResult = listingRepository.uploadFoodImage(imageUri)
 
                 uploadResult.fold(
                     onSuccess = { uploadedUrl ->
@@ -217,12 +157,7 @@ class CreateListingViewModel @Inject constructor(
                         Log.d(TAG, "✅ Image uploaded: $uploadedUrl")
                     },
                     onFailure = { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = context.getString(R.string.snack_image_upload_failed, error.message ?: "")
-                            )
-                        }
+                        _state.update { it.copy(isLoading = false) }
                         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_image_upload_failed, error.message ?: "")))
                         return@launch // Stop if upload fails
                     }
@@ -244,19 +179,11 @@ class CreateListingViewModel @Inject constructor(
                 onSuccess = {
                     _state.update { it.copy(isLoading = false) }
 
-                    // Clear draft on success
-                    draftStore.clear()
-
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listing_created)))
                     _uiEvent.send(UiEvent.NavigateUp)
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: context.getString(R.string.error_create_listing_failed)
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_create_listing_failed)))
                 }
             )

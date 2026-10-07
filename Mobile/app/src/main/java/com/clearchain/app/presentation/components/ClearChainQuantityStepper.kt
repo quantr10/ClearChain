@@ -34,7 +34,9 @@ fun ClearChainQuantityStepper(
     onIncrement: () -> Unit,
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
-    buttonSize: Dp = ClearChainButtonDefaults.Height
+    buttonSize: Dp = ClearChainButtonDefaults.Height,
+    /** A quantity change is in flight: the count becomes a spinner and both buttons wait. */
+    loading: Boolean = false
 ) {
     Row(
         modifier = if (expanded) modifier.fillMaxWidth() else modifier,
@@ -46,7 +48,7 @@ fun ClearChainQuantityStepper(
             contentDescription = stringResource(R.string.cart_decrease),
             onClick = onDecrement,
             tint = MaterialTheme.colorScheme.error,
-            enabled = enabled,
+            enabled = enabled && !loading,
             size = buttonSize
         )
         Surface(
@@ -58,7 +60,7 @@ fun ClearChainQuantityStepper(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(
+                if (loading) InlineSpinner() else Text(
                     text = "$quantity $unit",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
@@ -75,7 +77,7 @@ fun ClearChainQuantityStepper(
             contentDescription = stringResource(R.string.cart_increase),
             onClick = onIncrement,
             tint = MaterialTheme.colorScheme.primary,
-            enabled = enabled && canIncrement,
+            enabled = enabled && canIncrement && !loading,
             size = buttonSize
         )
     }

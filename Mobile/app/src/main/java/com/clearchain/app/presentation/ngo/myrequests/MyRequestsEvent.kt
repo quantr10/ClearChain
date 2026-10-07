@@ -25,8 +25,6 @@ sealed class MyRequestsEvent {
     // CSV export
     object ExportCsv : MyRequestsEvent()
 
-    object ClearError : MyRequestsEvent()
-
     // Advanced filter sheet
     object ShowFilterSheet : MyRequestsEvent()
     object HideFilterSheet : MyRequestsEvent()

@@ -64,8 +64,6 @@ class RegisterViewModel @Inject constructor(
             RegisterEvent.ToggleTos ->
                 _state.update { it.copy(tosAccepted = !it.tosAccepted, tosError = false) }
             RegisterEvent.Register -> register()
-            RegisterEvent.ClearError ->
-                _state.update { it.copy(error = null) }
         }
     }
 
@@ -94,7 +92,7 @@ class RegisterViewModel @Inject constructor(
         val s = _state.value
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
 
             try {
                 val emailAvailable = authApi.checkEmail(s.email).available
@@ -155,7 +153,6 @@ class RegisterViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = null,
                             emailError = emailErr,
                             passwordError = passwordErr
                         )

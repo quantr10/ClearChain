@@ -10,15 +10,24 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.content.Context
+import com.clearchain.app.R
+import com.clearchain.app.util.UiEvent
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.channels.Channel
 
 @HiltViewModel
 class NotificationInboxViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val notificationRepository: NotificationRepository,
     private val signalRService: SignalRService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationInboxState())
     val state: StateFlow<NotificationInboxState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -62,10 +71,18 @@ class NotificationInboxViewModel @Inject constructor(
     }
 
     fun markAllAsRead() {
-        viewModelScope.launch { notificationRepository.markAllAsRead() }
+        viewModelScope.launch {
+            notificationRepository.markAllAsRead().onFailure {
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_mark_all_read_failed)))
+            }
+        }
     }
 
     fun clearAll() {
-        viewModelScope.launch { notificationRepository.clearAll() }
+        viewModelScope.launch {
+            notificationRepository.clearAll().onFailure {
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_clear_notifications_failed)))
+            }
+        }
     }
 }

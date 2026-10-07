@@ -21,12 +21,12 @@ public class PickupRequestsController : ControllerBase
     // ── DELETE api/pickuprequests/{id} ───────────────────────────────────────
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> CancelPickupRequest(Guid id, [FromBody] CancelPickupRequestBody? body = null)
+    public async Task<ActionResult> CancelPickupRequest(Guid id)
     {
         if (!this.TryGetUserId(out var userId))
             return Unauthorized(new { message = "User not authenticated" });
 
-        var result = await _service.CancelAsync(id, userId, body?.Reason);
+        var result = await _service.CancelAsync(id, userId);
         if (!result.Success) return MapError(result);
 
         return Ok(new PickupRequestResponse { Message = "Pickup request cancelled successfully", Data = result.Data! });
@@ -94,7 +94,11 @@ public class PickupRequestsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid id)
     {
-        var result = await _service.GetByIdAsync(id, includeContacts: User.IsInRole("admin"));
+        if (!this.TryGetUserId(out var userId))
+            return Unauthorized(new { message = "User not authenticated" });
+
+        var isAdmin = User.IsInRole("admin");
+        var result = await _service.GetByIdAsync(id, userId, isAdmin, includeContacts: isAdmin);
         if (!result.Success) return MapError(result);
 
         return Ok(new PickupRequestResponse { Message = "Pickup request retrieved successfully", Data = result.Data! });
@@ -140,9 +144,4 @@ public class PickupRequestsController : ControllerBase
         PickupRequestServiceError.Conflict => Conflict(new { message = result.ErrorMessage }),
         _ => StatusCode(500, new { message = result.ErrorMessage })
     };
-}
-
-public class CancelPickupRequestBody
-{
-    public string? Reason { get; set; }
 }

@@ -29,6 +29,7 @@ import com.clearchain.app.presentation.ngo.ActivityHistorySheet
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,8 +39,17 @@ fun GroceryDashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         HapticPullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,
@@ -62,7 +72,9 @@ fun GroceryDashboardScreen(
                     onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
                 )
 
-                Column(
+                if (state.isLoading) {
+                    LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
+                } else Column(
                     modifier = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -113,7 +125,7 @@ fun GroceryDashboardScreen(
                             ActivityFeedList(activities = state.activities.take(5))
                             if (state.activities.size > 5) {
                                 Spacer(Modifier.height(8.dp))
-                                ClearChainButton(
+                                ClearChainOutlinedButton(
                                     text = stringResource(R.string.action_view_more),
                                     onClick = { showActivitySheet = true },
                                     modifier = Modifier.fillMaxWidth()

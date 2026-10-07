@@ -38,7 +38,6 @@ fun CartPickupScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    SnackbarMessageEffect(snackbarHostState, state.error)
 
     LaunchedEffect(groceryId) {
         viewModel.onEvent(CartEvent.ShowCheckout(groceryId))
@@ -61,13 +60,21 @@ fun CartPickupScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitleRow(
                 title = stringResource(R.string.title_request_pickup),
+                backEnabled = !state.isSubmitting,
                 onBack = onNavigateBack,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val group = state.groups.firstOrNull { it.groceryId == groceryId }
                 when {
-                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    state.isLoading -> LoadingState()
+                    group == null && state.error != null -> EmptyState(
+                        icon = Icons.Default.ErrorOutline,
+                        title = stringResource(R.string.error_generic),
+                        subtitle = state.error,
+                        actionLabel = stringResource(R.string.retry),
+                        onAction = { viewModel.onEvent(CartEvent.LoadCart) }
+                    )
                     group == null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
                         title = stringResource(R.string.cart_empty_title),
@@ -217,7 +224,9 @@ private fun CartPickupContent(
                     onDateSelected = { onEvent(CartEvent.PickupDateChanged(it)) },
                     enabled = !isLoading,
                     selectableDates = pickupSelectableDates,
-                    onClearDate = { onEvent(CartEvent.PickupDateChanged("")) }
+                    onClearDate = { onEvent(CartEvent.PickupDateChanged("")) },
+                    isError = state.pickupDateError != null,
+                    errorMessage = state.pickupDateError
                 )
             }
         }
@@ -240,7 +249,11 @@ private fun CartPickupContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(32.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
+                            .border(
+                                1.dp,
+                                if (state.pickupTimeError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant,
+                                ShapeMedium
+                            )
                             .clickable(enabled = !isLoading && hasValidPickupTimes) { showTimeSheet = true }
                             .padding(horizontal = 8.dp)
                     ) {
@@ -266,6 +279,13 @@ private fun CartPickupContent(
                                 }
                             )
                         }
+                    }
+                    state.pickupTimeError?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                     if (!hasValidPickupTimes) {
                         Text(

@@ -1,14 +1,13 @@
 package com.clearchain.app.presentation.pendingreview
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -205,7 +204,7 @@ fun PendingReviewScreen(
                 text = stringResource(R.string.pending_review_check_status),
                 onClick = { viewModel.refresh() },
                 loading = state.isRefreshing,
-                enabled = !state.isRefreshing,
+                enabled = !state.isBusy,
                 icon = Icons.Default.Refresh,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -218,6 +217,7 @@ fun PendingReviewScreen(
                     }
                 ),
                 onClick = onEditProfile,
+                enabled = !state.isBusy,
                 icon = Icons.Default.Edit,
                 fillMaxWidth = true
             )
@@ -225,6 +225,7 @@ fun PendingReviewScreen(
             ClearChainOutlinedButton(
                 text = stringResource(R.string.help),
                 onClick = onOpenHelp,
+                enabled = !state.isBusy,
                 icon = Icons.AutoMirrored.Filled.HelpOutline,
                 fillMaxWidth = true
             )
@@ -232,9 +233,10 @@ fun PendingReviewScreen(
             ClearChainOutlinedButton(
                 text = stringResource(R.string.pending_review_logout),
                 onClick = { viewModel.logout() },
+                enabled = !state.isBusy,
+                loading = state.isLoggingOut,
                 icon = Icons.AutoMirrored.Filled.Logout,
                 contentColor = MaterialTheme.colorScheme.error,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                 fillMaxWidth = true
             )
 

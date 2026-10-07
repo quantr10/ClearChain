@@ -50,6 +50,7 @@ fun InventoryScreen(
     }
 
     BackHandler(state.isSelectionMode) { viewModel.onEvent(InventoryEvent.ToggleSelectionMode) }
+    BlockBackWhile(state.isBulkOperating || state.distributingItemId != null)
 
     if (state.showFilterSheet) {
         InventoryFilterSheet(
@@ -158,7 +159,7 @@ fun InventoryScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allItems.isEmpty() -> {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            LoadingState()
                         }
 
                         state.error != null && state.allItems.isEmpty() -> {
@@ -225,7 +226,8 @@ fun InventoryScreen(
                                                     { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
                                                 } else {
                                                     null
-                                                }
+                                                },
+                                                isDistributing = state.distributingItemId == item.id
                                             )
                                             if (state.isSelectionMode) {
                                                 SelectionCircleButton(

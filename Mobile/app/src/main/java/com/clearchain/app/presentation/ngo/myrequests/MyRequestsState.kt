@@ -7,6 +7,7 @@ import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.presentation.components.CommonSortOptions
 import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
+import com.clearchain.app.presentation.components.RequestAction
 
 data class MyRequestsState(
     val allRequests: List<PickupRequest> = emptyList(),
@@ -35,6 +36,8 @@ data class MyRequestsState(
     val isRefreshing: Boolean = false,
     val isUploading: Boolean = false,
     val error: String? = null,
+    /** Request id → the status change waiting on the backend for that card. */
+    val pendingActions: Map<String, RequestAction> = emptyMap(),
 
     // Upload retry
     val uploadError: String? = null,

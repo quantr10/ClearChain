@@ -7,6 +7,7 @@ import com.clearchain.app.R
 import com.clearchain.app.data.local.AuthPreferenceStore
 import com.clearchain.app.domain.usecase.auth.LoginUseCase
 import com.clearchain.app.presentation.navigation.Screen
+import com.clearchain.app.util.ApiErrorUtils
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,8 +51,6 @@ class LoginViewModel @Inject constructor(
             is LoginEvent.PasswordChanged ->
                 _state.update { it.copy(password = event.password, passwordError = null) }
             LoginEvent.Login -> login()
-            LoginEvent.ClearError ->
-                _state.update { it.copy(error = null, isLockedOut = false) }
             LoginEvent.ToggleRememberMe ->
                 _state.update { it.copy(rememberMe = !it.rememberMe) }
         }
@@ -62,7 +61,7 @@ class LoginViewModel @Inject constructor(
         val currentState = _state.value
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null, isLockedOut = false) }
+            _state.update { it.copy(isLoading = true, isLockedOut = false) }
 
             val result = loginUseCase(
                 email = currentState.email,
@@ -97,30 +96,14 @@ class LoginViewModel @Inject constructor(
                     val lockoutMinutes = parseLockoutMinutes(raw)
                     if (lockoutMinutes > 0) {
                         _state.update {
-                            it.copy(isLoading = false, error = raw, isLockedOut = true, lockoutMinutes = lockoutMinutes)
+                            it.copy(isLoading = false, isLockedOut = true, lockoutMinutes = lockoutMinutes)
                         }
                     } else {
                         // Route each error to the appropriate field instead of a banner
-                        val isSystemError = raw.contains("429") || raw.contains("Too Many", ignoreCase = true) ||
-                            raw.contains("500") || raw.contains("502") || raw.contains("503") ||
-                            raw.contains("Unable to resolve host", ignoreCase = true) ||
-                            raw.contains("timeout", ignoreCase = true) ||
-                            raw.contains("connect", ignoreCase = true)
-
-                        val systemMsg = when {
-                            raw.contains("429") || raw.contains("Too Many", ignoreCase = true) ->
-                                context.getString(R.string.error_too_many_attempts)
-                            raw.contains("500") || raw.contains("502") || raw.contains("503") ->
-                                context.getString(R.string.error_server)
-                            raw.contains("Unable to resolve host", ignoreCase = true) ||
-                                raw.contains("timeout", ignoreCase = true) ||
-                                raw.contains("connect", ignoreCase = true) ->
-                                context.getString(R.string.error_no_internet)
-                            else -> null
-                        }
+                        val systemMsg = ApiErrorUtils.systemMessage(context, raw)
 
                         val (emailErr, passwordErr) = when {
-                            isSystemError -> null to null // handled via all 3 patterns below
+                            systemMsg != null -> null to null // shown as a snackbar below
                             raw.contains("401") || raw.contains("Unauthorized", ignoreCase = true) ->
                                 "" to context.getString(R.string.error_wrong_credentials)
                             raw.contains("404") || raw.contains("Not Found", ignoreCase = true) ->
@@ -132,7 +115,6 @@ class LoginViewModel @Inject constructor(
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                error = null,
                                 emailError = emailErr,
                                 passwordError = passwordErr
                             )

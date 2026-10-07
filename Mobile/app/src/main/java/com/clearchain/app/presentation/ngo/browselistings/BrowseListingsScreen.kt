@@ -19,13 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -43,7 +36,6 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.presentation.ngo.locationpicker.LocationPickerScreen
-import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -52,15 +44,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 
-// Screen-wide touch signal used to collapse an expanded cart stepper: every touch-down
-// anywhere on screen bumps `tick`, and carries the position + root coordinate space so a
-// listener can tell whether that touch landed on its own stepper (and should be ignored).
-private data class GlobalTouch(
-    val tick: Int,
-    val position: Offset?,
-    val rootCoordinates: LayoutCoordinates?
-)
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun BrowseListingsScreen(
@@ -68,12 +51,11 @@ fun BrowseListingsScreen(
     viewModel: BrowseListingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isUpdatingCart)
     val snackbarHostState = remember { SnackbarHostState() }
     var showLocationSheet by remember { mutableStateOf(false) }
-    var touchTick by remember { mutableIntStateOf(0) }
-    var lastTouchPosition by remember { mutableStateOf<Offset?>(null) }
-    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    val globalTouch = GlobalTouch(touchTick, lastTouchPosition, rootCoordinates)
+    val touchTracker = rememberGlobalTouchTracker()
+    val globalTouch = touchTracker.current
 
     LaunchedEffect(state.isLocationSet, state.isCheckingLocation) {
         if (!state.isCheckingLocation && !state.isLocationSet) {
@@ -134,19 +116,7 @@ fun BrowseListingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .onGloballyPositioned { rootCoordinates = it }
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                            val down = event.changes.firstOrNull { it.changedToDown() }
-                            if (down != null) {
-                                lastTouchPosition = down.position
-                                touchTick++
-                            }
-                        }
-                    }
-                }
+                .trackGlobalTouch(touchTracker)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // -- Static header --------------------------------------------------
@@ -219,7 +189,7 @@ fun BrowseListingsScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allListings.isEmpty() ->
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            LoadingState()
 
                         state.error != null && state.allListings.isEmpty() ->
                             EmptyState(
@@ -316,6 +286,7 @@ private fun ListingsListView(
                                 listing = listing,
                                 cartItem = cartItem,
                                 enabled = !state.isUpdatingCart,
+                                loading = state.updatingCartListingId == listing.id,
                                 globalTouch = globalTouch,
                                 onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
                                 onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
@@ -331,101 +302,6 @@ private fun ListingsListView(
     }
 }
 
-@Composable
-private fun ListingCartAction(
-    listing: Listing,
-    cartItem: CartItemData?,
-    enabled: Boolean,
-    globalTouch: GlobalTouch,
-    onAddToCart: (String) -> Unit,
-    onIncrementCartItem: (String) -> Unit,
-    onDecrementCartItem: (String) -> Unit,
-    onRemoveFromCart: (String) -> Unit
-) {
-    var isExpanded by remember(listing.id) { mutableStateOf(false) }
-    var expandTick by remember(listing.id) { mutableIntStateOf(0) }
-    var stepperBounds by remember(listing.id) { mutableStateOf<Rect?>(null) }
-
-    LaunchedEffect(globalTouch.tick) {
-        if (isExpanded && globalTouch.tick != expandTick) {
-            expandTick = globalTouch.tick
-            val position = globalTouch.position
-            val bounds = stepperBounds
-            val touchedStepper = position != null && bounds != null && bounds.contains(position)
-            if (!touchedStepper) {
-                isExpanded = false
-            }
-        }
-    }
-
-    when {
-        cartItem == null || cartItem.requestedQuantity <= 0 -> {
-            ClearChainActionIconButton(
-                icon = Icons.Default.Add,
-                contentDescription = stringResource(R.string.cart_add_to_cart),
-                onClick = {
-                    onAddToCart(listing.id)
-                    expandTick = globalTouch.tick
-                    isExpanded = true
-                },
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                enabled = enabled
-            )
-        }
-        isExpanded -> {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                ClearChainQuantityStepper(
-                    quantity = cartItem.requestedQuantity,
-                    unit = listing.unit,
-                    canIncrement = cartItem.requestedQuantity < listing.quantity,
-                    enabled = enabled,
-                    onDecrement = { onDecrementCartItem(listing.id) },
-                    onIncrement = { onIncrementCartItem(listing.id) },
-                    expanded = false,
-                    buttonSize = 24.dp,
-                    modifier = Modifier.onGloballyPositioned { coordinates ->
-                        stepperBounds = globalTouch.rootCoordinates?.localBoundingBoxOf(coordinates)
-                    }
-                )
-                ClearChainActionIconButton(
-                    icon = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.cart_remove),
-                    onClick = { onRemoveFromCart(listing.id) },
-                    tint = MaterialTheme.colorScheme.error,
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    enabled = enabled
-                )
-            }
-        }
-        else -> {
-            Surface(
-                onClick = {
-                    expandTick = globalTouch.tick
-                    isExpanded = true
-                },
-                modifier = Modifier.height(ClearChainButtonDefaults.Height).widthIn(min = 72.dp),
-                enabled = enabled,
-                shape = ButtonShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = 3.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        "${cartItem.requestedQuantity} ${listing.unit}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
-    }
-}
 // -----------------------------------------------------------------------------
 // Map view
 // -----------------------------------------------------------------------------
@@ -582,7 +458,7 @@ private fun GroceryMapView(
                         listings = listings,
                         favoritedIds = state.favoritedIds,
                         cartItemsByListingId = state.cartItemsByListingId,
-                        isUpdatingCart = state.isUpdatingCart,
+                        updatingCartListingId = state.updatingCartListingId,
                         globalTouch = globalTouch,
                         onNavigateToDetail = { navController.navigate(Screen.ListingDetail.createRoute(it)) },
                         onNavigateToProfile = { navController.navigate(Screen.PublicProfile.createRoute(it)) },
@@ -597,9 +473,8 @@ private fun GroceryMapView(
             }
         }
 
-        if (state.isLoadingMapListings) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        }
+        // The map and its pins stay; the bar says the pins are being refreshed.
+        UpdatingBar(visible = state.isLoadingMapListings, modifier = Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -612,7 +487,7 @@ private fun GroceryPinPopup(
     listings: List<Listing>,
     favoritedIds: Set<String>,
     cartItemsByListingId: Map<String, CartItemData>,
-    isUpdatingCart: Boolean,
+    updatingCartListingId: String?,
     globalTouch: GlobalTouch,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToProfile: (String) -> Unit,
@@ -687,7 +562,8 @@ private fun GroceryPinPopup(
                         ListingCartAction(
                             listing = listing,
                             cartItem = cartItem,
-                            enabled = !isUpdatingCart,
+                            enabled = updatingCartListingId == null,
+                            loading = updatingCartListingId == listing.id,
                             globalTouch = globalTouch,
                             onAddToCart = onAddToCart,
                             onIncrementCartItem = onIncrementCartItem,
@@ -729,7 +605,8 @@ private fun GroceryPinPopup(
                             ListingCartAction(
                                 listing = listing,
                                 cartItem = cartItem,
-                                enabled = !isUpdatingCart,
+                                enabled = updatingCartListingId == null,
+                                loading = updatingCartListingId == listing.id,
                                 globalTouch = globalTouch,
                                 onAddToCart = onAddToCart,
                                 onIncrementCartItem = onIncrementCartItem,

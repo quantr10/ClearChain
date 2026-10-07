@@ -8,7 +8,6 @@ import com.clearchain.app.presentation.components.SortOption
 sealed class InventoryEvent {
     object LoadInventory : InventoryEvent()
     object RefreshInventory : InventoryEvent()
-    object UpdateExpired : InventoryEvent()
 
     // Search & Sort
     data class SearchQueryChanged(val query: String) : InventoryEvent()
@@ -29,7 +28,6 @@ sealed class InventoryEvent {
     object ClearAdvancedFilters : InventoryEvent()
 
     data class DistributeItem(val itemId: String) : InventoryEvent()
-    object ClearError : InventoryEvent()
 
     // Bulk selection
     object ToggleSelectionMode : InventoryEvent()

@@ -66,6 +66,7 @@ fun AccountDetailScreen(
         ) {
             ScreenTitleRow(
                 title = stringResource(R.string.title_account_details),
+                backEnabled = !state.isSavingProfile,
                 onBack = {
                     if (state.isEditing) viewModel.onEvent(ProfileEvent.CancelEdit) else onNavigateBack()
                 },
@@ -73,11 +74,7 @@ fun AccountDetailScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    state.isLoading && user == null -> {
-                        CircularProgressIndicator(
-                            Modifier.align(Alignment.Center)
-                        )
-                    }
+                    state.isLoading && user == null -> LoadingState()
 
                     user == null -> {
                         EmptyState(
