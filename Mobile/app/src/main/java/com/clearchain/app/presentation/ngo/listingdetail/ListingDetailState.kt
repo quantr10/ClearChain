@@ -13,7 +13,6 @@ data class ListingDetailState(
     val currentUserType: OrganizationType? = null,
 
     val similarListings: List<Listing> = emptyList(),
-    val isLoadingSimilar: Boolean = false,
 
     // Real-time availability override from SignalR
     val availabilityOverride: Int? = null,

@@ -1,7 +1,6 @@
 package com.clearchain.app.data.repository
 
 import com.clearchain.app.data.local.dao.UserDao
-import com.clearchain.app.data.remote.api.NgoReputationData
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.UpdateProfileRequest
 import com.clearchain.app.domain.repository.OrganizationRepository
@@ -14,14 +13,6 @@ class OrganizationRepositoryImpl @Inject constructor(
     private val api: OrganizationApi,
     private val userDao: UserDao
 ) : OrganizationRepository {
-
-    override suspend fun getNgoReputation(organizationId: String): Result<NgoReputationData> {
-        return try {
-            Result.success(api.getNgoReputation(organizationId).data)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     override suspend fun uploadVerificationDocument(
         bytes: ByteArray,

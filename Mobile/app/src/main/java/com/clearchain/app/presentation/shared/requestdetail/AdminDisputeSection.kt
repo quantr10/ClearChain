@@ -86,7 +86,7 @@ private fun DisputeSummaryCard(
 ) {
     SectionCard(
         title = stringResource(R.string.disputes),
-        trailing = { DisputeStatusBadge(status) }
+        action = { DisputeStatusBadge(status) }
     ) {
         // Reasons are stored as keys; older rows may hold free text, which is shown as-is.
         val reasonLabel = NgoDisputeReason.fromKey(reason)?.let { stringResource(it.labelRes) } ?: reason

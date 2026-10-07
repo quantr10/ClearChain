@@ -20,7 +20,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<Inventory> Inventories { get; set; } = null!;
     public DbSet<ListingGroup> ListingGroups { get; set; } = null!;
     public DbSet<FCMToken> FCMTokens { get; set; } = null!;
-    public DbSet<FoodImageAnalysis> FoodImageAnalyses { get; set; } = null!;
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<Review> Reviews { get; set; } = null!;
@@ -42,7 +41,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Inventory>().ToTable("inventory");
         modelBuilder.Entity<ListingGroup>().ToTable("listinggroups");
         modelBuilder.Entity<FCMToken>().ToTable("fcmtokens");
-        modelBuilder.Entity<FoodImageAnalysis>().ToTable("foodimageanalyses");
         modelBuilder.Entity<Notification>().ToTable("notifications");
         modelBuilder.Entity<Message>().ToTable("messages");
         modelBuilder.Entity<Review>().ToTable("reviews");
@@ -75,20 +73,6 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<FCMToken>()
             .HasIndex(f => f.OrganizationId);
-
-        // FoodImageAnalysis → Grocery
-        modelBuilder.Entity<FoodImageAnalysis>()
-            .HasOne(f => f.Grocery)
-            .WithMany()
-            .HasForeignKey(f => f.GroceryId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // FoodImageAnalysis indexes
-        modelBuilder.Entity<FoodImageAnalysis>()
-            .HasIndex(f => f.GroceryId);
-
-        modelBuilder.Entity<FoodImageAnalysis>()
-            .HasIndex(f => f.AnalyzedAt);
 
         // PickupRequest → Ngo
         modelBuilder.Entity<PickupRequest>()

@@ -8,7 +8,6 @@ using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -223,8 +222,7 @@ public class ListingsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -233,7 +231,7 @@ public class ListingsController : ControllerBase
         var clampedPageSize = Math.Clamp(pageSize, 1, 100);
 
         var baseQuery = _context.ClearanceListings
-            .Where(l => l.GroceryId.ToString() == userId);
+            .Where(l => l.GroceryId == userId);
 
         var total = await baseQuery.CountAsync();
 
@@ -401,8 +399,7 @@ public class ListingsController : ControllerBase
             return NotFound(new { message = "Listing not found" });
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (listing.Status == ListingStatus.Archived && listing.GroceryId.ToString() != userId)
+        if (listing.Status == ListingStatus.Archived && (!this.TryGetUserId(out var userId) || listing.GroceryId != userId))
         {
             return NotFound(new { message = "Listing not found" });
         }
@@ -420,8 +417,7 @@ public class ListingsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ListingResponse>> DeleteListing(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -429,7 +425,7 @@ public class ListingsController : ControllerBase
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
             .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId == userId);
 
         if (listing == null)
         {
@@ -506,8 +502,7 @@ public class ListingsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ListingResponse>> ArchiveListing(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -515,7 +510,7 @@ public class ListingsController : ControllerBase
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
             .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId == userId);
 
         if (listing == null)
         {
@@ -552,8 +547,7 @@ public class ListingsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ListingResponse>> RestoreListing(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -561,7 +555,7 @@ public class ListingsController : ControllerBase
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
             .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId == userId);
 
         if (listing == null)
         {
@@ -617,8 +611,7 @@ public class ListingsController : ControllerBase
         Guid id,
         [FromBody] CreateListingRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -626,7 +619,7 @@ public class ListingsController : ControllerBase
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
             .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId == userId);
 
         if (listing == null)
         {
@@ -719,8 +712,7 @@ public class ListingsController : ControllerBase
         Guid id,
         [FromBody] UpdateListingQuantityRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
@@ -728,7 +720,7 @@ public class ListingsController : ControllerBase
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
             .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId.ToString() == userId);
+            .FirstOrDefaultAsync(l => l.Id == id && l.GroceryId == userId);
 
         if (listing == null)
         {

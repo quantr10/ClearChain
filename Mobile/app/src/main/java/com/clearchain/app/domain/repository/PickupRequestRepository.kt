@@ -5,17 +5,6 @@ import com.clearchain.app.domain.model.PickupRequest
 
 interface PickupRequestRepository {
 
-    suspend fun createPickupRequest(
-        listingId: String,
-        requestedQuantity: Int,
-        pickupDate: String,
-        pickupTime: String,
-        notes: String? = null,
-        requiresRefrigeration: Boolean = false,
-        isFragile: Boolean = false,
-        isHeavy: Boolean = false
-    ): Result<PickupRequest>
-
     suspend fun getMyPickupRequests(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>>
 
     suspend fun getGroceryPickupRequests(page: Int = 1, pageSize: Int = 20): Result<List<PickupRequest>>

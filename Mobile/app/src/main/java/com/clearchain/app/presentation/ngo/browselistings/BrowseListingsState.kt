@@ -1,11 +1,8 @@
 package com.clearchain.app.presentation.ngo.browselistings
 
-import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartItemData
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.CommonSortOptions
-import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
 
 data class BrowseListingsState(
@@ -24,11 +21,6 @@ data class BrowseListingsState(
         CommonSortOptions.NAME_DESC
     ),
     val selectedCategory: String? = null,
-    val availableCategoryFilters: List<FilterChipData> = listOf(
-        FilterChipData(null, labelResId = R.string.filter_all)
-    ) + FoodCategory.entries.map {
-        FilterChipData(it.name, labelResId = it.labelResId)
-    },
 
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -68,8 +60,6 @@ data class BrowseListingsState(
     val isUpdatingCart: Boolean = false
 ) {
     val listings: List<Listing> get() = filteredListings
-    val selectedCategoryEnum: FoodCategory? get() =
-        selectedCategory?.let { FoodCategory.valueOf(it) }
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
             (if (filterMinQuantity > 0) 1 else 0) +

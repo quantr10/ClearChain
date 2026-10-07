@@ -13,8 +13,6 @@ public class InventoryItemData
     public string ReceivedAt { get; set; } = string.Empty;
     public string? DistributedAt { get; set; }
     public string? PickupRequestId { get; set; }
-    public bool IsManuallyAdded { get; set; }
-    public string? SourcePickupRequestId { get; set; }
     public string? PhotoUrl { get; set; }
     public string? Notes { get; set; }
 }

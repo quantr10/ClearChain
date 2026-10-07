@@ -131,12 +131,12 @@ Full request and response schemas are published at `/swagger` when the API is ru
 ## Database
 
 PostgreSQL via Supabase, with Supabase Storage for images and documents.
-Table names are lowercase; 16 tables are mapped:
+Table names are lowercase; 15 tables are mapped:
 
 `organizations`, `clearancelistings`, `listinggroups`, `pickuprequests`,
 `pickuprequestitems`, `carts`, `cartitems`, `inventory`, `savedlistings`,
-`notifications`, `messages`, `reviews`, `disputes`,
-`foodimageanalyses`, `fcmtokens`, `refreshtokens`.
+`notifications`, `messages`, `reviews`, `disputes`, `fcmtokens`,
+`refreshtokens`.
 
 Schema changes are applied through EF Core migrations in
 `Backend/ClearChain.Infrastructure/Migrations`. The directory starts empty on a fresh

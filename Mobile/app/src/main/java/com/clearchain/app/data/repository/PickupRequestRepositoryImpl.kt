@@ -9,7 +9,6 @@ import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.remote.api.PickupRequestApi
 import com.clearchain.app.data.remote.dto.BulkActionRequest
 import com.clearchain.app.data.remote.dto.BulkRejectRequest
-import com.clearchain.app.data.remote.dto.CreatePickupRequestRequest
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.repository.BulkActionOutcome
@@ -28,37 +27,6 @@ class PickupRequestRepositoryImpl @Inject constructor(
     private val userDao: UserDao,
     @ApplicationContext private val context: Context
 ) : PickupRequestRepository {
-
-    override suspend fun createPickupRequest(
-        listingId: String,
-        requestedQuantity: Int,
-        pickupDate: String,
-        pickupTime: String,
-        notes: String?,
-        requiresRefrigeration: Boolean,
-        isFragile: Boolean,
-        isHeavy: Boolean
-    ): Result<PickupRequest> {
-        return try {
-            val response = pickupRequestApi.createPickupRequest(
-                CreatePickupRequestRequest(
-                    listingId = listingId,
-                    requestedQuantity = requestedQuantity,
-                    pickupDate = pickupDate,
-                    pickupTime = pickupTime,
-                    notes = notes,
-                    requiresRefrigeration = requiresRefrigeration,
-                    isFragile = isFragile,
-                    isHeavy = isHeavy
-                )
-            )
-            val domain = response.data.toDomain()
-            pickupRequestDao.upsert(domain.toEntity())
-            Result.success(domain)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     override suspend fun getMyPickupRequests(page: Int, pageSize: Int): Result<List<PickupRequest>> {
         return try {

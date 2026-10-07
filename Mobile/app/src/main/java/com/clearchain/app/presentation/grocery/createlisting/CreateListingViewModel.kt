@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.local.ListingDraft
 import com.clearchain.app.data.local.ListingDraftStore
-import com.clearchain.app.data.remote.dto.FoodAnalysisData
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.listing.CreateListingUseCase
@@ -69,7 +68,6 @@ class CreateListingViewModel @Inject constructor(
             expiryDate = s.expiryDate
         )
         draftStore.save(draft)
-        _state.update { it.copy(draftSavedAt = System.currentTimeMillis()) }
     }
 
     fun onEvent(event: CreateListingEvent) {
@@ -220,8 +218,7 @@ class CreateListingViewModel @Inject constructor(
                                 category = draft.category,
                                 quantity = draft.quantity,
                                 unit = draft.unit,
-                                expiryDate = draft.expiryDate,
-                                draftSavedAt = draft.savedAt
+                                expiryDate = draft.expiryDate
                             )
                         }
                         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_draft_restored)))
@@ -231,7 +228,6 @@ class CreateListingViewModel @Inject constructor(
 
             CreateListingEvent.ClearDraft -> {
                 viewModelScope.launch { draftStore.clear() }
-                _state.update { it.copy(draftSavedAt = null) }
             }
         }
     }
@@ -286,15 +282,6 @@ class CreateListingViewModel @Inject constructor(
                 onSuccess = { listing ->
                     _state.update { it.copy(isLoading = false) }
 
-                    // Save analysis to DB if AI was used
-                    if (currentState.analysisResult != null) {
-                        // imageUrl in analysis before saving
-                        val updatedAnalysis = currentState.analysisResult!!.copy(
-                            imageUrl = finalImageUrl
-                        )
-                        saveAnalysisToDatabase(updatedAnalysis)
-                    }
-
                     // Clear draft on success
                     draftStore.clear()
 
@@ -311,19 +298,6 @@ class CreateListingViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_create_listing_failed)))
                 }
             )
-        }
-    }
-
-// Save analysis after listing created
-    private fun saveAnalysisToDatabase(analysisData: FoodAnalysisData) {
-        viewModelScope.launch {
-            try {
-                listingRepository.saveAnalysis(analysisData)
-                Log.d(TAG, "✅ Analysis saved to database")
-            } catch (e: Exception) {
-                // Don't fail - analysis save is non-critical
-                Log.e(TAG, "⚠️ Failed to save analysis (non-critical): ${e.message}")
-            }
         }
     }
 

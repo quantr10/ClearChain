@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -456,32 +455,40 @@ private fun OrganizationCard(
             // location reads last here because it's the least actionable of the four
             // and it keeps the header uncluttered.
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                CompactInfoRow(
+                CompactDetailRow(
                     icon = Icons.Default.Email,
-                    value = organization.email,
-                    modifier = Modifier.fillMaxWidth()
+                    text = organization.email,
+                    modifier = Modifier.fillMaxWidth(),
+                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CompactInfoRow(
+                    CompactDetailRow(
                         icon = Icons.Default.Phone,
-                        value = organization.phone.ifBlank { stringResource(R.string.msg_not_provided) }
+                        text = organization.phone.ifBlank { stringResource(R.string.msg_not_provided) },
+                        iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
                     )
                     organization.contactPerson?.takeIf { it.isNotBlank() }?.let { person ->
-                        CompactInfoRow(
+                        CompactDetailRow(
                             icon = Icons.Default.Person,
-                            value = person,
-                            modifier = Modifier.weight(1f)
+                            text = person,
+                            modifier = Modifier.weight(1f),
+                            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
                         )
                     }
                 }
-                CompactInfoRow(
+                CompactDetailRow(
                     icon = Icons.Default.Place,
-                    value = organization.location.ifBlank { stringResource(R.string.msg_not_provided) },
-                    modifier = Modifier.fillMaxWidth()
+                    text = organization.location.ifBlank { stringResource(R.string.msg_not_provided) },
+                    modifier = Modifier.fillMaxWidth(),
+                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
 
@@ -526,62 +533,6 @@ private fun OrganizationCard(
                         icon = Icons.Default.CheckCircle
                     )
                 }
-            }
-        }
-    }
-}
-
-// Matches CompactAccountDetailRow in AccountDetailScreen.kt exactly (icon 14dp, 6dp gap,
-// labelSmall/SemiBold value, no separate label — the icon alone reads as Email/Phone/
-// Location, same as that screen's Contact/Location & Hours rows) so this list card reads at
-// the same compact scale as the rest of the app instead of the larger shared InfoRow
-// (icon 18dp, bodyMedium value) meant for full detail-screen layouts.
-@Composable
-private fun CompactInfoRow(icon: ImageVector, value: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun SelectionCircleButton(
-    checked: Boolean,
-    onCheckedChange: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onCheckedChange,
-        modifier = modifier.size(24.dp),
-        shape = RoundedCornerShape(50),
-        color = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-        border = if (checked) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = 1.dp
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (checked) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
             }
         }
     }

@@ -25,7 +25,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.math.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -34,7 +33,6 @@ import kotlinx.coroutines.launch
 class ListingDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val listingRepository: ListingRepository,
-    private val listingApi: ListingApi,
     private val cartApi: CartApi,
     private val savedListingApi: SavedListingApi,
     private val organizationApi: OrganizationApi,
@@ -121,10 +119,9 @@ class ListingDetailViewModel @Inject constructor(
 
     private fun loadSimilarListings(excludeId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoadingSimilar = true) }
             val locationPreference = locationPreferenceStore.locationPreference.first()
             if (locationPreference == null) {
-                _state.update { it.copy(similarListings = emptyList(), isLoadingSimilar = false) }
+                _state.update { it.copy(similarListings = emptyList()) }
                 return@launch
             }
 
@@ -148,12 +145,10 @@ class ListingDetailViewModel @Inject constructor(
                                             radiusKm = locationPreference.radiusKm
                                         )
                                 }
-                                .take(5),
-                            isLoadingSimilar = false
+                                .take(5)
                         )
                     }
                 }
-                .onFailure { _state.update { it.copy(isLoadingSimilar = false) } }
         }
     }
 

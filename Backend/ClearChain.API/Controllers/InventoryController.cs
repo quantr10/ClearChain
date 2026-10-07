@@ -7,7 +7,6 @@ using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace ClearChain.API.Controllers;
 
@@ -42,8 +41,6 @@ public class InventoryController : ControllerBase
             ReceivedAt = item.ReceivedAt.ToString("o"),
             DistributedAt = item.DistributedAt?.ToString("o"),
             PickupRequestId = item.PickupRequestId.ToString(),
-            IsManuallyAdded = item.IsManuallyAdded,
-            SourcePickupRequestId = item.SourcePickupRequestId,
             PhotoUrl = item.PhotoUrl,
             Notes = item.Notes
         };
@@ -54,14 +51,13 @@ public class InventoryController : ControllerBase
     public async Task<ActionResult<InventoryListResponse>> GetMyInventory(
         [FromQuery] string? status = null)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
 
         var query = _context.Inventories
-            .Where(i => i.NgoId.ToString() == userId);
+            .Where(i => i.NgoId == userId);
 
         // Filter by status if provided
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<InventoryStatus>(status, ignoreCase: true, out var statusEnum))
@@ -86,14 +82,13 @@ public class InventoryController : ControllerBase
     [HttpPut("{id}/distribute")]
     public async Task<ActionResult<InventoryItemResponse>> DistributeItem(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
 
         var item = await _context.Inventories
-            .FirstOrDefaultAsync(i => i.Id == id && i.NgoId.ToString() == userId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.NgoId == userId);
 
         if (item == null)
         {
@@ -129,14 +124,13 @@ public class InventoryController : ControllerBase
     [HttpPost("update-expired")]
     public async Task<ActionResult> UpdateExpiredItems()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
         {
             return Unauthorized(new { message = "User not authenticated" });
         }
 
         var expiredItems = await _context.Inventories
-            .Where(i => i.NgoId.ToString() == userId &&
+            .Where(i => i.NgoId == userId &&
                        i.Status == InventoryStatus.Active &&
                        i.ExpiryDate < DateTime.UtcNow.Date)
             .ToListAsync();
@@ -165,12 +159,11 @@ public class InventoryController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<InventoryItemResponse>> GetInventoryItemById(Guid id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        if (!this.TryGetUserId(out var userId))
             return Unauthorized(new { message = "User not authenticated" });
 
         var item = await _context.Inventories
-            .FirstOrDefaultAsync(i => i.Id == id && i.NgoId.ToString() == userId);
+            .FirstOrDefaultAsync(i => i.Id == id && i.NgoId == userId);
 
         if (item == null)
             return NotFound(new { message = "Inventory item not found" });

@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,17 +59,16 @@ import com.clearchain.app.domain.model.PickupRequestStatus
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.presentation.dispute.DisputeStatusBadge
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.ImageUtils
 import com.clearchain.app.util.PickupReceiptPdf
+import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
-import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -860,60 +858,62 @@ private fun RequestDetailContent(
                     )
                 }
             }
-        } else Card(
-            modifier = Modifier.fillMaxWidth().height(148.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(12.dp)
+        } else {
+            Card(
+                modifier = Modifier.fillMaxWidth().height(148.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                if (showReceiptBtn) {
-                    Row(
-                        modifier = Modifier.align(Alignment.TopEnd),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-                    ) {
-                        if (showReceiptBtn) {
-                            ImageActionButton(
-                                icon = Icons.Default.Receipt,
-                                label = stringResource(R.string.cd_download_receipt),
-                                loading = state.isGeneratingReceipt,
-                                onClick = onGenerateReceipt
-                            )
-                        }
-                    }
-                }
-                Column(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(12.dp)
                 ) {
-                    Surface(
-                        onClick = { onNavigateToPublicProfile(partyId) },
-                        modifier = Modifier.size(64.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        if (!partyAvatar.isNullOrBlank()) {
-                            AsyncImage(
-                                model = partyAvatar,
-                                contentDescription = partyName,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    partyName.take(1).uppercase(),
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    if (showReceiptBtn) {
+                        Row(
+                            modifier = Modifier.align(Alignment.TopEnd),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                        ) {
+                            if (showReceiptBtn) {
+                                ImageActionButton(
+                                    icon = Icons.Default.Receipt,
+                                    label = stringResource(R.string.cd_download_receipt),
+                                    loading = state.isGeneratingReceipt,
+                                    onClick = onGenerateReceipt
                                 )
                             }
                         }
                     }
-                    Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(partyType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Surface(
+                            onClick = { onNavigateToPublicProfile(partyId) },
+                            modifier = Modifier.size(64.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            if (!partyAvatar.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = partyAvatar,
+                                    contentDescription = partyName,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        partyName.take(1).uppercase(),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                        }
+                        Text(partyName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(partyType, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }
@@ -944,7 +944,7 @@ private fun RequestDetailContent(
         if (req.items.isNotEmpty()) {
             SectionCard(
                 title = stringResource(R.string.cart_requested_items),
-                trailing = {
+                action = {
                     Text(
                         "${req.items.size} ${if (req.items.size == 1) "item" else "items"}",
                         style = MaterialTheme.typography.labelSmall,
@@ -1202,65 +1202,6 @@ private fun RequestDetailContent(
     }
 }
 
-// -- Circular overlay action button --
-@Composable
-private fun ImageActionButton(
-    icon: ImageVector,
-    label: String,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    loading: Boolean = false,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.size(24.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (loading) {
-                CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = tint)
-            } else {
-                Icon(icon, label, Modifier.size(18.dp), tint = tint)
-            }
-        }
-    }
-}
-
-// -- Section card --
-@Composable
-internal fun SectionCard(
-    title: String,
-    trailing: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                trailing?.invoke()
-            }
-            content()
-        }
-    }
-}
-
 // -- Compact section label --
 @Composable
 private fun RequestedItemRow(
@@ -1335,28 +1276,6 @@ private fun RequestedItemRow(
         if (showDivider) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
-    }
-}
-
-// -- Compact detail row --
-@Composable
-private fun CompactDetailRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
-    bold: Boolean = true
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(icon, null, Modifier.size(14.dp), tint = textColor)
-        Text(
-            text,
-            style = MaterialTheme.typography.labelSmall,
-            color = textColor,
-            fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal
-        )
     }
 }
 

@@ -19,23 +19,6 @@ public class PickupRequestsController : ControllerBase
         _service = service;
     }
 
-    // ── POST api/pickuprequests ──────────────────────────────────────────────
-
-    [HttpPost]
-    [RequireVerifiedOrganization]
-    public async Task<ActionResult<PickupRequestResponse>> CreatePickupRequest(
-        [FromBody] CreatePickupRequestRequest request)
-    {
-        if (!this.TryGetUserId(out var userId))
-            return Unauthorized(new { message = "User not authenticated" });
-
-        var result = await _service.CreateAsync(userId, request);
-        if (!result.Success) return MapError(result);
-
-        return CreatedAtAction(nameof(GetPickupRequestById), new { id = result.Data!.Id },
-            new PickupRequestResponse { Message = "Pickup request created successfully", Data = result.Data! });
-    }
-
     // ── DELETE api/pickuprequests/{id} ───────────────────────────────────────
 
     [HttpDelete("{id}")]

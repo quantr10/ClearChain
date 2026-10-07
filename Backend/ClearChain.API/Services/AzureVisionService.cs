@@ -1,9 +1,6 @@
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using ClearChain.API.DTOs.ImageAnalysis;
-using ClearChain.Domain.Entities;
-using ClearChain.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Services;
 
@@ -15,7 +12,6 @@ public class AzureVisionService : IImageAnalysisService
 {
     private readonly ComputerVisionClient _visionClient;
     private readonly IStorageService _storageService;
-    private readonly ApplicationDbContext _context;
     private readonly ILogger<AzureVisionService> _logger;
 
     // ====================================================================
@@ -146,7 +142,6 @@ public class AzureVisionService : IImageAnalysisService
     public AzureVisionService(
         IConfiguration config,
         IStorageService storageService,
-        ApplicationDbContext context,
         ILogger<AzureVisionService> logger)
     {
         var endpoint = config["AZURE_VISION_ENDPOINT"]
@@ -160,7 +155,6 @@ public class AzureVisionService : IImageAnalysisService
         };
 
         _storageService = storageService;
-        _context = context;
         _logger = logger;
     }
 
@@ -201,60 +195,7 @@ public class AzureVisionService : IImageAnalysisService
             throw;
         }
     }
-    // ====================================================================
-    // 💾 NEW: SAVE ANALYSIS (Called only when listing created)
-    // ====================================================================
-    public async Task SaveAnalysisAsync(FoodAnalysisData data, Guid groceryId)
-    {
-        try
-        {
-            _logger.LogInformation($"💾 Saving analysis to DB: {data.Title} for grocery {groceryId}");
 
-            await SaveAnalysisToDatabase(data, groceryId);
-
-            _logger.LogInformation($"✅ Analysis saved successfully");
-        }
-        catch (Exception ex)
-        {
-            // Don't fail listing creation if analysis save fails
-            _logger.LogError(ex, "⚠️ Failed to save analysis (non-critical)");
-        }
-    }
-
-    // ====================================================================
-    // Keep private method as-is
-    // ====================================================================
-    private async Task SaveAnalysisToDatabase(FoodAnalysisData data, Guid groceryId)
-    {
-        DateTime? expiryDateUtc = null;
-        if (!string.IsNullOrEmpty(data.ExpiryDate))
-        {
-            var parsedDate = DateTime.Parse(data.ExpiryDate);
-            expiryDateUtc = DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
-        }
-
-        var entity = new FoodImageAnalysis
-        {
-            Id = Guid.NewGuid(),
-            GroceryId = groceryId,
-            ImageUrl = data.ImageUrl,
-            DetectedName = data.Title,
-            DetectedCategory = data.Category,
-            EstimatedExpiryDate = expiryDateUtc,
-            Notes = data.Notes,
-            Confidence = data.Confidence,
-            FreshnessScore = data.FreshnessScore,
-            QualityGrade = data.QualityGrade,
-            DetectedItems = System.Text.Json.JsonSerializer.Serialize(data.DetectedItems),
-            AnalyzedAt = DateTime.SpecifyKind(data.AnalyzedAt, DateTimeKind.Utc),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.FoodImageAnalyses.Add(entity);
-        await _context.SaveChangesAsync();
-    }
-
-    // ... rest of code unchanged ...
     // ====================================================================
     // 🚀 ENHANCED PROCESSING - Multi-factor Analysis
     // ====================================================================
@@ -730,28 +671,6 @@ public class AzureVisionService : IImageAnalysisService
         return string.Join(" ", words);
     }
 
-    public async Task<List<FoodAnalysisData>> GetAnalysisHistoryAsync(Guid groceryId, int limit = 10)
-    {
-        var analyses = await _context.FoodImageAnalyses
-            .Where(a => a.GroceryId == groceryId)
-            .OrderByDescending(a => a.AnalyzedAt)
-            .Take(limit)
-            .ToListAsync();
-
-        return analyses.Select(a => new FoodAnalysisData
-        {
-            Title = a.DetectedName,
-            Category = a.DetectedCategory,
-            ExpiryDate = a.EstimatedExpiryDate?.ToString("yyyy-MM-dd") ?? "",
-            Notes = a.Notes,
-            ImageUrl = a.ImageUrl,
-            Confidence = a.Confidence,
-            FreshnessScore = a.FreshnessScore,
-            QualityGrade = a.QualityGrade,
-            DetectedItems = System.Text.Json.JsonSerializer.Deserialize<List<DetectedItem>>(a.DetectedItems) ?? new(),
-            AnalyzedAt = a.AnalyzedAt
-        }).ToList();
-    }
 }
 
 public class ApiKeyServiceClientCredentials : Microsoft.Rest.ServiceClientCredentials

@@ -30,7 +30,6 @@ public record PickupRequestServiceResult(
 
 public interface IPickupRequestService
 {
-    Task<PickupRequestServiceResult> CreateAsync(Guid ngoId, CreatePickupRequestRequest request);
     Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false);
     Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType);
     Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, bool includeContacts = false);
@@ -66,65 +65,6 @@ public class PickupRequestService : IPickupRequestService
         _inventoryNotificationService = inventoryNotificationService;
         _adminNotificationService = adminNotificationService;
         _pushNotificationService = pushNotificationService;
-    }
-
-    public async Task<PickupRequestServiceResult> CreateAsync(Guid ngoId, CreatePickupRequestRequest request)
-    {
-        var ngo = await _context.Organizations.FindAsync(ngoId);
-        if (ngo == null || ngo.Type.ToLower() != "ngo")
-            return Fail(PickupRequestServiceError.Forbidden, "Only NGOs can create pickup requests");
-
-        var listing = await _context.ClearanceListings
-            .Include(l => l.Grocery)
-            .Include(l => l.Group)
-            .FirstOrDefaultAsync(l => l.Id.ToString() == request.ListingId);
-
-        if (listing == null)
-            return Fail(PickupRequestServiceError.NotFound, "Listing not found");
-        if (listing.Status != ListingStatus.Open)
-            return Fail(PickupRequestServiceError.InvalidStatus, "Listing is not available");
-        if (request.RequestedQuantity <= 0)
-            return Fail(PickupRequestServiceError.InvalidInput, "Requested quantity must be at least 1");
-        if (request.RequestedQuantity > listing.Quantity)
-            return Fail(PickupRequestServiceError.InvalidInput, $"Requested quantity exceeds available quantity ({listing.Quantity})");
-        if (!DateTime.TryParse(request.PickupDate, out var pickupDate))
-            return Fail(PickupRequestServiceError.InvalidInput, "Invalid pickup date format. Use yyyy-MM-dd.");
-        if (listing.Group == null)
-            return Fail(PickupRequestServiceError.InvalidInput, "Listing has no associated group");
-
-        var pickupDateUtc = DateTime.SpecifyKind(pickupDate, DateTimeKind.Utc);
-        if (pickupDateUtc.Date < DateTime.UtcNow.Date)
-            return Fail(PickupRequestServiceError.InvalidInput, "Pickup date cannot be in the past");
-        if (listing.ExpirationDate.HasValue && pickupDateUtc.Date > listing.ExpirationDate.Value.Date)
-            return Fail(PickupRequestServiceError.InvalidInput, $"Pickup date cannot be after expiry date ({listing.ExpirationDate.Value:yyyy-MM-dd})");
-
-        var (reservedListing, pickupRequest) = SplitListing(
-            listing, listing.Group, request.RequestedQuantity,
-            pickupDateUtc, request.PickupTime, request.Notes, ngoId,
-            request.RequiresRefrigeration, request.IsFragile, request.IsHeavy);
-
-        _context.PickupRequests.Add(pickupRequest);
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // The listing/group was reserved or modified by someone else between our read
-            // and this write (caught by the xmin concurrency token) — refuse rather than
-            // silently overselling the same stock.
-            return Fail(PickupRequestServiceError.Conflict,
-                "This listing was just updated by someone else. Please refresh and try again.");
-        }
-
-        var data = MapToData(pickupRequest, reservedListing.Id, ngo.Name, listing.Grocery?.Name ?? "");
-
-        // SignalR reaches the grocery only while they have the app open; the push is what
-        // gets a new request in front of them when it isn't.
-        await _notificationService.NotifyPickupRequestCreatedAsync(data);
-        await _pushNotificationService.SendPickupRequestCreatedNotification(pickupRequest.GroceryId, data);
-
-        return new PickupRequestServiceResult(true, Data: data);
     }
 
     public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false)
@@ -713,27 +653,6 @@ public class PickupRequestService : IPickupRequestService
         return Math.Round(earthRadiusKm * c, 1);
     }
 
-    private static PickupRequestItem BuildItem(
-        Guid requestId,
-        ClearanceListing sourceListing,
-        ClearanceListing reservedListing,
-        int requestedQuantity) =>
-        new()
-        {
-            Id = Guid.NewGuid(),
-            PickupRequestId = requestId,
-            ListingGroupId = sourceListing.GroupId,
-            OriginalListingId = sourceListing.Id,
-            ReservedListingId = reservedListing.Id,
-            RequestedQuantity = requestedQuantity,
-            ListingTitle = sourceListing.ProductName,
-            ListingCategory = sourceListing.Category,
-            ListingExpiryDate = sourceListing.ExpirationDate?.ToString("yyyy-MM-dd"),
-            ListingUnit = sourceListing.Unit,
-            ListingPhotoUrl = FirstImageUrl(sourceListing.PhotoUrl),
-            CreatedAt = DateTime.UtcNow
-        };
-
     private static string? FirstImageUrl(string? photoUrl)
     {
         if (string.IsNullOrWhiteSpace(photoUrl))
@@ -766,100 +685,6 @@ public class PickupRequestService : IPickupRequestService
             PageSize = pageSize,
             TotalPages = (int)Math.Ceiling((double)total / pageSize)
         };
-    }
-
-    private (ClearanceListing reservedListing, PickupRequest request) SplitListing(
-        ClearanceListing sourceListing, ListingGroup group,
-        int requestedQuantity, DateTime pickupDate,
-        string pickupTime, string? notes, Guid ngoId,
-        bool requiresRefrigeration = false,
-        bool isFragile = false, bool isHeavy = false)
-    {
-        var requestId = Guid.NewGuid();
-
-        if (requestedQuantity >= sourceListing.Quantity)
-        {
-            sourceListing.Status = ListingStatus.Reserved;
-            sourceListing.RelatedRequestId = requestId;
-            sourceListing.UpdatedAt = DateTime.UtcNow;
-            group.TotalAvailable -= sourceListing.Quantity;
-            group.TotalReserved += sourceListing.Quantity;
-            group.UpdatedAt = DateTime.UtcNow;
-
-            var wholeRequest = new PickupRequest
-            {
-                Id = requestId,
-                NgoId = ngoId,
-                GroceryId = sourceListing.GroceryId,
-                ListingId = sourceListing.Id,
-                PickupDate = pickupDate,
-                Status = PickupRequestStatus.Pending,
-                RequestedAt = DateTime.UtcNow,
-                RequestedQuantity = requestedQuantity,
-                PickupTime = pickupTime,
-                Notes = notes,
-                RequiresRefrigeration = requiresRefrigeration,
-                IsFragile = isFragile,
-                IsHeavy = isHeavy
-            };
-            wholeRequest.Items.Add(BuildItem(wholeRequest.Id, sourceListing, sourceListing, requestedQuantity));
-            PickupRequestSummary.Apply(wholeRequest);
-            return (sourceListing, wholeRequest);
-        }
-
-        var reservedListing = new ClearanceListing
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            GroceryId = sourceListing.GroceryId,
-            ProductName = sourceListing.ProductName,
-            Category = sourceListing.Category,
-            Quantity = requestedQuantity,
-            Unit = sourceListing.Unit,
-            ExpirationDate = sourceListing.ExpirationDate.HasValue
-                ? DateTime.SpecifyKind(sourceListing.ExpirationDate.Value, DateTimeKind.Utc)
-                : (DateTime?)null,
-            ClearanceDeadline = DateTime.SpecifyKind(sourceListing.ClearanceDeadline, DateTimeKind.Utc),
-            Notes = sourceListing.Notes,
-            PhotoUrl = sourceListing.PhotoUrl,
-            PickupTimeStart = sourceListing.PickupTimeStart,
-            PickupTimeEnd = sourceListing.PickupTimeEnd,
-            Status = ListingStatus.Reserved,
-            SplitReason = "partial_request",
-            RelatedRequestId = requestId,
-            SplitFromListingId = sourceListing.Id,
-            SplitIndex = group.ChildListings?.Count ?? 1,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        sourceListing.Quantity -= requestedQuantity;
-        sourceListing.UpdatedAt = DateTime.UtcNow;
-        group.TotalAvailable -= requestedQuantity;
-        group.TotalReserved += requestedQuantity;
-        group.UpdatedAt = DateTime.UtcNow;
-
-        _context.ClearanceListings.Add(reservedListing);
-
-        var partialRequest = new PickupRequest
-        {
-            Id = requestId,
-            NgoId = ngoId,
-            GroceryId = sourceListing.GroceryId,
-            ListingId = reservedListing.Id,
-            PickupDate = pickupDate,
-            Status = PickupRequestStatus.Pending,
-            RequestedAt = DateTime.UtcNow,
-            RequestedQuantity = requestedQuantity,
-            PickupTime = pickupTime,
-            Notes = notes,
-            RequiresRefrigeration = requiresRefrigeration,
-            IsFragile = isFragile,
-            IsHeavy = isHeavy
-        };
-        partialRequest.Items.Add(BuildItem(partialRequest.Id, sourceListing, reservedListing, requestedQuantity));
-        PickupRequestSummary.Apply(partialRequest);
-        return (reservedListing, partialRequest);
     }
 
     private async Task SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)

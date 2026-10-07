@@ -361,31 +361,3 @@ fun EditListingScreen(
         }
     }
 }
-
-@Composable
-private fun FieldCard(
-    label: String,
-    modifier: Modifier = Modifier,
-    isOptional: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            OptionalFieldLabel(
-                text = label.replace("*", "").trim(),
-                isOptional = isOptional,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            content()
-        }
-    }
-}

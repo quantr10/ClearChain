@@ -8,19 +8,6 @@ import kotlinx.serialization.Serializable
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class CreatePickupRequestRequest(
-    val listingId: String,
-    val requestedQuantity: Int,
-    val pickupDate: String,
-    val pickupTime: String,
-    val notes: String? = null,
-    val requiresRefrigeration: Boolean = false,
-    val isFragile: Boolean = false,
-    val isHeavy: Boolean = false
-)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
 data class BulkActionRequest(val ids: List<String>)
 
 @SuppressLint("UnsafeOptInUsageError")

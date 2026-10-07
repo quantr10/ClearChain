@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.presentation.components.ClearChainButtonDefaults
 import com.clearchain.app.presentation.components.ClearChainSurfaceCard
+import com.clearchain.app.presentation.components.SectionCard
 import com.clearchain.app.util.DateTimeUtils
 import java.util.Locale
 

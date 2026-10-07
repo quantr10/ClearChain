@@ -137,28 +137,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun refreshToken(refreshToken: String): Result<Pair<Organization, AuthTokens>> {
-        return try {
-            val request = RefreshTokenRequest(refreshToken)
-            val response = authApi.refreshToken(request)
-            val (organization, tokens) = response.data.toDomain()
-
-            userDao.clearUsers()
-            authTokenDao.saveTokens(
-                AuthTokenEntity(
-                    accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
-                )
-            )
-            userDao.insertUser(organization.toEntity())
-            Result.success(Pair(organization, tokens))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     override suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
         return try {
             authApi.changePassword(ChangePasswordRequest(currentPassword, newPassword))
@@ -180,10 +158,6 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    override suspend fun isLoggedIn(): Flow<Boolean> {
-        return authTokenDao.getTokensFlow().map { it != null }
     }
 }
 

@@ -71,20 +71,4 @@ public class InventoryNotificationService : IInventoryNotificationService
             _logger.LogError(ex, "Error sending InventoryItemExpired notification");
         }
     }
-
-    public async Task NotifyInventoryUpdatedAsync(InventoryItemData item)
-    {
-        try
-        {
-            await _hubContext.Clients
-                .Groups($"user_{item.NgoId}", $"item_{item.Id}")
-                .SendAsync("InventoryItemUpdated", item);
-
-            _logger.LogInformation($"Notified inventory item updated: {item.Id}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending InventoryItemUpdated notification");
-        }
-    }
 }

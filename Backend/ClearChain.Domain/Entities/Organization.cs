@@ -19,7 +19,6 @@ public class Organization
     public string? VerificationNotes { get; set; }   // Admin's note when approving/rejecting (e.g. rejection reason)
     public string? Hours { get; set; }
 
-    public string AuthProvider { get; set; } = "local";
     public string? ProfilePictureUrl { get; set; }
 
     public double? Latitude { get; set; }

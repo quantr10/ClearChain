@@ -8,10 +8,6 @@ namespace ClearChain.API.Services;
 
 public interface IOrganizationService
 {
-    Task<List<OrganizationDto>> GetPendingVerificationsAsync(string? type = null);
-    Task<List<OrganizationDto>> GetVerifiedOrganizationsAsync(string? type = null);
-    Task<(bool Success, string Message)> VerifyOrganizationAsync(Guid organizationId, string action, string? notes = null);
-    Task<OrganizationDto?> GetOrganizationByIdAsync(Guid id);
     Task<(bool Success, string Message)> UpdateProfileAsync(Guid userId, UpdateProfileRequest request);
 }
 
@@ -32,63 +28,6 @@ public class OrganizationService : IOrganizationService
         _logger = logger;
         _pushNotificationService = pushNotificationService;
         _emailService = emailService;
-    }
-
-    public async Task<List<OrganizationDto>> GetPendingVerificationsAsync(string? type = null)
-    {
-        var query = _context.Organizations
-            .Where(o => !o.Verified && o.VerificationStatus == "pending");
-
-        if (!string.IsNullOrEmpty(type))
-            query = query.Where(o => o.Type == type.ToLower());
-
-        var organizations = await query.OrderBy(o => o.CreatedAt).ToListAsync();
-        return organizations.Select(MapToDto).ToList();
-    }
-
-    public async Task<List<OrganizationDto>> GetVerifiedOrganizationsAsync(string? type = null)
-    {
-        var query = _context.Organizations
-            .Where(o => o.Verified && o.VerificationStatus == "approved");
-
-        if (!string.IsNullOrEmpty(type))
-            query = query.Where(o => o.Type == type.ToLower());
-
-        var organizations = await query.OrderBy(o => o.Name).ToListAsync();
-        return organizations.Select(MapToDto).ToList();
-    }
-
-    public async Task<(bool Success, string Message)> VerifyOrganizationAsync(
-        Guid organizationId, string action, string? notes = null)
-    {
-        var organization = await _context.Organizations.FindAsync(organizationId);
-        if (organization == null)
-            return (false, "Organization not found");
-        if (organization.Verified)
-            return (false, "Organization already verified");
-
-        if (action.ToLower() == "approved")
-        {
-            organization.Verified = true;
-            organization.VerificationStatus = "approved";
-        }
-        else if (action.ToLower() == "rejected")
-        {
-            organization.Verified = false;
-            organization.VerificationStatus = "rejected";
-        }
-        else
-            return (false, "Invalid action. Must be 'approved' or 'rejected'");
-
-        organization.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-        return (true, $"Organization {action} successfully");
-    }
-
-    public async Task<OrganizationDto?> GetOrganizationByIdAsync(Guid id)
-    {
-        var organization = await _context.Organizations.FindAsync(id);
-        return organization == null ? null : MapToDto(organization);
     }
 
     // ── handles new fields ───────────────────────────────────────────────────
@@ -233,33 +172,4 @@ public class OrganizationService : IOrganizationService
         }
     }
 
-    // ── includes new fields ──────────────────────────────────────────────────
-    private static OrganizationDto MapToDto(Organization org)
-    {
-        return new OrganizationDto
-        {
-            Id = org.Id,
-            Name = org.Name,
-            Type = org.Type,
-            Email = org.Email,
-            Phone = org.Phone ?? "",
-            Address = org.Address ?? "",
-            Location = org.Location ?? "",
-            State = org.State ?? "",
-            ZipCode = org.ZipCode ?? "",
-            Verified = org.Verified,
-            VerificationStatus = org.VerificationStatus,
-            VerificationNotes = org.VerificationNotes,
-            Hours = org.Hours,
-            ProfilePictureUrl = org.ProfilePictureUrl,
-            CreatedAt = org.CreatedAt.ToString("o"),
-            DocumentUrl = org.DocumentUrl,
-            // NEW
-            Latitude = org.Latitude,
-            Longitude = org.Longitude,
-            ContactPerson = org.ContactPerson,
-            PickupInstructions = org.PickupInstructions,
-            Description = org.Description
-        };
-    }
 }

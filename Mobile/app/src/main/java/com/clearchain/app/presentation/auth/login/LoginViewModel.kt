@@ -134,8 +134,7 @@ class LoginViewModel @Inject constructor(
                                 isLoading = false,
                                 error = null,
                                 emailError = emailErr,
-                                passwordError = passwordErr,
-                                systemError = systemMsg
+                                passwordError = passwordErr
                             )
                         }
 

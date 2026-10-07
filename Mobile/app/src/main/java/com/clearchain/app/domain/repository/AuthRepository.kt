@@ -18,12 +18,9 @@ interface AuthRepository {
 
     suspend fun login(email: String, password: String): Result<Pair<Organization, AuthTokens>>
     suspend fun logout(): Result<Unit>
-    suspend fun refreshToken(refreshToken: String): Result<Pair<Organization, AuthTokens>>
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
     suspend fun getCurrentUser(): Flow<Organization?>
 
     /** Re-fetch the signed-in org from GET /auth/me and refresh the local cache. */
     suspend fun refreshCurrentUser(): Result<Organization>
-
-    suspend fun isLoggedIn(): Flow<Boolean>
 }

@@ -1,10 +1,7 @@
 package com.clearchain.app.presentation.grocery.mylistings
 
-import com.clearchain.app.R
-import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.CommonSortOptions
-import com.clearchain.app.presentation.components.FilterChipData
 import com.clearchain.app.presentation.components.SortOption
 
 enum class MyListingsTab { ALL, AVAILABLE, ARCHIVED, RESERVED, EXPIRED }
@@ -28,11 +25,6 @@ data class MyListingsState(
 
     val activeTab: MyListingsTab = MyListingsTab.AVAILABLE,
     val selectedCategory: String? = null,
-    val availableCategoryFilters: List<FilterChipData> = listOf(
-        FilterChipData(null, labelResId = R.string.filter_all)
-    ) + FoodCategory.entries.map {
-        FilterChipData(it.name, labelResId = it.labelResId)
-    },
 
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
