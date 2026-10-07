@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -379,7 +380,7 @@ private fun ContactInformationSection(profile: PublicProfileData) {
                 }
             }
             hours?.let {
-                CompactDetailRow(Icons.Default.Schedule, it, MaterialTheme.colorScheme.onSurfaceVariant)
+                CompactDetailRow(Icons.Default.Schedule, it, textColor = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -442,7 +443,7 @@ private fun ContactLinkRow(icon: ImageVector, text: String, onClick: () -> Unit)
             modifier = Modifier.weight(1f)
         )
         Icon(
-            Icons.Default.OpenInNew,
+            Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
             modifier = Modifier.size(14.dp)

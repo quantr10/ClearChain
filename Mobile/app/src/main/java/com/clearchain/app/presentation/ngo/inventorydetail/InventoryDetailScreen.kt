@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.StickyNote2
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,11 +17,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.InventoryStatus
@@ -42,6 +45,7 @@ fun InventoryDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val snackbarHostState = remember { SnackbarHostState() }
     var showFullPhoto by remember { mutableStateOf(false) }
 
@@ -73,7 +77,7 @@ fun InventoryDetailScreen(
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, text)
                     }
-                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_item_label)))
+                    context.startActivity(Intent.createChooser(intent, resources.getString(R.string.share_item_label)))
                 },
                 onDismiss = { viewModel.dismissQrSheet() }
             )
@@ -210,7 +214,7 @@ fun InventoryDetailScreen(
                                     )
                                     request.notes?.takeIf { it.isNotBlank() }?.let { notes ->
                                         InventoryDetailRow(
-                                            icon = Icons.Default.StickyNote2,
+                                            icon = Icons.AutoMirrored.Filled.StickyNote2,
                                             label = stringResource(R.string.label_notes),
                                             value = notes
                                         )
@@ -223,7 +227,7 @@ fun InventoryDetailScreen(
                                             text = stringResource(R.string.view_full_request),
                                             onClick = { onNavigateToRequestDetail(request.id) },
                                             modifier = Modifier.weight(1f),
-                                            icon = Icons.Default.OpenInNew
+                                            icon = Icons.AutoMirrored.Filled.OpenInNew
                                         )
                                         ClearChainOutlinedButton(
                                             text = stringResource(R.string.action_view_grocery_profile),

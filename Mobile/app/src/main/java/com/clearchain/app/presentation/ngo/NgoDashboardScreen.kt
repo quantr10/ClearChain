@@ -14,11 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -260,7 +261,7 @@ private fun UpcomingPickupsTimeline(
         }
         if (pickups.size > 3) {
             ClearChainOutlinedButton(
-                text = stringResource(R.string.view_all_pickups, pickups.size),
+                text = pluralStringResource(R.plurals.view_all_pickups, pickups.size, pickups.size),
                 onClick = onViewAll,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -394,7 +395,7 @@ private fun NearbyListingsMiniMap(
             ) {
                 // User location marker (azure)
                 Marker(
-                    state = MarkerState(position = center),
+                    state = rememberUpdatedMarkerState(position = center),
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
                     title = stringResource(R.string.label_your_location)
                 )
@@ -426,8 +427,8 @@ private fun NearbyListingsMiniMap(
                     )
                     val avatarReady = avatarPainter.state is AsyncImagePainter.State.Success
                     MarkerComposable(
-                        keys = arrayOf(pos.latitude, pos.longitude, count, avatarReady),
-                        state = MarkerState(position = pos)
+                        keys = arrayOf<Any>(pos.latitude, pos.longitude, count, avatarReady),
+                        state = rememberUpdatedMarkerState(position = pos)
                     ) {
                         GroceryPinContent(
                             name = name,

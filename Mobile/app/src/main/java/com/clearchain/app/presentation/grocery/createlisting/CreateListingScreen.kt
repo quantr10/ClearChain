@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.clearchain.app.R
@@ -184,7 +185,7 @@ fun CreateListingScreen(
                                 .fillMaxWidth()
                                 .height(32.dp)
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                                .menuAnchor()
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -268,7 +269,7 @@ fun CreateListingScreen(
                                         },
                                         ShapeMedium
                                     )
-                                    .menuAnchor()
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                     .padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -526,7 +527,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                         )
                         if (result.notes.isNotBlank()) {
                             AiDetailRow(
-                                Icons.Default.Notes,
+                                Icons.AutoMirrored.Filled.Notes,
                                 stringResource(R.string.label_notes),
                                 result.notes
                             )

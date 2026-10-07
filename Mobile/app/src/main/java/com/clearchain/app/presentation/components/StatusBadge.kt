@@ -32,8 +32,8 @@ fun StatusBadge(
     label: String,
     backgroundColor: Color,
     contentColor: Color,
-    icon: ImageVector? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null
 ) {
     Surface(
         color = backgroundColor,
@@ -73,7 +73,7 @@ fun PickupStatusBadge(status: PickupRequestStatus) {
         PickupRequestStatus.CANCELLED -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, stringResource(R.string.status_cancelled), Icons.Default.Cancel)
         PickupRequestStatus.REJECTED -> BadgeStyle(StatusColors.RejectedBg, StatusColors.RejectedOnBg, stringResource(R.string.status_rejected), Icons.Default.Block)
     }
-    StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
+    StatusBadge(style.label, style.backgroundColor, style.contentColor, icon = style.icon)
 }
 
 @Composable
@@ -85,7 +85,7 @@ fun ListingStatusBadge(status: ListingStatus) {
         ListingStatus.EXPIRED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
         ListingStatus.ARCHIVED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_archived), Icons.Default.Archive)
     }
-    StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
+    StatusBadge(style.label, style.backgroundColor, style.contentColor, icon = style.icon)
 }
 
 @Composable
@@ -95,7 +95,7 @@ fun InventoryStatusBadge(status: InventoryStatus) {
         InventoryStatus.DISTRIBUTED -> BadgeStyle(StatusColors.DistributedBg, StatusColors.DistributedOnBg, stringResource(R.string.status_distributed), Icons.Default.Done)
         InventoryStatus.EXPIRED -> BadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, stringResource(R.string.status_expired), Icons.Default.Warning)
     }
-    StatusBadge(style.label, style.backgroundColor, style.contentColor, style.icon)
+    StatusBadge(style.label, style.backgroundColor, style.contentColor, icon = style.icon)
 }
 
 // Shared category → color mapping, reused anywhere a FoodCategory needs a swatch

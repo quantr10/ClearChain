@@ -18,12 +18,12 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun EmptyState(
+    modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Default.Inbox,
     title: String,
     subtitle: String? = null,
     actionLabel: String? = null,
-    onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onAction: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),

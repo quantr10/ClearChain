@@ -107,7 +107,7 @@ class TokenAuthenticator @Inject constructor(
 
             refreshClient.newCall(request).execute().use { resp ->
                 if (!resp.isSuccessful) return null
-                val raw = resp.body?.string() ?: return null
+                val raw = resp.body.string()
                 json.decodeFromString<AuthResponse>(raw).data
             }
         } catch (e: Exception) {

@@ -7,16 +7,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.UpcomingPickupData
@@ -129,7 +131,7 @@ fun GroceryDashboardScreen(
                             onClick = { navController.navigate(Screen.CreateListing.route) }
                         )
                         DashboardActionCard(
-                            icon = Icons.Default.List,
+                            icon = Icons.AutoMirrored.Filled.List,
                             title = stringResource(R.string.action_my_listings),
                             subtitle = stringResource(R.string.action_my_listings_subtitle),
                             onClick = { navController.navigate(Screen.MyListings.route) }
@@ -175,7 +177,7 @@ private fun GroceryUpcomingPickupsTimeline(
         }
         if (pickups.size > 3) {
             ClearChainOutlinedButton(
-                text = stringResource(R.string.view_all_pickups, pickups.size),
+                text = pluralStringResource(R.plurals.view_all_pickups, pickups.size, pickups.size),
                 onClick = onViewAll,
                 modifier = Modifier
                     .fillMaxWidth()

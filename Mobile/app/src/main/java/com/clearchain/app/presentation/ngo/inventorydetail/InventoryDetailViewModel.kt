@@ -40,7 +40,6 @@ class InventoryDetailViewModel @Inject constructor(
     private var joinedItemId: String? = null
 
     override fun onCleared() {
-        super.onCleared()
         joinedItemId?.let { itemId ->
             applicationScope.launch {
                 signalRService.leaveInventoryItemRoom(itemId)

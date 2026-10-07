@@ -24,6 +24,9 @@ class RegisterFCMTokenUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): Result<Unit> {
         return try {
+            // FCM 25 deprecates getToken()/onNewToken() in favour of register()/onRegistered().
+            // Moving the token flow over needs testing on a device, so the old API stays for now.
+            @Suppress("DEPRECATION")
             val token = FirebaseMessaging.getInstance().token.await()
             register(token)
         } catch (e: Exception) {

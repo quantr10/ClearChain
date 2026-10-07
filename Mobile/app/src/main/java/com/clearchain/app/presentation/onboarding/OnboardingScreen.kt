@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +31,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
@@ -152,7 +154,7 @@ fun OnboardingScreen(
                         ClearChainButton(
                             text = stringResource(R.string.onboarding_view_status),
                             onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
-                            icon = Icons.Default.ArrowForward,
+                            icon = Icons.AutoMirrored.Filled.ArrowForward,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -418,7 +420,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 label = stringResource(R.string.onboarding_pickup_instructions_label),
                 isOptional = true,
                 placeholder = stringResource(R.string.onboarding_pickup_instructions_placeholder),
-                leadingIcon = Icons.Default.DirectionsWalk,
+                leadingIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
                 imeAction = ImeAction.Done,
                 enabled = !state.isSaving,
                 singleLine = false,

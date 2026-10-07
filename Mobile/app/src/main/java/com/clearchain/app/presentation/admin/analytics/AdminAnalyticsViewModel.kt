@@ -236,7 +236,7 @@ class AdminAnalyticsViewModel @Inject constructor(
         line(string(R.string.timing_to_confirm), hours(t.medianHoursToConfirm))
         line(string(R.string.timing_p90), hours(t.p90HoursToPickup))
         line(string(R.string.timing_within_24h), pct(t.completedWithin24hRate))
-        note(string(R.string.timing_sample, t.sampleSize))
+        note(context.resources.getQuantityString(R.plurals.timing_sample, t.sampleSize, t.sampleSize))
 
         val b = data.backlog
         heading(string(R.string.section_live_backlog))

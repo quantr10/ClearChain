@@ -8,11 +8,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
@@ -192,7 +193,7 @@ private fun GroceryAnalytics(s: DashboardStatsData, activities: List<ActivityIte
     ) {
         RateContent(
             percent = pickupCompletionRate,
-            description = stringResource(R.string.analytics_completed_of_requests, s.completed, pickupTotal),
+            description = pluralStringResource(R.plurals.analytics_completed_of_requests, pickupTotal, s.completed, pickupTotal),
             spacing = RATE_CARD_SPACING
         )
     }
@@ -266,7 +267,7 @@ private fun NgoAnalytics(
     ) {
         RateContent(
             percent = completionRate,
-            description = stringResource(R.string.analytics_completed_of_requests, completedRequests, totalRequests),
+            description = pluralStringResource(R.plurals.analytics_completed_of_requests, totalRequests, completedRequests, totalRequests),
             spacing = RATE_CARD_SPACING
         )
     }

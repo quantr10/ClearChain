@@ -20,9 +20,9 @@ import com.clearchain.app.util.DateTimeUtils
 @Composable
 fun InventoryItemCard(
     item: InventoryItem,
+    modifier: Modifier = Modifier,
     onDistribute: ((String) -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onClick: (() -> Unit)? = null
 ) {
     var showDistributeDialog by remember { mutableStateOf(false) }
 

@@ -33,13 +33,13 @@ import com.clearchain.app.ui.theme.BrandTeal
 @Composable
 fun DashboardWelcomeHeader(
     userName: String,
+    modifier: Modifier = Modifier,
     subtitle: String = "",
     roleLabel: String = "",
     profilePictureUrl: String? = null,
     onProfileClick: () -> Unit = {},
     onNotificationsClick: (() -> Unit)? = null,
     gradientColors: List<Color> = listOf(BrandTeal, BrandGreen),
-    modifier: Modifier = Modifier,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     Box(
@@ -106,13 +106,13 @@ fun DashboardWelcomeHeader(
 fun AvatarImage(
     imageUrl: String?,
     name: String,
+    modifier: Modifier = Modifier,
     size: Int = 40,
     backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
     textColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     borderColor: Color? = null,
     borderWidth: Dp = 2.dp,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onClick: (() -> Unit)? = null
 ) {
     val avatarMod = modifier
         .size(size.dp)

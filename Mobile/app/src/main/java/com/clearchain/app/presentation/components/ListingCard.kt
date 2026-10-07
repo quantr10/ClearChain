@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun ListingCard(
     listing: Listing,
+    modifier: Modifier = Modifier,
     showGroceryInfo: Boolean = false,
     showPickupTime: Boolean = true,
     onClick: (() -> Unit)? = null,
     cartAction: (@Composable () -> Unit)? = null,
     secondaryActions: (@Composable RowScope.() -> Unit)? = null,
     topRightAction: (@Composable () -> Unit)? = null,
-    onGroceryAvatarClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onGroceryAvatarClick: (() -> Unit)? = null
 ) {
     val daysUntilExpiry: Long = remember(listing.expiryDate) {
         try {

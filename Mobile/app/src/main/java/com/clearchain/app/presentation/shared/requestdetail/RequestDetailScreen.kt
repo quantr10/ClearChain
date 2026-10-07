@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -43,7 +44,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.content.edit
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImage
@@ -165,7 +167,6 @@ class RequestDetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         joinedRequestId?.let { requestId ->
             applicationScope.launch {
                 signalRService.leavePickupRequestRoom(requestId)
@@ -265,7 +266,7 @@ class RequestDetailViewModel @Inject constructor(
                     val seenKey = "seen_complete_$requestId"
                     if (!prefs.getBoolean(seenKey, false)) {
                         // commit() writes synchronously so the flag survives rapid ViewModel recreation.
-                        prefs.edit().putBoolean(seenKey, true).commit()
+                        prefs.edit(commit = true) { putBoolean(seenKey, true) }
                         _state.update { it.copy(showAutoRatingSheet = true) }
                     }
                 }
@@ -536,7 +537,7 @@ fun RequestDetailScreen(
         isNgo -> req.ngoId == state.currentUserId
         else -> false
     }
-    val isChatVisible = isMyRequest && req != null &&
+    val isChatVisible = isMyRequest &&
         req.status != PickupRequestStatus.COMPLETED &&
         req.status != PickupRequestStatus.CANCELLED &&
         req.status != PickupRequestStatus.REJECTED
@@ -954,11 +955,11 @@ private fun RequestDetailContent(
 
         SectionCard(stringResource(R.string.label_request_information)) {
             if (expiryText != null) {
-                CompactDetailRow(Icons.Default.CalendarToday, expiryText, expiryColor)
+                CompactDetailRow(Icons.Default.CalendarToday, expiryText, textColor = expiryColor)
             }
-            CompactDetailRow(Icons.Default.AccessTime, timestampText, MaterialTheme.colorScheme.onSurfaceVariant)
+            CompactDetailRow(Icons.Default.AccessTime, timestampText, textColor = MaterialTheme.colorScheme.onSurfaceVariant)
             if (handlingParts.isNotEmpty()) {
-                CompactDetailRow(Icons.AutoMirrored.Filled.StickyNote2, handlingParts.joinToString(" \u00B7 "), MaterialTheme.colorScheme.onSurfaceVariant)
+                CompactDetailRow(Icons.AutoMirrored.Filled.StickyNote2, handlingParts.joinToString(" \u00B7 "), textColor = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -1275,7 +1276,7 @@ private fun RequestedItemRow(
 private fun ZoomablePhoto(url: String) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
-    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+    val transformState = rememberTransformableState { _, zoomChange, panChange, _ ->
         scale = (scale * zoomChange).coerceIn(1f, 4f)
         offset = if (scale > 1f) offset + panChange else Offset.Zero
     }
@@ -1733,7 +1734,7 @@ private fun RatingDialog(
                 ) {
                     Icon(
                         imageVector = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = stringResource(R.string.cd_star_n, i + 1),
+                        contentDescription = pluralStringResource(R.plurals.cd_star_n, i + 1, i + 1),
                         modifier = Modifier.size(32.dp),
                         tint = if (i < selectedRating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outline
                     )

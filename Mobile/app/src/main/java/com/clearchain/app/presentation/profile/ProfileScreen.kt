@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.clearchain.app.R
@@ -191,7 +193,7 @@ private fun ProfileViewContent(
                     )
                 }
                 DashboardActionCard(
-                    icon = Icons.Default.HelpOutline,
+                    icon = Icons.AutoMirrored.Filled.HelpOutline,
                     title = stringResource(R.string.label_help_faq),
                     onClick = onNavigateToHelp
                 )
@@ -206,7 +208,7 @@ private fun ProfileViewContent(
                     onClick = onChangePassword
                 )
                 DashboardActionCard(
-                    icon = Icons.Default.Logout,
+                    icon = Icons.AutoMirrored.Filled.Logout,
                     title = stringResource(R.string.logout),
                     iconContainerColor = MaterialTheme.colorScheme.errorContainer,
                     iconTint = MaterialTheme.colorScheme.error,
@@ -483,7 +485,7 @@ private fun LogoutDialog(
         confirmLabel = stringResource(R.string.logout),
         dismissLabel = stringResource(R.string.cancel),
         isDestructive = true,
-        icon = Icons.Default.Logout
+        icon = Icons.AutoMirrored.Filled.Logout
     )
 }
 

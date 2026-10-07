@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.clearchain.app.R
@@ -150,7 +150,7 @@ fun EditListingScreen(
                                     .fillMaxWidth()
                                     .height(32.dp)
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                                    .menuAnchor()
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                     .padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -233,7 +233,7 @@ fun EditListingScreen(
                                             },
                                             ShapeMedium
                                         )
-                                        .menuAnchor()
+                                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                         .padding(horizontal = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)

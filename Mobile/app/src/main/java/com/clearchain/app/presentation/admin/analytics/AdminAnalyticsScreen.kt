@@ -16,12 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.*
 import com.clearchain.app.presentation.components.*
@@ -201,7 +203,7 @@ private fun periodSubtitle(period: StatsPeriod?): String {
     return if (from != null && to != null) {
         stringResource(R.string.stats_period_range, from, to)
     } else {
-        stringResource(R.string.stats_period_days, period.days)
+        pluralStringResource(R.plurals.stats_period_days, period.days, period.days)
     }
 }
 
@@ -247,7 +249,7 @@ private fun TimingCard(data: AdminDetailedStatsData, highlighted: AnalyticsSecti
                 percent = (t.completedWithin24hRate * 100).roundToInt(),
                 description = stringResource(R.string.timing_within_24h_detail, (t.completedWithin24hRate * 100).roundToInt())
             )
-            FootNote(stringResource(R.string.timing_sample, t.sampleSize))
+            FootNote(pluralStringResource(R.plurals.timing_sample, t.sampleSize, t.sampleSize))
         }
     }
 }
@@ -380,7 +382,7 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        String.format(Locale.getDefault(), "%.1f", it),
+                        String.format(LocalConfiguration.current.locales[0], "%.1f", it),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -445,7 +447,7 @@ private fun OrganizationsCard(data: AdminDetailedStatsData, highlighted: Analyti
                     )
                     Text(
                         text = o.oldestPendingDays?.let {
-                            stringResource(R.string.stat_pending_verification_aged, o.pendingVerification, it)
+                            pluralStringResource(R.plurals.stat_pending_verification_aged, it, o.pendingVerification, it)
                         } ?: stringResource(R.string.stat_pending_verification, o.pendingVerification),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,

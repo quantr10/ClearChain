@@ -2,6 +2,8 @@ package com.clearchain.app.presentation.navigation
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -90,7 +92,7 @@ private fun getNgoNavigationItems(): List<NavigationItem> = listOf(
 
 private fun getGroceryNavigationItems(): List<NavigationItem> = listOf(
     NavigationItem(Screen.GroceryDashboard.route, Icons.Filled.Home, Icons.Outlined.Home, R.string.nav_home),
-    NavigationItem(Screen.MyListings.route, Icons.Filled.List, Icons.Outlined.List, R.string.nav_listings),
+    NavigationItem(Screen.MyListings.route, Icons.AutoMirrored.Filled.List, Icons.AutoMirrored.Outlined.List, R.string.nav_listings),
     NavigationItem(Screen.CreateListing.route, Icons.Filled.AddCircle, Icons.Outlined.AddCircle, R.string.nav_add),
     NavigationItem(Screen.PickupRequests.route, Icons.Filled.LocalShipping, Icons.Outlined.LocalShipping, R.string.nav_requests),
     NavigationItem(Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person, R.string.nav_profile)

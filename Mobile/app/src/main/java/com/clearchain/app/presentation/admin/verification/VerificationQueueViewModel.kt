@@ -163,7 +163,7 @@ class VerificationQueueViewModel @Inject constructor(
                     successCount++
                 } catch (_: Exception) {}
             }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_approved_orgs, successCount, ids.size)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_approved_orgs, ids.size, successCount, ids.size)))
             loadOrganizations()
             _state.update { it.copy(isProcessing = false) }
         }
@@ -181,7 +181,7 @@ class VerificationQueueViewModel @Inject constructor(
                     successCount++
                 } catch (_: Exception) {}
             }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_rejected_orgs, successCount, ids.size)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_rejected_orgs, ids.size, successCount, ids.size)))
             loadOrganizations()
             _state.update { it.copy(isProcessing = false) }
         }

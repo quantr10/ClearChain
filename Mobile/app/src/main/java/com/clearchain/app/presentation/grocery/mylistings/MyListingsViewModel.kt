@@ -201,7 +201,7 @@ class MyListingsViewModel @Inject constructor(
                 deleteListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_deleted, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_deleted, success, success)))
             loadListings()
         }
     }
@@ -217,7 +217,7 @@ class MyListingsViewModel @Inject constructor(
                 archiveListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_archived, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_archived, success, success)))
             loadListings()
         }
     }
@@ -233,7 +233,7 @@ class MyListingsViewModel @Inject constructor(
                 restoreListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_listings_restored, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_restored, success, success)))
             loadListings()
         }
     }

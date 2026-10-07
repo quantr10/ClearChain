@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -20,7 +21,6 @@ import com.clearchain.app.presentation.components.ClearChainButtonDefaults
 import com.clearchain.app.presentation.components.ClearChainSurfaceCard
 import com.clearchain.app.presentation.components.SectionCard
 import com.clearchain.app.util.DateTimeUtils
-import java.util.Locale
 
 private val StarAmber = Color(0xFFFFC107)
 
@@ -64,7 +64,7 @@ internal fun ReviewSection(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        String.format(Locale.getDefault(), "%.1f", rating.toFloat()),
+                        String.format(LocalConfiguration.current.locales[0], "%.1f", rating.toFloat()),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer

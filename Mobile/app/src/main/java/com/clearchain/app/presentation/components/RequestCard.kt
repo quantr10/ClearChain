@@ -3,12 +3,15 @@ package com.clearchain.app.presentation.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.StickyNote2
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,13 +31,13 @@ enum class RequestViewMode { GROCERY, NGO, ADMIN }
 fun RequestCard(
     request: PickupRequest,
     viewMode: RequestViewMode,
+    modifier: Modifier = Modifier,
     onApprove: ((String) -> Unit)? = null,
     onReject: ((String) -> Unit)? = null,
     onMarkReady: ((String) -> Unit)? = null,
     onCancel: ((String) -> Unit)? = null,
     onConfirmPickup: ((String) -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onClick: (() -> Unit)? = null
 ) {
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
     val titleText = when (viewMode) {
@@ -131,7 +134,7 @@ fun RequestCard(
             }
             if (handlingParts.isNotEmpty()) {
                 CompactDetailRow(
-                    icon = Icons.Default.StickyNote2,
+                    icon = Icons.AutoMirrored.Filled.StickyNote2,
                     text = handlingParts.joinToString(" \u00B7 "),
                     textColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -158,7 +161,7 @@ fun RequestCard(
     // Confirmation dialogs
     showConfirmDialog?.let { action ->
         val approveTitle = stringResource(R.string.dialog_approve_title)
-        val approveMsg = stringResource(R.string.dialog_approve_message, request.ngoName, request.requestedQuantity)
+        val approveMsg = pluralStringResource(R.plurals.dialog_approve_message, request.requestedQuantity, request.ngoName, request.requestedQuantity)
         val rejectTitle = stringResource(R.string.dialog_reject_title)
         val rejectMsg = stringResource(R.string.dialog_reject_message, request.ngoName)
         val readyTitle = stringResource(R.string.dialog_ready_title)
@@ -181,7 +184,7 @@ fun RequestCard(
             "reject" -> Icons.Default.Cancel
             "ready" -> Icons.Default.Inventory2
             "cancel" -> Icons.Default.Cancel
-            else -> Icons.Default.HelpOutline
+            else -> Icons.AutoMirrored.Filled.HelpOutline
         }
         ConfirmDialog(
             icon = dialogIcon,

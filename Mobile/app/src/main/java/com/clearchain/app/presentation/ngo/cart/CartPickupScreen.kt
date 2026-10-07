@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.presentation.components.*
@@ -341,7 +342,7 @@ private fun CartPickupContent(
                 onClick = { onEvent(CartEvent.SubmitCheckout) },
                 loading = state.isSubmitting,
                 enabled = canSubmit && !state.isSubmitting,
-                icon = Icons.Default.Send,
+                icon = Icons.AutoMirrored.Filled.Send,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -369,8 +370,8 @@ private fun PickupTimeDialog(
         ?: initialMinutes.firstOrNull()
         ?: 0
 
-    var hour by remember { mutableStateOf(initialHour) }
-    var minute by remember { mutableStateOf(initialMinute) }
+    var hour by remember { mutableIntStateOf(initialHour) }
+    var minute by remember { mutableIntStateOf(initialMinute) }
 
     ConfirmDialog(
         onDismiss = onDismiss,

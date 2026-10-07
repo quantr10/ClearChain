@@ -107,8 +107,8 @@ fun TimePickerField(
     if (showPicker) {
         val initialHour = value.takeIf { it.length >= 5 }?.substring(0, 2)?.toIntOrNull() ?: 0
         val initialMinute = value.takeIf { it.length >= 5 }?.substring(3, 5)?.toIntOrNull() ?: 0
-        var hour by remember { mutableStateOf(initialHour) }
-        var minute by remember { mutableStateOf(initialMinute) }
+        var hour by remember { mutableIntStateOf(initialHour) }
+        var minute by remember { mutableIntStateOf(initialMinute) }
 
         ConfirmDialog(
             onDismiss = { showPicker = false },

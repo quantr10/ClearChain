@@ -2,7 +2,7 @@ package com.clearchain.app.util
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 
 /**
  * Opens the phone dialer pre-filled with [phone]. This exact three-line pattern (tel: intent,
@@ -11,7 +11,7 @@ import android.net.Uri
  */
 fun dialPhone(context: Context, phone: String) {
     runCatching {
-        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+        context.startActivity(Intent(Intent.ACTION_DIAL, "tel:$phone".toUri()))
     }
 }
 
@@ -22,7 +22,7 @@ fun dialPhone(context: Context, phone: String) {
 fun sendEmail(context: Context, email: String, subject: String? = null) {
     runCatching {
         context.startActivity(
-            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$email")).apply {
+            Intent(Intent.ACTION_SENDTO, "mailto:$email".toUri()).apply {
                 subject?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
             }
         )
