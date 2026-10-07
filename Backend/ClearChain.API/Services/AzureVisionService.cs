@@ -233,9 +233,6 @@ public class AzureVisionService : IImageAnalysisService
         // 🎯 STEP 6: Detailed condition notes with storage tips
         var notes = GenerateDetailedNotes(tags, objects, description, freshnessScore, qualityGrade, category);
 
-        // 🎯 STEP 7: Top detected items
-        var detectedItems = BuildDetectedItemsList(tags, objects);
-
         return new FoodAnalysisData
         {
             Title = productName,
@@ -245,9 +242,7 @@ public class AzureVisionService : IImageAnalysisService
             ImageUrl = imageUrl,
             Confidence = categoryConfidence,
             FreshnessScore = freshnessScore,
-            QualityGrade = qualityGrade,
-            DetectedItems = detectedItems,
-            AnalyzedAt = DateTime.UtcNow
+            QualityGrade = qualityGrade
         };
     }
 
@@ -606,40 +601,6 @@ public class AzureVisionService : IImageAnalysisService
         }
 
         return string.Join(". ", notes) + ".";
-    }
-
-    // ====================================================================
-    // 📋 BUILD DETECTED ITEMS LIST
-    // ====================================================================
-    private List<DetectedItem> BuildDetectedItemsList(List<ImageTag> tags, List<DetectedObject> objects)
-    {
-        var items = new List<DetectedItem>();
-
-        // Add objects first (higher priority)
-        foreach (var obj in objects.Take(3))
-        {
-            items.Add(new DetectedItem
-            {
-                Name = CapitalizeWords(obj.ObjectProperty),
-                Confidence = obj.Confidence
-            });
-        }
-
-        // Add remaining tags
-        var remainingSlots = 5 - items.Count;
-        foreach (var tag in tags.Take(remainingSlots))
-        {
-            if (!items.Any(i => i.Name.ToLower() == tag.Name.ToLower()))
-            {
-                items.Add(new DetectedItem
-                {
-                    Name = CapitalizeWords(tag.Name),
-                    Confidence = tag.Confidence
-                });
-            }
-        }
-
-        return items;
     }
 
     // ====================================================================

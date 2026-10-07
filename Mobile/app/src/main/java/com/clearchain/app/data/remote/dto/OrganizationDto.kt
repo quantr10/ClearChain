@@ -99,14 +99,6 @@ data class ActivityResponse(
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class TodaySummaryData(
-    // Grocery
-    val expiringToday: Int = 0,
-    val pickupsToday: Int = 0,
-    val clearedToday: Int = 0,
-    val listingsCreatedToday: Int = 0,
-    val requestsCreatedToday: Int = 0,
-    // NGO
-    val distributedToday: Int = 0,
     val upcomingPickups: List<UpcomingPickupData> = emptyList()
 )
 

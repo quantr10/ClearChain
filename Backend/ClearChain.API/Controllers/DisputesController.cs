@@ -223,16 +223,13 @@ public class DisputesController : ControllerBase
     {
         id = d.Id.ToString(),
         pickupRequestId = d.PickupRequestId.ToString(),
-        initiatorId = d.InitiatorId.ToString(),
-        initiatorName = d.Initiator?.Name ?? "",
         reason = d.Reason,
         ngoStatement = d.NgoStatement,
         groceryStatement = d.GroceryStatement,
         photoEvidenceUrl = d.PhotoEvidenceUrl,
         status = d.Status,
         adminResolution = d.AdminResolution,
-        createdAt = d.CreatedAt.ToString("o"),
-        resolvedAt = d.ResolvedAt?.ToString("o")
+        createdAt = d.CreatedAt.ToString("o")
     };
 
     private static MyDisputeData MapToMyDispute(Dispute d) => new()
@@ -244,8 +241,7 @@ public class DisputesController : ControllerBase
         PhotoEvidenceUrl = d.PhotoEvidenceUrl,
         Status = d.Status,
         AdminResolution = d.AdminResolution,
-        CreatedAt = d.CreatedAt.ToString("o"),
-        ResolvedAt = d.ResolvedAt?.ToString("o")
+        CreatedAt = d.CreatedAt.ToString("o")
     };
 
     // A pickup holds one line per listing; older single-listing pickups only carry the snapshot
@@ -307,8 +303,7 @@ public class DisputesController : ControllerBase
         PhotoEvidenceUrl = d.PhotoEvidenceUrl,
         Status = d.Status,
         AdminResolution = d.AdminResolution,
-        CreatedAt = d.CreatedAt.ToString("o"),
-        ResolvedAt = d.ResolvedAt?.ToString("o")
+        CreatedAt = d.CreatedAt.ToString("o")
     };
 }
 

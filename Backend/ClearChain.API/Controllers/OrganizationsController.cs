@@ -468,8 +468,7 @@ public class OrganizationsController : ControllerBase
     }
 
     /// <summary>
-    /// Get NGO reputation score (pickup completion rate, avg response time).
-    /// Used by grocery stores when reviewing pickup requests.
+    /// An NGO's all-time pickup record: total requests, completed pickups and completion rate.
     /// </summary>
     [HttpGet("{id}/reputation")]
     public async Task<IActionResult> GetNgoReputation(Guid id)
@@ -480,9 +479,6 @@ public class OrganizationsController : ControllerBase
         var completed = await _context.PickupRequests
             .CountAsync(pr => pr.NgoId == id && pr.Status == Domain.Enums.PickupRequestStatus.Completed);
 
-        var cancelled = await _context.PickupRequests
-            .CountAsync(pr => pr.NgoId == id && pr.Status == Domain.Enums.PickupRequestStatus.Cancelled);
-
         var completionRate = total > 0 ? Math.Round((double)completed / total * 100, 1) : 0.0;
 
         return Ok(new
@@ -491,15 +487,13 @@ public class OrganizationsController : ControllerBase
             {
                 totalRequests = total,
                 completedPickups = completed,
-                cancelledPickups = cancelled,
                 completionRate
             }
         });
     }
 
     /// <summary>
-    /// Today's summary for the grocery dashboard: listings expiring today,
-    /// pickups today, items cleared today.
+    /// Today's pickups for the dashboard: approved or ready pickups scheduled for today.
     /// </summary>
     [HttpGet("my/today-summary")]
     public async Task<IActionResult> GetTodaySummary()
@@ -511,35 +505,9 @@ public class OrganizationsController : ControllerBase
         if (org == null) return NotFound();
 
         var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
 
         if (org.Type == "grocery")
         {
-            var expiringToday = await _context.ClearanceListings
-                .CountAsync(l => l.GroceryId == userGuid
-                    && l.ExpirationDate.HasValue
-                    && l.ExpirationDate.Value.Date == today
-                    && l.Status == Domain.Enums.ListingStatus.Open);
-
-            var groceryPickupsToday = await _context.PickupRequests
-                .CountAsync(pr => pr.GroceryId == userGuid
-                    && pr.PickupDate.Date == today
-                    && pr.Status == Domain.Enums.PickupRequestStatus.Approved);
-
-            var clearedToday = await _context.PickupRequests
-                .CountAsync(pr => pr.GroceryId == userGuid
-                    && pr.MarkedPickedUpAt.HasValue
-                    && pr.MarkedPickedUpAt.Value.Date == today
-                    && pr.Status == Domain.Enums.PickupRequestStatus.Completed);
-
-            var groceryListingsCreatedToday = await _context.ClearanceListings
-                .CountAsync(l => l.GroceryId == userGuid
-                    && l.CreatedAt.Date == today
-                    && l.Status == Domain.Enums.ListingStatus.Open);
-
-            var groceryRequestsReceivedToday = await _context.PickupRequests
-                .CountAsync(pr => pr.GroceryId == userGuid && pr.RequestedAt.Date == today);
-
             var groceryUpcomingPickups = await _context.PickupRequests
                 .Include(pr => pr.Ngo)
                 .Where(pr => pr.GroceryId == userGuid
@@ -557,18 +525,7 @@ public class OrganizationsController : ControllerBase
                 })
                 .ToListAsync();
 
-            return Ok(new
-            {
-                data = new
-                {
-                    expiringToday,
-                    pickupsToday = groceryPickupsToday,
-                    clearedToday,
-                    listingsCreatedToday = groceryListingsCreatedToday,
-                    requestsCreatedToday = groceryRequestsReceivedToday,
-                    upcomingPickups = groceryUpcomingPickups
-                }
-            });
+            return Ok(new { data = new { upcomingPickups = groceryUpcomingPickups } });
         }
 
         // NGO today summary
@@ -588,20 +545,7 @@ public class OrganizationsController : ControllerBase
             })
             .ToListAsync();
 
-        var requestsCreatedToday = await _context.PickupRequests
-            .CountAsync(pr => pr.NgoId == userGuid && pr.RequestedAt.Date == today);
-
-        var pickupsToday = await _context.PickupRequests
-            .CountAsync(pr => pr.NgoId == userGuid
-                && pr.Status == Domain.Enums.PickupRequestStatus.Completed
-                && pr.ConfirmedReceivedAt.HasValue
-                && pr.ConfirmedReceivedAt.Value.Date == today);
-
-        var distributedToday = await _context.Inventories
-            .CountAsync(i => i.NgoId == userGuid
-                && i.ReceivedAt.Date == today);
-
-        return Ok(new { data = new { requestsCreatedToday, pickupsToday, distributedToday, upcomingPickups } });
+        return Ok(new { data = new { upcomingPickups } });
     }
 
     /// <summary>

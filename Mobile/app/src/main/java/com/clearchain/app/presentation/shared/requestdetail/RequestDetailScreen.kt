@@ -254,8 +254,9 @@ class RequestDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoadingReview = true) }
             try {
-                val response = reviewApi.getMyReviews()
-                val mine = response.data.find { it.pickupRequestId == requestId }
+                // Read in init, so on a fast response it may not be in the state yet.
+                val me = _state.value.currentUserId ?: getCurrentUserUseCase().first()?.id
+                val mine = reviewApi.getReviewsForPickup(requestId).data.find { it.reviewerId == me }
                 _state.update { it.copy(myReview = mine, isLoadingReview = false) }
 
                 // Only evaluate the auto-sheet once per ViewModel instance.

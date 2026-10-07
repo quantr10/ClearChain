@@ -96,7 +96,6 @@ public class MessagesController : ControllerBase
         pickupRequestId = m.PickupRequestId.ToString(),
         senderId = m.SenderId.ToString(),
         senderName = m.Sender?.Name ?? "",
-        receiverId = m.ReceiverId.ToString(),
         content = m.Content,
         isRead = m.IsRead,
         sentAt = m.SentAt.ToString("o"),

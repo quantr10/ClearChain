@@ -58,25 +58,6 @@ public class FoodAnalysisData
     /// Quality grade (A/B/C/D)
     /// </summary>
     public string QualityGrade { get; set; } = string.Empty;
-
-    /// <summary>
-    /// All items detected in image
-    /// </summary>
-    public List<DetectedItem> DetectedItems { get; set; } = new();
-
-    /// <summary>
-    /// Timestamp of analysis
-    /// </summary>
-    public DateTime AnalyzedAt { get; set; }
-}
-
-/// <summary>
-/// Individual detected item in image
-/// </summary>
-public class DetectedItem
-{
-    public string Name { get; set; } = string.Empty;
-    public double Confidence { get; set; }
 }
 
 public class UploadImageResponse

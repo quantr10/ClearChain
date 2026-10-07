@@ -45,7 +45,6 @@ data class PublicProfileResponse(val data: PublicProfileData)
 data class NgoReputationData(
     val totalRequests: Int = 0,
     val completedPickups: Int = 0,
-    val cancelledPickups: Int = 0,
     val completionRate: Double = 0.0
 )
 

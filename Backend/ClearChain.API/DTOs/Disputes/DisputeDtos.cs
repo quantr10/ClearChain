@@ -42,7 +42,6 @@ public class DisputeListItemData
     public string Status { get; set; } = string.Empty;
     public string? AdminResolution { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
-    public string? ResolvedAt { get; set; }
 }
 
 public class DisputeListResponse
@@ -71,7 +70,6 @@ public class MyDisputeData
     public string Status { get; set; } = string.Empty;
     public string? AdminResolution { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
-    public string? ResolvedAt { get; set; }
 }
 
 public class MyDisputeListResponse

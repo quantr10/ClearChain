@@ -6,16 +6,13 @@ import kotlinx.serialization.Serializable
 data class DisputeData(
     val id: String,
     val pickupRequestId: String,
-    val initiatorId: String,
-    val initiatorName: String,
     val reason: String,
     val ngoStatement: String? = null,
     val groceryStatement: String? = null,
     val photoEvidenceUrl: String? = null,
     val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
-    val createdAt: String,
-    val resolvedAt: String? = null
+    val createdAt: String
 )
 
 @Serializable
@@ -60,8 +57,7 @@ data class DisputeListItemData(
     val photoEvidenceUrl: String? = null,
     val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
-    val createdAt: String,
-    val resolvedAt: String? = null
+    val createdAt: String
 )
 
 @Serializable
@@ -86,8 +82,7 @@ data class MyDisputeData(
     val photoEvidenceUrl: String? = null,
     val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
-    val createdAt: String,
-    val resolvedAt: String? = null
+    val createdAt: String
 )
 
 @Serializable
