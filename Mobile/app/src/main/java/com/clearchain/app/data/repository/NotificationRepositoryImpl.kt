@@ -93,19 +93,30 @@ class NotificationRepositoryImpl @Inject constructor(
             .onFailure { Log.w(TAG, "Could not mark $id read on server: ${it.message}") }
     }
 
-    override suspend fun markAllAsRead() {
+    override suspend fun markAllAsRead(): Result<Unit> {
+        // Local first so the badge clears at once. If the server refuses, the next sync
+        // would quietly bring the unread ones back — so restore them now and say so.
+        val unreadBefore = notificationDao.getAll().filter { !it.isRead }
         notificationDao.markAllAsRead()
-        runCatching { notificationApi.markAllAsRead() }
-            .onFailure { Log.w(TAG, "Could not mark all read on server: ${it.message}") }
+        return runCatching { notificationApi.markAllAsRead(); Unit }
+            .onFailure {
+                Log.w(TAG, "Could not mark all read on server: ${it.message}")
+                notificationDao.insertAll(unreadBefore)
+            }
     }
 
     override suspend fun insert(notification: AppNotification) =
         notificationDao.insert(notification.toEntity())
 
-    override suspend fun clearAll() {
+    override suspend fun clearAll(): Result<Unit> {
+        val before = notificationDao.getAll()
         notificationDao.clearAll()
-        // Server-side too, or the next sync pulls everything the user just cleared back.
-        runCatching { notificationApi.deleteAllNotifications() }
-            .onFailure { Log.w(TAG, "Could not clear inbox on server: ${it.message}") }
+        // Server-side too, or the next sync pulls everything the user just cleared back —
+        // which is why a refusal restores the inbox instead of leaving it looking cleared.
+        return runCatching { notificationApi.deleteAllNotifications(); Unit }
+            .onFailure {
+                Log.w(TAG, "Could not clear inbox on server: ${it.message}")
+                notificationDao.insertAll(before)
+            }
     }
 }

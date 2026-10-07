@@ -1,6 +1,5 @@
 package com.clearchain.app.presentation.auth.verify
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -23,10 +21,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.presentation.components.ClearChainButton
-import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
+import com.clearchain.app.presentation.components.BlockBackWhile
 
 @Composable
 fun EmailVerificationScreen(
@@ -34,6 +33,7 @@ fun EmailVerificationScreen(
     viewModel: EmailVerificationViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isLoading || state.isResending)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -84,6 +84,7 @@ fun EmailVerificationScreen(
             OutlinedTextField(
                 value = state.code,
                 onValueChange = { viewModel.onEvent(EmailVerificationEvent.CodeChanged(it)) },
+                enabled = !state.isLoading,
                 singleLine = true,
                 isError = state.codeError != null,
                 supportingText = state.codeError?.let { { Text(it) } },
@@ -100,23 +101,14 @@ fun EmailVerificationScreen(
                 )
             )
 
-            if (state.error != null) {
-                Text(
-                    text = state.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center
-                )
-            }
-
             ClearChainButton(
                 text = stringResource(R.string.submit),
                 onClick = { viewModel.onEvent(EmailVerificationEvent.Verify) },
-                enabled = state.code.length == 6,
+                enabled = state.code.length == 6 && !state.isResending,
                 loading = state.isLoading
             )
 
-            ClearChainButton(
+            ClearChainOutlinedButton(
                 text = when {
                     state.resendCooldownSeconds > 0 ->
                         stringResource(R.string.email_resend_cooldown, state.resendCooldownSeconds)
@@ -127,11 +119,9 @@ fun EmailVerificationScreen(
                         viewModel.onEvent(EmailVerificationEvent.ResendCode)
                     }
                 },
-                enabled = state.resendCooldownSeconds == 0,
+                enabled = state.resendCooldownSeconds == 0 && !state.isLoading,
                 loading = state.isResending,
-                containerColor = Color.White,
-                contentColor = BrandGreen,
-                border = BorderStroke(1.dp, BrandGreen)
+                fillMaxWidth = true
             )
         }
     }

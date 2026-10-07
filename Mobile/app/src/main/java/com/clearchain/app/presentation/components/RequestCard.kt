@@ -27,6 +27,9 @@ import java.util.concurrent.TimeUnit
 
 enum class RequestViewMode { GROCERY, NGO, ADMIN }
 
+/** A status-changing call on one pickup request that is waiting on the backend. */
+enum class RequestAction { APPROVE, REJECT, MARK_READY, CANCEL, CONFIRM_PICKUP }
+
 @Composable
 fun RequestCard(
     request: PickupRequest,
@@ -37,9 +40,12 @@ fun RequestCard(
     onMarkReady: ((String) -> Unit)? = null,
     onCancel: ((String) -> Unit)? = null,
     onConfirmPickup: ((String) -> Unit)? = null,
+    /** The call in flight for this request, if any: its button/dialog spins, the rest disable. */
+    pendingAction: RequestAction? = null,
     onClick: (() -> Unit)? = null
 ) {
     var showConfirmDialog by remember { mutableStateOf<String?>(null) }
+    DismissWhenFinished(pendingAction != null) { showConfirmDialog = null }
     val titleText = when (viewMode) {
         RequestViewMode.GROCERY -> request.ngoName
         RequestViewMode.NGO -> request.groceryName
@@ -144,12 +150,14 @@ fun RequestCard(
             when (viewMode) {
                 RequestViewMode.GROCERY -> GroceryRequestActions(
                     request = request,
+                    pendingAction = pendingAction,
                     onApprove = { onApprove?.invoke(request.id) },
                     onReject = { showConfirmDialog = "reject" },
                     onMarkReady = { onMarkReady?.invoke(request.id) }
                 )
                 RequestViewMode.NGO -> NgoRequestActions(
                     request = request,
+                    pendingAction = pendingAction,
                     onCancel = { showConfirmDialog = "cancel" },
                     onConfirmPickup = { onConfirmPickup?.invoke(request.id) }
                 )
@@ -192,6 +200,8 @@ fun RequestCard(
             message = message,
             confirmLabel = label,
             isDestructive = destructive == "true",
+            // Stays open and spinning until the call settles (DismissWhenFinished above).
+            confirmLoading = pendingAction != null,
             onConfirm = {
                 when (action) {
                     "approve" -> onApprove?.invoke(request.id)
@@ -199,7 +209,6 @@ fun RequestCard(
                     "ready" -> onMarkReady?.invoke(request.id)
                     "cancel" -> onCancel?.invoke(request.id)
                 }
-                showConfirmDialog = null
             },
             onDismiss = { showConfirmDialog = null }
         )
@@ -334,6 +343,7 @@ fun RequestItemsPreview(request: PickupRequest) {
 @Composable
 private fun GroceryRequestActions(
     request: PickupRequest,
+    pendingAction: RequestAction?,
     onApprove: () -> Unit,
     onReject: () -> Unit,
     onMarkReady: () -> Unit
@@ -345,6 +355,7 @@ private fun GroceryRequestActions(
                     text = stringResource(R.string.reject),
                     onClick = onReject,
                     modifier = Modifier.weight(1f),
+                    enabled = pendingAction == null,
                     icon = Icons.Default.Close,
                     contentColor = MaterialTheme.colorScheme.error
                 )
@@ -352,6 +363,8 @@ private fun GroceryRequestActions(
                     text = stringResource(R.string.approve),
                     onClick = onApprove,
                     modifier = Modifier.weight(1f),
+                    enabled = pendingAction == null,
+                    loading = pendingAction == RequestAction.APPROVE,
                     icon = Icons.Default.Check
                 )
             }
@@ -361,6 +374,8 @@ private fun GroceryRequestActions(
                 text = stringResource(R.string.action_mark_ready),
                 onClick = onMarkReady,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = pendingAction == null,
+                loading = pendingAction == RequestAction.MARK_READY,
                 icon = Icons.Default.Check
             )
         }
@@ -403,6 +418,7 @@ private fun GroceryRequestActions(
 @Composable
 private fun NgoRequestActions(
     request: PickupRequest,
+    pendingAction: RequestAction?,
     onCancel: () -> Unit,
     onConfirmPickup: () -> Unit
 ) {
@@ -412,6 +428,7 @@ private fun NgoRequestActions(
                 text = stringResource(R.string.cancel_request),
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth(),
+                enabled = pendingAction == null,
                 icon = Icons.Default.Cancel,
                 contentColor = MaterialTheme.colorScheme.error,
                 fillMaxWidth = true
@@ -452,7 +469,8 @@ private fun NgoRequestActions(
                 text = stringResource(R.string.confirm_pickup_photo),
                 onClick = onConfirmPickup,
                 modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Default.CameraAlt
+                enabled = pendingAction == null,
+                icon = Icons.Default.PhotoCamera
             )
         }
         else -> {}

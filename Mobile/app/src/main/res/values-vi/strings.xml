@@ -447,6 +447,7 @@
     <string name="label_add_photo">Thêm ảnh</string>
     <string name="msg_photo_source">Chụp ảnh hoặc chọn một ảnh từ thư viện của bạn.</string>
     <string name="msg_use_this_photo">Dùng ảnh này?</string>
+    <string name="action_use_photo">Dùng ảnh</string>
     <string name="action_take_photo_camera">Chụp ảnh</string>
     <string name="action_choose_gallery">Chọn từ thư viện</string>
     <string name="label_add_photo_proof">Thêm ảnh bằng chứng</string>
@@ -706,7 +707,6 @@
     </plurals>
 
     <string name="snack_quantity_updated">Đã cập nhật số lượng</string>
-    <string name="snack_draft_restored">Đã khôi phục nháp</string>
     <string name="snack_image_upload_failed">Tải ảnh thất bại: %1$s</string>
     <string name="snack_listing_created">Tạo danh sách thành công!</string>
     <string name="snack_analysis_failed">Phân tích thất bại: %1$s</string>
@@ -730,18 +730,25 @@
     <plurals name="snack_n_items_distributed">
         <item quantity="other">Đã phân phối %1$d mặt hàng</item>
     </plurals>
+    <plurals name="snack_n_orgs_approved">
+        <item quantity="other">Đã duyệt %1$d tổ chức</item>
+    </plurals>
+    <plurals name="snack_n_orgs_rejected">
+        <item quantity="other">Đã từ chối %1$d tổ chức</item>
+    </plurals>
+    <plurals name="snack_bulk_n_failed">
+        <item quantity="other">%1$d mục bị lỗi</item>
+    </plurals>
+    <string name="snack_bulk_partial">%1$s · %2$s</string>
+    <string name="error_bulk_all_failed">Không thực hiện được. Vui lòng thử lại.</string>
     <string name="snack_item_distributed">Đã đánh dấu mặt hàng là đã phân phối</string>
     <string name="snack_item_added">Đã thêm mặt hàng vào kho</string>
     <string name="snack_new_admin_notification">%1$s mới: %2$s</string>
     <string name="snack_new_transaction">Giao dịch: %1$s</string>
     <string name="snack_stats_refreshed">Đã làm mới thống kê</string>
+    <string name="snack_dashboard_refreshed">Đã làm mới bảng điều khiển</string>
+    <string name="snack_profile_refreshed">Đã làm mới hồ sơ</string>
     <string name="snack_new_registration">%1$s mới đăng ký: %2$s</string>
-    <plurals name="snack_approved_orgs">
-        <item quantity="other">Đã duyệt %1$d/%2$d tổ chức</item>
-    </plurals>
-    <plurals name="snack_rejected_orgs">
-        <item quantity="other">Đã từ chối %1$d/%2$d tổ chức</item>
-    </plurals>
     <string name="snack_org_approved">Đã duyệt tổ chức</string>
     <string name="snack_org_rejected">Đã từ chối tổ chức</string>
     <string name="snack_orgs_refreshed">Đã làm mới tổ chức</string>
@@ -875,6 +882,18 @@
     <string name="error_load_requests">Không thể tải yêu cầu</string>
     <string name="error_refresh_requests">Không thể làm mới yêu cầu</string>
     <string name="error_cancel_request_failed">Không thể hủy yêu cầu</string>
+    <string name="error_mark_all_read_failed">Không thể đánh dấu đã đọc. Vui lòng thử lại.</string>
+    <string name="error_clear_notifications_failed">Không thể xóa thông báo. Vui lòng thử lại.</string>
+    <string name="error_details_partial">Một số thông tin chưa tải được.</string>
+    <string name="error_location_autodetect_failed">Không xác định được vị trí của bạn. Hãy tìm kiếm hoặc chọn trên bản đồ.</string>
+    <string name="error_location_gps_unavailable">Không lấy được vị trí. Hãy kiểm tra GPS đã bật chưa.</string>
+    <string name="error_mark_ready_failed">Không thể đánh dấu sẵn sàng</string>
+    <string name="error_update_cart_failed">Không thể cập nhật giỏ hàng. Vui lòng thử lại.</string>
+    <string name="error_checkout_failed">Không thể gửi yêu cầu nhận hàng. Vui lòng thử lại.</string>
+    <string name="error_send_message_failed">Chưa gửi được tin nhắn. Vui lòng thử lại.</string>
+    <string name="error_dashboard_partial">Một số dữ liệu chưa tải được. Kéo xuống để thử lại.</string>
+    <string name="error_pickup_date_required">Vui lòng chọn ngày nhận hàng</string>
+    <string name="error_pickup_time_required">Vui lòng chọn giờ nhận hàng</string>
     <string name="error_upload_photo_failed">Không thể tải ảnh lên</string>
     <string name="error_submit_review_failed">Không thể gửi đánh giá</string>
     <string name="error_analysis_failed">Phân tích thất bại</string>

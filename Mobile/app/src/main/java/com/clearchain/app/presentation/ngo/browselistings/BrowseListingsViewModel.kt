@@ -138,7 +138,6 @@ class BrowseListingsViewModel @Inject constructor(
             BrowseListingsEvent.OpenCart -> viewModelScope.launch {
                 _uiEvent.send(UiEvent.Navigate(Screen.Cart.route))
             }
-            BrowseListingsEvent.ClearError -> _state.update { it.copy(error = null) }
 
             // Favorites
             is BrowseListingsEvent.ToggleFavorite -> toggleFavorite(event.listingId)
@@ -212,42 +211,42 @@ class BrowseListingsViewModel @Inject constructor(
 
     private fun addToCart(listingId: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.addItem(AddCartItemRequest(listingId = listingId, quantity = 1)) }
                 .onSuccess { response ->
                     updateCartState(response.data)
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_item_added)))
                 }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
     private fun decrementCartItem(listingId: String) {
         val item = _state.value.cartItemsByListingId[listingId] ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = item.requestedQuantity - 1)) }
                 .onSuccess { response -> updateCartState(response.data) }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
     private fun removeCartItem(listingId: String) {
         val item = _state.value.cartItemsByListingId[listingId] ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isUpdatingCart = true) }
+            _state.update { it.copy(updatingCartListingId = listingId) }
             runCatching { cartApi.updateItem(item.id, UpdateCartItemRequest(quantity = 0)) }
                 .onSuccess { response -> updateCartState(response.data) }
                 .onFailure { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_generic)) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_generic)))
                 }
-            _state.update { it.copy(isUpdatingCart = false) }
+            _state.update { it.copy(updatingCartListingId = null) }
         }
     }
 
@@ -313,7 +312,10 @@ class BrowseListingsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message ?: context.getString(R.string.error_load_listings)) }
+                    val msg = e.message ?: context.getString(R.string.error_load_listings)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.allListings.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -336,7 +338,8 @@ class BrowseListingsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listings_refreshed)))
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isRefreshing = false, error = e.message) }
+                    _state.update { it.copy(isRefreshing = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_refresh_failed)))
                 }
             )
         }

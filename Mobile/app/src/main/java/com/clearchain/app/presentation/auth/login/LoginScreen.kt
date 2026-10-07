@@ -37,6 +37,7 @@ fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isLoading)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val lockoutMessage = if (state.isLockedOut) {

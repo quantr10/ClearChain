@@ -16,10 +16,16 @@ data class CartState(
     ),
     val isLoading: Boolean = false,
     val isSubmitting: Boolean = false,
+    /** The cart item whose quantity change is in flight (its stepper spins). */
+    val updatingItemId: String? = null,
+    /** The cart item being removed (its delete button spins). */
+    val removingItemId: String? = null,
     val error: String? = null,
     val checkoutGroceryId: String? = null,
     val pickupDate: String = "",
     val pickupTime: String = "",
+    val pickupDateError: String? = null,
+    val pickupTimeError: String? = null,
     val notes: String = "",
     val requiresRefrigeration: Boolean = false,
     val isFragile: Boolean = false,

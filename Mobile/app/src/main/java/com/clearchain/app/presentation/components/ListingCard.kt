@@ -95,12 +95,7 @@ fun ListingCard(
                         contentDescription = listing.title,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        loading = {
-                            Box(
-                                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                                contentAlignment = Alignment.Center
-                            ) { CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.dp) }
-                        },
+                        loading = { FoodImagePlaceholder(Modifier.fillMaxSize()) },
                         error = { FoodImagePlaceholder(Modifier.fillMaxSize()) }
                     )
                 } else {

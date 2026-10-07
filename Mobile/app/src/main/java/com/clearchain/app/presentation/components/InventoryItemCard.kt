@@ -22,9 +22,12 @@ fun InventoryItemCard(
     item: InventoryItem,
     modifier: Modifier = Modifier,
     onDistribute: ((String) -> Unit)? = null,
+    /** This item's distribute call is in flight: the confirm dialog spins until it settles. */
+    isDistributing: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     var showDistributeDialog by remember { mutableStateOf(false) }
+    DismissWhenFinished(isDistributing) { showDistributeDialog = false }
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column(
@@ -94,6 +97,7 @@ fun InventoryItemCard(
                             text = stringResource(R.string.action_mark_distributed),
                             onClick = { showDistributeDialog = true },
                             modifier = Modifier.fillMaxWidth(),
+                            enabled = !isDistributing,
                             icon = Icons.Default.VolunteerActivism
                         )
                     }
@@ -128,10 +132,8 @@ fun InventoryItemCard(
             title = stringResource(R.string.action_mark_distributed),
             message = stringResource(R.string.mark_distributed_confirm, item.productName),
             confirmLabel = stringResource(R.string.ok),
-            onConfirm = {
-                onDistribute?.invoke(item.id)
-                showDistributeDialog = false
-            },
+            confirmLoading = isDistributing,
+            onConfirm = { onDistribute?.invoke(item.id) },
             onDismiss = { showDistributeDialog = false }
         )
     }

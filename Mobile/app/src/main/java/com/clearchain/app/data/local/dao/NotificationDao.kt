@@ -16,6 +16,12 @@ interface NotificationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(notification: NotificationEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(notifications: List<NotificationEntity>)
+
+    @Query("SELECT * FROM notifications")
+    suspend fun getAll(): List<NotificationEntity>
+
     @Query("UPDATE notifications SET isRead = 1, readAt = :timestamp WHERE id = :id")
     suspend fun markAsRead(id: String, timestamp: Long = System.currentTimeMillis())
 

@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.profile
 
 import com.clearchain.app.domain.model.ActivityItem
-import com.clearchain.app.domain.model.OrgStats
 import com.clearchain.app.domain.model.Organization
 
 data class ProfileState(
@@ -10,9 +9,6 @@ data class ProfileState(
     val error: String? = null,
     val averageRating: Double = 0.0,
     val reviewCount: Int = 0,
-
-    // ── Stats ────────────────────────────────────────────────────────────────
-    val stats: OrgStats? = null,
 
     // ── Activity feed ────────────────────────────────────────────────────────
     val activity: List<ActivityItem> = emptyList(),

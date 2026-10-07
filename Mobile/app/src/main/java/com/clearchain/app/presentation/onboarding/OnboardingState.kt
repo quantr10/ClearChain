@@ -40,7 +40,6 @@ data class OnboardingState(
 
     // General
     val isSaving: Boolean = false,
-    val error: String? = null,
     val addressLat: Double? = null,
     val addressLng: Double? = null
 ) {

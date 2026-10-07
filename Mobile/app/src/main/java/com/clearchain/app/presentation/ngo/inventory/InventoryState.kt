@@ -39,7 +39,9 @@ data class InventoryState(
     // Bulk selection
     val isSelectionMode: Boolean = false,
     val selectedIds: Set<String> = emptySet(),
-    val isBulkOperating: Boolean = false
+    val isBulkOperating: Boolean = false,
+    /** The single item whose "Mark as Distributed" call is in flight. */
+    val distributingItemId: String? = null
 ) {
     val selectedCount: Int get() = selectedIds.size
     val activeSelectedCount: Int get() = filteredItems.count { it.id in selectedIds && it.status == InventoryStatus.ACTIVE }

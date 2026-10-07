@@ -58,7 +58,6 @@ class TransactionsViewModel @Inject constructor(
 
     fun onEvent(event: TransactionsEvent) {
         when (event) {
-            TransactionsEvent.LoadTransactions -> loadTransactions()
             TransactionsEvent.RefreshTransactions -> refreshTransactions()
 
             is TransactionsEvent.SearchQueryChanged -> {
@@ -112,9 +111,6 @@ class TransactionsViewModel @Inject constructor(
                 applyFilters()
             }
 
-            TransactionsEvent.ClearError ->
-                _state.update { it.copy(error = null) }
-
             TransactionsEvent.ExportCsv -> exportCsv()
 
             TransactionsEvent.ShowFilterSheet ->
@@ -160,7 +156,7 @@ class TransactionsViewModel @Inject constructor(
 
     private fun loadTransactions() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
 
             try {
                 val response = adminApi.getAllPickupRequests()
@@ -180,12 +176,8 @@ class TransactionsViewModel @Inject constructor(
                 // to "show everything" each time a transaction event arrived.
                 applyFilters()
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = e.message ?: context.getString(R.string.error_load_transactions),
-                        isLoading = false
-                    )
-                }
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_load_transactions)))
             }
         }
     }
@@ -202,7 +194,7 @@ class TransactionsViewModel @Inject constructor(
 
     private fun refreshTransactions() {
         viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
+            _state.update { it.copy(isRefreshing = true) }
 
             try {
                 val response = adminApi.getAllPickupRequests()
@@ -220,12 +212,8 @@ class TransactionsViewModel @Inject constructor(
                 applyFilters()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_transactions_refreshed)))
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = e.message ?: context.getString(R.string.error_refresh_transactions),
-                        isRefreshing = false
-                    )
-                }
+                _state.update { it.copy(isRefreshing = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_refresh_transactions)))
             }
         }
     }

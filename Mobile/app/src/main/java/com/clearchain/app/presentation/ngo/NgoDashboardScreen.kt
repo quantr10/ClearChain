@@ -39,6 +39,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +49,15 @@ fun NgoDashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         HapticPullToRefreshBox(
@@ -72,7 +80,9 @@ fun NgoDashboardScreen(
                     onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
                 )
 
-                Column(
+                if (state.isLoading) {
+                    LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
+                } else Column(
                     modifier = Modifier.padding(ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -137,7 +147,7 @@ fun NgoDashboardScreen(
                             ActivityFeedList(activities = state.activities.take(5))
                             if (state.activities.size > 5) {
                                 Spacer(Modifier.height(8.dp))
-                                ClearChainButton(
+                                ClearChainOutlinedButton(
                                     text = stringResource(R.string.action_view_more),
                                     onClick = { showActivitySheet = true },
                                     modifier = Modifier.fillMaxWidth()
@@ -234,7 +244,7 @@ internal fun ActivityHistorySheet(
                 }
                 if (!showAll && activities.size > 20) {
                     item {
-                        ClearChainButton(
+                        ClearChainOutlinedButton(
                             text = stringResource(R.string.action_view_more),
                             onClick = { showAll = true },
                             modifier = Modifier.fillMaxWidth()
@@ -467,7 +477,7 @@ private fun NearbyListingsMiniMap(
             }
         }
 
-        ClearChainButton(
+        ClearChainOutlinedButton(
             text = stringResource(R.string.action_browse_all_listings),
             onClick = onViewAll,
             modifier = Modifier.fillMaxWidth()

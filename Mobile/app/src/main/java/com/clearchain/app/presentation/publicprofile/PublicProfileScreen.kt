@@ -49,6 +49,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.channels.Channel
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 
 // ── State ────────────────────────────────────────────────────────────────────
 data class PublicProfileState(
@@ -73,6 +79,9 @@ class PublicProfileViewModel @Inject constructor(
     private val _state = MutableStateFlow(PublicProfileState())
     val state: StateFlow<PublicProfileState> = _state.asStateFlow()
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     init {
         load()
     }
@@ -80,23 +89,36 @@ class PublicProfileViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            load()
+            // Awaited, so the pull-to-refresh spinner stays until the profile is back.
+            val ok = fetch()
             _state.update { it.copy(isRefreshing = false) }
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_profile_refreshed)))
         }
     }
 
     private fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = organizationApi.getPublicProfile(orgId)
-                _state.update { it.copy(profile = response.data, isLoading = false) }
-                if (response.data.type.equals("grocery", ignoreCase = true)) {
-                    loadMoreFromStore(response.data.id)
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_failed_load_profile), isLoading = false) }
+        viewModelScope.launch { fetch() }
+    }
+
+    private suspend fun fetch(): Boolean {
+        // Only a cold start blanks the page; a refresh keeps the profile on screen.
+        _state.update { it.copy(isLoading = it.profile == null, error = null) }
+        return try {
+            val response = organizationApi.getPublicProfile(orgId)
+            _state.update { it.copy(profile = response.data, isLoading = false) }
+            if (response.data.type.equals("grocery", ignoreCase = true)) {
+                loadMoreFromStore(response.data.id)
             }
+            true
+        } catch (e: Exception) {
+            val msg = e.message ?: context.getString(R.string.error_failed_load_profile)
+            if (_state.value.profile == null) {
+                _state.update { it.copy(error = msg, isLoading = false) }
+            } else {
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
+            }
+            false
         }
     }
 
@@ -122,8 +144,15 @@ fun PublicProfileScreen(
     viewModel: PublicProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -135,7 +164,7 @@ fun PublicProfileScreen(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     state.isLoading && state.profile == null ->
-                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        LoadingState()
 
                     state.error != null && state.profile == null ->
                         EmptyState(

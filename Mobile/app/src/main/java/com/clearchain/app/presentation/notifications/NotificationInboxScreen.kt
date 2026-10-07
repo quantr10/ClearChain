@@ -28,6 +28,7 @@ import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.ui.theme.ScreenPadding
 import java.text.SimpleDateFormat
 import java.util.*
+import com.clearchain.app.util.UiEvent
 
 @Composable
 fun NotificationInboxScreen(
@@ -36,8 +37,15 @@ fun NotificationInboxScreen(
     viewModel: NotificationInboxViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -70,7 +78,8 @@ fun NotificationInboxScreen(
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.cd_clear_notifications),
                         onClick = { viewModel.clearAll() },
-                        icon = Icons.Default.DeleteSweep
+                        icon = Icons.Default.DeleteSweep,
+                        contentColor = MaterialTheme.colorScheme.error
                     )
                 }
                 LazyColumn(

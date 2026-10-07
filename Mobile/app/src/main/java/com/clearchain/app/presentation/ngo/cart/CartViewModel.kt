@@ -52,7 +52,6 @@ class CartViewModel @Inject constructor(
                     isHeavy = false
                 )
             }
-            CartEvent.DismissCheckout -> _state.update { it.copy(checkoutGroceryId = null) }
             is CartEvent.PickupDateChanged -> onPickupDateChanged(event.value)
             is CartEvent.PickupTimeChanged -> updatePickupTime(event.value)
             is CartEvent.NotesChanged -> _state.update { it.copy(notes = event.value) }
@@ -60,7 +59,6 @@ class CartViewModel @Inject constructor(
             CartEvent.ToggleFragile -> _state.update { it.copy(isFragile = !it.isFragile) }
             CartEvent.ToggleHeavy -> _state.update { it.copy(isHeavy = !it.isHeavy) }
             CartEvent.SubmitCheckout -> submitCheckout()
-            CartEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
@@ -69,15 +67,25 @@ class CartViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             runCatching { cartApi.getCart() }
                 .onSuccess { response -> _state.update { it.copy(groups = response.data, isLoading = false) } }
-                .onFailure { error -> _state.update { it.copy(isLoading = false, error = error.message) } }
+                .onFailure { error ->
+                    val msg = error.message ?: context.getString(R.string.error_generic)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.groups.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
+                }
         }
     }
 
     private fun updateItem(itemId: String, quantity: Int) {
+        if (_state.value.updatingItemId != null || _state.value.removingItemId != null) return
         viewModelScope.launch {
+            _state.update {
+                if (quantity == 0) it.copy(removingItemId = itemId) else it.copy(updatingItemId = itemId)
+            }
             runCatching { cartApi.updateItem(itemId, UpdateCartItemRequest(quantity = quantity)) }
                 .onSuccess { response -> _state.update { it.copy(groups = response.data) } }
-                .onFailure { error -> _state.update { it.copy(error = error.message) } }
+                .onFailure { error -> _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_update_cart_failed))) }
+            _state.update { it.copy(updatingItemId = null, removingItemId = null) }
         }
     }
 
@@ -90,7 +98,7 @@ class CartViewModel @Inject constructor(
         val keepTime = s.pickupTime.takeIf {
             it.isNotBlank() && isPickupTimeAllowed(value, it, group?.pickupTimeStart, group?.pickupTimeEnd) == null
         }.orEmpty()
-        _state.update { it.copy(pickupDate = value, pickupTime = keepTime, error = null) }
+        _state.update { it.copy(pickupDate = value, pickupTime = keepTime, pickupDateError = null, pickupTimeError = null) }
     }
 
     private fun updatePickupTime(value: String) {
@@ -99,30 +107,35 @@ class CartViewModel @Inject constructor(
         val error = value.takeIf { it.isNotBlank() }
             ?.let { isPickupTimeAllowed(s.pickupDate, it, group?.pickupTimeStart, group?.pickupTimeEnd) }
         if (error != null) {
-            _state.update { it.copy(error = context.getString(error)) }
+            _state.update { it.copy(pickupTimeError = context.getString(error)) }
             return
         }
-        _state.update { it.copy(pickupTime = value, error = null) }
+        _state.update { it.copy(pickupTime = value, pickupTimeError = null) }
     }
 
     private fun submitCheckout() {
         val s = _state.value
         val groceryId = s.checkoutGroceryId ?: return
         val group = s.groups.firstOrNull { it.groceryId == groceryId }
-        if (s.pickupDate.isBlank() || s.pickupTime.isBlank()) {
-            _state.update { it.copy(error = context.getString(R.string.cart_checkout_missing_fields)) }
-            return
+        // Form problems are shown under the field they belong to.
+        val dateError = when {
+            s.pickupDate.isBlank() -> context.getString(R.string.error_pickup_date_required)
+            !isPickupDateAllowed(s.pickupDate, group?.earliestExpiryDate) ->
+                context.getString(R.string.error_pickup_date_after_expiry, group?.earliestExpiryDate.orEmpty())
+            else -> null
         }
-        if (!isPickupDateAllowed(s.pickupDate, group?.earliestExpiryDate)) {
-            _state.update { it.copy(error = context.getString(R.string.error_pickup_date_after_expiry, group?.earliestExpiryDate.orEmpty())) }
-            return
+        val timeError = when {
+            s.pickupTime.isBlank() -> context.getString(R.string.error_pickup_time_required)
+            dateError != null -> null
+            else -> isPickupTimeAllowed(s.pickupDate, s.pickupTime, group?.pickupTimeStart, group?.pickupTimeEnd)
+                ?.let { context.getString(it) }
         }
-        isPickupTimeAllowed(s.pickupDate, s.pickupTime, group?.pickupTimeStart, group?.pickupTimeEnd)?.let { error ->
-            _state.update { it.copy(error = context.getString(error)) }
+        if (dateError != null || timeError != null) {
+            _state.update { it.copy(pickupDateError = dateError, pickupTimeError = timeError) }
             return
         }
         viewModelScope.launch {
-            _state.update { it.copy(isSubmitting = true, error = null) }
+            _state.update { it.copy(isSubmitting = true) }
             runCatching {
                 cartApi.checkout(
                     CheckoutCartGroupRequest(
@@ -149,7 +162,8 @@ class CartViewModel @Inject constructor(
                 }
                 loadCart()
             }.onFailure { error ->
-                _state.update { it.copy(isSubmitting = false, error = error.message) }
+                _state.update { it.copy(isSubmitting = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_checkout_failed)))
             }
         }
     }

@@ -57,6 +57,8 @@ fun MyListingsScreen(
         )
     }
 
+    val isBulkDeleting = state.bulkOperation == MyListingsBulkOperation.DELETE
+    DismissWhenFinished(isBulkDeleting) { showBulkDeleteConfirm = false }
     if (showBulkDeleteConfirm) {
         ConfirmDialog(
             icon = Icons.Default.DeleteForever,
@@ -64,15 +66,14 @@ fun MyListingsScreen(
             message = stringResource(R.string.delete_account_confirm),
             confirmLabel = stringResource(R.string.delete),
             isDestructive = true,
-            onConfirm = {
-                showBulkDeleteConfirm = false
-                viewModel.onEvent(MyListingsEvent.BulkDelete)
-            },
+            confirmLoading = isBulkDeleting,
+            onConfirm = { viewModel.onEvent(MyListingsEvent.BulkDelete) },
             onDismiss = { showBulkDeleteConfirm = false }
         )
     }
 
     BackHandler(state.isSelectionMode) { viewModel.onEvent(MyListingsEvent.ToggleSelectionMode) }
+    BlockBackWhile(state.isBulkOperating)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -111,7 +112,6 @@ fun MyListingsScreen(
                                     onClick = { showBulkDeleteConfirm = true },
                                     modifier = Modifier.weight(1f),
                                     enabled = !state.isBulkOperating,
-                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
                                     containerColor = MaterialTheme.colorScheme.error,
                                     contentColor = MaterialTheme.colorScheme.onError,
                                     icon = Icons.Default.Delete
@@ -131,7 +131,6 @@ fun MyListingsScreen(
                                     onClick = { showBulkDeleteConfirm = true },
                                     modifier = Modifier.weight(1f),
                                     enabled = !state.isBulkOperating,
-                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
                                     containerColor = MaterialTheme.colorScheme.error,
                                     contentColor = MaterialTheme.colorScheme.onError,
                                     icon = Icons.Default.Delete
@@ -143,7 +142,6 @@ fun MyListingsScreen(
                                     onClick = { showBulkDeleteConfirm = true },
                                     modifier = Modifier.weight(1f),
                                     enabled = !state.isBulkOperating,
-                                    loading = state.bulkOperation == MyListingsBulkOperation.DELETE,
                                     containerColor = MaterialTheme.colorScheme.error,
                                     contentColor = MaterialTheme.colorScheme.onError,
                                     icon = Icons.Default.Delete
@@ -240,7 +238,7 @@ fun MyListingsScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allListings.isEmpty() -> {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            LoadingState()
                         }
 
                         state.error != null && state.allListings.isEmpty() -> {

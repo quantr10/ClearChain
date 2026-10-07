@@ -10,6 +10,7 @@ import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.util.DownloadsExport
+import com.clearchain.app.util.BulkResult
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,10 +47,10 @@ class VerificationQueueViewModel @Inject constructor(
     }
 
     fun onEvent(event: VerificationQueueEvent) {
+        // While an action is in flight, the list and the selection it started from stay put.
+        if (_state.value.isProcessing && event.isLockedWhileBusy()) return
         when (event) {
-            VerificationQueueEvent.LoadOrganizations -> loadOrganizations()
             VerificationQueueEvent.RefreshOrganizations -> refreshOrganizations()
-            VerificationQueueEvent.ClearError -> _state.update { it.copy(error = null) }
 
             is VerificationQueueEvent.SearchQueryChanged ->
                 _state.update { it.copy(searchQuery = event.query) }
@@ -155,7 +156,8 @@ class VerificationQueueViewModel @Inject constructor(
         val ids = _state.value.selectedOrgIds.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            _state.update { it.copy(isProcessing = true, isBatchMode = false, selectedOrgIds = emptySet()) }
+            // The batch bar stays up (Approve All spinning) until every call settles.
+            _state.update { it.copy(isProcessing = true, batchOperation = VerificationBatchOperation.APPROVE) }
             var successCount = 0
             ids.forEach { orgId ->
                 try {
@@ -163,9 +165,9 @@ class VerificationQueueViewModel @Inject constructor(
                     successCount++
                 } catch (_: Exception) {}
             }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_approved_orgs, ids.size, successCount, ids.size)))
+            _state.update { it.copy(isProcessing = false, batchOperation = null, isBatchMode = false, selectedOrgIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, successCount, ids.size, R.plurals.snack_n_orgs_approved)))
             loadOrganizations()
-            _state.update { it.copy(isProcessing = false) }
         }
     }
 
@@ -173,7 +175,7 @@ class VerificationQueueViewModel @Inject constructor(
         val ids = _state.value.selectedOrgIds.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            _state.update { it.copy(isProcessing = true, isBatchMode = false, selectedOrgIds = emptySet()) }
+            _state.update { it.copy(isProcessing = true, batchOperation = VerificationBatchOperation.REJECT) }
             var successCount = 0
             ids.forEach { orgId ->
                 try {
@@ -181,16 +183,17 @@ class VerificationQueueViewModel @Inject constructor(
                     successCount++
                 } catch (_: Exception) {}
             }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_rejected_orgs, ids.size, successCount, ids.size)))
+            _state.update { it.copy(isProcessing = false, batchOperation = null, isBatchMode = false, selectedOrgIds = emptySet()) }
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, successCount, ids.size, R.plurals.snack_n_orgs_rejected)))
             loadOrganizations()
-            _state.update { it.copy(isProcessing = false) }
         }
     }
 
     private fun approveOrganization() {
         val orgId = _state.value.showChecklistForId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(showChecklistForId = null, isProcessing = true) }
+            // The checklist dialog stays open (confirm spinning) until the call settles.
+            _state.update { it.copy(isProcessing = true) }
             try {
                 adminApi.verifyOrganization(orgId)
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_org_approved)))
@@ -198,7 +201,7 @@ class VerificationQueueViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_approve_failed)))
             }
-            _state.update { it.copy(isProcessing = false) }
+            _state.update { it.copy(isProcessing = false, showChecklistForId = null) }
         }
     }
 
@@ -206,7 +209,7 @@ class VerificationQueueViewModel @Inject constructor(
         val orgId = _state.value.showRejectDialogForId ?: return
         val reason = _state.value.rejectionReason.trim().ifBlank { null }
         viewModelScope.launch {
-            _state.update { it.copy(showRejectDialogForId = null, isProcessing = true) }
+            _state.update { it.copy(isProcessing = true) }
             try {
                 adminApi.unverifyOrganization(orgId, RejectOrganizationBody(reason))
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_org_rejected)))
@@ -214,13 +217,13 @@ class VerificationQueueViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_reject_failed)))
             }
-            _state.update { it.copy(isProcessing = false) }
+            _state.update { it.copy(isProcessing = false, showRejectDialogForId = null) }
         }
     }
 
     private fun loadOrganizations() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true) }
             try {
                 val response = adminApi.getAllOrganizations()
                 val organizations = response.data
@@ -228,14 +231,15 @@ class VerificationQueueViewModel @Inject constructor(
                     .filter { it.type != OrganizationType.ADMIN }
                 _state.update { it.copy(organizations = organizations, isLoading = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_load_orgs), isLoading = false) }
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_load_orgs)))
             }
         }
     }
 
     private fun refreshOrganizations() {
         viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
+            _state.update { it.copy(isRefreshing = true) }
             try {
                 val response = adminApi.getAllOrganizations()
                 val organizations = response.data
@@ -244,8 +248,33 @@ class VerificationQueueViewModel @Inject constructor(
                 _state.update { it.copy(organizations = organizations, isRefreshing = false) }
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_orgs_refreshed)))
             } catch (e: Exception) {
-                _state.update { it.copy(error = e.message ?: context.getString(R.string.error_refresh_failed), isRefreshing = false) }
+                _state.update { it.copy(isRefreshing = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_refresh_failed)))
             }
         }
+    }
+
+    private fun VerificationQueueEvent.isLockedWhileBusy(): Boolean = when (this) {
+            is VerificationQueueEvent.ToggleOrgSelection,
+            is VerificationQueueEvent.SelectAllVisible,
+            is VerificationQueueEvent.ClearSelection,
+            is VerificationQueueEvent.ToggleBatchMode,
+            is VerificationQueueEvent.StatusFilterChanged,
+            is VerificationQueueEvent.FilterOrgTypeChanged,
+            is VerificationQueueEvent.SearchQueryChanged,
+            is VerificationQueueEvent.SortOptionChanged,
+            is VerificationQueueEvent.ClearAdvancedFilters,
+            is VerificationQueueEvent.ShowFilterSheet,
+            is VerificationQueueEvent.RefreshOrganizations,
+            is VerificationQueueEvent.ShowChecklist,
+            is VerificationQueueEvent.ShowRejectDialog,
+            is VerificationQueueEvent.ToggleChecklistItem,
+            is VerificationQueueEvent.RejectionReasonChanged,
+            is VerificationQueueEvent.SelectRejectionTemplate,
+            is VerificationQueueEvent.BatchApprove,
+            is VerificationQueueEvent.BatchReject,
+            is VerificationQueueEvent.ConfirmApprove,
+            is VerificationQueueEvent.ConfirmReject -> true
+        else -> false
     }
 }

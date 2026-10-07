@@ -257,19 +257,7 @@ public class AdminController : ControllerBase
                 RequiresRefrigeration = pr.RequiresRefrigeration,
                 IsFragile = pr.IsFragile,
                 IsHeavy = pr.IsHeavy,
-                Items = pr.Items.Select(i => new PickupRequestItemData
-                {
-                    Id = i.Id.ToString(),
-                    ListingGroupId = i.ListingGroupId?.ToString(),
-                    OriginalListingId = i.OriginalListingId?.ToString(),
-                    ReservedListingId = i.ReservedListingId?.ToString(),
-                    RequestedQuantity = i.RequestedQuantity,
-                    ListingTitle = i.ListingTitle,
-                    ListingCategory = i.ListingCategory,
-                    ListingExpiryDate = i.ListingExpiryDate,
-                    ListingUnit = i.ListingUnit,
-                    ListingPhotoUrl = i.ListingPhotoUrl
-                }).ToList()
+                Items = pr.Items.Select(PickupRequestItemData.From).ToList()
             });
         }
 

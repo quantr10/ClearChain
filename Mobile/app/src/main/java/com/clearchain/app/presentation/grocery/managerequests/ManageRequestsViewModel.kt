@@ -11,6 +11,7 @@ import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCa
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetGroceryPickupRequestsUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.MarkReadyForPickupUseCase
+import com.clearchain.app.presentation.components.RequestAction
 import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -98,8 +99,6 @@ class ManageRequestsViewModel @Inject constructor(
             is ManageRequestsEvent.MarkReady -> markReadyForPickup(event.requestId)
 
             ManageRequestsEvent.ExportCsv -> exportCsv()
-
-            ManageRequestsEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
@@ -112,7 +111,10 @@ class ManageRequestsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_load_requests)) }
+                    val msg = error.message ?: context.getString(R.string.error_load_requests)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.allRequests.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -127,7 +129,10 @@ class ManageRequestsViewModel @Inject constructor(
                     applyFilters()
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_requests_refreshed)))
                 },
-                onFailure = { _state.update { it.copy(isRefreshing = false) } }
+                onFailure = { error ->
+                    _state.update { it.copy(isRefreshing = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_refresh_requests)))
+                }
             )
         }
     }
@@ -183,38 +188,51 @@ class ManageRequestsViewModel @Inject constructor(
     }
 
     private fun approveRequest(requestId: String) {
-        viewModelScope.launch {
+        withPendingAction(requestId, RequestAction.APPROVE) {
             approvePickupRequestUseCase(requestId).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_approved)))
                     loadRequests()
                 },
-                onFailure = { error -> _state.update { it.copy(error = error.message ?: context.getString(R.string.error_approve_failed)) } }
+                onFailure = { error -> _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_approve_failed))) }
             )
         }
     }
 
     private fun rejectRequest(requestId: String) {
-        viewModelScope.launch {
+        withPendingAction(requestId, RequestAction.REJECT) {
             cancelPickupRequestUseCase(requestId).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_rejected)))
                     loadRequests()
                 },
-                onFailure = { error -> _state.update { it.copy(error = error.message ?: context.getString(R.string.error_reject_failed)) } }
+                onFailure = { error -> _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_reject_failed))) }
             )
         }
     }
 
     private fun markReadyForPickup(requestId: String) {
-        viewModelScope.launch {
+        withPendingAction(requestId, RequestAction.MARK_READY) {
             markReadyForPickupUseCase(requestId).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_marked_ready)))
                     loadRequests()
                 },
-                onFailure = { error -> _state.update { it.copy(error = error.message ?: "Failed to mark as ready") } }
+                onFailure = { error -> _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_mark_ready_failed))) }
             )
+        }
+    }
+
+    /** Marks [requestId] busy with [action] while [block] runs, so only its card spins. */
+    private fun withPendingAction(requestId: String, action: RequestAction, block: suspend () -> Unit) {
+        if (requestId in _state.value.pendingActions) return
+        viewModelScope.launch {
+            _state.update { it.copy(pendingActions = it.pendingActions + (requestId to action)) }
+            try {
+                block()
+            } finally {
+                _state.update { it.copy(pendingActions = it.pendingActions - requestId) }
+            }
         }
     }
 

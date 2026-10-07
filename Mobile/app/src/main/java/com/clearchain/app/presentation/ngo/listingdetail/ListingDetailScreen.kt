@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.ngo.listingdetail
 
 import android.content.Intent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,15 +19,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,12 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.clearchain.app.R
-import com.clearchain.app.data.remote.dto.CartItemData
-import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
@@ -54,15 +43,6 @@ import com.clearchain.app.util.sendEmail
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
-
-// Screen-wide touch signal used to collapse an expanded cart stepper: every touch-down
-// anywhere on screen bumps `tick`, and carries the position + root coordinate space so a
-// listener can tell whether that touch landed on its own stepper (and should be ignored).
-private data class GlobalTouch(
-    val tick: Int,
-    val position: Offset?,
-    val rootCoordinates: LayoutCoordinates?
-)
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -79,10 +59,8 @@ fun ListingDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
     var showEditQty by remember { mutableStateOf(false) }
-    var touchTick by remember { mutableIntStateOf(0) }
-    var lastTouchPosition by remember { mutableStateOf<Offset?>(null) }
-    var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    val globalTouch = GlobalTouch(touchTick, lastTouchPosition, rootCoordinates)
+    val touchTracker = rememberGlobalTouchTracker()
+    val globalTouch = touchTracker.current
 
     LaunchedEffect(listingId) { viewModel.onEvent(ListingDetailEvent.LoadListing(listingId)) }
 
@@ -105,6 +83,7 @@ fun ListingDetailScreen(
             message = stringResource(R.string.msg_delete_listing_confirm, state.listing?.title ?: ""),
             confirmLabel = stringResource(R.string.delete),
             isDestructive = true,
+            confirmLoading = state.isDeleting,
             onConfirm = { viewModel.onEvent(ListingDetailEvent.DeleteListing) },
             onDismiss = { viewModel.onEvent(ListingDetailEvent.DismissDeleteConfirm) }
         )
@@ -116,6 +95,7 @@ fun ListingDetailScreen(
             title = stringResource(R.string.action_archive),
             message = stringResource(R.string.msg_archive_listing_confirm, state.listing?.title ?: ""),
             confirmLabel = stringResource(R.string.action_archive),
+            confirmLoading = state.isArchiving,
             onConfirm = { viewModel.onEvent(ListingDetailEvent.ArchiveListing) },
             onDismiss = { viewModel.onEvent(ListingDetailEvent.DismissArchiveConfirm) }
         )
@@ -127,6 +107,7 @@ fun ListingDetailScreen(
             title = stringResource(R.string.action_restore),
             message = stringResource(R.string.msg_restore_listing_confirm, state.listing?.title ?: ""),
             confirmLabel = stringResource(R.string.action_restore),
+            confirmLoading = state.isRestoring,
             onConfirm = { viewModel.onEvent(ListingDetailEvent.RestoreListing) },
             onDismiss = { viewModel.onEvent(ListingDetailEvent.DismissRestoreConfirm) }
         )
@@ -189,6 +170,7 @@ fun ListingDetailScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitleRow(
                 title = stringResource(R.string.title_listing_details),
+                backEnabled = !(state.isDeleting || state.isArchiving || state.isRestoring || state.isUpdatingCart),
                 onBack = onNavigateBack,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
@@ -196,22 +178,10 @@ fun ListingDetailScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .onGloballyPositioned { rootCoordinates = it }
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val down = event.changes.firstOrNull { it.changedToDown() }
-                                if (down != null) {
-                                    lastTouchPosition = down.position
-                                    touchTick++
-                                }
-                            }
-                        }
-                    }
+                    .trackGlobalTouch(touchTracker)
             ) {
                 when {
-                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    state.isLoading -> LoadingState()
 
                     state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
@@ -389,11 +359,12 @@ fun ListingDetailScreen(
                                                 .align(Alignment.BottomEnd)
                                                 .padding(8.dp)
                                         ) {
-                                            ListingDetailCartAction(
+                                            ListingCartAction(
                                                 listing = listing,
                                                 cartItem = state.cartItemsByListingId[listing.id],
                                                 availableQuantity = displayQty,
                                                 enabled = !state.isUpdatingCart,
+                                                loading = state.updatingCartListingId == listing.id,
                                                 globalTouch = globalTouch,
                                                 onAddToCart = { viewModel.onEvent(ListingDetailEvent.AddToCart(it)) },
                                                 onIncrementCartItem = { viewModel.onEvent(ListingDetailEvent.IncrementCartItem(it)) },
@@ -469,7 +440,6 @@ fun ListingDetailScreen(
                                                 onClick = { viewModel.onEvent(ListingDetailEvent.ShowArchiveConfirm) },
                                                 modifier = Modifier.weight(1f),
                                                 enabled = !state.isArchiving,
-                                                loading = state.isArchiving,
                                                 icon = Icons.Default.Archive
                                             )
                                         } else if (listing.status == ListingStatus.ARCHIVED) {
@@ -478,7 +448,6 @@ fun ListingDetailScreen(
                                                 onClick = { viewModel.onEvent(ListingDetailEvent.ShowRestoreConfirm) },
                                                 modifier = Modifier.weight(1f),
                                                 enabled = !state.isRestoring,
-                                                loading = state.isRestoring,
                                                 icon = Icons.Default.Unarchive
                                             )
                                         }
@@ -487,7 +456,6 @@ fun ListingDetailScreen(
                                             onClick = { viewModel.onEvent(ListingDetailEvent.ShowDeleteConfirm) },
                                             modifier = Modifier.weight(1f),
                                             enabled = !state.isDeleting,
-                                            loading = state.isDeleting,
                                             containerColor = MaterialTheme.colorScheme.error,
                                             contentColor = MaterialTheme.colorScheme.onError,
                                             icon = Icons.Default.Delete
@@ -699,103 +667,6 @@ private fun DetailImageCarousel(images: List<String>, title: String, onTap: (Str
 }
 
 // ── Circular action button overlaid on image — white icon on dark circle ─────
-
-@Composable
-private fun ListingDetailCartAction(
-    listing: Listing,
-    cartItem: CartItemData?,
-    availableQuantity: Int,
-    enabled: Boolean,
-    globalTouch: GlobalTouch,
-    onAddToCart: (String) -> Unit,
-    onIncrementCartItem: (String) -> Unit,
-    onDecrementCartItem: (String) -> Unit,
-    onRemoveFromCart: (String) -> Unit
-) {
-    var isExpanded by remember(listing.id) { mutableStateOf(false) }
-    var expandTick by remember(listing.id) { mutableIntStateOf(0) }
-    var stepperBounds by remember(listing.id) { mutableStateOf<Rect?>(null) }
-
-    LaunchedEffect(globalTouch.tick) {
-        if (isExpanded && globalTouch.tick != expandTick) {
-            expandTick = globalTouch.tick
-            val position = globalTouch.position
-            val bounds = stepperBounds
-            val touchedStepper = position != null && bounds != null && bounds.contains(position)
-            if (!touchedStepper) {
-                isExpanded = false
-            }
-        }
-    }
-
-    when {
-        cartItem == null || cartItem.requestedQuantity <= 0 -> {
-            ClearChainActionIconButton(
-                icon = Icons.Default.Add,
-                contentDescription = stringResource(R.string.cart_add_to_cart),
-                onClick = {
-                    onAddToCart(listing.id)
-                    expandTick = globalTouch.tick
-                    isExpanded = true
-                },
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                enabled = enabled && availableQuantity > 0
-            )
-        }
-        isExpanded -> {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                ClearChainQuantityStepper(
-                    quantity = cartItem.requestedQuantity,
-                    unit = listing.unit,
-                    canIncrement = cartItem.requestedQuantity < availableQuantity,
-                    enabled = enabled,
-                    onDecrement = { onDecrementCartItem(listing.id) },
-                    onIncrement = { onIncrementCartItem(listing.id) },
-                    expanded = false,
-                    buttonSize = 24.dp,
-                    modifier = Modifier.onGloballyPositioned { coordinates ->
-                        stepperBounds = globalTouch.rootCoordinates?.localBoundingBoxOf(coordinates)
-                    }
-                )
-                ClearChainActionIconButton(
-                    icon = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.cart_remove),
-                    onClick = { onRemoveFromCart(listing.id) },
-                    tint = MaterialTheme.colorScheme.error,
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    enabled = enabled
-                )
-            }
-        }
-        else -> {
-            Surface(
-                onClick = {
-                    expandTick = globalTouch.tick
-                    isExpanded = true
-                },
-                modifier = Modifier.height(ClearChainButtonDefaults.Height).widthIn(min = 72.dp),
-                enabled = enabled,
-                shape = ButtonShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shadowElevation = 3.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        "${cartItem.requestedQuantity} ${listing.unit}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
-    }
-}
 
 // ── Section card ─────────────────────────────────────────────────────────────
 

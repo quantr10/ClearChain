@@ -17,7 +17,6 @@ data class RegisterState(
 
     // UI State
     val isLoading: Boolean = false,
-    val error: String? = null,
 
     // Password strength meter
     val passwordStrength: PasswordStrength = PasswordStrength.NONE,

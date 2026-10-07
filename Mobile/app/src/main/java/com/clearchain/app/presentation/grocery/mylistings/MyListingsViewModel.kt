@@ -13,6 +13,7 @@ import com.clearchain.app.domain.usecase.listing.GetMyListingsUseCase
 import com.clearchain.app.domain.usecase.listing.RestoreListingUseCase
 import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
 import com.clearchain.app.util.DownloadsExport
+import com.clearchain.app.util.BulkResult
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -62,6 +63,8 @@ class MyListingsViewModel @Inject constructor(
     }
 
     fun onEvent(event: MyListingsEvent) {
+        // While an action is in flight, the list and the selection it started from stay put.
+        if (_state.value.isBulkOperating && event.isLockedWhileBusy()) return
         when (event) {
             MyListingsEvent.LoadListings -> loadListings()
             MyListingsEvent.RefreshListings -> refreshListings()
@@ -124,8 +127,6 @@ class MyListingsViewModel @Inject constructor(
 
             is MyListingsEvent.UpdateListingQuantity ->
                 updateListingQuantity(event.listingId, event.newQuantity)
-            MyListingsEvent.ClearError ->
-                _state.update { it.copy(error = null) }
             MyListingsEvent.ExportCsv -> exportCsv()
         }
     }
@@ -171,7 +172,10 @@ class MyListingsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_load_listings)) }
+                    val msg = error.message ?: context.getString(R.string.error_load_listings)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.allListings.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -186,7 +190,10 @@ class MyListingsViewModel @Inject constructor(
                     applyFilters()
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listings_refreshed)))
                 },
-                onFailure = { _state.update { it.copy(isRefreshing = false) } }
+                onFailure = { error ->
+                    _state.update { it.copy(isRefreshing = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_refresh_failed)))
+                }
             )
         }
     }
@@ -201,7 +208,7 @@ class MyListingsViewModel @Inject constructor(
                 deleteListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_deleted, success, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, success, ids.size, R.plurals.snack_n_listings_deleted)))
             loadListings()
         }
     }
@@ -217,7 +224,7 @@ class MyListingsViewModel @Inject constructor(
                 archiveListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_archived, success, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, success, ids.size, R.plurals.snack_n_listings_archived)))
             loadListings()
         }
     }
@@ -233,7 +240,7 @@ class MyListingsViewModel @Inject constructor(
                 restoreListingUseCase(id).onSuccess { success++ }
             }
             _state.update { it.copy(bulkOperation = null, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_listings_restored, success, success)))
+            _uiEvent.send(UiEvent.ShowSnackbar(BulkResult.message(context, success, ids.size, R.plurals.snack_n_listings_restored)))
             loadListings()
         }
     }
@@ -304,5 +311,23 @@ class MyListingsViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    private fun MyListingsEvent.isLockedWhileBusy(): Boolean = when (this) {
+            is MyListingsEvent.ToggleItemSelection,
+            is MyListingsEvent.SelectAll,
+            is MyListingsEvent.DeselectAll,
+            is MyListingsEvent.ToggleSelectionMode,
+            is MyListingsEvent.TabChanged,
+            is MyListingsEvent.SearchQueryChanged,
+            is MyListingsEvent.SortOptionChanged,
+            is MyListingsEvent.CategoryFilterChanged,
+            is MyListingsEvent.FilterExpiryWithinDaysChanged,
+            is MyListingsEvent.FilterHasRequestsChanged,
+            is MyListingsEvent.ClearAdvancedFilters,
+            is MyListingsEvent.ShowFilterSheet,
+            is MyListingsEvent.RefreshListings,
+            is MyListingsEvent.LoadListings -> true
+        else -> false
     }
 }

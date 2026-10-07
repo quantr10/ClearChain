@@ -57,13 +57,12 @@ fun EditListingScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             ScreenTitleRow(
                 title = stringResource(R.string.edit_listing),
+                backEnabled = !state.isSaving,
                 onBack = { navController.navigateUp() },
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             when {
-                state.isLoading -> Box(Modifier.weight(1f).fillMaxWidth(), Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                state.isLoading -> LoadingState(Modifier.weight(1f).fillMaxWidth())
                 else -> Column(
                     modifier = Modifier
                         .weight(1f)

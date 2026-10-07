@@ -11,6 +11,7 @@ import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.GetMyPickupRequestsUseCase
+import com.clearchain.app.presentation.components.RequestAction
 import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -102,10 +103,6 @@ class MyRequestsViewModel @Inject constructor(
 
             MyRequestsEvent.ExportCsv -> exportCsv()
 
-            MyRequestsEvent.ClearError -> {
-                _state.update { it.copy(error = null) }
-            }
-
             MyRequestsEvent.ShowFilterSheet ->
                 _state.update { it.copy(showFilterSheet = true) }
             MyRequestsEvent.HideFilterSheet ->
@@ -142,12 +139,10 @@ class MyRequestsViewModel @Inject constructor(
                     applyFilters()
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: context.getString(R.string.error_load_requests)
-                        )
-                    }
+                    val msg = error.message ?: context.getString(R.string.error_load_requests)
+                    _state.update { it.copy(isLoading = false, error = msg) }
+                    // Data already on screen stays; the failure is reported, not hidden.
+                    if (_state.value.allRequests.isNotEmpty()) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }
@@ -171,12 +166,8 @@ class MyRequestsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_requests_refreshed)))
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isRefreshing = false,
-                            error = error.message ?: context.getString(R.string.error_refresh_requests)
-                        )
-                    }
+                    _state.update { it.copy(isRefreshing = false) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_refresh_requests)))
                 }
             )
         }
@@ -229,36 +220,41 @@ class MyRequestsViewModel @Inject constructor(
     }
 
     private fun cancelRequest(requestId: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            val result = cancelPickupRequestUseCase(requestId)
-
-            result.fold(
+        withPendingAction(requestId, RequestAction.CANCEL) {
+            cancelPickupRequestUseCase(requestId).fold(
                 onSuccess = {
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_request_cancelled)))
                     loadRequests()
                 },
                 onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            error = error.message ?: context.getString(R.string.error_cancel_request_failed),
-                            isLoading = false
-                        )
-                    }
+                    _uiEvent.send(UiEvent.ShowSnackbar(error.message ?: context.getString(R.string.error_cancel_request_failed)))
                 }
             )
         }
     }
 
-    private fun confirmPickupWithPhoto(requestId: String, photoUri: Uri) {
+    /** Marks [requestId] busy with [action] while [block] runs, so only its card spins. */
+    private fun withPendingAction(requestId: String, action: RequestAction, block: suspend () -> Unit) {
+        if (requestId in _state.value.pendingActions) return
         viewModelScope.launch {
+            _state.update { it.copy(pendingActions = it.pendingActions + (requestId to action)) }
+            try {
+                block()
+            } finally {
+                _state.update { it.copy(pendingActions = it.pendingActions - requestId) }
+            }
+        }
+    }
+
+    private fun confirmPickupWithPhoto(requestId: String, photoUri: Uri) {
+        withPendingAction(requestId, RequestAction.CONFIRM_PICKUP) {
             val currentAttempts = _state.value.uploadAttempts + 1
 
+            // uploadError is left as-is so a retry keeps its banner (and spinning Retry
+            // button) on screen until the new attempt settles.
             _state.update {
                 it.copy(
                     isUploading = true,
-                    uploadError = null,
                     uploadAttempts = currentAttempts
                 )
             }
@@ -270,6 +266,7 @@ class MyRequestsViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isUploading = false,
+                            uploadError = null,
                             uploadAttempts = 0,
                             failedUploadRequestId = null,
                             failedUploadPhotoUri = null

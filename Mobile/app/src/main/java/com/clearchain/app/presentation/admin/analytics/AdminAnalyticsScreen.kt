@@ -95,10 +95,7 @@ fun AdminAnalyticsScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
-                state.isLoading && state.data == null ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                state.isLoading && state.data == null -> LoadingState()
 
                 state.data == null ->
                     EmptyState(
@@ -169,9 +166,6 @@ private fun AnalyticsHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (state.isLoading && state.data != null) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            }
             ClearChainActionIconButton(
                 icon = Icons.Default.FileDownload,
                 contentDescription = stringResource(R.string.cd_export_pdf),
@@ -179,6 +173,9 @@ private fun AnalyticsHeader(
                 enabled = !state.isExporting
             )
         }
+
+        // Switching period keeps the old figures on screen while the new ones load.
+        UpdatingBar(visible = state.isLoading && state.data != null)
 
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

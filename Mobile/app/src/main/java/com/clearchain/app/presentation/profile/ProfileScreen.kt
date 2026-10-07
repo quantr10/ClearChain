@@ -49,6 +49,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isUploadingAvatar)
     val snackbarHostState = remember { SnackbarHostState() }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -75,7 +76,7 @@ fun ProfileScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.isLoading && state.user == null ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    LoadingState()
 
                 state.user != null ->
                     ProfileViewContent(
@@ -112,23 +113,25 @@ fun ProfileScreen(
         )
     }
 
+    // These dialogs stay open (confirm spinning) until their call settles.
+    DismissWhenFinished(state.isChangingPassword) { showChangePasswordDialog = false }
+    DismissWhenFinished(state.isUploadingAvatar) { showAvatarPickerDialog = false }
+    DismissWhenFinished(state.isDeletingAccount) { showDeleteAccountDialog = false }
+
     if (showChangePasswordDialog) {
         ChangePasswordDialog(
             isLoading = state.isChangingPassword,
             onDismiss = { showChangePasswordDialog = false },
             onConfirm = { current, newPassword ->
                 viewModel.onEvent(ProfileEvent.ChangePassword(current, newPassword))
-                showChangePasswordDialog = false
             }
         )
     }
 
     if (showAvatarPickerDialog) {
         PhotoPickerDialog(
-            onPhotoSelected = { uri ->
-                viewModel.onEvent(ProfileEvent.AvatarSelected(uri))
-                showAvatarPickerDialog = false
-            },
+            onPhotoSelected = { uri -> viewModel.onEvent(ProfileEvent.AvatarSelected(uri)) },
+            confirmLoading = state.isUploadingAvatar,
             onDismiss = { showAvatarPickerDialog = false },
             title = stringResource(R.string.label_change_avatar),
             message = stringResource(R.string.msg_avatar_source),
@@ -140,10 +143,7 @@ fun ProfileScreen(
         DeleteAccountDialog(
             isLoading = state.isDeletingAccount,
             onDismiss = { showDeleteAccountDialog = false },
-            onConfirm = { password ->
-                viewModel.onEvent(ProfileEvent.DeleteAccount(password))
-                showDeleteAccountDialog = false
-            }
+            onConfirm = { password -> viewModel.onEvent(ProfileEvent.DeleteAccount(password)) }
         )
     }
 }
@@ -294,11 +294,7 @@ private fun ProfileHero(
                                 .background(Color.Black.copy(alpha = 0.35f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(28.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
+                            InlineSpinner(color = Color.White)
                         }
                     }
                 }
@@ -423,6 +419,7 @@ private fun ChangePasswordDialog(
                 error = null
             },
             label = stringResource(R.string.label_current_password),
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Next,
@@ -437,6 +434,7 @@ private fun ChangePasswordDialog(
                 error = null
             },
             label = stringResource(R.string.label_new_password),
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Next,
@@ -451,6 +449,7 @@ private fun ChangePasswordDialog(
                 error = null
             },
             label = stringResource(R.string.label_confirm_new_password),
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth(),
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Done,

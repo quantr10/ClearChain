@@ -68,7 +68,6 @@ class AdminAnalyticsViewModel @Inject constructor(
             AdminAnalyticsEvent.Load -> load(isRefresh = false)
             AdminAnalyticsEvent.Refresh -> load(isRefresh = true)
             AdminAnalyticsEvent.ExportPdf -> exportPdf()
-            AdminAnalyticsEvent.ClearError -> _state.update { it.copy(error = null) }
             AdminAnalyticsEvent.FocusConsumed -> _state.update { it.copy(focusedSection = null) }
             is AdminAnalyticsEvent.SelectPeriod -> {
                 if (event.period != _state.value.period) {
@@ -112,12 +111,12 @@ class AdminAnalyticsViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(string(R.string.snack_stats_refreshed)))
                 }
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        error = e.message ?: string(R.string.error_load_statistics),
-                        isLoading = false,
-                        isRefreshing = false
-                    )
+                val msg = e.message ?: string(R.string.error_load_statistics)
+                if (_state.value.data == null) {
+                    _state.update { it.copy(error = msg, isLoading = false, isRefreshing = false) }
+                } else {
+                    _state.update { it.copy(isLoading = false, isRefreshing = false) }
+                    if (!silent) _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             }
         }

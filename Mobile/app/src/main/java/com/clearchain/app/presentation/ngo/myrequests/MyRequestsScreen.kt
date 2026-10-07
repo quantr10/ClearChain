@@ -37,20 +37,11 @@ fun MyRequestsScreen(
     viewModel: MyRequestsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.pendingActions.isNotEmpty() || state.isUploading)
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showChecklistForId by remember { mutableStateOf<String?>(null) }
     var showPhotoPickerForId by remember { mutableStateOf<String?>(null) }
-    val uploadMessage = if (state.isUploading) {
-        if (state.uploadAttempts > 1) {
-            stringResource(R.string.uploading_photo_attempt, state.uploadAttempts)
-        } else {
-            stringResource(R.string.uploading_photo)
-        }
-    } else {
-        null
-    }
-    SnackbarMessageEffect(snackbarHostState, uploadMessage)
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -100,13 +91,15 @@ fun MyRequestsScreen(
                         ) {
                             ClearChainOutlinedButton(
                                 text = stringResource(R.string.close),
-                                onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) }
+                                onClick = { viewModel.onEvent(MyRequestsEvent.DismissUploadError) },
+                                enabled = !state.isUploading
                             )
                             if (state.uploadAttempts < 3) {
                                 ClearChainButton(
                                     text = stringResource(R.string.retry),
                                     onClick = { viewModel.onEvent(MyRequestsEvent.RetryFailedUpload) },
                                     fillMaxWidth = false,
+                                    loading = state.isUploading,
                                     icon = Icons.Default.Refresh
                                 )
                             }
@@ -156,7 +149,7 @@ fun MyRequestsScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allRequests.isEmpty() -> {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            LoadingState()
                         }
 
                         state.error != null && state.allRequests.isEmpty() -> {
@@ -199,7 +192,8 @@ fun MyRequestsScreen(
                                             request = request,
                                             onCardClick = { onNavigateToRequestDetail(request.id) },
                                             onCancel = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
-                                            onConfirmPickup = { showChecklistForId = it }
+                                            onConfirmPickup = { showChecklistForId = it },
+                                            pendingAction = state.pendingActions[request.id]
                                         )
                                     }
 
@@ -225,12 +219,13 @@ fun MyRequestsScreen(
     }
 
     // Steps 2 & 3 - Photo source + preview
+    DismissWhenFinished(state.isUploading) { showPhotoPickerForId = null }
     showPhotoPickerForId?.let { requestId ->
         PhotoPickerDialog(
             onPhotoSelected = { uri ->
                 viewModel.onEvent(MyRequestsEvent.ConfirmPickupWithPhoto(requestId, uri))
-                showPhotoPickerForId = null
             },
+            confirmLoading = state.isUploading,
             onDismiss = { showPhotoPickerForId = null },
             title = stringResource(R.string.label_add_photo_proof),
             message = stringResource(R.string.msg_choose_photo_source),
@@ -351,7 +346,8 @@ private fun RequestCardWithExtras(
     request: PickupRequest,
     onCardClick: () -> Unit,
     onCancel: (String) -> Unit,
-    onConfirmPickup: (String) -> Unit
+    onConfirmPickup: (String) -> Unit,
+    pendingAction: RequestAction?
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -362,7 +358,8 @@ private fun RequestCardWithExtras(
             modifier = Modifier.clickable { onCardClick() },
             viewMode = RequestViewMode.NGO,
             onCancel = onCancel,
-            onConfirmPickup = onConfirmPickup
+            onConfirmPickup = onConfirmPickup,
+            pendingAction = pendingAction
         )
     }
 }

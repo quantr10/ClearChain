@@ -13,8 +13,6 @@ sealed class CreateListingEvent {
     object ToggleCategoryDropdown : CreateListingEvent()
     object ToggleUnitDropdown : CreateListingEvent()
     object CreateListing : CreateListingEvent()
-    object ClearError : CreateListingEvent()
-    object AnalyzeImage : CreateListingEvent()
     object ApplyAISuggestions : CreateListingEvent()
     object ToggleImagePicker : CreateListingEvent()
     object ClearImage : CreateListingEvent()
@@ -23,8 +21,6 @@ sealed class CreateListingEvent {
     // Multi-image
     data class AddImage(val uri: Uri) : CreateListingEvent()
 
-    // Draft & Preview
+    // Preview
     object TogglePreview : CreateListingEvent()
-    object RestoreDraft : CreateListingEvent()
-    object ClearDraft : CreateListingEvent()
 }

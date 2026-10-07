@@ -34,9 +34,12 @@ fun ScreenTitleRow(
     title: String,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    /** False while an action on the screen is in flight: back (button and system) waits. */
+    backEnabled: Boolean = true,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val context = LocalContext.current
+    BlockBackWhile(onBack != null && !backEnabled)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -50,6 +53,7 @@ fun ScreenTitleRow(
                     HapticUtils.tick(context)
                     onBack()
                 },
+                enabled = backEnabled,
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(36.dp)
@@ -59,7 +63,9 @@ fun ScreenTitleRow(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (backEnabled) 1f else ClearChainButtonDefaults.DisabledAlpha
+                        )
                     )
                 }
             }

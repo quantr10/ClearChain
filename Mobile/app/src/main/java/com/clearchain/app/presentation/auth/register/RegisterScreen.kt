@@ -41,6 +41,7 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isLoading)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(true) {

@@ -30,6 +30,7 @@ fun ManageRequestsScreen(
     viewModel: ManageRequestsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.pendingActions.isNotEmpty())
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -97,7 +98,7 @@ fun ManageRequestsScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allRequests.isEmpty() -> {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            LoadingState()
                         }
 
                         state.error != null && state.allRequests.isEmpty() -> {
@@ -143,7 +144,8 @@ fun ManageRequestsScreen(
                                                 viewMode = RequestViewMode.GROCERY,
                                                 onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
                                                 onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
-                                                onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) }
+                                                onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) },
+                                                pendingAction = state.pendingActions[request.id]
                                             )
                                         }
                                     }

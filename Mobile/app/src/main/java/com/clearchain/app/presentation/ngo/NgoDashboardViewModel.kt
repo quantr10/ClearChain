@@ -17,6 +17,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import android.content.Context
+import com.clearchain.app.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 // Derived impact metrics computed from stats
 data class ImpactMetrics(
@@ -26,6 +34,8 @@ data class ImpactMetrics(
 )
 
 data class NgoDashboardState(
+    /** Until the first load settles; refreshes keep the sections on screen. */
+    val isLoading: Boolean = true,
     val userName: String = "",
     val profilePictureUrl: String? = null,
     val stats: DashboardStatsData? = null,
@@ -51,6 +61,7 @@ data class NgoDashboardState(
 
 @HiltViewModel
 class NgoDashboardViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val organizationApi: OrganizationApi,
     private val listingRepository: ListingRepository
@@ -63,16 +74,23 @@ class NgoDashboardViewModel @Inject constructor(
     private val _state = MutableStateFlow(NgoDashboardState())
     val state = _state.asStateFlow()
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     init {
         observeUser()
-        viewModelScope.launch { loadAll() }
+        viewModelScope.launch {
+            loadAll()
+            _state.update { it.copy(isLoading = false) }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            loadAll()
+            val ok = loadAll()
             _state.update { it.copy(isRefreshing = false) }
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dashboard_refreshed)))
         }
     }
 
@@ -85,11 +103,21 @@ class NgoDashboardViewModel @Inject constructor(
      *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime —
      *  which is how the freshly loaded user name and coordinates (and with them the nearby
      *  map) used to blink in and then vanish again. */
-    private suspend fun loadAll(): Unit = coroutineScope {
-        launch { loadStats() }
-        launch { loadTodaySummary() }
-        launch { loadActivity() }
-        launch { loadNearbyListings() }
+    private suspend fun loadAll(): Boolean {
+        val results = coroutineScope {
+            listOf(
+            async { loadStats() },
+            async { loadTodaySummary() },
+            async { loadActivity() },
+            async { loadNearbyListings() },
+            ).awaitAll()
+        }
+        // Sections fail independently and each keeps whatever it showed before;
+        // one snackbar says something is missing instead of failing silently.
+        if (false in results) {
+            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.error_dashboard_partial)))
+        }
+        return false !in results
     }
 
     // Collected rather than read once, so a new avatar or a renamed organization
@@ -115,7 +143,7 @@ class NgoDashboardViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadStats() {
+    private suspend fun loadStats(): Boolean {
         try {
             val s = organizationApi.getMyStats().data
             // The API counts the last seven days off the hand-over date. This used to be
@@ -124,34 +152,41 @@ class NgoDashboardViewModel @Inject constructor(
             _state.update { it.copy(stats = s, weeklyCompleted = s.completedThisWeek) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load stats", e)
+            return false
         }
+        return true
     }
 
-    private suspend fun loadTodaySummary() {
+    private suspend fun loadTodaySummary(): Boolean {
         try {
             val summary = organizationApi.getTodaySummary().data
             _state.update { it.copy(todaySummary = summary) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load today's summary", e)
+            return false
         }
+        return true
     }
 
-    private suspend fun loadActivity() {
+    private suspend fun loadActivity(): Boolean {
         try {
             val activities = organizationApi.getMyActivity().data
             _state.update { it.copy(activities = activities) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load activity", e)
+            return false
         }
+        return true
     }
 
-    private suspend fun loadNearbyListings() {
+    private suspend fun loadNearbyListings(): Boolean {
         try {
-            listingRepository.getAllListings(status = "open", pageSize = 50).onSuccess { listings ->
+            return listingRepository.getAllListings(status = "open", pageSize = 50).onSuccess { listings ->
                 _state.update { it.copy(availableListings = listings) }
-            }
+            }.isSuccess
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load nearby listings", e)
+            return false
         }
     }
 }

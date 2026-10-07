@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.analytics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +33,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.clearchain.app.util.UiEvent
+import kotlinx.coroutines.channels.Channel
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 // ── ViewModel ────────────────────────────────────────────────────────────────
 data class AnalyticsState(
@@ -46,6 +55,7 @@ data class AnalyticsState(
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val organizationApi: OrganizationApi
 ) : ViewModel() {
@@ -53,48 +63,59 @@ class AnalyticsViewModel @Inject constructor(
     private val _state = MutableStateFlow(AnalyticsState())
     val state: StateFlow<AnalyticsState> = _state.asStateFlow()
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     init {
-        loadAll()
+        viewModelScope.launch { loadAll() }
     }
 
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            loadAll()
+            val ok = loadAll()
             _state.update { it.copy(isRefreshing = false) }
+            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_stats_refreshed)))
         }
     }
 
-    private fun loadAll() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val user = getCurrentUserUseCase().first()
-                val orgType = user?.type ?: OrganizationType.GROCERY
-                val stats = organizationApi.getMyStats()
+    private suspend fun loadAll(): Boolean {
+        // Only a cold start blanks the page; a refresh keeps the figures on screen.
+        _state.update { it.copy(isLoading = it.stats == null, error = null) }
+        try {
+            val user = getCurrentUserUseCase().first()
+            val orgType = user?.type ?: OrganizationType.GROCERY
+            val stats = organizationApi.getMyStats()
 
-                // Supplementary sections degrade gracefully: if any of these fail, the core
-                // stats above still render — only the extra section they feed goes missing.
-                // 30 days to match the analytics activity-trend chart below.
-                val activities = runCatching { organizationApi.getMyActivity(days = 30).data }
-                    .getOrDefault(emptyList())
-                val reputation = if (orgType == OrganizationType.NGO && user != null) {
-                    runCatching { organizationApi.getNgoReputation(user.id).data }.getOrNull()
-                } else {
-                    null
-                }
-                _state.update {
-                    it.copy(
-                        stats = stats.data,
-                        orgType = orgType,
-                        activities = activities,
-                        ngoReputation = reputation,
-                        isLoading = false
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+            // Supplementary sections degrade gracefully: if any of these fail, the core
+            // stats above still render — only the extra section they feed goes missing.
+            // 30 days to match the analytics activity-trend chart below.
+            val activities = runCatching { organizationApi.getMyActivity(days = 30).data }
+                .getOrDefault(emptyList())
+            val reputation = if (orgType == OrganizationType.NGO && user != null) {
+                runCatching { organizationApi.getNgoReputation(user.id).data }.getOrNull()
+            } else {
+                null
             }
+            _state.update {
+                it.copy(
+                    stats = stats.data,
+                    orgType = orgType,
+                    activities = activities,
+                    ngoReputation = reputation,
+                    isLoading = false
+                )
+            }
+            return true
+        } catch (e: Exception) {
+            val msg = e.message ?: context.getString(R.string.error_load_statistics)
+            if (_state.value.stats == null) {
+                _state.update { it.copy(isLoading = false, error = msg) }
+            } else {
+                _state.update { it.copy(isLoading = false) }
+                _uiEvent.send(UiEvent.ShowSnackbar(msg))
+            }
+            return false
         }
     }
 }
@@ -107,8 +128,15 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            if (event is UiEvent.ShowSnackbar) snackbarHostState.showSnackbar(event.message)
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -119,7 +147,7 @@ fun AnalyticsScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (state.isLoading && state.stats == null) {
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    LoadingState()
                 } else {
                     HapticPullToRefreshBox(
                         isRefreshing = state.isRefreshing,
@@ -141,6 +169,14 @@ fun AnalyticsScreen(
                                 } else {
                                     NgoAnalytics(s, state.ngoReputation, state.activities)
                                 }
+                            } else if (state.error != null) {
+                                EmptyState(
+                                    icon = Icons.Default.BarChart,
+                                    title = stringResource(R.string.error_load_statistics),
+                                    subtitle = state.error ?: stringResource(R.string.error_generic),
+                                    actionLabel = stringResource(R.string.action_retry),
+                                    onAction = viewModel::refresh
+                                )
                             }
                             Spacer(Modifier.height(12.dp))
                         }

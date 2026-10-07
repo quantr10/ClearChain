@@ -101,7 +101,7 @@ fun InventoryDetailScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    state.isLoading -> LoadingState()
 
                     state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
@@ -241,19 +241,10 @@ fun InventoryDetailScreen(
 
                             if (state.isLoadingRequest) {
                                 SectionCard(stringResource(R.string.section_source), contentSpacing = 8.dp) {
-                                    Row(
+                                    LoadingState(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            stringResource(R.string.loading_source_info),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                        message = stringResource(R.string.loading_source_info)
+                                    )
                                 }
                             }
 

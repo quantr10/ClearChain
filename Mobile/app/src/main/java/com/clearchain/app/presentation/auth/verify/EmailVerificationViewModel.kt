@@ -9,6 +9,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.ResendVerificationUseCase
 import com.clearchain.app.domain.usecase.auth.VerifyEmailUseCase
 import com.clearchain.app.presentation.navigation.Screen
+import com.clearchain.app.util.ApiErrorUtils
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,7 +50,6 @@ class EmailVerificationViewModel @Inject constructor(
             }
             EmailVerificationEvent.Verify -> verify()
             EmailVerificationEvent.ResendCode -> resend()
-            EmailVerificationEvent.ClearError -> _state.update { it.copy(error = null) }
         }
     }
 
@@ -60,7 +60,7 @@ class EmailVerificationViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, codeError = null) }
             val result = verifyEmailUseCase(s.email, s.code)
             result.fold(
                 onSuccess = { (user, _) ->
@@ -73,7 +73,21 @@ class EmailVerificationViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_email_verified)))
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(isLoading = false, error = error.message ?: context.getString(R.string.error_verification_failed)) }
+                    // Same split as login: a rejected code belongs under the code field,
+                    // a system/network failure is a snackbar.
+                    val raw = error.message.orEmpty()
+                    val systemMsg = ApiErrorUtils.systemMessage(context, raw)
+                    if (systemMsg != null) {
+                        _state.update { it.copy(isLoading = false) }
+                        _uiEvent.send(UiEvent.ShowSnackbar(systemMsg))
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                codeError = raw.ifBlank { context.getString(R.string.error_verification_failed) }
+                            )
+                        }
+                    }
                 }
             )
         }
@@ -82,7 +96,7 @@ class EmailVerificationViewModel @Inject constructor(
     private fun resend() {
         if (_state.value.resendCooldownSeconds > 0) return
         viewModelScope.launch {
-            _state.update { it.copy(isResending = true, error = null) }
+            _state.update { it.copy(isResending = true) }
             val result = resendVerificationUseCase(email)
             _state.update { it.copy(isResending = false) }
             result.fold(
@@ -91,7 +105,10 @@ class EmailVerificationViewModel @Inject constructor(
                     startCooldown(60)
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(error = error.message ?: context.getString(R.string.error_resend_code_failed)) }
+                    val raw = error.message.orEmpty()
+                    val msg = ApiErrorUtils.systemMessage(context, raw)
+                        ?: raw.ifBlank { context.getString(R.string.error_resend_code_failed) }
+                    _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
         }

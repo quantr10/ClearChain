@@ -23,6 +23,4 @@ sealed class ManageRequestsEvent {
 
     // CSV export
     object ExportCsv : ManageRequestsEvent()
-
-    object ClearError : ManageRequestsEvent()
 }

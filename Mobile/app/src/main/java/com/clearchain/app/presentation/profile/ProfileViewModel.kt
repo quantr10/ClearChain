@@ -9,7 +9,6 @@ import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.DeleteAccountRequest
 import com.clearchain.app.domain.model.ActivityItem
-import com.clearchain.app.domain.model.OrgStats
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.OrganizationRepository
 import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
@@ -50,11 +49,7 @@ class ProfileViewModel @Inject constructor(
 
     fun onEvent(event: ProfileEvent) {
         when (event) {
-            ProfileEvent.LoadProfile -> loadProfile()
-            ProfileEvent.LoadStats -> loadStats()
-            ProfileEvent.LoadActivity -> loadActivity()
             ProfileEvent.Refresh -> loadAll()
-            ProfileEvent.ClearError -> _state.update { it.copy(error = null) }
 
             is ProfileEvent.ChangePassword ->
                 changePassword(event.currentPassword, event.newPassword)
@@ -101,12 +96,10 @@ class ProfileViewModel @Inject constructor(
 
     private fun loadAll() {
         viewModelScope.launch {
-            // Load profile, stats, and activity concurrently
+            // Load profile and activity concurrently
             val profileJob = async { runCatching { loadProfileSuspend() } }
-            val statsJob = async { runCatching { loadStatsSuspend() } }
             val activityJob = async { runCatching { loadActivitySuspend() } }
             profileJob.await()
-            statsJob.await()
             activityJob.await()
         }
     }
@@ -132,35 +125,6 @@ class ProfileViewModel @Inject constructor(
                 reviewCount = publicProfile?.reviewCount ?: 0,
                 isLoading = false
             )
-        }
-    }
-
-    private fun loadStats() {
-        viewModelScope.launch {
-            runCatching { loadStatsSuspend() }
-        }
-    }
-
-    private suspend fun loadStatsSuspend() {
-        val dto = organizationApi.getMyStats().data
-        val stats = OrgStats(
-            inStock = dto.inStock,
-            activeRequests = dto.activeRequests,
-            distributed = dto.distributed,
-            availableFood = dto.availableFood,
-            totalCompleted = dto.totalCompleted,
-            activeListings = dto.activeListings,
-            pendingRequests = dto.pendingRequests,
-            completed = dto.completed,
-            foodSaved = dto.foodSaved,
-            totalListings = dto.totalListings
-        )
-        _state.update { it.copy(stats = stats) }
-    }
-
-    private fun loadActivity() {
-        viewModelScope.launch {
-            runCatching { loadActivitySuspend() }
         }
     }
 
@@ -285,7 +249,7 @@ class ProfileViewModel @Inject constructor(
                         e,
                         context.getString(R.string.error_update_profile_failed)
                     )
-                    _state.update { it.copy(isSavingProfile = false, error = msg) }
+                    _state.update { it.copy(isSavingProfile = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )
@@ -361,7 +325,7 @@ class ProfileViewModel @Inject constructor(
                 },
                 onFailure = { e ->
                     val msg = e.message ?: context.getString(R.string.error_change_password_failed)
-                    _state.update { it.copy(isChangingPassword = false, error = msg) }
+                    _state.update { it.copy(isChangingPassword = false) }
                     _uiEvent.send(UiEvent.ShowSnackbar(msg))
                 }
             )

@@ -65,8 +65,8 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    BlockBackWhile(state.isSaving || state.isUploadingDocument)
     val snackbarHostState = remember { SnackbarHostState() }
-    SnackbarMessageEffect(snackbarHostState, state.error)
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -452,7 +452,9 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        modifier = Modifier
+                            .height(32.dp)
+                            .padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -462,10 +464,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                             modifier = Modifier.weight(1f)
                         ) {
                             when {
-                                state.isUploadingDocument -> CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp
-                                )
+                                state.isUploadingDocument -> InlineSpinner()
                                 state.uploadedDocumentUrl != null -> Icon(
                                     Icons.Default.CheckCircle,
                                     null,

@@ -57,8 +57,10 @@ data class BrowseListingsState(
 
     // Backend cart
     val cartItemsByListingId: Map<String, CartItemData> = emptyMap(),
-    val isUpdatingCart: Boolean = false
+    /** The listing whose cart call is in flight; every cart control waits for it. */
+    val updatingCartListingId: String? = null
 ) {
+    val isUpdatingCart: Boolean get() = updatingCartListingId != null
     val listings: List<Listing> get() = filteredListings
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +

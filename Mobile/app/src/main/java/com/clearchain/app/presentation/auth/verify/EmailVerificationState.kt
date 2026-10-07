@@ -6,6 +6,5 @@ data class EmailVerificationState(
     val codeError: String? = null,
     val isLoading: Boolean = false,
     val isResending: Boolean = false,
-    val resendCooldownSeconds: Int = 0,
-    val error: String? = null
+    val resendCooldownSeconds: Int = 0
 )

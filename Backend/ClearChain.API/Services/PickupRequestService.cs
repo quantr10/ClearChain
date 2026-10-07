@@ -1,10 +1,10 @@
+using ClearChain.API.Common;
 using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.API.DTOs.Inventory;
-using System.Text.Json;
 
 namespace ClearChain.API.Services;
 
@@ -32,7 +32,7 @@ public interface IPickupRequestService
 {
     Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false);
     Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType);
-    Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, bool includeContacts = false);
+    Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, Guid callerId, bool isAdmin, bool includeContacts = false);
     Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize);
     Task<PickupRequestServiceResult> GetGroceryRequestsAsync(Guid groceryId, int page, int pageSize);
     Task<PickupRequestServiceResult> ApproveAsync(Guid requestId, Guid groceryId);
@@ -235,7 +235,7 @@ public class PickupRequestService : IPickupRequestService
                         Quantity = item.RequestedQuantity,
                         Unit = item.ListingUnit,
                         ExpiryDate = expiryDate,
-                        PhotoUrl = item.ListingPhotoUrl ?? FirstImageUrl(reserved?.PhotoUrl),
+                        PhotoUrl = item.ListingPhotoUrl ?? ListingFields.FirstImageUrl(reserved?.PhotoUrl),
                         Status = InventoryStatus.Active,
                         ReceivedAt = DateTime.UtcNow,
                         CreatedAt = DateTime.UtcNow,
@@ -291,7 +291,7 @@ public class PickupRequestService : IPickupRequestService
                     Quantity = pickupRequest.RequestedQuantity ?? 0,
                     Unit = listing.Unit,
                     ExpiryDate = expiryDate,
-                    PhotoUrl = FirstImageUrl(listing.PhotoUrl),
+                    PhotoUrl = ListingFields.FirstImageUrl(listing.PhotoUrl),
                     Status = InventoryStatus.Active,
                     ReceivedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
@@ -399,13 +399,17 @@ public class PickupRequestService : IPickupRequestService
         return new PickupRequestServiceResult(true, Data: data, InventoryData: inventoryDto);
     }
 
-    public async Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, bool includeContacts = false)
+    public async Task<PickupRequestServiceResult> GetByIdAsync(
+        Guid requestId, Guid callerId, bool isAdmin, bool includeContacts = false)
     {
+        // Only the two parties and admins may read a request; anyone else gets the same
+        // "not found" as for an id that does not exist, so ids cannot be probed.
         var pr = await _context.PickupRequests
             .Include(p => p.Ngo)
             .Include(p => p.Grocery)
             .Include(p => p.Items)
-            .FirstOrDefaultAsync(p => p.Id == requestId);
+            .FirstOrDefaultAsync(p => p.Id == requestId &&
+                (isAdmin || p.NgoId == callerId || p.GroceryId == callerId));
 
         if (pr == null)
             return Fail(PickupRequestServiceError.NotFound, "Pickup request not found");
@@ -580,19 +584,7 @@ public class PickupRequestService : IPickupRequestService
             DistanceKm = HaversineKm(
                 pr.Ngo?.Latitude, pr.Ngo?.Longitude,
                 pr.Grocery?.Latitude, pr.Grocery?.Longitude),
-            Items = pr.Items.Select(i => new PickupRequestItemData
-            {
-                Id = i.Id.ToString(),
-                ListingGroupId = i.ListingGroupId?.ToString(),
-                OriginalListingId = i.OriginalListingId?.ToString(),
-                ReservedListingId = i.ReservedListingId?.ToString(),
-                RequestedQuantity = i.RequestedQuantity,
-                ListingTitle = i.ListingTitle,
-                ListingCategory = i.ListingCategory,
-                ListingExpiryDate = i.ListingExpiryDate,
-                ListingUnit = i.ListingUnit,
-                ListingPhotoUrl = i.ListingPhotoUrl
-            }).ToList()
+            Items = pr.Items.Select(PickupRequestItemData.From).ToList()
         };
     }
 
@@ -611,26 +603,6 @@ public class PickupRequestService : IPickupRequestService
                 Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
         var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         return Math.Round(earthRadiusKm * c, 1);
-    }
-
-    private static string? FirstImageUrl(string? photoUrl)
-    {
-        if (string.IsNullOrWhiteSpace(photoUrl))
-            return null;
-
-        var trimmed = photoUrl.Trim();
-        if (!trimmed.StartsWith("["))
-            return trimmed;
-
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(trimmed)
-                ?.FirstOrDefault(url => !string.IsNullOrWhiteSpace(url));
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     private static PickupRequestsResponse ToPagedResponse(
