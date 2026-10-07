@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">ClearChain</string>
 
     <!-- ── General ── -->
@@ -24,7 +24,7 @@
     <string name="forgot_password_email_subject">ClearChain — Forgot my password</string>
     <string name="label_or">or</string>
     <string name="label_from_date">From %1$s</string>
-    <string name="label_request_count_short">%1$d req</string>
+    <string name="label_request_count_short" tools:ignore="PluralsCandidate">%1$d req</string>
     <string name="remember_me">Remember me</string>
     <string name="password_strength_weak">Weak</string>
     <string name="password_strength_medium">Medium</string>
@@ -57,7 +57,7 @@
     <!-- ── Reviews ── -->
     <string name="rate_and_review">Rate this pickup</string>
     <string name="your_rating">Your rating</string>
-    <string name="cd_rated_out_of_five">Rated %1$d out of 5</string>
+    <string name="cd_rated_out_of_five" tools:ignore="PluralsCandidate">Rated %1$d out of 5</string>
 
     <!-- ── Disputes ── -->
     <string name="open_dispute">Report an issue</string>
@@ -73,7 +73,10 @@
     <string name="mark_all_read">Mark all as read</string>
     <string name="no_notifications">No notifications yet</string>
     <string name="cd_open_notifications">Open notifications</string>
-    <string name="no_notifications_subtitle">Anything sent to you in the last %1$d days shows up here.</string>
+    <plurals name="no_notifications_subtitle">
+        <item quantity="one">Anything sent to you in the last %1$d day shows up here.</item>
+        <item quantity="other">Anything sent to you in the last %1$d days shows up here.</item>
+    </plurals>
 
     <!-- ── Settings ── -->
     <string name="settings">Settings</string>
@@ -135,8 +138,11 @@
     <string name="impact_co2">CO₂ Reduced</string>
     <string name="weekly_pickups">Weekly Pickups</string>
     <string name="goal_reached">Goal reached! Great work this week.</string>
-    <string name="goal_remaining">%1$d more to reach your weekly goal</string>
-    <string name="view_all_pickups">View all %1$d pickups</string>
+    <string name="goal_remaining" tools:ignore="PluralsCandidate">%1$d more to reach your weekly goal</string>
+    <plurals name="view_all_pickups">
+        <item quantity="one">View %1$d pickup</item>
+        <item quantity="other">View all %1$d pickups</item>
+    </plurals>
 
     <!-- ── Status badges ── -->
     <string name="status_available">Available</string>
@@ -168,7 +174,10 @@
     <string name="note_waiting_grocery_prepare">Waiting for %1$s to prepare your request</string>
     <string name="confirm_pickup_photo">Confirm Pickup with Photo</string>
     <string name="dialog_approve_title">Approve Request?</string>
-    <string name="dialog_approve_message">Approve pickup from %1$s for %2$d items?</string>
+    <plurals name="dialog_approve_message">
+        <item quantity="one">Approve pickup from %1$s for %2$d item?</item>
+        <item quantity="other">Approve pickup from %1$s for %2$d items?</item>
+    </plurals>
     <string name="dialog_reject_title">Reject Request?</string>
     <string name="dialog_reject_message">Reject request from %1$s? Quantity will be restored.</string>
     <string name="dialog_ready_title">Mark Ready?</string>
@@ -301,7 +310,10 @@
 
     <!-- Admin Dashboard -->
     <string name="stat_completion_rate">Completion Rate</string>
-    <string name="admin_completion_detail">%1$d of %2$d requests completed</string>
+    <plurals name="admin_completion_detail">
+        <item quantity="one">%1$d of %2$d request completed</item>
+        <item quantity="other">%1$d of %2$d requests completed</item>
+    </plurals>
     <string name="section_request_status_breakdown">Request Status Breakdown</string>
     <string name="org_type_groceries">Grocery Stores</string>
     <string name="org_type_ngos">NGOs</string>
@@ -426,7 +438,10 @@
     <string name="stat_total">Total</string>
 
     <!-- Analytics compound strings -->
-    <string name="analytics_completed_of_requests">%1$d completed of %2$d total requests</string>
+    <plurals name="analytics_completed_of_requests">
+        <item quantity="one">%1$d completed of %2$d total request</item>
+        <item quantity="other">%1$d completed of %2$d total requests</item>
+    </plurals>
     <string name="analytics_pickup_completion_rate">Pickup completion rate</string>
 
     <!-- Admin Dashboard compound strings -->
@@ -579,8 +594,11 @@
 
     <!-- NGO Dashboard -->
     <string name="label_your_location">Your location</string>
-    <string name="label_n_available">%1$d available</string>
-    <string name="label_n_listings_nearby">%1$d listings nearby</string>
+    <string name="label_n_available" tools:ignore="PluralsCandidate">%1$d available</string>
+    <plurals name="label_n_listings_nearby">
+        <item quantity="one">%1$d listing nearby</item>
+        <item quantity="other">%1$d listings nearby</item>
+    </plurals>
 
     <!-- Request Pickup form -->
     <string name="label_pickup_date_section">Pickup Date</string>
@@ -595,7 +613,10 @@
 
     <!-- Public Profile stats -->
     <string name="profile_detail_no_reviews">No pickup reviews yet</string>
-    <string name="profile_rating_summary">%1$s rating - %2$d reviews</string>
+    <plurals name="profile_rating_summary">
+        <item quantity="one">%1$s rating - %2$d review</item>
+        <item quantity="other">%1$s rating - %2$d reviews</item>
+    </plurals>
     <string name="profile_section_impact">Impact</string>
     <string name="profile_stat_joined_since">Joined since</string>
     <string name="profile_stat_orders_processed">Orders processed</string>
@@ -652,7 +673,10 @@
     <string name="cd_preview_image">Preview</string>
     <string name="cd_clear_notifications">Clear all notifications</string>
     <string name="action_view_grocery_profile">View Grocery Profile</string>
-    <string name="cd_star_n">%1$d star</string>
+    <plurals name="cd_star_n">
+        <item quantity="one">%1$d star</item>
+        <item quantity="other">%1$d stars</item>
+    </plurals>
     <string name="cd_proof_of_pickup">Proof of pickup</string>
     <string name="cd_saved_only">Saved only</string>
     <string name="greeting_hi">Hi, %1$s</string>
@@ -691,7 +715,10 @@
     <string name="label_pickup_verification_checklist">Pickup Verification Checklist</string>
     <string name="hint_email_you">you@example.com</string>
     <string name="hint_email_org">org@example.com</string>
-    <string name="msg_account_locked">Account locked. Try again in %1$d minute(s).</string>
+    <plurals name="msg_account_locked">
+        <item quantity="one">Account locked. Try again in %1$d minute.</item>
+        <item quantity="other">Account locked. Try again in %1$d minutes.</item>
+    </plurals>
     <string name="tos_agree_prefix">I agree to the </string>
     <string name="tos_agree_and"> and </string>
 
@@ -708,9 +735,18 @@
     <string name="snack_listing_archived">Listing archived</string>
     <string name="snack_listing_restored">Listing restored</string>
 
-    <string name="snack_n_listings_deleted">%1$d listings deleted</string>
-    <string name="snack_n_listings_archived">%1$d listings archived</string>
-    <string name="snack_n_listings_restored">%1$d listings restored</string>
+    <plurals name="snack_n_listings_deleted">
+        <item quantity="one">%1$d listing deleted</item>
+        <item quantity="other">%1$d listings deleted</item>
+    </plurals>
+    <plurals name="snack_n_listings_archived">
+        <item quantity="one">%1$d listing archived</item>
+        <item quantity="other">%1$d listings archived</item>
+    </plurals>
+    <plurals name="snack_n_listings_restored">
+        <item quantity="one">%1$d listing restored</item>
+        <item quantity="other">%1$d listings restored</item>
+    </plurals>
 
     <string name="snack_quantity_updated">Quantity updated</string>
     <string name="snack_draft_restored">Draft restored</string>
@@ -735,15 +771,24 @@
     <string name="snack_csv_failed">Failed to save CSV</string>
     <string name="snack_export_failed">Export failed: %1$s</string>
     <string name="snack_inventory_refreshed">Inventory refreshed</string>
-    <string name="snack_n_items_distributed">%1$d item(s) distributed</string>
+    <plurals name="snack_n_items_distributed">
+        <item quantity="one">%1$d item distributed</item>
+        <item quantity="other">%1$d items distributed</item>
+    </plurals>
     <string name="snack_item_distributed">Item marked as distributed</string>
     <string name="snack_item_added">Item added to inventory</string>
     <string name="snack_new_admin_notification">New %1$s: %2$s</string>
     <string name="snack_new_transaction">Transaction: %1$s</string>
     <string name="snack_stats_refreshed">Statistics refreshed</string>
     <string name="snack_new_registration">New %1$s registered: %2$s</string>
-    <string name="snack_approved_orgs">Approved %1$d of %2$d organizations</string>
-    <string name="snack_rejected_orgs">Rejected %1$d of %2$d organizations</string>
+    <plurals name="snack_approved_orgs">
+        <item quantity="one">Approved %1$d of %2$d organization</item>
+        <item quantity="other">Approved %1$d of %2$d organizations</item>
+    </plurals>
+    <plurals name="snack_rejected_orgs">
+        <item quantity="one">Rejected %1$d of %2$d organization</item>
+        <item quantity="other">Rejected %1$d of %2$d organizations</item>
+    </plurals>
     <string name="snack_org_approved">Organization approved</string>
     <string name="snack_org_rejected">Organization rejected</string>
     <string name="snack_orgs_refreshed">Organizations refreshed</string>
@@ -999,15 +1044,21 @@
     <string name="chart_top_groceries">Stores by pickups completed</string>
     <string name="chart_top_ngos">NGOs by pickups completed</string>
 
-    <string name="stat_pending_verification">%1$d awaiting verification</string>
-    <string name="stat_pending_verification_aged">%1$d awaiting verification · oldest %2$d days</string>
+    <string name="stat_pending_verification" tools:ignore="PluralsCandidate">%1$d awaiting verification</string>
+    <plurals name="stat_pending_verification_aged">
+        <item quantity="one">%1$d awaiting verification · oldest %2$d day</item>
+        <item quantity="other">%1$d awaiting verification · oldest %2$d days</item>
+    </plurals>
     <string name="chart_no_requests">No pickup requests in this period.</string>
 
     <!-- ── Admin stats & analytics screen ── -->
     <string name="stats_analytics_title">Stats &amp; Analytics</string>
     <string name="stats_all_time_subtitle">Everything since the platform opened</string>
     <string name="stats_period_range">%1$s – %2$s</string>
-    <string name="stats_period_days">Last %1$d days</string>
+    <plurals name="stats_period_days">
+        <item quantity="one">Last %1$d day</item>
+        <item quantity="other">Last %1$d days</item>
+    </plurals>
     <string name="action_retry">Try again</string>
 
     <string name="section_timing">Hand-over speed</string>
@@ -1017,7 +1068,10 @@
     <string name="timing_p90">Slowest 10%% took over</string>
     <string name="timing_within_24h">Finished within a day</string>
     <string name="timing_within_24h_detail">%1$d%% of pickups finished within a day</string>
-    <string name="timing_sample">Medians across %1$d completed pickups</string>
+    <plurals name="timing_sample">
+        <item quantity="one">Medians across %1$d completed pickup</item>
+        <item quantity="other">Medians across %1$d completed pickups</item>
+    </plurals>
     <string name="timing_no_data">No pickups completed in this period, so there is nothing to time.</string>
 
     <string name="section_live_backlog">Waiting right now</string>

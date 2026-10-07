@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.clearchain.app.R
@@ -120,7 +122,7 @@ fun PendingReviewScreen(
             }
 
             // ── Rejection reason ─────────────────────────────────────────────
-            if (rejected && !user?.verificationNotes.isNullOrBlank()) {
+            if (rejected && !user.verificationNotes.isNullOrBlank()) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
@@ -137,7 +139,7 @@ fun PendingReviewScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            user!!.verificationNotes!!,
+                            user.verificationNotes,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -223,14 +225,14 @@ fun PendingReviewScreen(
             ClearChainOutlinedButton(
                 text = stringResource(R.string.help),
                 onClick = onOpenHelp,
-                icon = Icons.Default.HelpOutline,
+                icon = Icons.AutoMirrored.Filled.HelpOutline,
                 fillMaxWidth = true
             )
 
             ClearChainOutlinedButton(
                 text = stringResource(R.string.pending_review_logout),
                 onClick = { viewModel.logout() },
-                icon = Icons.Default.Logout,
+                icon = Icons.AutoMirrored.Filled.Logout,
                 contentColor = MaterialTheme.colorScheme.error,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                 fillMaxWidth = true

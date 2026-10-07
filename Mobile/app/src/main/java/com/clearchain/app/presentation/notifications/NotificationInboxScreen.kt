@@ -15,10 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.AppNotification
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
@@ -49,8 +50,9 @@ fun NotificationInboxScreen(
                 EmptyState(
                     icon = Icons.Default.Notifications,
                     title = stringResource(R.string.no_notifications),
-                    subtitle = stringResource(
-                        R.string.no_notifications_subtitle,
+                    subtitle = pluralStringResource(
+                        R.plurals.no_notifications_subtitle,
+                        state.retention.retentionDays,
                         state.retention.retentionDays
                     ),
                     modifier = Modifier.weight(1f).fillMaxWidth()

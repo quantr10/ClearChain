@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,7 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartItemData
@@ -78,7 +79,7 @@ fun ListingDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
     var showEditQty by remember { mutableStateOf(false) }
-    var touchTick by remember { mutableStateOf(0) }
+    var touchTick by remember { mutableIntStateOf(0) }
     var lastTouchPosition by remember { mutableStateOf<Offset?>(null) }
     var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val globalTouch = GlobalTouch(touchTick, lastTouchPosition, rootCoordinates)
@@ -536,7 +537,7 @@ fun ListingDetailScreen(
                                                         overflow = TextOverflow.Ellipsis
                                                     )
                                                     Icon(
-                                                        Icons.Default.OpenInNew,
+                                                        Icons.AutoMirrored.Filled.OpenInNew,
                                                         null,
                                                         Modifier.size(14.dp),
                                                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
@@ -565,7 +566,7 @@ fun ListingDetailScreen(
                                                         modifier = Modifier.weight(1f)
                                                     )
                                                     Icon(
-                                                        Icons.Default.OpenInNew,
+                                                        Icons.AutoMirrored.Filled.OpenInNew,
                                                         null,
                                                         Modifier.size(14.dp),
                                                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
@@ -712,7 +713,7 @@ private fun ListingDetailCartAction(
     onRemoveFromCart: (String) -> Unit
 ) {
     var isExpanded by remember(listing.id) { mutableStateOf(false) }
-    var expandTick by remember(listing.id) { mutableStateOf(0) }
+    var expandTick by remember(listing.id) { mutableIntStateOf(0) }
     var stepperBounds by remember(listing.id) { mutableStateOf<Rect?>(null) }
 
     LaunchedEffect(globalTouch.tick) {

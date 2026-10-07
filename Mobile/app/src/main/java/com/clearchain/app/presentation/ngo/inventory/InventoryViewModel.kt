@@ -315,7 +315,7 @@ class InventoryViewModel @Inject constructor(
                 distributeInventoryItemUseCase(id).onSuccess { succeeded++ }
             }
             _state.update { it.copy(isBulkOperating = false, isSelectionMode = false, selectedIds = emptySet()) }
-            _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_n_items_distributed, succeeded)))
+            _uiEvent.send(UiEvent.ShowSnackbar(context.resources.getQuantityString(R.plurals.snack_n_items_distributed, succeeded, succeeded)))
             loadInventory()
         }
     }

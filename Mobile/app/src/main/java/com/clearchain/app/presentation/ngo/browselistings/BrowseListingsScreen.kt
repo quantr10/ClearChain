@@ -27,10 +27,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -69,7 +70,7 @@ fun BrowseListingsScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showLocationSheet by remember { mutableStateOf(false) }
-    var touchTick by remember { mutableStateOf(0) }
+    var touchTick by remember { mutableIntStateOf(0) }
     var lastTouchPosition by remember { mutableStateOf<Offset?>(null) }
     var rootCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val globalTouch = GlobalTouch(touchTick, lastTouchPosition, rootCoordinates)
@@ -342,7 +343,7 @@ private fun ListingCartAction(
     onRemoveFromCart: (String) -> Unit
 ) {
     var isExpanded by remember(listing.id) { mutableStateOf(false) }
-    var expandTick by remember(listing.id) { mutableStateOf(0) }
+    var expandTick by remember(listing.id) { mutableIntStateOf(0) }
     var stepperBounds by remember(listing.id) { mutableStateOf<Rect?>(null) }
 
     LaunchedEffect(globalTouch.tick) {
@@ -475,9 +476,9 @@ private fun GroceryMapView(
             // Preference location pin (distinct blue marker)
             if (state.userLat != null && state.userLng != null) {
                 Marker(
-                    state = MarkerState(position = prefPos),
+                    state = rememberUpdatedMarkerState(position = prefPos),
                     title = state.locationDisplayName.ifBlank { "My Location" },
-                    snippet = stringResource(R.string.label_n_listings_nearby, state.filteredListings.size),
+                    snippet = pluralStringResource(R.plurals.label_n_listings_nearby, state.filteredListings.size, state.filteredListings.size),
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory
                         .defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
@@ -506,8 +507,8 @@ private fun GroceryMapView(
                 val avatarReady = avatarPainter.state is AsyncImagePainter.State.Success
 
                 MarkerComposable(
-                    keys = arrayOf(pos.latitude, pos.longitude, count, avatarReady),
-                    state = MarkerState(position = pos),
+                    keys = arrayOf<Any>(pos.latitude, pos.longitude, count, avatarReady),
+                    state = rememberUpdatedMarkerState(position = pos),
                     onClick = {
                         viewModel.onEvent(BrowseListingsEvent.GroceryPinTapped(key))
                         true

@@ -1,6 +1,8 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.hiltAndroid)
     alias(libs.plugins.ksp)
@@ -9,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.clearchain.app"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.clearchain.app"
@@ -19,7 +21,7 @@ android {
         versionName = "1.0"
 
         // Read from local.properties
-        val properties = org.jetbrains.kotlin.konan.properties.Properties()
+        val properties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
             localPropertiesFile.inputStream().use { properties.load(it) }
@@ -36,6 +38,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -46,20 +49,27 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+    bundle {
+        // The app switches language at runtime (Settings), so every install needs every
+        // language's resources rather than only the device's.
+        language {
+            enableSplit = false
+        }
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -80,7 +90,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
 
     // Retrofit
     implementation(libs.retrofit)
@@ -122,11 +132,12 @@ dependencies {
     implementation(libs.lifecycle.process)
 
     // SignalR
-    implementation("com.microsoft.signalr:signalr:8.0.0")
+    implementation(libs.signalr)
 
-    implementation("com.google.android.gms:play-services-location:21.1.0")
-    implementation("com.google.maps.android:maps-compose:4.3.3")
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    // Location and maps
+    implementation(libs.play.services.location)
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
 
     // Testing
     testImplementation(libs.junit)

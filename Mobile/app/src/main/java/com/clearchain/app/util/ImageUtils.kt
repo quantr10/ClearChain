@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.core.graphics.scale
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -66,6 +67,6 @@ object ImageUtils {
         val ratio = minOf(MAX_WIDTH.toFloat() / w, MAX_HEIGHT.toFloat() / h)
         val newW = (w * ratio).toInt()
         val newH = (h * ratio).toInt()
-        return Bitmap.createScaledBitmap(source, newW, newH, true)
+        return source.scale(newW, newH)
     }
 }

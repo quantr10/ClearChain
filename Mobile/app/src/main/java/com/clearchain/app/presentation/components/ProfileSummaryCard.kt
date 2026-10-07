@@ -14,13 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.BrandGreen
-import java.util.Locale
 
 /**
  * Profile summary card shown as the first section of both the account detail
@@ -39,9 +40,10 @@ fun ProfileSummaryCard(
     onEdit: (() -> Unit)? = null
 ) {
     val reviewText = if (reviewCount > 0 && averageRating > 0.0) {
-        stringResource(
-            R.string.profile_rating_summary,
-            String.format(Locale.getDefault(), "%.1f", averageRating),
+        pluralStringResource(
+            R.plurals.profile_rating_summary,
+            reviewCount,
+            String.format(LocalConfiguration.current.locales[0], "%.1f", averageRating),
             reviewCount
         )
     } else {

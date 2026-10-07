@@ -25,9 +25,9 @@ fun FullPhotoDialog(
     photoUrl: String,
     onDismiss: () -> Unit
 ) {
-    var scale by remember { mutableStateOf(1f) }
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
     Dialog(
         onDismissRequest = onDismiss,

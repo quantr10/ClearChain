@@ -44,5 +44,4 @@ interface PickupRequestApi {
         @Path("id") id: String,
         @Part proofPhoto: MultipartBody.Part
     ): PickupRequestResponse
-
 }

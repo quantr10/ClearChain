@@ -31,8 +31,8 @@ object TodayOrLaterDates : SelectableDates {
 fun DatePickerField(
     value: String,
     onDateSelected: (String) -> Unit,
-    label: String = "",
     modifier: Modifier = Modifier,
+    label: String = "",
     isError: Boolean = false,
     errorMessage: String? = null,
     enabled: Boolean = true,

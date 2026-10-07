@@ -13,12 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.presentation.auth.AuthDivider
@@ -39,7 +40,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val lockoutMessage = if (state.isLockedOut) {
-        stringResource(R.string.msg_account_locked, state.lockoutMinutes)
+        pluralStringResource(R.plurals.msg_account_locked, state.lockoutMinutes, state.lockoutMinutes)
     } else {
         null
     }

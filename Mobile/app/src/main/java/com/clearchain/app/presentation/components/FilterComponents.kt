@@ -32,8 +32,8 @@ import com.clearchain.app.util.HapticUtils
 fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    placeholder: String = "Search...",
     modifier: Modifier = Modifier,
+    placeholder: String = "Search...",
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -355,11 +355,11 @@ fun FilterSection(
 @Composable
 fun ResultsCountAndSort(
     count: Int,
+    modifier: Modifier = Modifier,
     itemName: String = "item",
     selectedSort: SortOption,
     onSortSelected: (SortOption) -> Unit,
     sortOptions: List<SortOption>,
-    modifier: Modifier = Modifier,
     countText: String? = null,
     leadingContent: (@Composable RowScope.() -> Unit)? = null
 ) {

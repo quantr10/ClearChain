@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 fun DashboardActionCard(
     icon: ImageVector,
     title: String,
+    modifier: Modifier = Modifier,
     subtitle: String = "",
     badge: String? = null,
     onClick: (() -> Unit)?,
-    modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     iconContainerColor: Color = MaterialTheme.colorScheme.primaryContainer,
     iconTint: Color = MaterialTheme.colorScheme.primary,

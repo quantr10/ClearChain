@@ -21,7 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.content.edit
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
@@ -86,7 +87,7 @@ fun SplashScreen(
                 val pendingScreen = prefs.getString("pending_screen", null)
                 val pendingRequestId = prefs.getString("pending_request_id", null)
                 if (pendingScreen != null) {
-                    prefs.edit().clear().apply()
+                    prefs.edit { clear() }
 
                     // A pickup-request push carries the specific request's id — route
                     // straight to it instead of the generic list it used to fall back to.

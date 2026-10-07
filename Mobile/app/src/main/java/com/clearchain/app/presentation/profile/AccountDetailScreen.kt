@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +21,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
@@ -393,7 +395,7 @@ private fun AccountDetailEditContent(
                     value = state.editPickupInstructions,
                     onValueChange = { onEvent(ProfileEvent.EditPickupInstructionsChanged(it)) },
                     placeholder = stringResource(R.string.hint_pickup_instructions_long),
-                    leadingIcon = Icons.Default.DirectionsWalk,
+                    leadingIcon = Icons.AutoMirrored.Filled.DirectionsWalk,
                     imeAction = ImeAction.Done,
                     enabled = !busy,
                     singleLine = false,
@@ -520,7 +522,7 @@ private fun CompactAccountDetailRow(
         }
         if (isAction && enabled) {
             Icon(
-                imageVector = Icons.Default.OpenInNew,
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)

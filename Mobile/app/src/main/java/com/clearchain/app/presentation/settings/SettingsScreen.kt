@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.settings
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.BuildConfig
 import com.clearchain.app.R
 import com.clearchain.app.data.local.SettingsStore
@@ -65,7 +65,7 @@ fun SettingsScreen(
     // rather than having the tap quietly do nothing.
     val openLink: (String) -> Unit = { url ->
         try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         } catch (e: ActivityNotFoundException) {
             linkError = true
         }

@@ -34,9 +34,9 @@ import com.clearchain.app.ui.theme.ShapeMedium
 fun ClearChainTextField(
     value: String,
     onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
     label: String = "",
     isOptional: Boolean = false,
-    modifier: Modifier = Modifier,
     placeholder: String = "",
     isError: Boolean = false,
     errorMessage: String? = null,

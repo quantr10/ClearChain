@@ -104,8 +104,8 @@ fun SectionCard(
 fun CompactDetailRow(
     icon: ImageVector,
     text: String,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
     iconTint: Color = textColor,
     maxLines: Int = Int.MAX_VALUE
 ) {

@@ -57,6 +57,8 @@ class FCMService : FirebaseMessagingService() {
         serviceScope.cancel()
     }
 
+    // FCM 25 deprecates onNewToken() in favour of onRegistered(); see RegisterFCMTokenUseCase.
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "🔔 FCM token rotated")

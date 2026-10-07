@@ -65,7 +65,6 @@ class ListingDetailViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // Leaving the room is a fire-and-forget send on the shared connection — it releases a
         // server-side group membership without touching the connection itself.
         joinedListingId?.let { listingId ->

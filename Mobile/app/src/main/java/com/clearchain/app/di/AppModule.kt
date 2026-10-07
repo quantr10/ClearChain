@@ -26,7 +26,7 @@ object AppModule {
         )
             // Every table is a cache of server data, so a schema change rebuilds the database
             // instead of migrating it. The cached session goes with it: users sign in again.
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

@@ -115,6 +115,8 @@ class RegisterViewModel @Inject constructor(
                 // the authoritative server error below.
             }
 
+            // Deprecated in FCM 25; see RegisterFCMTokenUseCase.
+            @Suppress("DEPRECATION")
             val fcmToken = try {
                 FirebaseMessaging.getInstance().token.await()
             } catch (e: Exception) {

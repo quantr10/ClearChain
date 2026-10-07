@@ -27,7 +27,7 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(
+            combine<Any, SettingsState>(
                 settingsStore.theme,
                 settingsStore.language,
                 settingsStore.notifNewListing,

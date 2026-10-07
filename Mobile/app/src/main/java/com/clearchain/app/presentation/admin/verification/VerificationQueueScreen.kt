@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.admin.verification
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -19,7 +18,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
@@ -499,7 +499,7 @@ private fun OrganizationCard(
                     text = stringResource(R.string.label_view_document),
                     onClick = {
                         if (isPdf) {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(docUrl))
+                            val intent = Intent(Intent.ACTION_VIEW, docUrl.toUri())
                             context.startActivity(intent)
                         } else {
                             fullPhotoUrl = docUrl

@@ -22,7 +22,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.clearchain.app.data.local.SessionManager
@@ -98,6 +100,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     val context = LocalContext.current
+                    val resources = LocalResources.current
 
                     var showBottomBar by remember { mutableStateOf(false) }
                     var userType by remember { mutableStateOf<OrganizationType?>(null) }
@@ -111,7 +114,7 @@ class MainActivity : ComponentActivity() {
                             showBottomBar = false
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.msg_session_expired),
+                                resources.getString(R.string.msg_session_expired),
                                 Toast.LENGTH_LONG
                             ).show()
                             navController.navigate(Screen.Login.route) {
@@ -176,15 +179,12 @@ class MainActivity : ComponentActivity() {
 
         // Store deep link data to be handled after login check
         if (screen != null) {
-            getSharedPreferences("deeplink", MODE_PRIVATE)
-                .edit()
-                .putString("pending_screen", screen)
-                .apply {
-                    if (requestId != null) {
-                        putString("pending_request_id", requestId)
-                    }
+            getSharedPreferences("deeplink", MODE_PRIVATE).edit {
+                putString("pending_screen", screen)
+                if (requestId != null) {
+                    putString("pending_request_id", requestId)
                 }
-                .apply()
+            }
 
             Log.d(TAG, "✅ Deep link saved: screen=$screen, requestId=$requestId")
         }

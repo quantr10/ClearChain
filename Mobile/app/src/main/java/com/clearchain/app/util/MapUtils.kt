@@ -3,6 +3,7 @@ package com.clearchain.app.util
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
 
 /**
  * Opens [query] in the Google Maps app, falling back to the browser map when
@@ -12,13 +13,13 @@ fun openInGoogleMaps(context: Context, query: String) {
     val encoded = Uri.encode(query)
     runCatching {
         context.startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$encoded")).apply {
+            Intent(Intent.ACTION_VIEW, "geo:0,0?q=$encoded".toUri()).apply {
                 setPackage("com.google.android.apps.maps")
             }
         )
     }.onFailure {
         context.startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=$encoded"))
+            Intent(Intent.ACTION_VIEW, "https://maps.google.com/?q=$encoded".toUri())
         )
     }
 }

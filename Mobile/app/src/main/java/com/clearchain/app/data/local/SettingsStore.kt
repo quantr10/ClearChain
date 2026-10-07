@@ -1,6 +1,7 @@
 package com.clearchain.app.data.local
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -60,12 +61,12 @@ class SettingsStore @Inject constructor(
 
     suspend fun setLanguageAndSync(language: String) {
         setLanguage(language)
-        syncPrefs().edit().putString(SYNC_KEY_LANGUAGE, language).apply()
+        syncPrefs().edit { putString(SYNC_KEY_LANGUAGE, language) }
     }
 
     suspend fun setThemeAndSync(theme: String) {
         setTheme(theme)
-        syncPrefs().edit().putString(SYNC_KEY_THEME, theme).apply()
+        syncPrefs().edit { putString(SYNC_KEY_THEME, theme) }
     }
 
     /** The stored theme as of the last write, readable before DataStore has emitted. */
@@ -78,7 +79,7 @@ class SettingsStore @Inject constructor(
     suspend fun primeSyncedTheme() {
         val prefs = syncPrefs()
         if (!prefs.contains(SYNC_KEY_THEME)) {
-            prefs.edit().putString(SYNC_KEY_THEME, theme.first()).apply()
+            prefs.edit { putString(SYNC_KEY_THEME, theme.first()) }
         }
     }
 
