@@ -11,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.clearchain.app"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.clearchain.app"

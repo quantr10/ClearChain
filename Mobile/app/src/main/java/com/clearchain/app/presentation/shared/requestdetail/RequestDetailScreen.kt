@@ -852,6 +852,11 @@ private fun RequestDetailContent(
         // -- 1. Avatar + party name card (with action buttons top-right) --
         val showReceiptBtn = isMyRequest && req.status == PickupRequestStatus.COMPLETED
         val partyName = if (isGrocery) req.ngoName else req.groceryName
+
+        // String.take, not Flow.take: Compose lint before 1.12 resolves it to the
+        // flow operator because of this file's kotlinx.coroutines.flow.* import.
+        @Suppress("FlowOperatorInvokedInComposition")
+        val partyInitial = partyName.take(1).uppercase()
         val partyType = if (isGrocery) {
             stringResource(R.string.label_ngo_party)
         } else {
@@ -934,7 +939,7 @@ private fun RequestDetailContent(
                             } else {
                                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Text(
-                                        partyName.take(1).uppercase(),
+                                        partyInitial,
                                         style = MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
