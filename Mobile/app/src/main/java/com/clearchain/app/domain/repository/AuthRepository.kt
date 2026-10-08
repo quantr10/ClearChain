@@ -16,6 +16,10 @@ interface AuthRepository {
     suspend fun verifyEmail(email: String, code: String): Result<Pair<Organization, AuthTokens>>
     suspend fun resendVerification(email: String): Result<Unit>
 
+    /** Emails a reset code; succeeds whether or not the address has an account. */
+    suspend fun requestPasswordReset(email: String): Result<Unit>
+    suspend fun resetPassword(email: String, code: String, newPassword: String): Result<Unit>
+
     suspend fun login(email: String, password: String): Result<Pair<Organization, AuthTokens>>
     suspend fun logout(): Result<Unit>
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>

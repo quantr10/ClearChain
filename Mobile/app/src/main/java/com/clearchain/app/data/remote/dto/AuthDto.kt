@@ -108,6 +108,14 @@ data class ResendVerificationRequest(val email: String)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
+data class ForgotPasswordRequest(val email: String)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class ResetPasswordRequest(val email: String, val code: String, val newPassword: String)
+
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 data class ApiResponse<T>(val message: String? = null, val data: T? = null)
 
 @SuppressLint("UnsafeOptInUsageError")

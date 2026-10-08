@@ -53,6 +53,21 @@ class LoginViewModel @Inject constructor(
             LoginEvent.Login -> login()
             LoginEvent.ToggleRememberMe ->
                 _state.update { it.copy(rememberMe = !it.rememberMe) }
+            is LoginEvent.PasswordResetCompleted -> {
+                // Reset also clears any lockout server-side, so drop ours to match.
+                _state.update {
+                    it.copy(
+                        email = event.email,
+                        password = "",
+                        emailError = null,
+                        passwordError = null,
+                        isLockedOut = false
+                    )
+                }
+                viewModelScope.launch {
+                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_password_reset_done)))
+                }
+            }
         }
     }
 

@@ -39,6 +39,11 @@ public class Organization
     public DateTime? EmailVerificationTokenExpiry { get; set; }
     public int EmailVerificationAttempts { get; set; } = 0;
 
+    // ── Password reset ───────────────────────────────────────────────────────
+    public string? PasswordResetToken { get; set; }       // BCrypt hash of the emailed code
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+    public int PasswordResetAttempts { get; set; } = 0;
+
     // ── Onboarding document ──────────────────────────────────────────────────
     public string? DocumentUrl { get; set; }        // Verification doc (business reg / charity cert)
     public string? DocumentMimeType { get; set; }

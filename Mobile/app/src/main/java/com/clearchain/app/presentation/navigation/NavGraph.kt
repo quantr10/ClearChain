@@ -17,6 +17,7 @@ import com.clearchain.app.presentation.admin.dashboard.AdminDashboardScreen
 import com.clearchain.app.presentation.admin.transactions.TransactionsScreen
 import com.clearchain.app.presentation.admin.verification.VerificationQueueScreen
 import com.clearchain.app.presentation.analytics.AnalyticsScreen
+import com.clearchain.app.presentation.auth.forgot.ForgotPasswordScreen
 import com.clearchain.app.presentation.auth.login.LoginScreen
 import com.clearchain.app.presentation.auth.register.RegisterScreen
 import com.clearchain.app.presentation.auth.verify.EmailVerificationScreen
@@ -83,9 +84,9 @@ fun NavGraph(
             SplashScreen(navController = navController)
         }
 
-        composable(Screen.Login.route) {
+        composable(Screen.Login.route) { entry ->
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
-            LoginScreen(navController = navController)
+            LoginScreen(navController = navController, resultHandle = entry.savedStateHandle)
         }
 
         composable(Screen.Register.route) {
@@ -99,6 +100,19 @@ fun NavGraph(
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             EmailVerificationScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.ForgotPassword.route,
+            arguments = listOf(
+                navArgument("email") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) {
+            LaunchedEffect(Unit) { onShowBottomBar(false, null) }
+            ForgotPasswordScreen(navController = navController)
         }
 
         composable(Screen.Onboarding.route) {

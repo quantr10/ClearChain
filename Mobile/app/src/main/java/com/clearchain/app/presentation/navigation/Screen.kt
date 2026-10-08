@@ -11,6 +11,9 @@ sealed class Screen(val route: String) {
     object EmailVerification : Screen("email_verification/{email}") {
         fun createRoute(email: String) = "email_verification/${java.net.URLEncoder.encode(email, "UTF-8")}"
     }
+    object ForgotPassword : Screen("forgot_password?email={email}") {
+        fun createRoute(email: String) = "forgot_password?email=${java.net.URLEncoder.encode(email, "UTF-8")}"
+    }
 
     // ── Grocery ──────────────────────────────────────────────────────────────
     object GroceryDashboard : Screen("grocery_dashboard")
