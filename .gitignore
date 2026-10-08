@@ -1,89 +1,58 @@
-# .NET
-bin/
-obj/
-*.user
-*.suo
-.vs/
-*.cache
-*.lscache
+# ── Secrets and machine-local config ────────────────────────────────────────
+.env
+*.env
+appsettings.*.json
+!appsettings.json
+firebase-adminsdk.json
+google-services.json
+local.properties
+*.jks
+*.keystore
+
+# ── .NET build output ───────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+artifacts/
 *.dll
 *.exe
 *.pdb
+*.cache
+*.lscache
 project.lock.json
 project.fragment.lock.json
-artifacts/
 
-# Environment files
-.env
-*.env
-appsettings.Development.json
-appsettings.*.json
-!appsettings.json
-
-# Rider
-.idea/
-
-# User-specific files
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-
-# Android
+# ── Android / Gradle / Kotlin ───────────────────────────────────────────────
+build/
+.gradle/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+.navigation/
 *.apk
 *.aab
 *.ap_
 *.dex
 *.class
-local.properties
-.gradle/
-build/
-captures/
-.externalNativeBuild
-.cxx
-*.iml
-.idea/
-*.hprof
-google-services.json
-
-# Kotlin
 *.kotlin_module
-
-# Generated files
-.navigation/
 *.hprof
 
-# Keystore files
-*.jks
-*.keystore
+# ── IDEs and tools ──────────────────────────────────────────────────────────
+.idea/
+.vs/
+*.iml
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+.claude/settings.local.json
+.claude/*.lock
 
-# Node modules (if any)
-node_modules/
+# ── Logs ────────────────────────────────────────────────────────────────────
+[Ll]ogs/
+*.log
 
-# OS files
+# ── OS files ────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-firebase-adminsdk.json
