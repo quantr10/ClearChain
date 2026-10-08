@@ -27,7 +27,6 @@ public class PickupRequestData
     public string? ListingExpiryDate { get; set; }
     public string ListingUnit { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
-    public string? MarkedReadyAt { get; set; }
     public string? MarkedPickedUpAt { get; set; }
     public string? ConfirmedReceivedAt { get; set; }
     public string? ProofPhotoUrl { get; set; }
@@ -44,9 +43,6 @@ public class PickupRequestData
 public class PickupRequestItemData
 {
     public string Id { get; set; } = string.Empty;
-    public string? ListingGroupId { get; set; }
-    public string? OriginalListingId { get; set; }
-    public string? ReservedListingId { get; set; }
     public int RequestedQuantity { get; set; }
     public string ListingTitle { get; set; } = string.Empty;
     public string ListingCategory { get; set; } = string.Empty;
@@ -57,9 +53,6 @@ public class PickupRequestItemData
     public static PickupRequestItemData From(PickupRequestItem item) => new()
     {
         Id = item.Id.ToString(),
-        ListingGroupId = item.ListingGroupId?.ToString(),
-        OriginalListingId = item.OriginalListingId?.ToString(),
-        ReservedListingId = item.ReservedListingId?.ToString(),
         RequestedQuantity = item.RequestedQuantity,
         ListingTitle = item.ListingTitle,
         ListingCategory = item.ListingCategory,

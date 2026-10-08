@@ -9,7 +9,6 @@ public class Message
     public string Content { get; set; } = string.Empty;
     public bool IsRead { get; set; } = false;
     public DateTime SentAt { get; set; }
-    public DateTime? ReadAt { get; set; }
 
     public Organization? Sender { get; set; }
     public PickupRequest? PickupRequest { get; set; }

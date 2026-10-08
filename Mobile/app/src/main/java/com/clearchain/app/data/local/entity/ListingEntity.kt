@@ -24,10 +24,6 @@ data class ListingEntity(
     val imageUrl: String? = null,
     val location: String,
     val createdAt: String,
-    val groupId: String? = null,
-    val splitReason: String = "new_listing",
-    val relatedRequestId: String? = null,
-    val splitIndex: Int = 0,
     val distanceKm: Double? = null
 )
 
@@ -48,10 +44,6 @@ fun ListingEntity.toDomain(): Listing = Listing(
     imageUrl = imageUrl,
     location = location,
     createdAt = createdAt,
-    groupId = groupId,
-    splitReason = splitReason,
-    relatedRequestId = relatedRequestId,
-    splitIndex = splitIndex,
     distanceKm = distanceKm
 )
 
@@ -72,9 +64,5 @@ fun Listing.toEntity(): ListingEntity = ListingEntity(
     imageUrl = imageUrl,
     location = location,
     createdAt = createdAt,
-    groupId = groupId,
-    splitReason = splitReason,
-    relatedRequestId = relatedRequestId,
-    splitIndex = splitIndex,
     distanceKm = distanceKm
 )

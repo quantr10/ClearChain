@@ -79,7 +79,6 @@ public class OrganizationsController : ControllerBase
             {
                 data = new
                 {
-                    inStock = inventoryStatus.Active,
                     activeRequests = byStatus.InFlight,
                     distributed = inventoryStatus.Distributed,
                     availableFood = availableListings,
@@ -138,7 +137,6 @@ public class OrganizationsController : ControllerBase
                     foodSaved = (int)Math.Round(groceryRescued.Kg),
                     mealsEstimate = (int)Math.Round(groceryRescued.Kg * QuantityUnits.MealsPerKg),
                     co2EstimateKg = (int)Math.Round(groceryRescued.Kg * QuantityUnits.Co2PerKg),
-                    totalListings = listingStatus.Total,
                     requestStatus = byStatus,
                     listingStatus
                 }

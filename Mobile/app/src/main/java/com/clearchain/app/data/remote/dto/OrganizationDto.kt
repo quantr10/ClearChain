@@ -3,13 +3,12 @@ package com.clearchain.app.data.remote.dto
 import android.annotation.SuppressLint
 import kotlinx.serialization.Serializable
 
-// NGO stats: inStock, activeRequests, distributed, availableFood, totalCompleted
-// Grocery stats: activeListings, pendingRequests, completed, foodSaved, totalListings
+// NGO stats: activeRequests, distributed, availableFood, totalCompleted
+// Grocery stats: activeListings, pendingRequests, completed, foodSaved
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class DashboardStatsData(
     // NGO
-    val inStock: Int = 0,
     val activeRequests: Int = 0,
     val distributed: Int = 0,
     val availableFood: Int = 0,
@@ -21,7 +20,6 @@ data class DashboardStatsData(
     val pendingRequests: Int = 0,
     val completed: Int = 0,
     val foodSaved: Int = 0,
-    val totalListings: Int = 0,
     // Weighed and converted by the API (QuantityUnits) so every screen quotes the same
     // impact for the same food. Never recompute these on the client.
     val mealsEstimate: Int = 0,

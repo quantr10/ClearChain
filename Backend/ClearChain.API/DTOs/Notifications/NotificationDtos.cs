@@ -1,3 +1,5 @@
+using ClearChain.Domain.Entities;
+
 namespace ClearChain.API.DTOs.Notifications;
 
 public class NotificationDto
@@ -7,10 +9,19 @@ public class NotificationDto
     public string Title { get; set; } = string.Empty;
     public string Body { get; set; } = string.Empty;
     public string? RelatedId { get; set; }
-    public string? RelatedType { get; set; }
     public bool IsRead { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
-    public string? ReadAt { get; set; }
+
+    public static NotificationDto From(Notification n) => new()
+    {
+        Id = n.Id.ToString(),
+        Type = n.Type,
+        Title = n.Title,
+        Body = n.Body,
+        RelatedId = n.RelatedId,
+        IsRead = n.IsRead,
+        CreatedAt = n.CreatedAt.ToString("o")
+    };
 }
 
 public class NotificationListResponse

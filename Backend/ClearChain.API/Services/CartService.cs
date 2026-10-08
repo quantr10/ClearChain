@@ -190,7 +190,7 @@ public class CartService : ICartService
             foreach (var cartItem in cartItems)
             {
                 var listing = cartItem.Listing!;
-                var reservedListing = ReserveListing(listing, listing.Group!, cartItem.RequestedQuantity, pickupRequest.Id);
+                var reservedListing = ReserveListing(listing, listing.Group!, cartItem.RequestedQuantity);
                 pickupRequest.Items.Add(new PickupRequestItem
                 {
                     Id = Guid.NewGuid(),
@@ -376,12 +376,11 @@ public class CartService : ICartService
         return (starts.Max(), ends.Min());
     }
 
-    private ClearanceListing ReserveListing(ClearanceListing sourceListing, ListingGroup group, int requestedQuantity, Guid requestId)
+    private ClearanceListing ReserveListing(ClearanceListing sourceListing, ListingGroup group, int requestedQuantity)
     {
         if (requestedQuantity >= sourceListing.Quantity)
         {
             sourceListing.Status = ListingStatus.Reserved;
-            sourceListing.RelatedRequestId = requestId;
             sourceListing.UpdatedAt = DateTime.UtcNow;
             group.TotalAvailable -= sourceListing.Quantity;
             group.TotalReserved += sourceListing.Quantity;
@@ -407,10 +406,6 @@ public class CartService : ICartService
             PickupTimeStart = sourceListing.PickupTimeStart,
             PickupTimeEnd = sourceListing.PickupTimeEnd,
             Status = ListingStatus.Reserved,
-            SplitReason = "cart_request",
-            RelatedRequestId = requestId,
-            SplitFromListingId = sourceListing.Id,
-            SplitIndex = group.ChildListings?.Count ?? 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

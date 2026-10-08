@@ -82,8 +82,6 @@ class FCMService : FirebaseMessagingService() {
 
         serviceScope.launch {
             try {
-                val (relatedId, relatedType) = deriveRelation(data)
-
                 database.notificationDao().insert(
                     NotificationEntity(
                         // The server's row id, so the same notification arriving again over
@@ -92,8 +90,7 @@ class FCMService : FirebaseMessagingService() {
                         type = type,
                         title = title,
                         body = body,
-                        relatedId = relatedId,
-                        relatedType = relatedType,
+                        relatedId = relatedId(data),
                         isRead = false,
                         createdAt = System.currentTimeMillis()
                     )
@@ -117,13 +114,8 @@ class FCMService : FirebaseMessagingService() {
      * Mirrors the server's mapping from payload key to inbox relation, so a notification opened
      * from the tray deep-links to the same place as one opened from the inbox.
      */
-    private fun deriveRelation(data: Map<String, String>): Pair<String?, String?> = when {
-        data["requestId"] != null -> data["requestId"] to "pickup_request"
-        data["listingId"] != null -> data["listingId"] to "listing"
-        data["inventoryId"] != null -> data["inventoryId"] to "inventory"
-        data["organizationId"] != null -> data["organizationId"] to "organization"
-        else -> null to null
-    }
+    private fun relatedId(data: Map<String, String>): String? =
+        data["requestId"] ?: data["listingId"] ?: data["inventoryId"] ?: data["organizationId"]
 
     private fun showNotification(
         title: String,

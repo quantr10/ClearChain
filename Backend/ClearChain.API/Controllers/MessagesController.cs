@@ -39,11 +39,7 @@ public class MessagesController : ControllerBase
 
         // Mark unread as read for this user
         var unread = messages.Where(m => m.ReceiverId == userId && !m.IsRead).ToList();
-        foreach (var msg in unread)
-        {
-            msg.IsRead = true;
-            msg.ReadAt = DateTime.UtcNow;
-        }
+        foreach (var msg in unread) msg.IsRead = true;
         if (unread.Any()) await _context.SaveChangesAsync();
 
         return Ok(new
@@ -98,8 +94,7 @@ public class MessagesController : ControllerBase
         senderName = m.Sender?.Name ?? "",
         content = m.Content,
         isRead = m.IsRead,
-        sentAt = m.SentAt.ToString("o"),
-        readAt = m.ReadAt?.ToString("o")
+        sentAt = m.SentAt.ToString("o")
     };
 }
 

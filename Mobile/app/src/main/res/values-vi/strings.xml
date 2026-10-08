@@ -375,8 +375,6 @@
     <string name="error_failed_load_listing">Không thể tải niêm yết</string>
 
     <!-- My Requests -->
-    <string name="uploading_photo">Đang tải ảnh…</string>
-    <string name="uploading_photo_attempt">Đang tải ảnh… (Lần %1$d/3)</string>
 
     <!-- Profile -->
     <string name="error_failed_load_profile">Không thể tải hồ sơ</string>
@@ -1081,7 +1079,6 @@
 
     <string name="account_detail">Chi tiết tài khoản</string>
     <string name="cart_add_to_cart">Thêm vào giỏ hàng</string>
-    <string name="cart_checkout_missing_fields">Cần có ngày và giờ lấy hàng</string>
     <string name="cart_decrease">Giảm</string>
     <string name="cart_empty_subtitle">Thêm niêm yết từ mục Duyệt để yêu cầu lấy hàng từ cửa hàng.</string>
     <string name="cart_empty_title">Giỏ hàng của bạn đang trống</string>

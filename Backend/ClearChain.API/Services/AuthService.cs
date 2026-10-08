@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Auth;
-using BCrypt.Net;
 
 namespace ClearChain.API.Services;
 

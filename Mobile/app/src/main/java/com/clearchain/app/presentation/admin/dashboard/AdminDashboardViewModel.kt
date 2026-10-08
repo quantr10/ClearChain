@@ -87,7 +87,7 @@ class AdminDashboardViewModel @Inject constructor(
                     it.copy(
                         // Merged into the existing stats rather than replaced — this push
                         // payload only carries a subset of AdminStats' fields, and the rest
-                        // (verified/unverified orgs, reserved/expired listings, etc., loaded
+                        // (reserved/expired listings, approved/ready requests, etc., loaded
                         // via REST) must not be zeroed out by every real-time update. If the
                         // initial REST load hasn't landed yet, there's nothing to merge into —
                         // leave it null rather than show a partially-populated AdminStats.
@@ -95,12 +95,10 @@ class AdminDashboardViewModel @Inject constructor(
                             totalOrganizations = stats.totalNGOs + stats.totalGroceries,
                             totalGroceries = stats.totalGroceries,
                             totalNgos = stats.totalNGOs,
-                            totalListings = stats.activeListings,
                             activeListings = stats.activeListings,
                             totalPickupRequests = stats.totalDonations,
                             pendingRequests = stats.pendingRequests,
-                            completedRequests = stats.completedToday,
-                            totalFoodSaved = stats.totalDonations.toDouble()
+                            completedRequests = stats.completedToday
                         ),
                         recentActivities = listOf(activity) + it.recentActivities.take(19)
                     )

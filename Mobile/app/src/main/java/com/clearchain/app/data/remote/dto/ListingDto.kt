@@ -27,11 +27,7 @@ data class ListingResponse(
 @Serializable
 data class ListingsResponse(
     val message: String,
-    val data: List<ListingData>,
-    val total: Int = 0,
-    val page: Int = 1,
-    val pageSize: Int = 50,
-    val totalPages: Int = 1
+    val data: List<ListingData>
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -54,20 +50,12 @@ data class ListingData(
     val location: String,
     val createdAt: String,
 
-    // ListingGroup tracking
-    val groupId: String? = null,
-    val splitReason: String = "new_listing",
-    val relatedRequestId: String? = null,
-    val splitIndex: Int = 0,
-    val groupSummary: ListingGroupSummaryDto? = null,
-
     // ── Distance from NGO ────────────────────────────────────────────────────
     val distanceKm: Double? = null,
 
     // ── Analytics ────────────────────────────────────────────────────────────
     val viewCount: Int = 0,
     val requestCount: Int = 0,
-    val imageUrls: List<String> = emptyList(),
 
     // ── Grocery coordinates (for map pins) ───────────────────────────────────
     val groceryLatitude: Double? = null,
@@ -77,16 +65,6 @@ data class ListingData(
     val groceryHours: String? = null
 )
 
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class ListingGroupSummaryDto(
-    val groupId: String,
-    val originalQuantity: Int,
-    val totalReserved: Int,
-    val totalAvailable: Int,
-    val totalRemoved: Int = 0,
-    val childListingsCount: Int
-)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
@@ -130,25 +108,10 @@ fun ListingData.toDomain(): Listing {
         imageUrl = imageUrl,
         location = location,
         createdAt = createdAt,
-        groupId = groupId,
-        splitReason = splitReason,
-        relatedRequestId = relatedRequestId,
-        splitIndex = splitIndex,
-        groupSummary = groupSummary?.let {
-            ListingGroupSummary(
-                groupId = it.groupId,
-                originalQuantity = it.originalQuantity,
-                totalReserved = it.totalReserved,
-                totalAvailable = it.totalAvailable,
-                totalRemoved = it.totalRemoved,
-                childListingsCount = it.childListingsCount
-            )
-        },
         distanceKm = distanceKm,
         // Analytics
         viewCount = viewCount,
         requestCount = requestCount,
-        imageUrls = imageUrls,
         groceryLatitude = groceryLatitude,
         groceryLongitude = groceryLongitude,
         groceryHours = groceryHours

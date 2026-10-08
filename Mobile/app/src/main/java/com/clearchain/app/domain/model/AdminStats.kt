@@ -5,11 +5,8 @@ data class AdminStats(
     val totalOrganizations: Int,
     val totalGroceries: Int,
     val totalNgos: Int,
-    val verifiedOrganizations: Int,
-    val unverifiedOrganizations: Int,
 
     // Listing stats
-    val totalListings: Int,
     val activeListings: Int,
     val reservedListings: Int,
     val expiredListings: Int,
@@ -19,10 +16,6 @@ data class AdminStats(
     val pendingRequests: Int,
     val approvedRequests: Int,
     val readyRequests: Int,
-    val rejectedRequests: Int,
     val completedRequests: Int,
-    val cancelledRequests: Int,
-
-    // Food saved
-    val totalFoodSaved: Double
+    val cancelledRequests: Int
 )

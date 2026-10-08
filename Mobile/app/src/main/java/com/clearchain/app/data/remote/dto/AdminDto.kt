@@ -57,11 +57,8 @@ data class AdminStatsDto(
     val totalOrganizations: Int,
     val totalGroceries: Int,
     val totalNgos: Int,
-    val verifiedOrganizations: Int,
-    val unverifiedOrganizations: Int,
 
     // Listing stats
-    val totalListings: Int,
     val activeListings: Int,
     val reservedListings: Int,
     val expiredListings: Int = 0,
@@ -71,12 +68,8 @@ data class AdminStatsDto(
     val pendingRequests: Int,
     val approvedRequests: Int,
     val readyRequests: Int,
-    val rejectedRequests: Int,
     val completedRequests: Int,
-    val cancelledRequests: Int,
-
-    // Food saved
-    val totalFoodSaved: Double
+    val cancelledRequests: Int
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -93,9 +86,6 @@ fun AdminStatsDto.toDomain(): AdminStats {
         totalOrganizations = totalOrganizations,
         totalGroceries = totalGroceries,
         totalNgos = totalNgos,
-        verifiedOrganizations = verifiedOrganizations,
-        unverifiedOrganizations = unverifiedOrganizations,
-        totalListings = totalListings,
         activeListings = activeListings,
         reservedListings = reservedListings,
         expiredListings = expiredListings,
@@ -103,10 +93,8 @@ fun AdminStatsDto.toDomain(): AdminStats {
         pendingRequests = pendingRequests,
         approvedRequests = approvedRequests,
         readyRequests = readyRequests,
-        rejectedRequests = rejectedRequests,
         completedRequests = completedRequests,
-        cancelledRequests = cancelledRequests,
-        totalFoodSaved = totalFoodSaved
+        cancelledRequests = cancelledRequests
     )
 }
 

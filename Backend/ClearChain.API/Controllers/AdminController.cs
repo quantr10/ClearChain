@@ -142,10 +142,7 @@ public class AdminController : ControllerBase
         var totalOrgs = await orgs.CountAsync();
         var totalGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery");
         var totalNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo");
-        var verifiedOrgs = await orgs.CountAsync(o => o.Verified);
-        var unverifiedOrgs = totalOrgs - verifiedOrgs;
 
-        var totalListings = await _context.ClearanceListings.CountAsync();
         var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
         var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
         var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
@@ -154,23 +151,15 @@ public class AdminController : ControllerBase
         var pendingRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Pending);
         var approvedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Approved);
         var readyRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Ready);
-        var rejectedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Rejected);
         var completedRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Completed);
         var cancelledRequests = await _context.PickupRequests.CountAsync(pr => pr.Status == PickupRequestStatus.Cancelled);
-
-        var totalFoodSaved = await _context.PickupRequests
-            .Where(pr => pr.Status == PickupRequestStatus.Completed)
-            .SumAsync(pr => pr.RequestedQuantity ?? 0);
 
         var stats = new AdminStatsOverviewData
         {
             TotalOrganizations = totalOrgs,
             TotalGroceries = totalGroceries,
             TotalNgos = totalNgos,
-            VerifiedOrganizations = verifiedOrgs,
-            UnverifiedOrganizations = unverifiedOrgs,
 
-            TotalListings = totalListings,
             ActiveListings = activeListings,
             ReservedListings = reservedListings,
             ExpiredListings = expiredListings,
@@ -179,11 +168,8 @@ public class AdminController : ControllerBase
             PendingRequests = pendingRequests,
             ApprovedRequests = approvedRequests,
             ReadyRequests = readyRequests,
-            RejectedRequests = rejectedRequests,
             CompletedRequests = completedRequests,
-            CancelledRequests = cancelledRequests,
-
-            TotalFoodSaved = totalFoodSaved
+            CancelledRequests = cancelledRequests
         };
 
         return Ok(new AdminStatsOverviewResponse
@@ -250,7 +236,6 @@ public class AdminController : ControllerBase
                 ListingExpiryDate = pr.ListingExpiryDate,
                 ListingUnit = pr.ListingUnit,
                 CreatedAt = pr.RequestedAt.ToString("o"),
-                MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
                 MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
                 ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
                 ProofPhotoUrl = pr.ProofPhotoUrl,

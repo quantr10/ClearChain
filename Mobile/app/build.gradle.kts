@@ -126,7 +126,6 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     // Lifecycle
-    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
     // ProcessLifecycleOwner — drives the SignalR connection off app foreground/background
     implementation(libs.lifecycle.process)

@@ -11,10 +11,8 @@ data class NotificationEntity(
     val title: String,
     val body: String,
     val relatedId: String? = null,
-    val relatedType: String? = null,
     val isRead: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis(),
-    val readAt: Long? = null
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 fun NotificationEntity.toDomain() = AppNotification(
@@ -23,10 +21,8 @@ fun NotificationEntity.toDomain() = AppNotification(
     title = title,
     body = body,
     relatedId = relatedId,
-    relatedType = relatedType,
     isRead = isRead,
-    createdAt = createdAt.toString(),
-    readAt = readAt?.toString()
+    createdAt = createdAt.toString()
 )
 
 fun AppNotification.toEntity() = NotificationEntity(
@@ -35,8 +31,6 @@ fun AppNotification.toEntity() = NotificationEntity(
     title = title,
     body = body,
     relatedId = relatedId,
-    relatedType = relatedType,
     isRead = isRead,
-    createdAt = createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-    readAt = readAt?.toLongOrNull()
+    createdAt = createdAt.toLongOrNull() ?: System.currentTimeMillis()
 )

@@ -14,5 +14,4 @@ public class InventoryItemData
     public string? DistributedAt { get; set; }
     public string? PickupRequestId { get; set; }
     public string? PhotoUrl { get; set; }
-    public string? Notes { get; set; }
 }

@@ -1,6 +1,5 @@
 using ClearChain.API.Common;
 using ClearChain.API.DTOs.Notifications;
-using ClearChain.Domain.Entities;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -56,7 +55,7 @@ public class NotificationsController : ControllerBase
         return Ok(new NotificationListResponse
         {
             Message = "Notifications retrieved",
-            Data = items.Select(MapToDto).ToList(),
+            Data = items.Select(NotificationDto.From).ToList(),
             UnreadCount = unreadCount,
             Total = total,
             Page = clampedPage,
@@ -78,10 +77,9 @@ public class NotificationsController : ControllerBase
         if (notification == null) return NotFound(new { message = "Notification not found" });
 
         notification.IsRead = true;
-        notification.ReadAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Marked as read", data = MapToDto(notification) });
+        return Ok(new { message = "Marked as read", data = NotificationDto.From(notification) });
     }
 
     // PUT api/notifications/read-all
@@ -90,19 +88,11 @@ public class NotificationsController : ControllerBase
     {
         if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
-        var unread = await _context.Notifications
+        var marked = await _context.Notifications
             .Where(n => n.RecipientId == userId && !n.IsRead)
-            .ToListAsync();
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
 
-        foreach (var n in unread)
-        {
-            n.IsRead = true;
-            n.ReadAt = DateTime.UtcNow;
-        }
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = $"{unread.Count} notifications marked as read" });
+        return Ok(new { message = $"{marked} notifications marked as read" });
     }
 
     // DELETE api/notifications — clears the caller's whole inbox
@@ -121,17 +111,4 @@ public class NotificationsController : ControllerBase
     // Notifications are written by IPushNotificationService, never directly. Persisting a row
     // on its own would produce an inbox entry that was never pushed or broadcast — visible on
     // next launch, silent at the moment it mattered.
-
-    private static NotificationDto MapToDto(Notification n) => new()
-    {
-        Id = n.Id.ToString(),
-        Type = n.Type,
-        Title = n.Title,
-        Body = n.Body,
-        RelatedId = n.RelatedId,
-        RelatedType = n.RelatedType,
-        IsRead = n.IsRead,
-        CreatedAt = n.CreatedAt.ToString("o"),
-        ReadAt = n.ReadAt?.ToString("o")
-    };
 }

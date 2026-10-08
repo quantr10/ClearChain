@@ -29,7 +29,6 @@ data class PickupRequest(
     val listingUnit: String = "",
     val createdAt: String,
     val proofPhotoUrl: String? = null,
-    val markedReadyAt: String? = null,
     val markedPickedUpAt: String? = null,
     val confirmedReceivedAt: String? = null,
     val requiresRefrigeration: Boolean = false,
@@ -49,9 +48,6 @@ data class PickupRequest(
 @Serializable
 data class PickupRequestItem(
     val id: String,
-    val listingGroupId: String? = null,
-    val originalListingId: String? = null,
-    val reservedListingId: String? = null,
     val requestedQuantity: Int,
     val listingTitle: String,
     val listingCategory: String,

@@ -20,15 +20,6 @@ public class ListingData
     public string Location { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
 
-    // ListingGroup tracking fields
-    public string? GroupId { get; set; }
-    public string SplitReason { get; set; } = "new_listing";
-    public string? RelatedRequestId { get; set; }
-    public int SplitIndex { get; set; } = 0;
-
-    // Present only when the listing belongs to a split group.
-    public ListingGroupSummary? GroupSummary { get; set; }
-
     // ── Distance from NGO's search location ──────────────────────────────────
     public double? DistanceKm { get; set; }
 
@@ -36,23 +27,7 @@ public class ListingData
     public int ViewCount { get; set; }
     public int RequestCount { get; set; }
 
-    // ── Multi-image ──────────────────────────────────────────────────────────
-    public List<string> ImageUrls { get; set; } = new();
-
     // ── Grocery coordinates (for map pins) ───────────────────────────────────
     public double? GroceryLatitude { get; set; }
     public double? GroceryLongitude { get; set; }
-}
-
-/// <summary>
-/// Lightweight group info included in listing responses
-/// </summary>
-public class ListingGroupSummary
-{
-    public string GroupId { get; set; } = string.Empty;
-    public int OriginalQuantity { get; set; }
-    public int TotalReserved { get; set; }
-    public int TotalAvailable { get; set; }
-    public int TotalRemoved { get; set; }
-    public int ChildListingsCount { get; set; }
 }

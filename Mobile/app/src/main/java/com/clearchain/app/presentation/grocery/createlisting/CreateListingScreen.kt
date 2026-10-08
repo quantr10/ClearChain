@@ -114,7 +114,6 @@ fun CreateListingScreen(
                         pickupTimeEnd = "",
                         status = ListingStatus.AVAILABLE,
                         imageUrl = state.selectedImageUri?.toString(),
-                        imageUrls = listOfNotNull(state.selectedImageUri?.toString()),
                         location = "",
                         createdAt = "",
                         groceryHours = state.groceryHours

@@ -9,10 +9,8 @@ data class NotificationData(
     val title: String,
     val body: String,
     val relatedId: String? = null,
-    val relatedType: String? = null,
     val isRead: Boolean = false,
-    val createdAt: String,
-    val readAt: String? = null
+    val createdAt: String
 )
 
 @Serializable
@@ -20,9 +18,6 @@ data class NotificationListResponse(
     val message: String = "",
     val data: List<NotificationData> = emptyList(),
     val unreadCount: Int = 0,
-    val total: Int = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
     val totalPages: Int = 1,
     /** How long the server keeps a notification — the window this list was drawn from. */
     val retentionDays: Int = 30
@@ -47,8 +42,6 @@ fun NotificationData.toEntity() = com.clearchain.app.data.local.entity.Notificat
     title = title,
     body = body,
     relatedId = relatedId,
-    relatedType = relatedType,
     isRead = isRead,
-    createdAt = createdAt.toEpochMillis() ?: System.currentTimeMillis(),
-    readAt = readAt.toEpochMillis()
+    createdAt = createdAt.toEpochMillis() ?: System.currentTimeMillis()
 )

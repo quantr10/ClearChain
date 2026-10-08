@@ -8,8 +8,6 @@ public class Notification
     public string Title { get; set; } = string.Empty;
     public string Body { get; set; } = string.Empty;
     public string? RelatedId { get; set; }       // ID of related entity (listing, request, etc.)
-    public string? RelatedType { get; set; }     // "listing", "pickup_request", "inventory"
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; }
-    public DateTime? ReadAt { get; set; }
 }

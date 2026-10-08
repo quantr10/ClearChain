@@ -21,7 +21,6 @@ class LocationPreferenceStore @Inject constructor(
         val KEY_LNG = doublePreferencesKey("lng")
         val KEY_RADIUS = intPreferencesKey("radius_km")
         val KEY_DISPLAY_NAME = stringPreferencesKey("display_name")
-        val KEY_SAVED_AT = longPreferencesKey("saved_at")
     }
 
     val locationPreference: Flow<LocationPreference?> = context.dataStore.data.map { prefs ->
@@ -31,8 +30,7 @@ class LocationPreferenceStore @Inject constructor(
             latitude = lat,
             longitude = lng,
             radiusKm = prefs[KEY_RADIUS] ?: 10,
-            displayName = prefs[KEY_DISPLAY_NAME] ?: "Unknown",
-            savedAt = prefs[KEY_SAVED_AT] ?: 0
+            displayName = prefs[KEY_DISPLAY_NAME] ?: "Unknown"
         )
     }
 
@@ -42,7 +40,6 @@ class LocationPreferenceStore @Inject constructor(
             prefs[KEY_LNG] = preference.longitude
             prefs[KEY_RADIUS] = preference.radiusKm
             prefs[KEY_DISPLAY_NAME] = preference.displayName
-            prefs[KEY_SAVED_AT] = System.currentTimeMillis()
         }
     }
 

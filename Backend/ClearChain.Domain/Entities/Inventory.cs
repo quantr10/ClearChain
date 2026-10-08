@@ -13,7 +13,6 @@ public class Inventory
     public string Unit { get; set; } = string.Empty;
     public DateTime ExpiryDate { get; set; }
     public InventoryStatus Status { get; set; } = InventoryStatus.Active;
-    public string? Notes { get; set; }
     public string? PhotoUrl { get; set; }
 
     public DateTime ReceivedAt { get; set; }

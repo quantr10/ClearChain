@@ -17,11 +17,7 @@ data class PickupRequestResponse(
 @Serializable
 data class PickupRequestsResponse(
     val message: String,
-    val data: List<PickupRequestData>,
-    val total: Int = 0,
-    val page: Int = 1,
-    val pageSize: Int = 20,
-    val totalPages: Int = 1
+    val data: List<PickupRequestData>
 )
 
 @SuppressLint("UnsafeOptInUsageError")
@@ -50,7 +46,6 @@ data class PickupRequestData(
     val listingUnit: String = "",
     val createdAt: String,
     val proofPhotoUrl: String? = null,
-    val markedReadyAt: String? = null,
     val markedPickedUpAt: String? = null,
     val confirmedReceivedAt: String? = null,
     val requiresRefrigeration: Boolean = false,
@@ -66,9 +61,6 @@ data class PickupRequestData(
 @Serializable
 data class PickupRequestItemData(
     val id: String,
-    val listingGroupId: String? = null,
-    val originalListingId: String? = null,
-    val reservedListingId: String? = null,
     val requestedQuantity: Int,
     val listingTitle: String,
     val listingCategory: String,
@@ -111,7 +103,7 @@ fun PickupRequestData.toDomain(): PickupRequest {
         listingUnit = listingUnit,
         createdAt = createdAt,
         proofPhotoUrl = proofPhotoUrl,
-        markedReadyAt = markedReadyAt,
+
         markedPickedUpAt = markedPickedUpAt,
         confirmedReceivedAt = confirmedReceivedAt,
         requiresRefrigeration = requiresRefrigeration,
@@ -123,9 +115,6 @@ fun PickupRequestData.toDomain(): PickupRequest {
         items = items.map {
             PickupRequestItem(
                 id = it.id,
-                listingGroupId = it.listingGroupId,
-                originalListingId = it.originalListingId,
-                reservedListingId = it.reservedListingId,
                 requestedQuantity = it.requestedQuantity,
                 listingTitle = it.listingTitle,
                 listingCategory = it.listingCategory,

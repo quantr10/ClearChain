@@ -50,9 +50,7 @@ class AuthRepositoryImpl @Inject constructor(
             authTokenDao.saveTokens(
                 AuthTokenEntity(
                     accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
+                    refreshToken = tokens.refreshToken
                 )
             )
             userDao.insertUser(organization.toEntity())
@@ -82,9 +80,7 @@ class AuthRepositoryImpl @Inject constructor(
             authTokenDao.saveTokens(
                 AuthTokenEntity(
                     accessToken = tokens.accessToken,
-                    refreshToken = tokens.refreshToken,
-                    expiresIn = tokens.expiresIn,
-                    tokenType = tokens.tokenType
+                    refreshToken = tokens.refreshToken
                 )
             )
             userDao.insertUser(organization.toEntity())
