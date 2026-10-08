@@ -34,7 +34,8 @@ fun SearchBar(
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "Search...",
-    trailingIcon: @Composable (() -> Unit)? = null
+    trailingIcon: @Composable (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -50,8 +51,10 @@ fun SearchBar(
         modifier = modifier
             .fillMaxWidth()
             .height(32.dp)
+            .disabledIf(!enabled)
             .border(1.dp, borderColor, ShapeMedium)
             .padding(horizontal = 8.dp),
+        enabled = enabled,
         textStyle = MaterialTheme.typography.labelSmall.copy(
             color = MaterialTheme.colorScheme.onSurface
         ),
@@ -84,7 +87,8 @@ fun SearchBar(
                 } else if (query.isNotEmpty()) {
                     IconButton(
                         onClick = { onQueryChange("") },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        enabled = enabled
                     ) {
                         Icon(
                             Icons.Default.Clear,

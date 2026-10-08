@@ -185,7 +185,8 @@ fun VerificationQueueScreen(
                                         } else {
                                             viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
                                         }
-                                    }
+                                    },
+                                    enabled = !state.isProcessing
                                 )
                             }
                         } else {
@@ -388,7 +389,8 @@ private fun OrganizationCard(
                     SelectionCircleButton(
                         checked = isSelected,
                         onCheckedChange = { onToggleSelect() },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        enabled = !isProcessing
                     )
                 }
 
@@ -586,7 +588,11 @@ private fun ApprovalChecklistDialog(
                         enabled = !isSubmitting,
                         modifier = Modifier.size(24.dp)
                     )
-                    Text(item, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        item,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.disabledIf(isSubmitting)
+                    )
                 }
             }
         }

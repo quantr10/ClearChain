@@ -459,6 +459,7 @@ fun LocationPickerScreen(
                             onValueChange = { viewModel.onRadiusChanged(it.toInt()) },
                             valueRange = 1f..50f,
                             steps = 0,
+                            enabled = !state.isSavingLocation,
                             modifier = Modifier.height(28.dp)
                         )
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -476,13 +477,14 @@ fun LocationPickerScreen(
                         onQueryChange = { viewModel.onSearchQueryChanged(it, geocoder) },
                         placeholder = stringResource(R.string.location_search_hint),
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isSavingLocation
                     )
                     UpdatingBar(visible = state.isSearching)
 
                     if (state.showSuggestions) {
                         state.searchSuggestions.forEachIndexed { index, suggestion ->
                             Row(
-                                Modifier.fillMaxWidth().clickable { viewModel.onSuggestionSelected(suggestion) }.padding(vertical = 8.dp),
+                                Modifier.fillMaxWidth().clickable(enabled = !state.isSavingLocation) { viewModel.onSuggestionSelected(suggestion) }.disabledIf(state.isSavingLocation).padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {

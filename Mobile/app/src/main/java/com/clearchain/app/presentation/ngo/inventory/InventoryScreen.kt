@@ -147,7 +147,8 @@ fun InventoryScreen(
                                         } else {
                                             viewModel.onEvent(InventoryEvent.SelectAll)
                                         }
-                                    }
+                                    },
+                                    enabled = !state.isBulkOperating
                                 )
                             }
                         } else {
@@ -233,7 +234,8 @@ fun InventoryScreen(
                                                 SelectionCircleButton(
                                                     checked = isSelected,
                                                     onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
-                                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                                    enabled = !state.isBulkOperating
                                                 )
                                             }
                                         }

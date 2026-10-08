@@ -226,7 +226,8 @@ fun RegisterScreen(
                                         append(tosPrivacy)
                                     }
                                 },
-                                style = MaterialTheme.typography.labelSmall
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.disabledIf(state.isLoading)
                             )
                         }
                         if (state.tosError) {

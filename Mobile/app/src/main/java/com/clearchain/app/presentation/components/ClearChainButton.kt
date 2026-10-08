@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +26,13 @@ object ClearChainButtonDefaults {
     /** Disabled buttons keep their own hue at this opacity so a red action still reads as red. */
     const val DisabledAlpha = 0.38f
 }
+
+/**
+ * Fades content the way a disabled control fades. For labels that sit beside a control
+ * (a checkbox's or radio's text) so they dim together with it while an action is in flight.
+ */
+fun Modifier.disabledIf(disabled: Boolean): Modifier =
+    if (disabled) alpha(ClearChainButtonDefaults.DisabledAlpha) else this
 
 @Composable
 private fun clearChainButtonTextStyle(): TextStyle = MaterialTheme.typography.labelSmall

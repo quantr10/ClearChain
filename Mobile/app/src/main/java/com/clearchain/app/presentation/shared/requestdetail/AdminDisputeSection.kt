@@ -182,10 +182,18 @@ internal fun ResolveDisputeDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onOutcomeChange(value) }
+                        .clickable(enabled = !isResolving) { onOutcomeChange(value) }
                 ) {
-                    RadioButton(selected = outcome == value, onClick = { onOutcomeChange(value) })
-                    Text(label, style = MaterialTheme.typography.bodyMedium)
+                    RadioButton(
+                        selected = outcome == value,
+                        onClick = { onOutcomeChange(value) },
+                        enabled = !isResolving
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.disabledIf(isResolving)
+                    )
                 }
             }
         }
@@ -199,6 +207,7 @@ internal fun ResolveDisputeDialog(
             placeholder = stringResource(R.string.dispute_grocery_statement_placeholder),
             singleLine = false,
             minLines = 2,
+            enabled = !isResolving,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -210,6 +219,7 @@ internal fun ResolveDisputeDialog(
             placeholder = stringResource(R.string.dispute_resolution_note_placeholder),
             singleLine = false,
             minLines = 2,
+            enabled = !isResolving,
             modifier = Modifier.fillMaxWidth()
         )
     }
