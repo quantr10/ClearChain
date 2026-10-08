@@ -8,8 +8,8 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.inventory.DistributeItemUseCase
 import com.clearchain.app.domain.usecase.inventory.GetMyInventoryUseCase
 import com.clearchain.app.domain.usecase.inventory.UpdateExpiredItemsUseCase
-import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.BulkResult
+import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -310,23 +310,23 @@ class InventoryViewModel @Inject constructor(
     }
 
     private fun InventoryEvent.isLockedWhileBusy(): Boolean = when (this) {
-            is InventoryEvent.ToggleItemSelection,
-            is InventoryEvent.SelectAll,
-            is InventoryEvent.DeselectAll,
-            is InventoryEvent.ToggleSelectionMode,
-            is InventoryEvent.StatusTabChanged,
-            is InventoryEvent.SearchQueryChanged,
-            is InventoryEvent.SortOptionChanged,
-            is InventoryEvent.CategoryFilterChanged,
-            is InventoryEvent.FilterExpiryWithinDaysChanged,
-            is InventoryEvent.FilterMinQtyChanged,
-            is InventoryEvent.FilterMaxQtyChanged,
-            is InventoryEvent.ClearAdvancedFilters,
-            is InventoryEvent.ShowFilterSheet,
-            is InventoryEvent.RefreshInventory,
-            is InventoryEvent.LoadInventory,
-            is InventoryEvent.DistributeItem,
-            is InventoryEvent.BulkDistribute -> true
+        is InventoryEvent.ToggleItemSelection,
+        is InventoryEvent.SelectAll,
+        is InventoryEvent.DeselectAll,
+        is InventoryEvent.ToggleSelectionMode,
+        is InventoryEvent.StatusTabChanged,
+        is InventoryEvent.SearchQueryChanged,
+        is InventoryEvent.SortOptionChanged,
+        is InventoryEvent.CategoryFilterChanged,
+        is InventoryEvent.FilterExpiryWithinDaysChanged,
+        is InventoryEvent.FilterMinQtyChanged,
+        is InventoryEvent.FilterMaxQtyChanged,
+        is InventoryEvent.ClearAdvancedFilters,
+        is InventoryEvent.ShowFilterSheet,
+        is InventoryEvent.RefreshInventory,
+        is InventoryEvent.LoadInventory,
+        is InventoryEvent.DistributeItem,
+        is InventoryEvent.BulkDistribute -> true
         else -> false
     }
 }

@@ -24,7 +24,7 @@ object ClearChainButtonDefaults {
     val HorizontalPadding = 8.dp
 
     /** Disabled buttons keep their own hue at this opacity so a red action still reads as red. */
-    const val DisabledAlpha = 0.38f
+    val DisabledAlpha = 0.38f
 }
 
 /**

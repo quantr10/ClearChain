@@ -14,7 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +44,7 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
+import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.mapsQuery
 import com.clearchain.app.util.openInGoogleMaps
@@ -47,14 +52,9 @@ import com.clearchain.app.util.sendEmail
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.clearchain.app.util.UiEvent
-import kotlinx.coroutines.channels.Channel
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 
 // ── State ────────────────────────────────────────────────────────────────────
 data class PublicProfileState(

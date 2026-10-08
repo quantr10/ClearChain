@@ -1,12 +1,17 @@
 package com.clearchain.app.presentation.analytics
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -28,18 +33,13 @@ import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
+import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.clearchain.app.util.UiEvent
-import kotlinx.coroutines.channels.Channel
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 // ── ViewModel ────────────────────────────────────────────────────────────────
 data class AnalyticsState(

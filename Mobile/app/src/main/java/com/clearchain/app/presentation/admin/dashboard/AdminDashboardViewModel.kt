@@ -162,7 +162,7 @@ class AdminDashboardViewModel @Inject constructor(
         val results = coroutineScope {
             listOf(
                 async { loadStatistics() },
-                async { loadAlertFeed() },
+                async { loadAlertFeed() }
             ).awaitAll()
         }
         val allOk = false !in results

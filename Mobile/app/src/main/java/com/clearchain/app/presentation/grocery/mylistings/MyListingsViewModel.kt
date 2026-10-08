@@ -12,8 +12,8 @@ import com.clearchain.app.domain.usecase.listing.DeleteListingUseCase
 import com.clearchain.app.domain.usecase.listing.GetMyListingsUseCase
 import com.clearchain.app.domain.usecase.listing.RestoreListingUseCase
 import com.clearchain.app.domain.usecase.listing.UpdateListingQuantityUseCase
-import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.BulkResult
+import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -314,20 +314,20 @@ class MyListingsViewModel @Inject constructor(
     }
 
     private fun MyListingsEvent.isLockedWhileBusy(): Boolean = when (this) {
-            is MyListingsEvent.ToggleItemSelection,
-            is MyListingsEvent.SelectAll,
-            is MyListingsEvent.DeselectAll,
-            is MyListingsEvent.ToggleSelectionMode,
-            is MyListingsEvent.TabChanged,
-            is MyListingsEvent.SearchQueryChanged,
-            is MyListingsEvent.SortOptionChanged,
-            is MyListingsEvent.CategoryFilterChanged,
-            is MyListingsEvent.FilterExpiryWithinDaysChanged,
-            is MyListingsEvent.FilterHasRequestsChanged,
-            is MyListingsEvent.ClearAdvancedFilters,
-            is MyListingsEvent.ShowFilterSheet,
-            is MyListingsEvent.RefreshListings,
-            is MyListingsEvent.LoadListings -> true
+        is MyListingsEvent.ToggleItemSelection,
+        is MyListingsEvent.SelectAll,
+        is MyListingsEvent.DeselectAll,
+        is MyListingsEvent.ToggleSelectionMode,
+        is MyListingsEvent.TabChanged,
+        is MyListingsEvent.SearchQueryChanged,
+        is MyListingsEvent.SortOptionChanged,
+        is MyListingsEvent.CategoryFilterChanged,
+        is MyListingsEvent.FilterExpiryWithinDaysChanged,
+        is MyListingsEvent.FilterHasRequestsChanged,
+        is MyListingsEvent.ClearAdvancedFilters,
+        is MyListingsEvent.ShowFilterSheet,
+        is MyListingsEvent.RefreshListings,
+        is MyListingsEvent.LoadListings -> true
         else -> false
     }
 }
