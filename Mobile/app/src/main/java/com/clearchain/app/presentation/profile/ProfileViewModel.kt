@@ -13,6 +13,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.OrganizationRepository
 import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.domain.usecase.auth.RefreshCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
 import com.clearchain.app.util.ApiErrorUtils
 import com.clearchain.app.util.ImageUtils
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 class ProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val refreshCurrentUserUseCase: RefreshCurrentUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val organizationApi: OrganizationApi,
@@ -97,7 +99,15 @@ class ProfileViewModel @Inject constructor(
     private fun loadAll() {
         viewModelScope.launch {
             // Load profile and activity concurrently
-            val profileJob = async { runCatching { loadProfileSuspend() } }
+            val profileJob = async {
+                runCatching { loadProfileSuspend() }.onFailure { e ->
+                    // Without this the spinner never stops: isLoading was set true and
+                    // nothing else would clear it.
+                    _state.update {
+                        it.copy(isLoading = false, error = ApiErrorUtils.messageOr(e, context.getString(R.string.error_generic)))
+                    }
+                }
+            }
             val activityJob = async { runCatching { loadActivitySuspend() } }
             profileJob.await()
             activityJob.await()
@@ -114,10 +124,9 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun loadProfileSuspend() {
         _state.update { it.copy(isLoading = true, error = null) }
-        val user = getCurrentUserUseCase().first()
-        val publicProfile = user?.let {
-            runCatching { organizationApi.getPublicProfile(it.id).data }.getOrNull()
-        }
+        // An empty cache would otherwise make Retry re-read the same nothing; ask the server.
+        val user = getCurrentUserUseCase().first() ?: refreshCurrentUserUseCase().getOrThrow()
+        val publicProfile = runCatching { organizationApi.getPublicProfile(user.id).data }.getOrNull()
         _state.update {
             it.copy(
                 user = user,
