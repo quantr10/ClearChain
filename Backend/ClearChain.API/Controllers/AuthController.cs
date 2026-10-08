@@ -136,6 +136,34 @@ public class AuthController : ControllerBase
         return Ok(new { message });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var (success, message) = await _authService.RequestPasswordResetAsync(request.Email);
+
+        if (!success)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message });
+
+        return Ok(new { message });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var (success, message) = await _authService.ResetPasswordAsync(request.Email, request.Code, request.NewPassword);
+
+        if (!success)
+            return BadRequest(new { message });
+
+        return Ok(new { message });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {

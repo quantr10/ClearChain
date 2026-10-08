@@ -16,11 +16,21 @@ public interface IAuthService
     Task<(bool Success, string Message)> DeleteAccountAsync(Guid userId, string password);
     Task<(bool Success, string Message, AuthResponse? Response)> VerifyEmailAsync(string email, string code);
     Task<(bool Success, string Message)> ResendVerificationAsync(string email);
+    Task<(bool Success, string Message)> RequestPasswordResetAsync(string email);
+    Task<(bool Success, string Message)> ResetPasswordAsync(string email, string code, string newPassword);
 }
 
 public class AuthService : IAuthService
 {
     private const int MaxEmailVerificationAttempts = 5;
+    private const int MaxPasswordResetAttempts = 5;
+    private const int PasswordResetCodeMinutes = 15;
+    private const int PasswordResetResendSeconds = 60;
+
+    // Same reply whether or not the address has an account, so this endpoint can't be
+    // used to find out who is registered.
+    private const string PasswordResetRequestedMessage =
+        "If an account exists for that email, we've sent a reset code.";
 
     private readonly ApplicationDbContext _context;
     private readonly IJwtService _jwtService;
@@ -215,6 +225,98 @@ public class AuthService : IAuthService
         return emailSent
             ? (true, "Verification email resent")
             : (false, "Couldn't send the verification email. Please try again shortly.");
+    }
+
+    public async Task<(bool Success, string Message)> RequestPasswordResetAsync(string email)
+    {
+        var user = await _context.Organizations
+            .FirstOrDefaultAsync(o => o.Email.ToLower() == email.ToLower() && !o.IsDeleted);
+
+        if (user == null || user.PasswordHash == null)
+            return (true, PasswordResetRequestedMessage);
+
+        // A code issued in the last minute is still on its way — don't mail another one,
+        // so the endpoint can't be used to flood someone's inbox.
+        var issuedAt = user.PasswordResetTokenExpiry?.AddMinutes(-PasswordResetCodeMinutes);
+        if (issuedAt > DateTime.UtcNow.AddSeconds(-PasswordResetResendSeconds))
+            return (true, PasswordResetRequestedMessage);
+
+        var code = VerificationCodeGenerator.Generate();
+        user.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(code);
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(PasswordResetCodeMinutes);
+        user.PasswordResetAttempts = 0;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.Name, code);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+            return (false, "Couldn't send the reset email. Please try again shortly.");
+        }
+
+        return (true, PasswordResetRequestedMessage);
+    }
+
+    public async Task<(bool Success, string Message)> ResetPasswordAsync(string email, string code, string newPassword)
+    {
+        var user = await _context.Organizations
+            .FirstOrDefaultAsync(o => o.Email.ToLower() == email.ToLower() && !o.IsDeleted);
+
+        if (user?.PasswordResetToken == null || user.PasswordResetTokenExpiry == null)
+            return (false, "Invalid or expired reset code. Request a new one.");
+
+        if (user.PasswordResetTokenExpiry < DateTime.UtcNow)
+            return (false, "Reset code has expired. Please request a new one.");
+
+        if (!BCrypt.Net.BCrypt.Verify(code, user.PasswordResetToken))
+        {
+            user.PasswordResetAttempts++;
+            if (user.PasswordResetAttempts >= MaxPasswordResetAttempts)
+            {
+                // Same rule as email verification: burn the code rather than leave it
+                // guessable for the rest of its window.
+                user.PasswordResetToken = null;
+                user.PasswordResetTokenExpiry = null;
+                user.PasswordResetAttempts = 0;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                return (false, "Too many incorrect attempts. Request a new code.");
+            }
+
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return (false, "Invalid reset code.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        user.PasswordResetAttempts = 0;
+
+        // Whoever forgot the password may also be the one who tripped the lockout.
+        user.FailedLoginCount = 0;
+        user.LockoutUntil = null;
+
+        // The code arrived at this address, which is the same proof email verification
+        // asks for — without this, an unverified user would reset and still be refused.
+        user.EmailVerified = true;
+        user.EmailVerificationToken = null;
+        user.EmailVerificationTokenExpiry = null;
+        user.EmailVerificationAttempts = 0;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        // Sign out every device: if the password leaked, existing sessions did too.
+        var tokens = await _context.RefreshTokens
+            .Where(t => t.OrganizationId == user.Id && !t.IsRevoked)
+            .ToListAsync();
+        foreach (var t in tokens) { t.IsRevoked = true; t.RevokedAt = DateTime.UtcNow; }
+
+        await _context.SaveChangesAsync();
+        return (true, "Password reset successfully. Please log in with your new password.");
     }
 
     public async Task<(bool Success, string Message, AuthResponse? Response)> LoginAsync(LoginRequest request)

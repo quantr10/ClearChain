@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -20,25 +19,26 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.presentation.auth.AuthDivider
 import com.clearchain.app.presentation.auth.AuthHeader
+import com.clearchain.app.presentation.auth.forgot.PASSWORD_RESET_EMAIL_KEY
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.*
 import com.clearchain.app.util.UiEvent
-import com.clearchain.app.util.sendEmail
 import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
     navController: NavController,
+    resultHandle: SavedStateHandle,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     BlockBackWhile(state.isLoading)
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val lockoutMessage = if (state.isLockedOut) {
         pluralStringResource(R.plurals.msg_account_locked, state.lockoutMinutes, state.lockoutMinutes)
@@ -64,6 +64,18 @@ fun LoginScreen(
                     }
                 }
                 else -> Unit
+            }
+        }
+    }
+
+    // ForgotPasswordScreen leaves the reset email on our back-stack entry when it pops.
+    LaunchedEffect(resultHandle) {
+        resultHandle.getStateFlow<String?>(PASSWORD_RESET_EMAIL_KEY, null).collect { email ->
+            if (email != null) {
+                // Cleared rather than removed: remove() detaches this flow, so a second
+                // reset in the same session would go unseen.
+                resultHandle[PASSWORD_RESET_EMAIL_KEY] = null
+                viewModel.onEvent(LoginEvent.PasswordResetCompleted(email))
             }
         }
     }
@@ -144,13 +156,10 @@ fun LoginScreen(
                                 modifier = Modifier.disabledIf(state.isLoading)
                             )
                         }
-                        val forgotPasswordSubject = stringResource(R.string.forgot_password_email_subject)
                         ClearChainOutlinedButton(
                             text = stringResource(R.string.forgot_password),
                             onClick = {
-                                // No self-service reset flow exists yet — route to support
-                                // instead of a dead button.
-                                sendEmail(context, "support@clearchain.app", forgotPasswordSubject)
+                                navController.navigate(Screen.ForgotPassword.createRoute(state.email.trim()))
                             },
                             enabled = !state.isLoading
                         )

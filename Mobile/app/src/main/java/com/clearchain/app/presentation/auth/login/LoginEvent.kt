@@ -5,4 +5,5 @@ sealed class LoginEvent {
     data class PasswordChanged(val password: String) : LoginEvent()
     object Login : LoginEvent()
     object ToggleRememberMe : LoginEvent()
+    data class PasswordResetCompleted(val email: String) : LoginEvent()
 }

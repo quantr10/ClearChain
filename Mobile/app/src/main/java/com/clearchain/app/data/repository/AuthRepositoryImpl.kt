@@ -69,6 +69,24 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun requestPasswordReset(email: String): Result<Unit> {
+        return try {
+            authApi.forgotPassword(ForgotPasswordRequest(email))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun resetPassword(email: String, code: String, newPassword: String): Result<Unit> {
+        return try {
+            authApi.resetPassword(ResetPasswordRequest(email, code, newPassword))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun login(email: String, password: String): Result<Pair<Organization, AuthTokens>> {
         return try {
             val request = LoginRequest(email, password)

@@ -20,6 +20,16 @@ interface AuthApi {
         @Body request: ResendVerificationRequest
     ): MessageResponse
 
+    @POST("auth/forgot-password")
+    suspend fun forgotPassword(
+        @Body request: ForgotPasswordRequest
+    ): MessageResponse
+
+    @POST("auth/reset-password")
+    suspend fun resetPassword(
+        @Body request: ResetPasswordRequest
+    ): MessageResponse
+
     @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
