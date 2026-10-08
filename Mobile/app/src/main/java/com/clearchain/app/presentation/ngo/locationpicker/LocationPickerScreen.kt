@@ -30,6 +30,7 @@ import com.clearchain.app.domain.model.LocationPreference
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.util.UiEvent
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -43,10 +44,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.channels.Channel
-import com.clearchain.app.util.UiEvent
 
 data class PlaceSuggestion(
     val name: String,

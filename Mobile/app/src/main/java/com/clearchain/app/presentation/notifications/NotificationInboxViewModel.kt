@@ -1,20 +1,20 @@
 package com.clearchain.app.presentation.notifications
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.local.entity.toDomain
 import com.clearchain.app.data.remote.dto.toEntity
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.repository.NotificationRepository
+import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import android.content.Context
-import com.clearchain.app.R
-import com.clearchain.app.util.UiEvent
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.Channel
 
 @HiltViewModel
 class NotificationInboxViewModel @Inject constructor(

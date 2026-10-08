@@ -65,7 +65,6 @@ data class ListingData(
     val groceryHours: String? = null
 )
 
-
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class UpdateListingQuantityRequest(

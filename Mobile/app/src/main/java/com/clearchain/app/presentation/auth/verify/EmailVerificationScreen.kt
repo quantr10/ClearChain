@@ -20,12 +20,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
+import com.clearchain.app.presentation.components.BlockBackWhile
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
-import com.clearchain.app.presentation.components.BlockBackWhile
 
 @Composable
 fun EmailVerificationScreen(

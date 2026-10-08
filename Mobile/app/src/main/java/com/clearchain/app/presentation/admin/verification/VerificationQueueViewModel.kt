@@ -9,8 +9,8 @@ import com.clearchain.app.data.remote.dto.RejectOrganizationBody
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.OrganizationType
-import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.BulkResult
+import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -255,26 +255,26 @@ class VerificationQueueViewModel @Inject constructor(
     }
 
     private fun VerificationQueueEvent.isLockedWhileBusy(): Boolean = when (this) {
-            is VerificationQueueEvent.ToggleOrgSelection,
-            is VerificationQueueEvent.SelectAllVisible,
-            is VerificationQueueEvent.ClearSelection,
-            is VerificationQueueEvent.ToggleBatchMode,
-            is VerificationQueueEvent.StatusFilterChanged,
-            is VerificationQueueEvent.FilterOrgTypeChanged,
-            is VerificationQueueEvent.SearchQueryChanged,
-            is VerificationQueueEvent.SortOptionChanged,
-            is VerificationQueueEvent.ClearAdvancedFilters,
-            is VerificationQueueEvent.ShowFilterSheet,
-            is VerificationQueueEvent.RefreshOrganizations,
-            is VerificationQueueEvent.ShowChecklist,
-            is VerificationQueueEvent.ShowRejectDialog,
-            is VerificationQueueEvent.ToggleChecklistItem,
-            is VerificationQueueEvent.RejectionReasonChanged,
-            is VerificationQueueEvent.SelectRejectionTemplate,
-            is VerificationQueueEvent.BatchApprove,
-            is VerificationQueueEvent.BatchReject,
-            is VerificationQueueEvent.ConfirmApprove,
-            is VerificationQueueEvent.ConfirmReject -> true
+        is VerificationQueueEvent.ToggleOrgSelection,
+        is VerificationQueueEvent.SelectAllVisible,
+        is VerificationQueueEvent.ClearSelection,
+        is VerificationQueueEvent.ToggleBatchMode,
+        is VerificationQueueEvent.StatusFilterChanged,
+        is VerificationQueueEvent.FilterOrgTypeChanged,
+        is VerificationQueueEvent.SearchQueryChanged,
+        is VerificationQueueEvent.SortOptionChanged,
+        is VerificationQueueEvent.ClearAdvancedFilters,
+        is VerificationQueueEvent.ShowFilterSheet,
+        is VerificationQueueEvent.RefreshOrganizations,
+        is VerificationQueueEvent.ShowChecklist,
+        is VerificationQueueEvent.ShowRejectDialog,
+        is VerificationQueueEvent.ToggleChecklistItem,
+        is VerificationQueueEvent.RejectionReasonChanged,
+        is VerificationQueueEvent.SelectRejectionTemplate,
+        is VerificationQueueEvent.BatchApprove,
+        is VerificationQueueEvent.BatchReject,
+        is VerificationQueueEvent.ConfirmApprove,
+        is VerificationQueueEvent.ConfirmReject -> true
         else -> false
     }
 }

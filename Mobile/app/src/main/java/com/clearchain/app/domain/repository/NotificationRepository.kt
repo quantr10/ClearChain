@@ -18,9 +18,11 @@ interface NotificationRepository {
     suspend fun sync(): Result<NotificationRetention>
 
     suspend fun markAsRead(id: String)
+
     /** Optimistic: the inbox updates at once and is restored if the server refuses. */
     suspend fun markAllAsRead(): Result<Unit>
     suspend fun insert(notification: AppNotification)
+
     /** Optimistic: the inbox empties at once and is restored if the server refuses. */
     suspend fun clearAll(): Result<Unit>
 }

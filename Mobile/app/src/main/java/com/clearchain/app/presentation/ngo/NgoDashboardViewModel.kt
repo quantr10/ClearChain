@@ -1,8 +1,10 @@
 package com.clearchain.app.presentation.ngo
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.DashboardStatsData
@@ -10,21 +12,19 @@ import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import com.clearchain.app.util.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import android.content.Context
-import com.clearchain.app.R
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 // Derived impact metrics computed from stats
 data class ImpactMetrics(
@@ -106,10 +106,10 @@ class NgoDashboardViewModel @Inject constructor(
     private suspend fun loadAll(): Boolean {
         val results = coroutineScope {
             listOf(
-            async { loadStats() },
-            async { loadTodaySummary() },
-            async { loadActivity() },
-            async { loadNearbyListings() },
+                async { loadStats() },
+                async { loadTodaySummary() },
+                async { loadActivity() },
+                async { loadNearbyListings() }
             ).awaitAll()
         }
         // Sections fail independently and each keeps whatever it showed before;

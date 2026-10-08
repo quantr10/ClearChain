@@ -98,7 +98,10 @@ class NotificationRepositoryImpl @Inject constructor(
         // would quietly bring the unread ones back — so restore them now and say so.
         val unreadBefore = notificationDao.getAll().filter { !it.isRead }
         notificationDao.markAllAsRead()
-        return runCatching { notificationApi.markAllAsRead(); Unit }
+        return runCatching {
+            notificationApi.markAllAsRead()
+            Unit
+        }
             .onFailure {
                 Log.w(TAG, "Could not mark all read on server: ${it.message}")
                 notificationDao.insertAll(unreadBefore)
@@ -113,7 +116,10 @@ class NotificationRepositoryImpl @Inject constructor(
         notificationDao.clearAll()
         // Server-side too, or the next sync pulls everything the user just cleared back —
         // which is why a refusal restores the inbox instead of leaving it looking cleared.
-        return runCatching { notificationApi.deleteAllNotifications(); Unit }
+        return runCatching {
+            notificationApi.deleteAllNotifications()
+            Unit
+        }
             .onFailure {
                 Log.w(TAG, "Could not clear inbox on server: ${it.message}")
                 notificationDao.insertAll(before)

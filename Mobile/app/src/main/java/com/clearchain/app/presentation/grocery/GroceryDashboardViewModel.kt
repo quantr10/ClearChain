@@ -10,19 +10,19 @@ import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.DashboardStatsData
 import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class GroceryDashboardState(
     /** Until the first load settles; refreshes keep the sections on screen. */
@@ -87,9 +87,9 @@ class GroceryDashboardViewModel @Inject constructor(
     private suspend fun loadAll(): Boolean {
         val results = coroutineScope {
             listOf(
-            async { loadStats() },
-            async { loadTodaySummary() },
-            async { loadActivity() },
+                async { loadStats() },
+                async { loadTodaySummary() },
+                async { loadActivity() }
             ).awaitAll()
         }
         // Sections fail independently and each keeps whatever it showed before;
