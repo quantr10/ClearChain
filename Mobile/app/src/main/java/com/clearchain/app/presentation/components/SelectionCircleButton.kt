@@ -20,11 +20,13 @@ import androidx.compose.ui.unit.dp
 fun SelectionCircleButton(
     checked: Boolean,
     onCheckedChange: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     Surface(
         onClick = onCheckedChange,
-        modifier = modifier.size(24.dp),
+        modifier = modifier.size(24.dp).disabledIf(!enabled),
+        enabled = enabled,
         shape = RoundedCornerShape(50),
         color = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         border = if (checked) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),

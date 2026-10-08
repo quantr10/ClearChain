@@ -59,8 +59,11 @@ fun CreateListingScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
+            // A FAB has no disabled state: while the listing is being created it fades and
+            // ignores taps, like the rest of the form.
             SmallFloatingActionButton(
-                onClick = { viewModel.onEvent(CreateListingEvent.TogglePreview) },
+                onClick = { if (!state.isLoading) viewModel.onEvent(CreateListingEvent.TogglePreview) },
+                modifier = Modifier.disabledIf(state.isLoading),
                 containerColor = if (state.isPreviewMode) {
                     MaterialTheme.colorScheme.secondaryContainer
                 } else {
@@ -425,7 +428,8 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                 if (state.selectedImageUri != null) {
                     IconButton(
                         onClick = { viewModel.onEvent(CreateListingEvent.ClearImage) },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp).disabledIf(state.isLoading),
+                        enabled = !state.isLoading
                     ) {
                         Icon(
                             Icons.Default.Close,
@@ -550,12 +554,14 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                             ClearChainOutlinedButton(
                                 text = stringResource(R.string.action_enter_manually),
                                 onClick = { viewModel.onEvent(CreateListingEvent.DismissAnalysis) },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                enabled = !state.isLoading
                             )
                             ClearChainButton(
                                 text = stringResource(R.string.action_apply_ai),
                                 onClick = { viewModel.onEvent(CreateListingEvent.ApplyAISuggestions) },
                                 modifier = Modifier.weight(1f),
+                                enabled = !state.isLoading,
                                 icon = Icons.Default.AutoAwesome
                             )
                         }
@@ -568,6 +574,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                     text = stringResource(R.string.action_take_photo),
                     onClick = { viewModel.onEvent(CreateListingEvent.ToggleImagePicker) },
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isLoading,
                     icon = Icons.Default.CameraAlt
                 )
                 Text(

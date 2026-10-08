@@ -1689,16 +1689,21 @@ private fun DisputeDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedReason = reason }
+                                .clickable(enabled = !isSubmitting) { selectedReason = reason }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             RadioButton(
                                 selected = selectedReason == reason,
-                                onClick = { selectedReason = reason }
+                                onClick = { selectedReason = reason },
+                                enabled = !isSubmitting
                             )
-                            Text(stringResource(reason.labelRes), style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                stringResource(reason.labelRes),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.disabledIf(isSubmitting)
+                            )
                         }
                     }
                 }
@@ -1725,6 +1730,7 @@ private fun DisputeDialog(
                         photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSubmitting,
                     icon = Icons.Default.Image
                 )
             } else {
@@ -1735,7 +1741,11 @@ private fun DisputeDialog(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
-                    IconButton(onClick = { photoUri = null }, modifier = Modifier.align(Alignment.TopEnd)) {
+                    IconButton(
+                        onClick = { photoUri = null },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                        enabled = !isSubmitting
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
@@ -1774,13 +1784,14 @@ private fun RatingDialog(
             color = MaterialTheme.colorScheme.onSurface
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().disabledIf(isSubmitting),
             horizontalArrangement = Arrangement.Center
         ) {
             repeat(5) { i ->
                 IconButton(
                     onClick = { selectedRating = i + 1 },
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
+                    enabled = !isSubmitting
                 ) {
                     Icon(
                         imageVector = if (i < selectedRating) Icons.Default.Star else Icons.Default.StarBorder,

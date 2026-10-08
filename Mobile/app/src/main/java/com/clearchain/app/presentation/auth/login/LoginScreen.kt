@@ -140,7 +140,8 @@ fun LoginScreen(
                             )
                             Text(
                                 text = stringResource(R.string.remember_me),
-                                style = MaterialTheme.typography.labelSmall
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.disabledIf(state.isLoading)
                             )
                         }
                         val forgotPasswordSubject = stringResource(R.string.forgot_password_email_subject)
@@ -150,7 +151,8 @@ fun LoginScreen(
                                 // No self-service reset flow exists yet — route to support
                                 // instead of a dead button.
                                 sendEmail(context, "support@clearchain.app", forgotPasswordSubject)
-                            }
+                            },
+                            enabled = !state.isLoading
                         )
                     }
 

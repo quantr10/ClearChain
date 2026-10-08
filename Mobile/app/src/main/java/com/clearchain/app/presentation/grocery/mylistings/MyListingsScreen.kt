@@ -8,7 +8,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -218,7 +217,7 @@ fun MyListingsScreen(
                         },
                         leadingContent = if (state.isSelectionMode) {
                             {
-                                CircleCheckbox(
+                                SelectionCircleButton(
                                     checked = state.allSelected,
                                     onCheckedChange = {
                                         if (state.allSelected) {
@@ -226,7 +225,8 @@ fun MyListingsScreen(
                                         } else {
                                             viewModel.onEvent(MyListingsEvent.SelectAll)
                                         }
-                                    }
+                                    },
+                                    enabled = !state.isBulkOperating
                                 )
                             }
                         } else {
@@ -341,12 +341,13 @@ fun MyListingsScreen(
 
                                             // Selection circle overlay (top-left)
                                             if (state.isSelectionMode) {
-                                                CircleCheckbox(
+                                                SelectionCircleButton(
                                                     checked = isSelected,
                                                     onCheckedChange = { viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id)) },
                                                     modifier = Modifier
                                                         .align(Alignment.TopStart)
-                                                        .padding(8.dp)
+                                                        .padding(8.dp),
+                                                    enabled = !state.isBulkOperating
                                                 )
                                             }
                                         } // end Box
@@ -464,33 +465,6 @@ private fun MyListingsFilterSheet(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             )
-        }
-    }
-}
-
-@Composable
-private fun CircleCheckbox(
-    checked: Boolean,
-    onCheckedChange: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onCheckedChange,
-        modifier = modifier.size(24.dp),
-        shape = CircleShape,
-        color = if (checked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.92f),
-        border = if (!checked) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null,
-        shadowElevation = 1.dp
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (checked) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
         }
     }
 }
