@@ -84,9 +84,7 @@ class TokenAuthenticator @Inject constructor(
                 authTokenDao.saveTokens(
                     AuthTokenEntity(
                         accessToken = refreshed.accessToken,
-                        refreshToken = refreshed.refreshToken,
-                        expiresIn = refreshed.expiresIn,
-                        tokenType = refreshed.tokenType
+                        refreshToken = refreshed.refreshToken
                     )
                 )
             }

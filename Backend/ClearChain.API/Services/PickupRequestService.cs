@@ -572,7 +572,6 @@ public class PickupRequestService : IPickupRequestService
             ListingUnit = pr.ListingUnit ?? "",
             CreatedAt = pr.RequestedAt.ToString("o"),
             ProofPhotoUrl = proofPhotoUrl ?? pr.ProofPhotoUrl,
-            MarkedReadyAt = pr.MarkedReadyAt?.ToString("o"),
             MarkedPickedUpAt = pr.MarkedPickedUpAt?.ToString("o"),
             ConfirmedReceivedAt = pr.ConfirmedReceivedAt?.ToString("o"),
             RequiresRefrigeration = pr.RequiresRefrigeration,
@@ -631,7 +630,6 @@ public class PickupRequestService : IPickupRequestService
         {
             var target = availableSiblings.First();
             target.Quantity += cancelledListing.Quantity;
-            target.SplitReason = "merge";
             target.UpdatedAt = DateTime.UtcNow;
             group.TotalReserved -= cancelledListing.Quantity;
             group.TotalAvailable += cancelledListing.Quantity;
@@ -641,8 +639,6 @@ public class PickupRequestService : IPickupRequestService
         else
         {
             cancelledListing.Status = ListingStatus.Open;
-            cancelledListing.RelatedRequestId = null;
-            cancelledListing.SplitReason = "cancel_restore";
             cancelledListing.UpdatedAt = DateTime.UtcNow;
             group.TotalReserved -= cancelledListing.Quantity;
             group.TotalAvailable += cancelledListing.Quantity;

@@ -22,11 +22,11 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications")
     suspend fun getAll(): List<NotificationEntity>
 
-    @Query("UPDATE notifications SET isRead = 1, readAt = :timestamp WHERE id = :id")
-    suspend fun markAsRead(id: String, timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE notifications SET isRead = 1 WHERE id = :id")
+    suspend fun markAsRead(id: String)
 
-    @Query("UPDATE notifications SET isRead = 1, readAt = :timestamp")
-    suspend fun markAllAsRead(timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE notifications SET isRead = 1")
+    suspend fun markAllAsRead()
 
     @Query("DELETE FROM notifications WHERE createdAt < :timestamp")
     suspend fun deleteOlderThan(timestamp: Long)

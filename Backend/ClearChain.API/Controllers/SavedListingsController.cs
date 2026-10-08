@@ -33,7 +33,7 @@ public class SavedListingsController : ControllerBase
         var alreadySaved = await _context.SavedListings
             .AnyAsync(s => s.NgoId == userId && s.ListingId == listingId);
 
-        if (alreadySaved) return Ok(new { message = "Already saved", saved = true });
+        if (alreadySaved) return Ok(new { message = "Already saved" });
 
         _context.SavedListings.Add(new SavedListing
         {
@@ -43,7 +43,7 @@ public class SavedListingsController : ControllerBase
         });
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Listing saved", saved = true });
+        return Ok(new { message = "Listing saved" });
     }
 
     // DELETE api/savedlistings/{listingId} — Unsave a listing
@@ -55,12 +55,12 @@ public class SavedListingsController : ControllerBase
         var saved = await _context.SavedListings
             .FirstOrDefaultAsync(s => s.NgoId == userId && s.ListingId == listingId);
 
-        if (saved == null) return Ok(new { message = "Not saved", saved = false });
+        if (saved == null) return Ok(new { message = "Not saved" });
 
         _context.SavedListings.Remove(saved);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Listing unsaved", saved = false });
+        return Ok(new { message = "Listing unsaved" });
     }
 
     // GET api/savedlistings/ids — Get list of saved listing IDs (for UI toggle state)

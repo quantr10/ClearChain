@@ -29,52 +29,29 @@ public class ListingsController : ControllerBase
         _pushNotificationService = pushNotificationService;
     }
 
-    private ListingData MapListingToDto(ClearanceListing listing, ListingGroup? group = null)
+    private static ListingData MapListingToDto(ClearanceListing listing) => new()
     {
-        var dto = new ListingData
-        {
-            Id = listing.Id.ToString(),
-            GroceryId = listing.GroceryId.ToString(),
-            GroceryName = listing.Grocery?.Name ?? "",
-            GroceryProfilePictureUrl = listing.Grocery?.ProfilePictureUrl,
-            Title = listing.ProductName,
-            Description = listing.Notes ?? "",
-            Category = listing.Category,
-            Quantity = (int)listing.Quantity,
-            Unit = listing.Unit,
-            ExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
-            PickupTimeStart = listing.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",
-            PickupTimeEnd = listing.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
-            Status = listing.Status.ToString().ToLower(),
-            ImageUrl = listing.PhotoUrl,
-            Location = listing.Grocery?.Location ?? "",
-            CreatedAt = listing.CreatedAt.ToString("o"),
-            GroupId = listing.GroupId?.ToString(),
-            SplitReason = listing.SplitReason,
-            RelatedRequestId = listing.RelatedRequestId?.ToString(),
-            SplitIndex = listing.SplitIndex,
-            ViewCount = listing.ViewCount,
-            ImageUrls = ParseImageUrls(listing.PhotoUrl),
-            GroceryLatitude = listing.Grocery?.Latitude,
-            GroceryLongitude = listing.Grocery?.Longitude,
-            GroceryHours = listing.Grocery?.Hours
-        };
-
-        if (group != null)
-        {
-            dto.GroupSummary = new ListingGroupSummary
-            {
-                GroupId = group.Id.ToString(),
-                OriginalQuantity = (int)group.OriginalQuantity,
-                TotalReserved = (int)group.TotalReserved,
-                TotalAvailable = (int)group.TotalAvailable,
-                TotalRemoved = (int)group.TotalRemoved,
-                ChildListingsCount = group.ChildListings?.Count ?? 0
-            };
-        }
-
-        return dto;
-    }
+        Id = listing.Id.ToString(),
+        GroceryId = listing.GroceryId.ToString(),
+        GroceryName = listing.Grocery?.Name ?? "",
+        GroceryProfilePictureUrl = listing.Grocery?.ProfilePictureUrl,
+        Title = listing.ProductName,
+        Description = listing.Notes ?? "",
+        Category = listing.Category,
+        Quantity = (int)listing.Quantity,
+        Unit = listing.Unit,
+        ExpiryDate = listing.ExpirationDate?.ToString("yyyy-MM-dd") ?? "",
+        PickupTimeStart = listing.PickupTimeStart?.ToString(@"hh\:mm") ?? "09:00",
+        PickupTimeEnd = listing.PickupTimeEnd?.ToString(@"hh\:mm") ?? "17:00",
+        Status = listing.Status.ToString().ToLower(),
+        ImageUrl = listing.PhotoUrl,
+        Location = listing.Grocery?.Location ?? "",
+        CreatedAt = listing.CreatedAt.ToString("o"),
+        ViewCount = listing.ViewCount,
+        GroceryLatitude = listing.Grocery?.Latitude,
+        GroceryLongitude = listing.Grocery?.Longitude,
+        GroceryHours = listing.Grocery?.Hours
+    };
 
     // ── GetAllListings with geospatial filter ────────────────────────────────
     [HttpGet]
@@ -91,7 +68,6 @@ public class ListingsController : ControllerBase
     {
         var query = _context.ClearanceListings
             .Include(l => l.Grocery)
-            .Include(l => l.Group)
             .Where(l => l.Status != ListingStatus.Archived)
             .AsQueryable();
 
@@ -134,7 +110,7 @@ public class ListingsController : ControllerBase
         // Map to DTOs and calculate distance if location provided
         var listingDtos = listings.Select(l =>
         {
-            var dto = MapListingToDto(l, l.Group);
+            var dto = MapListingToDto(l);
 
             if (lat.HasValue && lng.HasValue &&
                 l.Grocery?.Latitude != null && l.Grocery?.Longitude != null)
@@ -198,23 +174,6 @@ public class ListingsController : ControllerBase
 
     private static double ToRadians(double degrees) => degrees * Math.PI / 180;
 
-    private static List<string> ParseImageUrls(string? photoUrl)
-    {
-        if (string.IsNullOrEmpty(photoUrl))
-            return new List<string>();
-
-        if (!photoUrl.StartsWith("["))
-            return new List<string> { photoUrl };
-
-        try
-        {
-            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(photoUrl) ?? new List<string>();
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return new List<string>();
-        }
-    }
 
     [HttpGet("grocery/my")]
     [Authorize]
@@ -237,7 +196,6 @@ public class ListingsController : ControllerBase
 
         var listings = await baseQuery
             .Include(l => l.Grocery)
-            .Include(l => l.Group)
             .OrderByDescending(l => l.CreatedAt)
             .Skip((clampedPage - 1) * clampedPageSize)
             .Take(clampedPageSize)
@@ -252,7 +210,7 @@ public class ListingsController : ControllerBase
 
         var listingDtos = listings.Select(l =>
         {
-            var dto = MapListingToDto(l, l.Group);
+            var dto = MapListingToDto(l);
             dto.RequestCount = requestCounts.GetValueOrDefault(l.Id, 0);
             return dto;
         }).ToList();
@@ -296,18 +254,6 @@ public class ListingsController : ControllerBase
         TimeSpan? pickupTimeStart = profilePickupWindow?.Start;
         TimeSpan? pickupTimeEnd = profilePickupWindow?.End;
 
-        if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
-            TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
-        {
-            pickupTimeStart = startTime;
-        }
-
-        if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
-            TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
-        {
-            pickupTimeEnd = endTime;
-        }
-
         var groupId = Guid.NewGuid();
         var listingId = Guid.NewGuid();
 
@@ -316,15 +262,6 @@ public class ListingsController : ControllerBase
             Id = groupId,
             OriginalListingId = listingId,
             GroceryId = userId,
-            ProductName = request.Title,
-            Category = request.Category.ToUpper(),
-            Unit = request.Unit,
-            Notes = request.Description,
-            PhotoUrl = request.ImageUrl,
-            ExpirationDate = expiryDateUtc,
-            ClearanceDeadline = clearanceDeadlineUtc,
-            PickupTimeStart = pickupTimeStart,
-            PickupTimeEnd = pickupTimeEnd,
             OriginalQuantity = request.Quantity,
             TotalAvailable = request.Quantity,
             TotalReserved = 0,
@@ -334,13 +271,6 @@ public class ListingsController : ControllerBase
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
-
-        // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl
-        string? resolvedPhotoUrl = null;
-        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
-            resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
-        else if (!string.IsNullOrEmpty(request.ImageUrl))
-            resolvedPhotoUrl = request.ImageUrl;
 
         var listing = new ClearanceListing
         {
@@ -355,11 +285,9 @@ public class ListingsController : ControllerBase
             ClearanceDeadline = clearanceDeadlineUtc,
             Notes = request.Description,
             Status = ListingStatus.Open,
-            PhotoUrl = resolvedPhotoUrl,
+            PhotoUrl = string.IsNullOrEmpty(request.ImageUrl) ? null : request.ImageUrl,
             PickupTimeStart = pickupTimeStart,
             PickupTimeEnd = pickupTimeEnd,
-            SplitReason = "new_listing",
-            SplitIndex = 0,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -370,7 +298,7 @@ public class ListingsController : ControllerBase
         await _context.SaveChangesAsync();
 
         listing.Grocery = grocery;
-        var listingDto = MapListingToDto(listing, listingGroup);
+        var listingDto = MapListingToDto(listing);
 
         await _listingNotificationService.NotifyListingCreatedAsync(listingDto);
         await _pushNotificationService.SendNewListingNotificationToAllNGOs(listingDto);
@@ -391,7 +319,6 @@ public class ListingsController : ControllerBase
     {
         var listing = await _context.ClearanceListings
             .Include(l => l.Grocery)
-            .Include(l => l.Group)
             .FirstOrDefaultAsync(l => l.Id == id);
 
         if (listing == null)
@@ -404,7 +331,7 @@ public class ListingsController : ControllerBase
             return NotFound(new { message = "Listing not found" });
         }
 
-        var listingDto = MapListingToDto(listing, listing.Group);
+        var listingDto = MapListingToDto(listing);
 
         return Ok(new ListingResponse
         {
@@ -448,13 +375,6 @@ public class ListingsController : ControllerBase
             item.OriginalListingId = null;
         }
 
-        var splitChildren = await _context.ClearanceListings
-            .Where(l => l.SplitFromListingId == listing.Id)
-            .ToListAsync();
-        foreach (var child in splitChildren)
-        {
-            child.SplitFromListingId = null;
-        }
 
         if (listing.GroupId.HasValue && listing.Group != null)
         {
@@ -489,7 +409,7 @@ public class ListingsController : ControllerBase
 
         await _listingNotificationService.NotifyListingDeletedAsync(deletedListingId);
 
-        var listingData = MapListingToDto(listing, listing.Group);
+        var listingData = MapListingToDto(listing);
 
         return Ok(new ListingResponse
         {
@@ -533,7 +453,7 @@ public class ListingsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var listingDto = MapListingToDto(listing, listing.Group);
+        var listingDto = MapListingToDto(listing);
         await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
 
         return Ok(new ListingResponse
@@ -578,7 +498,7 @@ public class ListingsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var listingDto = MapListingToDto(listing, listing.Group);
+        var listingDto = MapListingToDto(listing);
         await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
 
         return Ok(new ListingResponse
@@ -633,28 +553,8 @@ public class ListingsController : ControllerBase
         var expiryDateUtc = DateTime.SpecifyKind(expiryDate, DateTimeKind.Utc);
         var clearanceDeadlineUtc = expiryDateUtc.AddDays(1);
 
-        var pickupTimeStart = listing.PickupTimeStart;
-        var pickupTimeEnd = listing.PickupTimeEnd;
-
-        if (!string.IsNullOrEmpty(request.PickupTimeStart) &&
-            TimeSpan.TryParse(request.PickupTimeStart, out var startTime))
-        {
-            pickupTimeStart = startTime;
-        }
-
-        if (!string.IsNullOrEmpty(request.PickupTimeEnd) &&
-            TimeSpan.TryParse(request.PickupTimeEnd, out var endTime))
-        {
-            pickupTimeEnd = endTime;
-        }
-
-        // Resolve photo storage: prefer ImageUrls array, fall back to single ImageUrl,
-        // fall back to whatever the listing already had if neither was sent.
-        string? resolvedPhotoUrl = listing.PhotoUrl;
-        if (request.ImageUrls != null && request.ImageUrls.Count > 0)
-            resolvedPhotoUrl = System.Text.Json.JsonSerializer.Serialize(request.ImageUrls.Take(5).ToList());
-        else if (!string.IsNullOrEmpty(request.ImageUrl))
-            resolvedPhotoUrl = request.ImageUrl;
+        // Keep the listing's photo when the edit didn't send a new one.
+        var resolvedPhotoUrl = string.IsNullOrEmpty(request.ImageUrl) ? listing.PhotoUrl : request.ImageUrl;
 
         var oldQuantity = (int)listing.Quantity;
         var quantityDifference = request.Quantity - oldQuantity;
@@ -667,8 +567,6 @@ public class ListingsController : ControllerBase
         listing.ClearanceDeadline = clearanceDeadlineUtc;
         listing.Notes = request.Description;
         listing.PhotoUrl = resolvedPhotoUrl;
-        listing.PickupTimeStart = pickupTimeStart;
-        listing.PickupTimeEnd = pickupTimeEnd;
         listing.UpdatedAt = DateTime.UtcNow;
 
         if (listing.GroupId.HasValue && listing.Group != null && quantityDifference != 0)
@@ -679,7 +577,7 @@ public class ListingsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var listingDto = MapListingToDto(listing, listing.Group);
+        var listingDto = MapListingToDto(listing);
 
         await _listingNotificationService.NotifyListingUpdatedAsync(listingDto);
 
@@ -741,7 +639,7 @@ public class ListingsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        var listingDto = MapListingToDto(listing, listing.Group);
+        var listingDto = MapListingToDto(listing);
 
         await _listingNotificationService.NotifyListingQuantityChangedAsync(
             listingDto,

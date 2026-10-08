@@ -25,22 +25,12 @@ data class Listing(
     val location: String,
     val createdAt: String,
 
-    // ListingGroup tracking fields
-    val groupId: String? = null,
-    val splitReason: String = "new_listing",
-    val relatedRequestId: String? = null,
-    val splitIndex: Int = 0,
-
-    // OPTIONAL: Group summary for UI context
-    val groupSummary: ListingGroupSummary? = null,
-
     // ── Distance from NGO location ───────────────────────────────────────────
     val distanceKm: Double? = null,
 
     // ── Analytics ────────────────────────────────────────────────────────────
     val viewCount: Int = 0,
     val requestCount: Int = 0,
-    val imageUrls: List<String> = emptyList(),
 
     // Grocery store coordinates for map pins
     val groceryLatitude: Double? = null,
@@ -48,17 +38,6 @@ data class Listing(
 
     // Operating hours — live from grocery's profile (not stored on listing)
     val groceryHours: String? = null
-)
-
-@SuppressLint("UnsafeOptInUsageError")
-@Serializable
-data class ListingGroupSummary(
-    val groupId: String,
-    val originalQuantity: Int,
-    val totalReserved: Int,
-    val totalAvailable: Int,
-    val totalRemoved: Int = 0,
-    val childListingsCount: Int
 )
 
 @Serializable

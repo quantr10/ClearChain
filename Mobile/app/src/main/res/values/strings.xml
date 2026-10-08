@@ -227,7 +227,6 @@
     <string name="cart_decrease">Decrease</string>
     <string name="cart_increase">Increase</string>
     <string name="cart_remove">Remove</string>
-    <string name="cart_checkout_missing_fields">Pickup date and time are required</string>
     <string name="cart_pickup_request_created">Pickup request created</string>
 
     <!-- ── Splash ── -->
@@ -396,8 +395,6 @@
     <string name="error_failed_load_listing">Failed to load listing</string>
 
     <!-- My Requests -->
-    <string name="uploading_photo">Uploading photo…</string>
-    <string name="uploading_photo_attempt">Uploading photo… (Attempt %1$d/3)</string>
 
     <!-- Profile -->
     <string name="error_failed_load_profile">Failed to load profile</string>

@@ -10,8 +10,7 @@ data class MessageData(
     val senderName: String,
     val content: String,
     val isRead: Boolean = false,
-    val sentAt: String,
-    val readAt: String? = null
+    val sentAt: String
 )
 
 @Serializable

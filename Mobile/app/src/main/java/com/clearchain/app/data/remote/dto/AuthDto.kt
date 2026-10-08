@@ -48,8 +48,6 @@ data class MeData(
 data class AuthData(
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String,
-    val expiresIn: Int,
     val user: OrganizationDto
 )
 
@@ -151,9 +149,7 @@ fun AuthData.toDomain(): Pair<Organization, AuthTokens> {
     val organization = user.toDomain()
     val tokens = AuthTokens(
         accessToken = accessToken,
-        refreshToken = refreshToken,
-        expiresIn = expiresIn,
-        tokenType = tokenType
+        refreshToken = refreshToken
     )
     return Pair(organization, tokens)
 }

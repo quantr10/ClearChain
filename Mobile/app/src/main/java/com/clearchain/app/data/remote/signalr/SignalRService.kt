@@ -555,10 +555,8 @@ data class InventoryDistributedNotification(
 
 // Admin notifications
 data class OrganizationRegisteredNotification(
-    val organizationId: String,
     val name: String,
     val type: String,
-    val email: String,
     val location: String,
     val registeredAt: String
 )

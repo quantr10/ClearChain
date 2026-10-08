@@ -6,8 +6,6 @@ data class AppNotification(
     val title: String,
     val body: String,
     val relatedId: String?,
-    val relatedType: String?,
     val isRead: Boolean,
-    val createdAt: String,
-    val readAt: String?
+    val createdAt: String
 )

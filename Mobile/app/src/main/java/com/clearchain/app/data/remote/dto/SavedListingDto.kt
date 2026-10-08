@@ -9,6 +9,5 @@ data class SavedListingIdsResponse(
 
 @Serializable
 data class SavedListingToggleResponse(
-    val message: String = "",
-    val saved: Boolean = false
+    val message: String = ""
 )

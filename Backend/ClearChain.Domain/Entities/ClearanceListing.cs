@@ -21,12 +21,6 @@ public class ClearanceListing
 
     public ListingStatus Status { get; set; } = ListingStatus.Open;
 
-    // NEW: Tracking split information
-    public string SplitReason { get; set; } = "new_listing";  // new_listing, partial_request, merge, cancel_restore
-    public Guid? RelatedRequestId { get; set; }  // If RESERVED
-    public Guid? SplitFromListingId { get; set; }  // Parent listing ID if split
-    public int SplitIndex { get; set; } = 0;  // Order in group
-
     public int ViewCount { get; set; } = 0;
 
     public DateTime CreatedAt { get; set; }

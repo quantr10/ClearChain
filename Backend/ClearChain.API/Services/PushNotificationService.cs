@@ -10,7 +10,6 @@ using ClearChain.API.DTOs.Admin;
 using ClearChain.API.DTOs.Inventory;
 using ClearChain.API.DTOs.Notifications;
 using ClearChain.API.Hubs;
-using ClearChain.Domain.Entities;
 
 // FirebaseAdmin.Messaging also defines a Notification; alias the entity so the two never blur.
 using NotificationRow = ClearChain.Domain.Entities.Notification;
@@ -427,7 +426,7 @@ public class PushNotificationService : IPushNotificationService
             return;
         }
 
-        var (relatedId, relatedType) = DeriveRelation(data);
+        var relatedId = DeriveRelatedId(data);
         var type = data.GetValueOrDefault("type", "general");
         var now = DateTime.UtcNow;
 
@@ -439,7 +438,6 @@ public class PushNotificationService : IPushNotificationService
             Title = title,
             Body = body,
             RelatedId = relatedId,
-            RelatedType = relatedType,
             IsRead = false,
             CreatedAt = now
         }).ToList();
@@ -457,7 +455,7 @@ public class PushNotificationService : IPushNotificationService
 
         foreach (var row in rows)
         {
-            await BroadcastAsync(row.RecipientId, MapToDto(row));
+            await BroadcastAsync(row.RecipientId, NotificationDto.From(row));
         }
 
         var tokens = await _context.FCMTokens
@@ -479,7 +477,7 @@ public class PushNotificationService : IPushNotificationService
     {
         try
         {
-            var (relatedId, relatedType) = DeriveRelation(data);
+            var relatedId = DeriveRelatedId(data);
 
             var notification = new NotificationRow
             {
@@ -489,7 +487,6 @@ public class PushNotificationService : IPushNotificationService
                 Title = title,
                 Body = body,
                 RelatedId = relatedId,
-                RelatedType = relatedType,
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -497,7 +494,7 @@ public class PushNotificationService : IPushNotificationService
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
 
-            return MapToDto(notification);
+            return NotificationDto.From(notification);
         }
         catch (Exception ex)
         {
@@ -656,31 +653,17 @@ public class PushNotificationService : IPushNotificationService
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static NotificationDto MapToDto(NotificationRow n) => new()
-    {
-        Id = n.Id.ToString(),
-        Type = n.Type,
-        Title = n.Title,
-        Body = n.Body,
-        RelatedId = n.RelatedId,
-        RelatedType = n.RelatedType,
-        IsRead = n.IsRead,
-        CreatedAt = n.CreatedAt.ToString("o"),
-        ReadAt = n.ReadAt?.ToString("o")
-    };
-
     /// <summary>
-    /// Maps the push payload's entity key onto the inbox row's relation columns, so a
-    /// notification opened from the inbox deep-links the same way as one opened from the tray.
+    /// Maps the push payload's entity key onto the inbox row's RelatedId, so a notification
+    /// opened from the inbox deep-links the same way as one opened from the tray.
     /// </summary>
-    private static (string? RelatedId, string? RelatedType) DeriveRelation(
-        IReadOnlyDictionary<string, string> data)
+    private static string? DeriveRelatedId(IReadOnlyDictionary<string, string> data)
     {
-        if (data.TryGetValue("requestId", out var requestId)) return (requestId, "pickup_request");
-        if (data.TryGetValue("listingId", out var listingId)) return (listingId, "listing");
-        if (data.TryGetValue("inventoryId", out var inventoryId)) return (inventoryId, "inventory");
-        if (data.TryGetValue("organizationId", out var orgId)) return (orgId, "organization");
-        return (null, null);
+        foreach (var key in new[] { "requestId", "listingId", "inventoryId", "organizationId" })
+        {
+            if (data.TryGetValue(key, out var id)) return id;
+        }
+        return null;
     }
 
     private static string DashboardFor(string organizationType) => organizationType.ToLower() switch

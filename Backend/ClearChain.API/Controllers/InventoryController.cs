@@ -1,5 +1,4 @@
 using ClearChain.Infrastructure.Data;
-using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
 using ClearChain.API.Common;
 using ClearChain.API.DTOs.Inventory;
@@ -41,8 +40,7 @@ public class InventoryController : ControllerBase
             ReceivedAt = item.ReceivedAt.ToString("o"),
             DistributedAt = item.DistributedAt?.ToString("o"),
             PickupRequestId = item.PickupRequestId.ToString(),
-            PhotoUrl = item.PhotoUrl,
-            Notes = item.Notes
+            PhotoUrl = item.PhotoUrl
         };
     }
 

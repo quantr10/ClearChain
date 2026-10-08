@@ -158,11 +158,6 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PickupRequestItem>()
             .HasIndex(i => i.ListingGroupId);
 
-        modelBuilder.Entity<ClearanceListing>()
-            .HasOne<ClearanceListing>()
-            .WithMany()
-            .HasForeignKey(l => l.SplitFromListingId)
-            .OnDelete(DeleteBehavior.SetNull);
 
         // Indexes
         modelBuilder.Entity<Organization>()
