@@ -4,21 +4,16 @@ import android.util.Log
 import com.clearchain.app.data.local.database.ClearChainDatabase
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.repository.AuthRepository
-import com.clearchain.app.domain.usecase.fcm.UnregisterFCMTokenUseCase
 import javax.inject.Inject
 
 class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,
-    private val unregisterFCMTokenUseCase: UnregisterFCMTokenUseCase,
     private val signalRService: SignalRService,
     private val database: ClearChainDatabase
 ) {
     suspend operator fun invoke(): Result<Unit> {
-        // Order matters: the unregister endpoint is authenticated, so it has to go out while the
-        // session is still valid. Doing it after logout would silently 401 and leave this device
-        // subscribed to the account being left.
-        unregisterFCMTokenUseCase()
-
+        // The logout call sends this device's FCM token too, and the server drops it along with
+        // the session, so the next account signed in here doesn't inherit our push.
         val result = authRepository.logout()
 
         runCatching { signalRService.disconnect() }
