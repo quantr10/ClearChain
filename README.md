@@ -38,7 +38,7 @@ Backend/
   ClearChain.API/             Controllers, DTOs, services, hubs, jobs, middleware
   ClearChain.Domain/          Entities, enums, constants
   ClearChain.Infrastructure/  DbContext and EF Core migrations
-  ClearChain.Tests/           xUnit test project (no tests written yet)
+  ClearChain.Tests/           xUnit tests
 
 Mobile/
   app/src/main/java/com/clearchain/app/
@@ -47,6 +47,7 @@ Mobile/
     presentation/ Compose screens, ViewModels, navigation, shared components
     ui/theme/     Colors, typography, spacing tokens
     util/         Shared helpers
+  app/src/test/   JVM unit tests
 ```
 
 ## Getting started
@@ -55,7 +56,7 @@ Mobile/
 
 ```bash
 cd Backend/ClearChain.API
-# create a .env file with the variables listed below
+cp .env.example .env   # then fill in the values
 dotnet restore
 dotnet run
 ```
@@ -77,17 +78,22 @@ cd Mobile
 
 ### Backend (`.env`)
 
-```env
-DATABASE_URL=your_postgresql_connection_string
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_KEY=your_service_key
-JWT_SECRET_KEY=your_jwt_secret
-JWT_ISSUER=clearchain-api
-JWT_AUDIENCE=clearchain-mobile
-JWT_EXPIRY_MINUTES=60
-REFRESH_TOKEN_EXPIRY_DAYS=7
-```
+`Backend/ClearChain.API/.env.example` lists every variable the API reads. Copy it to
+`.env` next to it and fill in the values:
+
+| Variables | Used for | If missing |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL connection | API won't start |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Image and document storage | API won't start |
+| `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE` | Signing sign-in tokens | API won't start |
+| `JWT_EXPIRY_MINUTES`, `REFRESH_TOKEN_EXPIRY_DAYS` | Token lifetimes | Defaults to 60 minutes and 7 days |
+| `AZURE_VISION_ENDPOINT`, `AZURE_VISION_KEY` | Food image analysis | API won't start |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Verification and password-reset emails | Emails are skipped (logged as a warning) |
+| `ALLOWED_ORIGINS` | CORS for browser clients (comma-separated) | Only `http://localhost:3000` is allowed |
+
+Push notifications read `firebase-adminsdk.json` from the API's working directory rather
+than an environment variable. Without it, push is disabled and notifications still arrive
+over SignalR.
 
 ### Android (`local.properties`)
 
@@ -111,7 +117,7 @@ Endpoints are grouped by controller under `/api`:
 
 | Route | Purpose |
 | --- | --- |
-| `/api/auth` | Register, login, refresh, logout, email verification, password change |
+| `/api/auth` | Register, login, refresh, logout, email verification, password change and reset |
 | `/api/organizations` | Profiles, verification documents, public profiles, stats |
 | `/api/listings` | Clearance listing CRUD, geospatial search, archive/restore |
 | `/api/pickuprequests` | Request lifecycle: create, approve, reject, ready, picked up |
@@ -121,7 +127,6 @@ Endpoints are grouped by controller under `/api`:
 | `/api/messages` | Per-pickup conversations |
 | `/api/notifications` | Notification inbox |
 | `/api/reviews` | Post-pickup reviews |
-| `/api/reports` | Content reports |
 | `/api/disputes` | Disputes on completed pickups |
 | `/api/imageanalysis` | AI food image analysis and upload |
 | `/api/admin` | Verification queue, statistics, transactions, disputes |
@@ -209,8 +214,8 @@ one, and a number of Compose argument lists run well past 120 columns.
 ## Testing
 
 ```bash
-cd Backend && dotnet test     # xUnit project is set up but currently has no tests
-cd Mobile  && ./gradlew test  # only the generated example tests exist
+cd Backend && dotnet test
+cd Mobile  && ./gradlew test
 ```
 
 ## License
