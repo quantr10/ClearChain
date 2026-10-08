@@ -79,8 +79,10 @@ fun AccountDetailScreen(
                     user == null -> {
                         EmptyState(
                             icon = Icons.Default.ErrorOutline,
-                            title = stringResource(R.string.no_data),
-                            onAction = {}
+                            title = stringResource(R.string.error_generic),
+                            subtitle = state.error,
+                            actionLabel = stringResource(R.string.retry),
+                            onAction = { viewModel.onEvent(ProfileEvent.Refresh) }
                         )
                     }
 
