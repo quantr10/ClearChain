@@ -11,6 +11,9 @@ public class AdminStatsOverviewData
     public int TotalOrganizations { get; set; }
     public int TotalGroceries { get; set; }
     public int TotalNgos { get; set; }
+    /// <summary>Of the groceries and NGOs above, those still awaiting verification.</summary>
+    public int PendingGroceries { get; set; }
+    public int PendingNgos { get; set; }
 
     public int ActiveListings { get; set; }
     public int ReservedListings { get; set; }

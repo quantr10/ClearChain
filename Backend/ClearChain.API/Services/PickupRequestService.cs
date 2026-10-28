@@ -423,7 +423,7 @@ public class PickupRequestService : IPickupRequestService
         {
             if (string.IsNullOrEmpty(data.ListingTitle)) data.ListingTitle = listing.ProductName;
             if (string.IsNullOrEmpty(data.ListingCategory)) data.ListingCategory = listing.Category;
-            data.ListingDescription = listing.Notes;
+            data.ListingDescription = listing.Description;
         }
 
         return new PickupRequestServiceResult(true, Data: data);

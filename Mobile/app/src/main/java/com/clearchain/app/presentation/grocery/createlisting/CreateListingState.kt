@@ -6,6 +6,7 @@ import com.clearchain.app.data.remote.dto.FoodAnalysisData
 data class CreateListingState(
     val title: String = "",
     val description: String = "",
+    val notes: String = "",
     val category: String = "FRUITS",
     val quantity: String = "",
     val unit: String = "kg",

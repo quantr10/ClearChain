@@ -8,6 +8,7 @@ import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,17 +42,9 @@ class AdminDashboardViewModel @Inject constructor(
 
     private fun setupSignalR() {
         // This screen only listens for the events themselves; connection state is not surfaced.
+        // Each event the admin should know about reloads the dashboard's figures and alerts.
         viewModelScope.launch {
             signalRService.newOrganizationRegistered.collect { notification ->
-                val activity = AdminActivity(
-                    id = UUID.randomUUID().toString(),
-                    type = AdminActivityType.NEW_ORGANIZATION,
-                    title = context.getString(R.string.activity_title_new_org, notification.type),
-                    description = context.getString(R.string.activity_desc_new_org, notification.name, notification.location),
-                    timestamp = notification.registeredAt,
-                    icon = if (notification.type.equals("NGO", ignoreCase = true)) "🏢" else "🏪"
-                )
-                _state.update { it.copy(recentActivities = listOf(activity) + it.recentActivities.take(19)) }
                 loadStats()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_admin_notification, notification.type, notification.name)))
             }
@@ -59,30 +52,23 @@ class AdminDashboardViewModel @Inject constructor(
 
         viewModelScope.launch {
             signalRService.transactionCompleted.collect { notification ->
-                val activity = AdminActivity(
-                    id = UUID.randomUUID().toString(),
-                    type = AdminActivityType.TRANSACTION_COMPLETED,
-                    title = context.getString(R.string.activity_title_transaction),
-                    description = context.getString(R.string.activity_desc_transaction, notification.ngoName, notification.quantity.toString(), notification.unit, notification.groceryName),
-                    timestamp = notification.completedAt,
-                    icon = "✅"
-                )
-                _state.update { it.copy(recentActivities = listOf(activity) + it.recentActivities.take(19)) }
                 loadStats()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_transaction, notification.productName)))
             }
         }
 
         viewModelScope.launch {
+            signalRService.newDisputeCreated.collect { notification ->
+                loadStats()
+                val reason = NgoDisputeReason.fromKey(notification.reason)?.let { context.getString(it.labelRes) }
+                    ?: notification.reasonLabel
+                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_new_dispute, reason, notification.ngoName)))
+            }
+        }
+
+        // The hourly stats push only refreshes the figures; it is not activity and says nothing.
+        viewModelScope.launch {
             signalRService.statsUpdated.collect { stats ->
-                val activity = AdminActivity(
-                    id = UUID.randomUUID().toString(),
-                    type = AdminActivityType.STATS_UPDATED,
-                    title = context.getString(R.string.activity_title_stats_updated),
-                    description = context.getString(R.string.activity_desc_stats, stats.totalDonations.toString(), stats.completedToday.toString()),
-                    timestamp = stats.updatedAt,
-                    icon = "📊"
-                )
                 _state.update {
                     it.copy(
                         // Merged into the existing stats rather than replaced — this push
@@ -99,8 +85,7 @@ class AdminDashboardViewModel @Inject constructor(
                             totalPickupRequests = stats.totalDonations,
                             pendingRequests = stats.pendingRequests,
                             completedRequests = stats.completedToday
-                        ),
-                        recentActivities = listOf(activity) + it.recentActivities.take(19)
+                        )
                     )
                 }
             }
@@ -150,8 +135,8 @@ class AdminDashboardViewModel @Inject constructor(
     }
 
     /** Reloads every dashboard section concurrently and suspends until all have settled,
-     *  so pull-to-refresh keeps its spinner until the statistics, alert feed and user
-     *  growth chart are actually up to date. Returns whether every section loaded; any
+     *  so pull-to-refresh keeps its spinner until the statistics and alert feed are
+     *  actually up to date. Returns whether every section loaded; any
      *  failure is reported once, the same way the NGO and grocery dashboards do it — an
      *  empty alert feed must not pass for "no alerts".
      *

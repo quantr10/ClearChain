@@ -265,14 +265,7 @@ private fun VerificationFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,8 +285,7 @@ private fun VerificationFilterSheet(
             }
 
             // Organization type
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_org_type), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            FilterSection(title = stringResource(R.string.filter_org_type)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(null to stringResource(R.string.filter_all), "GROCERY" to "Grocery", "NGO" to "NGO")
                         .forEach { (type, label) ->

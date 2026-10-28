@@ -52,6 +52,10 @@ class CreateListingViewModel @Inject constructor(
                 _state.update { it.copy(description = event.description, descriptionError = null) }
             }
 
+            is CreateListingEvent.NotesChanged -> {
+                _state.update { it.copy(notes = event.notes) }
+            }
+
             is CreateListingEvent.CategoryChanged -> {
                 _state.update {
                     it.copy(
@@ -168,6 +172,7 @@ class CreateListingViewModel @Inject constructor(
             val result = createListingUseCase(
                 title = currentState.title,
                 description = currentState.description,
+                notes = currentState.notes,
                 category = currentState.category,
                 quantity = currentState.quantity.toInt(),
                 unit = currentState.unit,
@@ -277,7 +282,8 @@ class CreateListingViewModel @Inject constructor(
         _state.update {
             it.copy(
                 title = analysis.title,
-                description = analysis.notes,
+                description = analysis.description,
+                notes = analysis.notes,
                 category = analysis.category.uppercase(),
                 expiryDate = analysis.expiryDate.take(10)
             )

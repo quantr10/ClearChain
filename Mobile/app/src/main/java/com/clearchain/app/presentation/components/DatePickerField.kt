@@ -33,6 +33,7 @@ fun DatePickerField(
     onDateSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: String = "",
+    placeholder: String = "",
     isError: Boolean = false,
     errorMessage: String? = null,
     enabled: Boolean = true,
@@ -40,7 +41,6 @@ fun DatePickerField(
     onClearDate: (() -> Unit)? = null
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(selectableDates = selectableDates)
 
     val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
     val borderWidth = 1.dp
@@ -79,7 +79,7 @@ fun DatePickerField(
             ) {
                 Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = iconTint)
                 Text(
-                    text = value,
+                    text = value.ifBlank { placeholder },
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (value.isNotBlank()) {
@@ -114,6 +114,16 @@ fun DatePickerField(
     }
 
     if (showPicker) {
+        // Built when the dialog opens, not once per field: the selectable days can change
+        // while the field is on screen (a range's other end moves, data arrives), and the
+        // calendar should open on the date the field currently shows.
+        val initialMillis = runCatching {
+            LocalDate.parse(value.take(10)).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+        }.getOrNull()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis,
+            selectableDates = selectableDates
+        )
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {

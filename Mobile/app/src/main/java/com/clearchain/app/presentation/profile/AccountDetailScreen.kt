@@ -7,7 +7,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -146,35 +145,16 @@ fun AccountDetailScreen(
                                     )
                                     if (addressParts.isNotEmpty()) {
                                         val fullAddress = addressParts.joinToString(", ")
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        CompactAccountDetailRow(
+                                            icon = Icons.Default.Home,
+                                            label = "",
+                                            value = fullAddress,
+                                            isAction = true,
+                                            onClickLabel = stringResource(R.string.action_get_directions)
                                         ) {
-                                            Icon(
-                                                Icons.Default.Home,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                fullAddress,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                            ClearChainActionIconButton(
-                                                icon = Icons.Default.Navigation,
-                                                contentDescription = stringResource(R.string.action_get_directions),
-                                                onClick = {
-                                                    openInGoogleMaps(
-                                                        context,
-                                                        mapsQuery(user.latitude, user.longitude, fullAddress)
-                                                    )
-                                                }
+                                            openInGoogleMaps(
+                                                context,
+                                                mapsQuery(user.latitude, user.longitude, fullAddress)
                                             )
                                         }
                                     } else {
@@ -475,10 +455,11 @@ private fun CompactAccountDetailRow(
     value: String,
     enabled: Boolean = true,
     isAction: Boolean = false,
+    onClickLabel: String? = null,
     onClick: (() -> Unit)? = null
 ) {
     val actionModifier = if (enabled && onClick != null) {
-        Modifier.clickable(onClick = onClick)
+        Modifier.clickable(onClickLabel = onClickLabel, onClick = onClick)
     } else {
         Modifier
     }
@@ -516,15 +497,9 @@ private fun CompactAccountDetailRow(
                 text = value,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = valueColor
-            )
-        }
-        if (isAction && enabled) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                color = valueColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -8,6 +8,7 @@ import com.clearchain.app.data.remote.api.AdminApi
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.domain.model.hasItemExpiringBy
 import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.util.DownloadsExport
@@ -75,42 +76,6 @@ class TransactionsViewModel @Inject constructor(
                 applyFilters()
             }
 
-            is TransactionsEvent.DatePresetSelected -> {
-                val today = LocalDate.now()
-                val (start, end) = when (event.preset) {
-                    "TODAY" -> today.toString() to today.toString()
-                    "WEEK" -> today.minusDays(6).toString() to today.toString()
-                    "MONTH" -> today.withDayOfMonth(1).toString() to today.toString()
-                    else -> null to null
-                }
-                _state.update {
-                    it.copy(
-                        selectedDatePreset = event.preset,
-                        filterStartDate = start,
-                        filterEndDate = end
-                    )
-                }
-                applyFilters()
-            }
-
-            is TransactionsEvent.ShowDatePicker ->
-                _state.update { it.copy(showDatePickerDialog = true, datePickerForStart = event.forStart) }
-
-            TransactionsEvent.HideDatePicker ->
-                _state.update { it.copy(showDatePickerDialog = false) }
-
-            is TransactionsEvent.CustomDateSelected -> {
-                val isStart = _state.value.datePickerForStart
-                _state.update { s ->
-                    if (isStart) {
-                        s.copy(filterStartDate = event.dateStr, selectedDatePreset = "CUSTOM", showDatePickerDialog = false)
-                    } else {
-                        s.copy(filterEndDate = event.dateStr, showDatePickerDialog = false)
-                    }
-                }
-                applyFilters()
-            }
-
             TransactionsEvent.ExportCsv -> exportCsv()
 
             TransactionsEvent.ShowFilterSheet ->
@@ -118,6 +83,41 @@ class TransactionsViewModel @Inject constructor(
 
             TransactionsEvent.HideFilterSheet ->
                 _state.update { it.copy(showFilterSheet = false) }
+
+            is TransactionsEvent.ToggleDisputeFilter -> {
+                _state.update {
+                    val selected = it.filterDisputes
+                    it.copy(filterDisputes = if (event.filter in selected) selected - event.filter else selected + event.filter)
+                }
+                applyFilters()
+            }
+
+            is TransactionsEvent.FilterCategoryChanged -> {
+                _state.update { it.copy(filterCategory = event.category) }
+                applyFilters()
+            }
+
+            is TransactionsEvent.FilterPickupDateChanged -> {
+                _state.update { it.copy(filterPickupDate = event.date) }
+                applyFilters()
+            }
+
+            is TransactionsEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
+                applyFilters()
+            }
+
+            TransactionsEvent.ClearAdvancedFilters -> {
+                _state.update {
+                    it.copy(
+                        filterDisputes = emptySet(),
+                        filterCategory = null,
+                        filterPickupDate = null,
+                        filterExpiresBy = null
+                    )
+                }
+                applyFilters()
+            }
         }
     }
 
@@ -227,14 +227,23 @@ class TransactionsViewModel @Inject constructor(
             filtered = filtered.filter { it.status.name == status }
         }
 
-        // Filter by date range
-        val start = currentState.filterStartDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        val end = currentState.filterEndDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        if (start != null || end != null) {
-            filtered = filtered.filter { t ->
-                val date = runCatching { LocalDate.parse(t.createdAt.take(10)) }.getOrNull() ?: return@filter true
-                (start == null || !date.isBefore(start)) && (end == null || !date.isAfter(end))
-            }
+        // Both on keeps every disputed transaction; none on skips this filter.
+        if (currentState.filterDisputes.isNotEmpty()) {
+            filtered = filtered.filter { t -> currentState.filterDisputes.any { it.matches(t.disputeStatus) } }
+        }
+
+        currentState.filterCategory?.let { category ->
+            filtered = filtered.filter { it.listingCategory == category }
+        }
+
+        // Pickup on the picked date
+        currentState.filterPickupDate?.let { date ->
+            filtered = filtered.filter { it.pickupDate.take(10) == date }
+        }
+
+        // Any product expiring on or before the picked date
+        currentState.filterExpiresBy?.let { date ->
+            filtered = filtered.filter { it.hasItemExpiringBy(date) }
         }
 
         // Filter by search query

@@ -47,8 +47,9 @@ with.
 ### Features
 
 **Grocery stores**
-- Create listings from a photo; Azure Computer Vision suggests the title, category,
-  an estimated expiry date and a quality grade
+- Create listings from a photo; a vision model on Azure OpenAI suggests the title, category,
+  expiry date (read from the label when one is printed) and a quality grade, in English or
+  Vietnamese
 - Edit, archive, restore and adjust the quantity of listings
 - Approve, reject and mark pickup requests ready
 - Export listings and requests as CSV
@@ -82,7 +83,7 @@ with.
 | Auth | JWT access tokens, rotating refresh tokens, BCrypt |
 | Realtime | SignalR |
 | Background jobs | Hangfire with PostgreSQL storage |
-| Integrations | Azure Computer Vision, FirebaseAdmin (push), MailKit (email) |
+| Integrations | Azure OpenAI (food photo analysis), FirebaseAdmin (push), MailKit (email) |
 | Logging and config | Serilog (console and rolling file), DotNetEnv |
 
 **Mobile**
@@ -106,7 +107,8 @@ builds with JDK 17.
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Android Studio](https://developer.android.com/studio) with JDK 17 and the Android SDK (API 36)
 - A [Supabase](https://supabase.com) project (PostgreSQL database and Storage)
-- An [Azure Computer Vision](https://azure.microsoft.com/products/ai-services/ai-vision) resource
+- An [Azure OpenAI](https://learn.microsoft.com/azure/ai-foundry/openai/overview) (Microsoft Foundry)
+  resource with a deployment of a model that accepts images and supports structured outputs
 - A [Firebase](https://console.firebase.google.com) project with an Android app registered
   as `com.clearchain.app`
 - A Google Maps API key with the Maps SDK for Android enabled
@@ -250,7 +252,8 @@ variables set in the shell or by a host work too and take precedence.
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | File storage | API won't start |
 | `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE` | Signing sign-in tokens | API won't start |
 | `JWT_EXPIRY_MINUTES`, `REFRESH_TOKEN_EXPIRY_DAYS` | Token lifetimes | Defaults to 60 minutes and 7 days |
-| `AZURE_VISION_ENDPOINT`, `AZURE_VISION_KEY` | Food image analysis | API won't start |
+| `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT` | Food image analysis | API won't start |
+| `AZURE_OPENAI_REASONING_EFFORT` | Reasoning effort (`none`, `low`, ...) when the deployment is a reasoning model | Not sent; leave unset for other models |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Verification and password-reset emails | Emails are skipped and a warning is logged |
 | `ALLOWED_ORIGINS` | CORS for browser clients, comma-separated | Only `http://localhost:3000` is allowed |
 | `ASPNETCORE_ENVIRONMENT` | `Development` enables Swagger | Production behavior, no Swagger |

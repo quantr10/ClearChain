@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -411,6 +410,19 @@ fun ListingDetailScreen(
                                     }
                                 }
 
+                                // ── Notes card ───────────────────────────────────
+                                if (listing.notes.isNotBlank()) {
+                                    SectionCard(stringResource(R.string.label_notes)) {
+                                        Text(
+                                            listing.notes,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 4,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
                                 // ── Details card ─────────────────────────────────
                                 SectionCard(stringResource(R.string.section_details)) {
                                     CompactDetailRow(Icons.Default.ShoppingCart, "$displayQty ${listing.unit}")
@@ -504,12 +516,6 @@ fun ListingDetailScreen(
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
-                                                    Icon(
-                                                        Icons.AutoMirrored.Filled.OpenInNew,
-                                                        null,
-                                                        Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                                                    )
                                                 }
                                             }
                                             phone?.let {
@@ -533,12 +539,6 @@ fun ListingDetailScreen(
                                                         color = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.weight(1f)
                                                     )
-                                                    Icon(
-                                                        Icons.AutoMirrored.Filled.OpenInNew,
-                                                        null,
-                                                        Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                                                    )
                                                 }
                                             }
                                         }
@@ -548,7 +548,14 @@ fun ListingDetailScreen(
                                         SectionCard(stringResource(R.string.section_location_hours)) {
                                             if (address.isNotBlank()) {
                                                 Row(
-                                                    modifier = Modifier.fillMaxWidth(),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable(onClickLabel = stringResource(R.string.action_get_directions)) {
+                                                            openInGoogleMaps(
+                                                                context,
+                                                                mapsQuery(profile?.latitude, profile?.longitude, address)
+                                                            )
+                                                        },
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
@@ -562,20 +569,10 @@ fun ListingDetailScreen(
                                                         address,
                                                         style = MaterialTheme.typography.labelSmall,
                                                         fontWeight = FontWeight.SemiBold,
-                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        color = MaterialTheme.colorScheme.primary,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
                                                         modifier = Modifier.weight(1f)
-                                                    )
-                                                    ClearChainActionIconButton(
-                                                        icon = Icons.Default.Navigation,
-                                                        contentDescription = stringResource(R.string.action_get_directions),
-                                                        onClick = {
-                                                            openInGoogleMaps(
-                                                                context,
-                                                                mapsQuery(profile?.latitude, profile?.longitude, address)
-                                                            )
-                                                        }
                                                     )
                                                 }
                                             }

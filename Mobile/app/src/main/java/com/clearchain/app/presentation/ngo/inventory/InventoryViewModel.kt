@@ -83,20 +83,12 @@ class InventoryViewModel @Inject constructor(
             // Advanced filter sheet
             InventoryEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
             InventoryEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
-            is InventoryEvent.FilterExpiryWithinDaysChanged -> {
-                _state.update { it.copy(filterExpiryWithinDays = event.days) }
-                applyFilters()
-            }
-            is InventoryEvent.FilterMinQtyChanged -> {
-                _state.update { it.copy(filterMinQty = event.min) }
-                applyFilters()
-            }
-            is InventoryEvent.FilterMaxQtyChanged -> {
-                _state.update { it.copy(filterMaxQty = event.max) }
+            is InventoryEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
                 applyFilters()
             }
             InventoryEvent.ClearAdvancedFilters -> {
-                _state.update { it.copy(selectedCategory = null, filterExpiryWithinDays = null, filterMinQty = 0.0, filterMaxQty = null) }
+                _state.update { it.copy(selectedCategory = null, filterExpiresBy = null) }
                 applyFilters()
             }
 
@@ -239,25 +231,16 @@ class InventoryViewModel @Inject constructor(
             }
         }
 
-        // Advanced: expiry within N days
-        current.filterExpiryWithinDays?.let { days ->
-            val today = java.time.LocalDate.now()
-            val threshold = today.plusDays(days.toLong())
+        // Advanced: expires on or before the picked date
+        current.filterExpiresBy?.let { date ->
+            val limit = java.time.LocalDate.parse(date)
             filtered = filtered.filter { item ->
                 runCatching {
-                    val exp = java.time.LocalDate.parse(item.expiryDate.take(10))
-                    !exp.isBefore(today) && !exp.isAfter(threshold)
+                    !java.time.LocalDate.parse(item.expiryDate.take(10)).isAfter(limit)
                 }.getOrDefault(false)
             }
         }
 
-        // Advanced: quantity range
-        if (current.filterMinQty > 0.0) {
-            filtered = filtered.filter { it.quantity >= current.filterMinQty }
-        }
-        current.filterMaxQty?.let { max ->
-            filtered = filtered.filter { it.quantity <= max }
-        }
 
         // Apply sort
         filtered = when (current.selectedSort.value) {
@@ -318,9 +301,7 @@ class InventoryViewModel @Inject constructor(
         is InventoryEvent.SearchQueryChanged,
         is InventoryEvent.SortOptionChanged,
         is InventoryEvent.CategoryFilterChanged,
-        is InventoryEvent.FilterExpiryWithinDaysChanged,
-        is InventoryEvent.FilterMinQtyChanged,
-        is InventoryEvent.FilterMaxQtyChanged,
+        is InventoryEvent.FilterExpiresByChanged,
         is InventoryEvent.ClearAdvancedFilters,
         is InventoryEvent.ShowFilterSheet,
         is InventoryEvent.RefreshInventory,

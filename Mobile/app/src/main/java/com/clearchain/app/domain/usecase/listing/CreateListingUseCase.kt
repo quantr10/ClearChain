@@ -10,6 +10,7 @@ class CreateListingUseCase @Inject constructor(
     suspend operator fun invoke(
         title: String,
         description: String,
+        notes: String,
         category: String,
         quantity: Int,
         unit: String,
@@ -24,6 +25,7 @@ class CreateListingUseCase @Inject constructor(
         return listingRepository.createListing(
             title = title.trim(),
             description = description.trim(),
+            notes = notes.trim(),
             category = category,
             quantity = quantity,
             unit = unit.trim(),

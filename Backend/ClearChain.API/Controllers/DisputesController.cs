@@ -18,17 +18,20 @@ public class DisputesController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStorageService _storageService;
     private readonly IPushNotificationService _pushNotificationService;
+    private readonly IAdminNotificationService _adminNotificationService;
 
     private static readonly string[] ClosedStatuses = { "resolved_ngo", "resolved_grocery", "dismissed" };
 
     public DisputesController(
         ApplicationDbContext context,
         IStorageService storageService,
-        IPushNotificationService pushNotificationService)
+        IPushNotificationService pushNotificationService,
+        IAdminNotificationService adminNotificationService)
     {
         _context = context;
         _storageService = storageService;
         _pushNotificationService = pushNotificationService;
+        _adminNotificationService = adminNotificationService;
     }
 
     // POST api/disputes — NGO opens a dispute on a completed pickup
@@ -93,6 +96,16 @@ public class DisputesController : ControllerBase
         var initiator = await _context.Organizations.FindAsync(userId);
         await _pushNotificationService.SendNewDisputeAlertToAdmins(
             dispute.Id, DisputeReasons.Label(dispute.Reason), initiator?.Name ?? "An NGO");
+        // Live update for admins with the dashboard open; the push above covers everyone else.
+        await _adminNotificationService.NotifyNewDisputeAsync(new NewDisputeNotification
+        {
+            DisputeId = dispute.Id.ToString(),
+            PickupRequestId = dispute.PickupRequestId.ToString(),
+            Reason = dispute.Reason,
+            ReasonLabel = DisputeReasons.Label(dispute.Reason),
+            NgoName = initiator?.Name ?? "An NGO",
+            CreatedAt = dispute.CreatedAt
+        });
 
         return Ok(new { message = "Dispute opened successfully", data = MapToDto(dispute) });
     }
@@ -149,33 +162,9 @@ public class DisputesController : ControllerBase
         });
     }
 
-    // PUT api/disputes/{id}/review — admin only. Claims an open dispute so it moves from the
-    // open queue to "under review" while the admin contacts both parties.
-    [HttpPut("{id}/review")]
-    [Authorize(Roles = "admin")]
-    public async Task<IActionResult> StartReview(Guid id)
-    {
-        var dispute = await _context.Disputes
-            .Include(d => d.Initiator)
-            .Include(d => d.PickupRequest!).ThenInclude(pr => pr.Grocery)
-            .Include(d => d.PickupRequest!).ThenInclude(pr => pr.Ngo)
-            .Include(d => d.PickupRequest!).ThenInclude(pr => pr.Items)
-            .FirstOrDefaultAsync(d => d.Id == id);
-
-        if (dispute == null)
-            return NotFound(new { message = "Dispute not found" });
-
-        if (dispute.Status != "open")
-            return BadRequest(new { message = $"Cannot start a review on a dispute with status '{dispute.Status}'" });
-
-        dispute.Status = "under_review";
-        await _context.SaveChangesAsync();
-
-        return Ok(new DisputeResponse { Message = "Dispute is now under review", Data = MapToListItem(dispute) });
-    }
-
     // PUT api/disputes/{id}/resolve — admin only. Closes out a dispute the admin has already
-    // handled outside the app; there is no customer-facing resolution workflow.
+    // handled outside the app; there is no customer-facing resolution workflow. An open dispute
+    // goes straight here: there is no separate review step to claim it first.
     [HttpPut("{id}/resolve")]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> ResolveDispute(Guid id, [FromBody] ResolveDisputeRequest request)
@@ -192,7 +181,7 @@ public class DisputesController : ControllerBase
         if (dispute == null)
             return NotFound(new { message = "Dispute not found" });
 
-        if (dispute.Status != "open" && dispute.Status != "under_review")
+        if (dispute.Status != "open")
             return BadRequest(new { message = $"Cannot resolve a dispute with status '{dispute.Status}'" });
 
         if (!ClosedStatuses.Contains(request.Status))

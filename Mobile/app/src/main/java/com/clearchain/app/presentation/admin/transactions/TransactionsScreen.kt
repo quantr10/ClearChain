@@ -1,12 +1,9 @@
 package com.clearchain.app.presentation.admin.transactions
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -20,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
+import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.ScreenPadding
@@ -49,16 +47,6 @@ fun TransactionsScreen(
             state = state,
             onEvent = viewModel::onEvent,
             onDismiss = { viewModel.onEvent(TransactionsEvent.HideFilterSheet) }
-        )
-    }
-
-    // Date picker dialog
-    if (state.showDatePickerDialog) {
-        DatePickerForTransaction(
-            isStart = state.datePickerForStart,
-            initial = if (state.datePickerForStart) state.filterStartDate else state.filterEndDate,
-            onConfirm = { viewModel.onEvent(TransactionsEvent.CustomDateSelected(it)) },
-            onDismiss = { viewModel.onEvent(TransactionsEvent.HideDatePicker) }
         )
     }
 
@@ -157,7 +145,7 @@ fun TransactionsScreen(
 // Transactions filter bottom sheet
 // -----------------------------------------------------------------------------
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun TransactionsFilterSheet(
     state: TransactionsState,
@@ -166,14 +154,7 @@ private fun TransactionsFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -187,14 +168,67 @@ private fun TransactionsFilterSheet(
                 if (state.activeFilterCount > 0) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.action_clear_all),
-                        onClick = { onEvent(TransactionsEvent.DatePresetSelected(null)) }
+                        onClick = { onEvent(TransactionsEvent.ClearAdvancedFilters) }
                     )
                 }
             }
 
-            FilterSection(title = stringResource(R.string.filter_date_range)) {
-                DateRangeFilterRow(state = state, onEvent = onEvent)
+            // Dispute — first, since a disputed pickup is what an admin most often hunts for
+            FilterSection(title = stringResource(R.string.filter_dispute)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // No "All" chip: leaving both off shows everything, like the NGO "Saved only" toggle.
+                    DisputeFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = filter in state.filterDisputes,
+                            onClick = { onEvent(TransactionsEvent.ToggleDisputeFilter(filter)) },
+                            label = { Text(stringResource(filter.labelRes), style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
             }
+
+            // Food category
+            FilterSection(title = stringResource(R.string.filter_category)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = state.filterCategory == null,
+                        onClick = { onEvent(TransactionsEvent.FilterCategoryChanged(null)) },
+                        label = { Text(stringResource(R.string.filter_all), style = MaterialTheme.typography.labelSmall) }
+                    )
+                    FoodCategory.entries.forEach { category ->
+                        FilterChip(
+                            selected = state.filterCategory == category.name,
+                            onClick = {
+                                onEvent(
+                                    TransactionsEvent.FilterCategoryChanged(
+                                        if (state.filterCategory == category.name) null else category.name
+                                    )
+                                )
+                            },
+                            label = { Text(stringResource(category.labelResId), style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+            }
+
+            // Pickup date
+            FilterSection(title = stringResource(R.string.filter_pickup_date)) {
+                DateFilterField(
+                    date = state.filterPickupDate,
+                    onDateChanged = { onEvent(TransactionsEvent.FilterPickupDateChanged(it)) }
+                )
+            }
+
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(TransactionsEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),
@@ -202,153 +236,6 @@ private fun TransactionsFilterSheet(
                 modifier = Modifier.fillMaxWidth()
             )
         }
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Date range filter row
-// -----------------------------------------------------------------------------
-
-@Composable
-private fun DateRangeFilterRow(
-    state: TransactionsState,
-    onEvent: (TransactionsEvent) -> Unit
-) {
-    val presets = listOf(
-        null to stringResource(R.string.preset_all_time),
-        "TODAY" to stringResource(R.string.preset_today),
-        "WEEK" to stringResource(R.string.preset_this_week),
-        "MONTH" to stringResource(R.string.preset_this_month),
-        "CUSTOM" to stringResource(R.string.preset_custom)
-    )
-    Row(
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            Icons.Default.DateRange,
-            null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        presets.forEach { (key, label) ->
-            if (key == "CUSTOM") {
-                FilterChip(
-                    selected = state.selectedDatePreset == "CUSTOM",
-                    onClick = {
-                        if (state.selectedDatePreset == "CUSTOM") {
-                            onEvent(TransactionsEvent.DatePresetSelected(null))
-                        } else {
-                            onEvent(TransactionsEvent.ShowDatePicker(forStart = true))
-                        }
-                    },
-                    label = {
-                        val label2 = when {
-                            state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null && state.filterEndDate != null ->
-                                "${state.filterStartDate.takeLast(5)} \u2013 ${state.filterEndDate.takeLast(5)}"
-                            state.selectedDatePreset == "CUSTOM" && state.filterStartDate != null ->
-                                stringResource(R.string.label_from_date, state.filterStartDate.takeLast(5))
-                            else -> label
-                        }
-                        Text(label2)
-                    },
-                    leadingIcon = if (state.selectedDatePreset == "CUSTOM") {
-                        (
-                            {
-                                Icon(Icons.Default.EditCalendar, null, Modifier.size(14.dp))
-                            }
-                            )
-                    } else {
-                        null
-                    }
-                )
-            } else {
-                FilterChip(
-                    selected = state.selectedDatePreset == key,
-                    onClick = { onEvent(TransactionsEvent.DatePresetSelected(key)) },
-                    label = { Text(label) }
-                )
-            }
-        }
-    }
-    // When custom is active, show start/end pickers
-    if (state.selectedDatePreset == "CUSTOM") {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ClearChainOutlinedButton(
-                text = state.filterStartDate ?: stringResource(R.string.label_from),
-                onClick = { onEvent(TransactionsEvent.ShowDatePicker(forStart = true)) },
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.CalendarToday
-            )
-            Text("\u2013", style = MaterialTheme.typography.bodyMedium)
-            ClearChainOutlinedButton(
-                text = state.filterEndDate ?: stringResource(R.string.label_to),
-                onClick = { onEvent(TransactionsEvent.ShowDatePicker(forStart = false)) },
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.CalendarToday
-            )
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Date picker dialog (used for custom range)
-// -----------------------------------------------------------------------------
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DatePickerForTransaction(
-    isStart: Boolean,
-    initial: String?,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val initialMs = remember(initial) {
-        runCatching {
-            val ld = java.time.LocalDate.parse(initial ?: throw Exception())
-            ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-        }.getOrNull()
-    }
-    val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMs)
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            ClearChainButton(
-                text = stringResource(R.string.ok),
-                fillMaxWidth = false,
-                onClick = {
-                    pickerState.selectedDateMillis?.let { ms ->
-                        val date = java.time.Instant.ofEpochMilli(ms)
-                            .atZone(java.time.ZoneOffset.UTC)
-                            .toLocalDate()
-                            .toString()
-                        onConfirm(date)
-                    }
-                },
-                enabled = pickerState.selectedDateMillis != null
-            )
-        },
-        dismissButton = {
-            ClearChainOutlinedButton(text = stringResource(R.string.cancel), onClick = onDismiss)
-        }
-    ) {
-        DatePicker(
-            state = pickerState,
-            headline = {
-                Text(
-                    stringResource(if (isStart) R.string.label_select_start_date else R.string.label_select_end_date),
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-            }
-        )
     }
 }
 

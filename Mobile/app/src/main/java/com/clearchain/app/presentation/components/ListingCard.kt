@@ -38,45 +38,9 @@ fun ListingCard(
     topRightAction: (@Composable () -> Unit)? = null,
     onGroceryAvatarClick: (() -> Unit)? = null
 ) {
-    val daysUntilExpiry: Long = remember(listing.expiryDate) {
-        try {
-            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(listing.expiryDate)!!
-            val today = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.time
-            TimeUnit.MILLISECONDS.toDays(date.time - today.time)
-        } catch (_: Exception) {
-            Long.MAX_VALUE
-        }
-    }
-    val expiryColor = when {
-        daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
-        daysUntilExpiry <= 3L -> Color(0xFFE65100)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val expiryText = when {
-        daysUntilExpiry < 0 -> stringResource(R.string.listing_expired_label)
-        daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
-        daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
-        daysUntilExpiry in 2..3 -> stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
-        else -> stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(listing.expiryDate))
-    }
-
-    val urgencyBannerText: String? = when {
-        daysUntilExpiry < 0L -> stringResource(R.string.listing_expired_label)
-        daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
-        daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
-        daysUntilExpiry <= 3L -> stringResource(R.string.listing_expiring_soon)
-        else -> null
-    }
-    val urgencyBannerColor: Color = when {
-        daysUntilExpiry <= 0L -> Color(0xCCB71C1C)
-        daysUntilExpiry == 1L -> Color(0xCCE65100)
-        else -> Color(0xCCF57F17)
-    }
+    val daysUntilExpiry: Long = remember(listing.expiryDate) { daysUntil(listing.expiryDate) }
+    val expiryColor = expiryTextColor(daysUntilExpiry)
+    val expiryText = expiryLabel(daysUntilExpiry, listing.expiryDate)
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column {
@@ -102,24 +66,7 @@ fun ListingCard(
                     FoodImagePlaceholder(Modifier.fillMaxSize())
                 }
 
-                // Urgency banner (bottom-center)
-                if (urgencyBannerText != null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .background(urgencyBannerColor)
-                            .padding(vertical = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            urgencyBannerText.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
+                ExpiryUrgencyBanner(daysUntilExpiry, Modifier.align(Alignment.BottomCenter))
 
                 // Status badge overlay (top-right)
                 Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
@@ -312,8 +259,75 @@ fun ListingCard(
     }
 }
 
+// ── Expiry, shared with InventoryItemCard ────────────────────────────────────
+
+/** Whole days from today to [date] (yyyy-MM-dd, time ignored); [Long.MAX_VALUE] when unparseable. */
+internal fun daysUntil(date: String): Long =
+    try {
+        val parsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(date)!!
+        val today = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.time
+        TimeUnit.MILLISECONDS.toDays(parsed.time - today.time)
+    } catch (_: Exception) {
+        Long.MAX_VALUE
+    }
+
 @Composable
-private fun FoodImagePlaceholder(modifier: Modifier = Modifier) {
+internal fun expiryTextColor(daysUntilExpiry: Long): Color = when {
+    daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
+    daysUntilExpiry <= 3L -> Color(0xFFE65100)
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
+@Composable
+internal fun expiryLabel(daysUntilExpiry: Long, date: String): String = when {
+    daysUntilExpiry < 0 -> stringResource(R.string.listing_expired_label)
+    daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
+    daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
+    daysUntilExpiry in 2..3 -> stringResource(R.string.listing_expires_in_days, daysUntilExpiry.toInt())
+    else -> stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(date))
+}
+
+/**
+ * The full-width strip across the bottom of a card's photo once food is three days or less
+ * from expiry; draws nothing before that.
+ */
+@Composable
+internal fun ExpiryUrgencyBanner(daysUntilExpiry: Long, modifier: Modifier = Modifier) {
+    val text = when {
+        daysUntilExpiry < 0L -> stringResource(R.string.listing_expired_label)
+        daysUntilExpiry == 0L -> stringResource(R.string.listing_expires_today)
+        daysUntilExpiry == 1L -> stringResource(R.string.listing_expires_tomorrow)
+        daysUntilExpiry <= 3L -> stringResource(R.string.listing_expiring_soon)
+        else -> return
+    }
+    val color = when {
+        daysUntilExpiry <= 0L -> Color(0xCCB71C1C)
+        daysUntilExpiry == 1L -> Color(0xCCE65100)
+        else -> Color(0xCCF57F17)
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(color)
+            .padding(vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+internal fun FoodImagePlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center

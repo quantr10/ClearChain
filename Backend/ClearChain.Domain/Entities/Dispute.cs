@@ -9,7 +9,7 @@ public class Dispute
     public string? NgoStatement { get; set; }
     public string? GroceryStatement { get; set; }
     public string? PhotoEvidenceUrl { get; set; }
-    public string Status { get; set; } = "open";    // open, under_review, resolved_ngo, resolved_grocery, dismissed
+    public string Status { get; set; } = "open";    // open, resolved_ngo, resolved_grocery, dismissed
     public string? AdminResolution { get; set; }
     public Guid? ResolvedByAdminId { get; set; }
     public DateTime CreatedAt { get; set; }

@@ -40,6 +40,7 @@ class EditListingViewModel @Inject constructor(
                             listingId = listing.id,
                             title = listing.title,
                             description = listing.description,
+                            notes = listing.notes,
                             category = listing.category.name,
                             quantity = listing.quantity.toString(),
                             unit = listing.unit,
@@ -62,6 +63,7 @@ class EditListingViewModel @Inject constructor(
         when (event) {
             is EditListingEvent.TitleChanged -> _state.update { it.copy(title = event.title, titleError = null) }
             is EditListingEvent.DescriptionChanged -> _state.update { it.copy(description = event.description, descriptionError = null) }
+            is EditListingEvent.NotesChanged -> _state.update { it.copy(notes = event.notes) }
             is EditListingEvent.CategoryChanged -> _state.update { it.copy(category = event.category, showCategoryDropdown = false) }
             is EditListingEvent.QuantityChanged -> _state.update { it.copy(quantity = event.quantity.filter { c -> c.isDigit() }, quantityError = null) }
             is EditListingEvent.UnitChanged -> _state.update { it.copy(unit = event.unit, showUnitDropdown = false, unitError = null) }
@@ -81,6 +83,7 @@ class EditListingViewModel @Inject constructor(
                 id = s.listingId,
                 title = s.title,
                 description = s.description,
+                notes = s.notes,
                 category = s.category,
                 quantity = s.quantity.toInt(),
                 unit = s.unit,

@@ -32,9 +32,7 @@ data class InventoryState(
 
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
-    val filterExpiryWithinDays: Int? = null,
-    val filterMinQty: Double = 0.0,
-    val filterMaxQty: Double? = null,
+    val filterExpiresBy: String? = null, // yyyy-MM-dd; null = any date
 
     // Bulk selection
     val isSelectionMode: Boolean = false,
@@ -48,7 +46,5 @@ data class InventoryState(
     val allSelected: Boolean get() = filteredItems.isNotEmpty() && selectedIds.containsAll(filteredItems.map { it.id })
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
-            (if (filterExpiryWithinDays != null) 1 else 0) +
-            (if (filterMinQty > 0.0) 1 else 0) +
-            (if (filterMaxQty != null) 1 else 0)
+            (if (filterExpiresBy != null) 1 else 0)
 }

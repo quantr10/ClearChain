@@ -2,11 +2,9 @@ package com.clearchain.app.presentation.admin.analytics
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,9 +30,6 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.UiEvent
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
@@ -89,6 +85,14 @@ fun AdminAnalyticsScreen(
         }
     }
 
+    if (state.showFilterSheet) {
+        AnalyticsFilterSheet(
+            state = state,
+            onEvent = viewModel::onEvent,
+            onDismiss = { viewModel.onEvent(AdminAnalyticsEvent.HideFilterSheet) }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
@@ -121,14 +125,13 @@ fun AdminAnalyticsScreen(
                             item {
                                 AnalyticsHeader(
                                     state = state,
-                                    onSelect = { viewModel.onEvent(AdminAnalyticsEvent.SelectPeriod(it)) },
+                                    onShowFilters = { viewModel.onEvent(AdminAnalyticsEvent.ShowFilterSheet) },
                                     onExportPdf = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) }
                                 )
                             }
 
                             // One item per section, in enum order: see FIRST_SECTION_INDEX.
                             item { RequestStatusCard(data, highlighted) }
-                            item { TimingCard(data, highlighted) }
                             item { BacklogCard(data, highlighted) }
                             item { LeaderboardCard(data, highlighted) }
                             item { QualityCard(data, highlighted) }
@@ -146,7 +149,7 @@ fun AdminAnalyticsScreen(
 @Composable
 private fun AnalyticsHeader(
     state: AdminAnalyticsState,
-    onSelect: (StatsPeriodOption) -> Unit,
+    onShowFilters: () -> Unit,
     onExportPdf: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -161,46 +164,141 @@ private fun AnalyticsHeader(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = periodSubtitle(state.data?.period),
+                    text = state.period.description(LocalContext.current.resources),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            ClearChainActionIconButton(
-                icon = Icons.Default.FileDownload,
-                contentDescription = stringResource(R.string.cd_export_pdf),
-                onClick = onExportPdf,
-                enabled = !state.isExporting
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ClearChainActionIconButton(
+                    icon = Icons.Default.FileDownload,
+                    contentDescription = stringResource(R.string.cd_export_pdf),
+                    onClick = onExportPdf,
+                    enabled = !state.isExporting
+                )
+                BadgedBox(
+                    badge = {
+                        if (state.activeFilterCount > 0) Badge { Text(state.activeFilterCount.toString()) }
+                    }
+                ) {
+                    ClearChainActionIconButton(
+                        icon = Icons.Default.Tune,
+                        contentDescription = stringResource(R.string.advanced_filters),
+                        onClick = onShowFilters
+                    )
+                }
+            }
         }
 
-        // Switching period keeps the old figures on screen while the new ones load.
+        // Changing the range keeps the old figures on screen while the new ones load.
         UpdatingBar(visible = state.isLoading && state.data != null)
+    }
+}
 
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatsPeriodOption.entries.forEach { option ->
-                FilterChip(
-                    selected = option == state.period,
-                    onClick = { onSelect(option) },
-                    label = { Text(stringResource(option.labelRes)) }
+// ── Advanced filter sheet ────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun AnalyticsFilterSheet(
+    state: AdminAnalyticsState,
+    onEvent: (AdminAnalyticsEvent) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        FilterSheetContent {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.advanced_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
+                if (state.activeFilterCount > 0) {
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_clear_all),
+                        onClick = { onEvent(AdminAnalyticsEvent.ClearFilters) }
+                    )
+                }
             }
+
+            FilterSection(title = stringResource(R.string.filter_time_period)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatsPeriodType.entries.forEach { type ->
+                        FilterChip(
+                            selected = state.period.type == type,
+                            onClick = { onEvent(AdminAnalyticsEvent.PeriodTypeSelected(type)) },
+                            label = { Text(stringResource(type.labelRes), style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+                if (state.period.type != StatsPeriodType.ALL) {
+                    PeriodStepper(
+                        period = state.period,
+                        canGoBack = state.period.canGoBack(state.firstDataDate),
+                        onPrevious = { onEvent(AdminAnalyticsEvent.PreviousPeriod) },
+                        onNext = { onEvent(AdminAnalyticsEvent.NextPeriod) }
+                    )
+                }
+            }
+
+            ClearChainButton(
+                text = stringResource(R.string.action_apply_filters),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
+/** ‹ September 2026 › with the days it covers underneath. */
 @Composable
-private fun periodSubtitle(period: StatsPeriod?): String {
-    if (period == null || period.isAllTime) return stringResource(R.string.stats_all_time_subtitle)
-    val from = formatIsoDate(period.from)
-    val to = formatIsoDate(period.to)
-    return if (from != null && to != null) {
-        stringResource(R.string.stats_period_range, from, to)
-    } else {
-        pluralStringResource(R.plurals.stats_period_days, period.days, period.days)
+private fun PeriodStepper(
+    period: AnalyticsPeriod,
+    canGoBack: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit
+) {
+    val res = LocalContext.current.resources
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ClearChainActionIconButton(
+            icon = Icons.Default.ChevronLeft,
+            contentDescription = stringResource(R.string.cd_previous_period),
+            onClick = onPrevious,
+            enabled = canGoBack
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                period.title(res),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            period.rangeText(res)?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        ClearChainActionIconButton(
+            icon = Icons.Default.ChevronRight,
+            contentDescription = stringResource(R.string.cd_next_period),
+            onClick = onNext,
+            enabled = period.canGoForward
+        )
     }
 }
 
@@ -223,30 +321,6 @@ private fun RequestStatusCard(data: AdminDetailedStatsData, highlighted: Analyti
             EmptyChartNote(stringResource(R.string.chart_no_requests))
         } else {
             ColumnBarChart(bars = bars)
-        }
-    }
-}
-
-// ── Timing ───────────────────────────────────────────────────────────────────
-
-@Composable
-private fun TimingCard(data: AdminDetailedStatsData, highlighted: AnalyticsSection?) {
-    val t = data.timing
-
-    AnalyticsCard(AnalyticsSection.TIMING, stringResource(R.string.section_timing), highlighted) {
-        if (t.sampleSize == 0) {
-            EmptyChartNote(stringResource(R.string.timing_no_data))
-        } else {
-            MetricRow(stringResource(R.string.timing_to_ready), formatDuration(t.medianHoursToReady))
-            MetricRow(stringResource(R.string.timing_to_pickup), formatDuration(t.medianHoursToPickup))
-            MetricRow(stringResource(R.string.timing_to_confirm), formatDuration(t.medianHoursToConfirm))
-            MetricRow(stringResource(R.string.timing_p90), formatDuration(t.p90HoursToPickup))
-            Spacer(Modifier.height(4.dp))
-            RateContent(
-                percent = (t.completedWithin24hRate * 100).roundToInt(),
-                description = stringResource(R.string.timing_within_24h_detail, (t.completedWithin24hRate * 100).roundToInt())
-            )
-            FootNote(pluralStringResource(R.plurals.timing_sample, t.sampleSize, t.sampleSize))
         }
     }
 }
@@ -417,42 +491,19 @@ private fun OrganizationsCard(data: AdminDetailedStatsData, highlighted: Analyti
         if (o.total == 0) {
             EmptyChartNote(stringResource(R.string.chart_no_organizations))
         } else {
-            // One dimension only: an unverified NGO is still an NGO, so verification is
-            // not a third slice here.
+            // The slices split every org exactly once: an applicant still in the queue
+            // is counted as awaiting, not under its type as well, so the ring adds up
+            // to the total in the middle.
             DonutChart(
                 slices = listOf(
-                    BarData(stringResource(R.string.org_type_groceries), o.groceries, StatusColors.Available),
-                    BarData(stringResource(R.string.org_type_ngos), o.ngos, StatusColors.Approved)
+                    BarData(stringResource(R.string.org_type_groceries), o.groceries - o.pendingGroceries, StatusColors.Available),
+                    BarData(stringResource(R.string.org_type_ngos), o.ngos - o.pendingNgos, StatusColors.Approved),
+                    BarData(stringResource(R.string.stat_awaiting_verification), o.pendingGroceries + o.pendingNgos, StatusColors.Pending)
                 ),
                 centerValue = o.total.toString(),
                 centerLabel = stringResource(R.string.stat_total),
-                footnote = stringResource(R.string.admin_org_total_verified, o.total, o.verified)
+                legendFirst = true
             )
-
-            if (o.pendingVerification > 0) {
-                val stale = (o.oldestPendingDays ?: 0) >= 7
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        if (stale) Icons.Default.Warning else Icons.Default.HourglassTop,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = if (stale) MaterialTheme.colorScheme.error else StatusColors.Pending
-                    )
-                    Text(
-                        text = o.oldestPendingDays?.let {
-                            pluralStringResource(R.plurals.stat_pending_verification_aged, it, o.pendingVerification, it)
-                        } ?: stringResource(R.string.stat_pending_verification, o.pendingVerification),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (stale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
         }
     }
 }
@@ -587,10 +638,4 @@ private fun formatDuration(hours: Double?): String = when {
     hours < 1 -> "${(hours * 60).roundToInt()}m"
     hours < 48 -> "${hours.roundToInt()}h"
     else -> "${(hours / 24).roundToInt()}d"
-}
-
-private fun formatIsoDate(iso: String?): String? = iso?.let {
-    runCatching {
-        LocalDate.parse(it.take(10)).format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault()))
-    }.getOrNull()
 }

@@ -28,8 +28,7 @@ data class MyListingsState(
 
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
-    val filterExpiryWithinDays: Int? = null,
-    val filterHasRequests: Boolean = false,
+    val filterExpiresBy: String? = null, // yyyy-MM-dd; null = any date
 
     // Bulk selection
     val isSelectionMode: Boolean = false,
@@ -46,6 +45,5 @@ data class MyListingsState(
     val allSelected: Boolean get() = filteredListings.isNotEmpty() && selectedIds.containsAll(filteredListings.map { it.id })
     val activeFilterCount: Int get() =
         (if (selectedCategory != null) 1 else 0) +
-            (if (filterExpiryWithinDays != null) 1 else 0) +
-            (if (filterHasRequests) 1 else 0)
+            (if (filterExpiresBy != null) 1 else 0)
 }

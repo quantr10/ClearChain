@@ -24,6 +24,12 @@ data class AdminDetailedStatsData(
     val organizations: StatsOrganizations = StatsOrganizations()
 )
 
+/** UTC days ("yyyy-MM-dd", ascending) that have any activity the period figures count. */
+@Serializable
+data class StatsActiveDatesResponse(
+    val data: List<String> = emptyList()
+)
+
 @Serializable
 data class StatsPeriod(
     val from: String? = null,
@@ -116,6 +122,9 @@ data class StatsOrganizations(
     val ngos: Int = 0,
     val verified: Int = 0,
     val pendingVerification: Int = 0,
+    /** [pendingVerification] split by type. */
+    val pendingGroceries: Int = 0,
+    val pendingNgos: Int = 0,
     val oldestPendingDays: Int? = null
 )
 
@@ -133,6 +142,8 @@ data class AdminAlertItem(
     val severity: String, // "high" | "medium"
     val id: String,
     val title: String,
+    val reason: String? = null, // dispute reason key, see NgoDisputeReason
+    val pickupRequestId: String? = null,
     val body: String,
     val status: String,
     val createdAt: String

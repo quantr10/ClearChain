@@ -46,6 +46,19 @@ val PickupRequest.searchText: String
         }
     }.lowercase()
 
+/**
+ * True when any product in the request expires on or before [date] (`yyyy-MM-dd`).
+ * A product with no readable expiry date doesn't match.
+ */
+fun PickupRequest.hasItemExpiringBy(date: String): Boolean {
+    val limit = java.time.LocalDate.parse(date)
+    return itemLines.any { item ->
+        runCatching {
+            !java.time.LocalDate.parse(item.listingExpiryDate!!.take(10)).isAfter(limit)
+        }.getOrDefault(false)
+    }
+}
+
 /** Product names in the request, for exports and summaries. */
 val PickupRequest.itemTitles: List<String>
     get() = itemLines.map { it.listingTitle }.filter { it.isNotBlank() }

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.hasItemExpiringBy
 import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.CancelPickupRequestUseCase
@@ -111,12 +112,16 @@ class MyRequestsViewModel @Inject constructor(
                 _state.update { it.copy(filterCategory = event.category) }
                 applyFilters()
             }
-            is MyRequestsEvent.FilterPickupDatePresetChanged -> {
-                _state.update { it.copy(filterPickupDatePreset = event.preset) }
+            is MyRequestsEvent.FilterPickupDateChanged -> {
+                _state.update { it.copy(filterPickupDate = event.date) }
+                applyFilters()
+            }
+            is MyRequestsEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
                 applyFilters()
             }
             MyRequestsEvent.ClearAdvancedFilters -> {
-                _state.update { it.copy(filterCategory = null, filterPickupDatePreset = null) }
+                _state.update { it.copy(filterCategory = null, filterPickupDate = null, filterExpiresBy = null) }
                 applyFilters()
             }
         }
@@ -192,20 +197,14 @@ class MyRequestsViewModel @Inject constructor(
             filtered = filtered.filter { it.listingCategory == category }
         }
 
-        current.filterPickupDatePreset?.let { preset ->
-            val today = java.time.LocalDate.now()
-            filtered = filtered.filter { request ->
-                runCatching {
-                    val pickupDate = java.time.LocalDate.parse(request.pickupDate.take(10))
-                    when (preset) {
-                        "TODAY" -> pickupDate == today
-                        "WEEK" -> !pickupDate.isBefore(today) && !pickupDate.isAfter(today.plusDays(7))
-                        "MONTH" -> !pickupDate.isBefore(today) && !pickupDate.isAfter(today.plusDays(30))
-                        "PAST" -> pickupDate.isBefore(today)
-                        else -> true
-                    }
-                }.getOrDefault(true)
-            }
+        // Pickup on the picked date
+        current.filterPickupDate?.let { date ->
+            filtered = filtered.filter { it.pickupDate.take(10) == date }
+        }
+
+        // Any product expiring on or before the picked date
+        current.filterExpiresBy?.let { date ->
+            filtered = filtered.filter { it.hasItemExpiringBy(date) }
         }
 
         filtered = when (current.selectedSort.value) {

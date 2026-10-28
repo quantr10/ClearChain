@@ -57,6 +57,8 @@ data class AdminStatsDto(
     val totalOrganizations: Int,
     val totalGroceries: Int,
     val totalNgos: Int,
+    val pendingGroceries: Int = 0,
+    val pendingNgos: Int = 0,
 
     // Listing stats
     val activeListings: Int,
@@ -86,6 +88,8 @@ fun AdminStatsDto.toDomain(): AdminStats {
         totalOrganizations = totalOrganizations,
         totalGroceries = totalGroceries,
         totalNgos = totalNgos,
+        pendingGroceries = pendingGroceries,
+        pendingNgos = pendingNgos,
         activeListings = activeListings,
         reservedListings = reservedListings,
         expiredListings = expiredListings,

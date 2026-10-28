@@ -9,6 +9,7 @@ interface ListingRepository {
     suspend fun createListing(
         title: String,
         description: String,
+        notes: String,
         category: String,
         quantity: Int,
         unit: String,
@@ -35,6 +36,7 @@ interface ListingRepository {
         id: String,
         title: String,
         description: String,
+        notes: String,
         category: String,
         quantity: Int,
         unit: String,

@@ -7,7 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.StickyNote2
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -56,8 +56,8 @@ fun CreateListingScreen(
     BackHandler(state.isPreviewMode) { viewModel.onEvent(CreateListingEvent.TogglePreview) }
     BlockBackWhile(state.isLoading)
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+    FabScaffold(
+        snackbarHostState = snackbarHostState,
         floatingActionButton = {
             // A FAB has no disabled state: while the listing is being created it fades and
             // ignores taps, like the rest of the form.
@@ -95,6 +95,7 @@ fun CreateListingScreen(
                 val previewListing = remember(
                     state.title,
                     state.description,
+                    state.notes,
                     state.category,
                     state.quantity,
                     state.unit,
@@ -108,6 +109,7 @@ fun CreateListingScreen(
                         groceryName = "",
                         title = state.title.ifBlank { "—" },
                         description = state.description,
+                        notes = state.notes,
                         category = runCatching { FoodCategory.valueOf(state.category) }
                             .getOrDefault(FoodCategory.OTHER),
                         quantity = state.quantity.toIntOrNull() ?: 0,
@@ -164,6 +166,21 @@ fun CreateListingScreen(
                         imeAction = ImeAction.Next,
                         isError = state.descriptionError != null,
                         errorMessage = state.descriptionError,
+                        enabled = !state.isLoading && !state.isAnalyzing,
+                        singleLine = false,
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                }
+
+                // ── Notes ────────────────────────────────────────────────────
+                FieldCard(label = stringResource(R.string.label_notes)) {
+                    ClearChainTextField(
+                        value = state.notes,
+                        onValueChange = { viewModel.onEvent(CreateListingEvent.NotesChanged(it)) },
+                        placeholder = stringResource(R.string.label_notes_placeholder),
+                        leadingIcon = Icons.AutoMirrored.Filled.StickyNote2,
+                        imeAction = ImeAction.Next,
                         enabled = !state.isLoading && !state.isAnalyzing,
                         singleLine = false,
                         minLines = 2,
@@ -536,9 +553,16 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
                             stringResource(R.string.label_expiry_date),
                             result.expiryDate.take(10)
                         )
+                        if (result.description.isNotBlank()) {
+                            AiDetailRow(
+                                Icons.Default.Description,
+                                stringResource(R.string.label_description),
+                                result.description
+                            )
+                        }
                         if (result.notes.isNotBlank()) {
                             AiDetailRow(
-                                Icons.AutoMirrored.Filled.Notes,
+                                Icons.AutoMirrored.Filled.StickyNote2,
                                 stringResource(R.string.label_notes),
                                 result.notes
                             )

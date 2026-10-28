@@ -17,14 +17,15 @@ public class ImageAnalysisController : ControllerBase
     private readonly IStorageService _storageService;
     private readonly ILogger<ImageAnalysisController> _logger;
 
-    // Formats accepted by /analyze specifically — this is what's sent to Azure Computer
-    // Vision, so it's declared independently from StorageBucketPolicy (used by /upload
-    // below) even though the two happen to list the same formats today. If Azure's real
-    // capabilities or the "food-images" bucket's config ever diverge again, each stays
-    // free to change on its own.
+    // Formats accepted by /analyze specifically — this is what's sent to the Azure OpenAI
+    // vision model, which reads JPEG, PNG, WEBP and non-animated GIF. It's declared
+    // independently from StorageBucketPolicy (used by /upload below) so the model's formats
+    // and the "food-images" bucket's config can each change on their own.
     private static readonly string[] AnalyzeAllowedMimeTypes =
-        { "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif" };
-    private const long AnalyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB (Azure limit)
+        { "image/jpeg", "image/png", "image/webp", "image/gif" };
+    // The app compresses photos well below this; the cap keeps request size and image
+    // token cost bounded for anything else.
+    private const long AnalyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB
 
     public ImageAnalysisController(
         IImageAnalysisService analysisService,
@@ -40,27 +41,22 @@ public class ImageAnalysisController : ControllerBase
     /// Analyze food image with AI and get auto-fill data for CreateListingRequest
     /// </summary>
     /// <remarks>
-    /// POST /api/imageanalysis/analyze
+    /// POST /api/imageanalysis/analyze (multipart: image, optional language "en" or "vi")
     ///
-    /// Upload image from camera or album
-    /// Returns: Title, Category, ExpiryDate, Notes, ImageUrl
-    ///
-    /// Flow:
-    /// 1. Upload to Supabase storage
-    /// 2. Analyze with Azure Computer Vision
-    /// 3. Return auto-fill data
-    /// 4. Save analysis to database
+    /// The photo goes to a vision model on Azure OpenAI and nothing is stored: the image is
+    /// uploaded separately through /upload when the listing is created. Title, description and
+    /// notes come back in the requested language.
     ///
     /// Example Response:
     /// {
     ///   "success": true,
-    ///   "message": "Image analyzed successfully",
+    ///   "message": "Image analyzed successfully. Ready to auto-fill listing form.",
     ///   "data": {
-    ///     "title": "Fresh Bread",
+    ///     "title": "Whole wheat bread",
+    ///     "description": "Sliced whole wheat sandwich bread, 500 g loaf. Soft and hearty, ideal for toast and sandwiches.",
     ///     "category": "BAKERY",
     ///     "expiryDate": "2026-03-15",
-    ///     "notes": "Good quality, fresh, bright",
-    ///     "imageUrl": "https://supabase.../image.jpg",
+    ///     "notes": "Fresh loaf with an intact crust. Store in an airtight bag at room temperature.",
     ///     "confidence": 0.92,
     ///     "freshnessScore": 85,
     ///     "qualityGrade": "A"
@@ -73,7 +69,8 @@ public class ImageAnalysisController : ControllerBase
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     [ProducesResponseType(500)]
-    public async Task<ActionResult<AnalyzeImageResponse>> AnalyzeImage(IFormFile image)
+    public async Task<ActionResult<AnalyzeImageResponse>> AnalyzeImage(
+        IFormFile image, [FromForm] string? language)
     {
         try
         {
@@ -121,7 +118,9 @@ public class ImageAnalysisController : ControllerBase
             _logger.LogInformation($"🔍 Analyzing image for grocery {groceryId}: {image.FileName}");
 
             // Analyze image with AI
-            var result = await _analysisService.AnalyzeFoodImageAsync(image, groceryId);
+            // Anything other than Vietnamese falls back to English, the app's default language.
+            var outputLanguage = string.Equals(language, "vi", StringComparison.OrdinalIgnoreCase) ? "vi" : "en";
+            var result = await _analysisService.AnalyzeFoodImageAsync(image, groceryId, outputLanguage);
 
             _logger.LogInformation($"✅ Analysis complete: {result.Title} ({result.Category}) - Grade {result.QualityGrade}");
 

@@ -98,6 +98,21 @@ fun NgoDashboardScreen(
                             )
                         }
 
+                        // ── Inventory ────────────────────────────────────────────
+                        // What the NGO holds, laid out like the listings tiles on the
+                        // grocery and admin homes.
+                        state.stats?.inventoryStatus?.let { inventory ->
+                            DashboardSection(title = stringResource(R.string.nav_inventory)) {
+                                StatOverview(
+                                    hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), inventory.active),
+                                    secondary = listOf(
+                                        StatTile(Icons.Default.VolunteerActivism, stringResource(R.string.status_distributed), inventory.distributed),
+                                        StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), inventory.expired)
+                                    )
+                                )
+                            }
+                        }
+
                         // ── Nearby Listings Mini-Map ─────────────────────────────
                         val mapListings = state.availableListings.filter {
                             it.groceryLatitude != null && it.groceryLongitude != null
@@ -498,18 +513,22 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
         "pickup_completed" -> Icons.Default.Done
         "pickup_cancelled" -> Icons.Default.Cancel
         "inventory_received" -> Icons.Default.Inventory
+        // Admin feed only
+        "org_registered" -> Icons.Default.PersonAdd
+        "dispute_opened" -> Icons.Default.ReportProblem
         else -> Icons.Default.Info
     }
     val iconColor = when (item.type) {
         "listing_created" -> MaterialTheme.colorScheme.primary
         "pickup_completed" -> MaterialTheme.colorScheme.primary
-        "pickup_cancelled" -> MaterialTheme.colorScheme.error
+        "pickup_cancelled", "dispute_opened" -> MaterialTheme.colorScheme.error
+        "org_registered" -> MaterialTheme.colorScheme.tertiary
         "pickup_approved" -> MaterialTheme.colorScheme.tertiary
         "inventory_received" -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val iconContainerColor = when (item.type) {
-        "pickup_cancelled" -> MaterialTheme.colorScheme.errorContainer
+        "pickup_cancelled", "dispute_opened" -> MaterialTheme.colorScheme.errorContainer
         else -> iconColor.copy(alpha = 0.12f)
     }
     val timeLabel = remember(item.timestamp) {

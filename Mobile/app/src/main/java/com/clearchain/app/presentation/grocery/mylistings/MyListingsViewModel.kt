@@ -89,16 +89,12 @@ class MyListingsViewModel @Inject constructor(
             // Advanced filter sheet
             MyListingsEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
             MyListingsEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
-            is MyListingsEvent.FilterExpiryWithinDaysChanged -> {
-                _state.update { it.copy(filterExpiryWithinDays = event.days) }
-                applyFilters()
-            }
-            is MyListingsEvent.FilterHasRequestsChanged -> {
-                _state.update { it.copy(filterHasRequests = event.enabled) }
+            is MyListingsEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
                 applyFilters()
             }
             MyListingsEvent.ClearAdvancedFilters -> {
-                _state.update { it.copy(selectedCategory = null, filterExpiryWithinDays = null, filterHasRequests = false) }
+                _state.update { it.copy(selectedCategory = null, filterExpiresBy = null) }
                 applyFilters()
             }
 
@@ -271,17 +267,14 @@ class MyListingsViewModel @Inject constructor(
             filtered = filtered.filter { it.category.name == category }
         }
 
-        current.filterExpiryWithinDays?.let { days ->
-            val threshold = java.time.LocalDate.now().plusDays(days.toLong())
+        // Expires on or before the picked date
+        current.filterExpiresBy?.let { date ->
+            val limit = java.time.LocalDate.parse(date)
             filtered = filtered.filter { listing ->
                 runCatching {
-                    !java.time.LocalDate.parse(listing.expiryDate.take(10)).isAfter(threshold)
-                }.getOrDefault(true)
+                    !java.time.LocalDate.parse(listing.expiryDate.take(10)).isAfter(limit)
+                }.getOrDefault(false)
             }
-        }
-
-        if (current.filterHasRequests) {
-            filtered = filtered.filter { it.requestCount > 0 }
         }
 
         filtered = when (current.selectedSort.value) {
@@ -322,8 +315,7 @@ class MyListingsViewModel @Inject constructor(
         is MyListingsEvent.SearchQueryChanged,
         is MyListingsEvent.SortOptionChanged,
         is MyListingsEvent.CategoryFilterChanged,
-        is MyListingsEvent.FilterExpiryWithinDaysChanged,
-        is MyListingsEvent.FilterHasRequestsChanged,
+        is MyListingsEvent.FilterExpiresByChanged,
         is MyListingsEvent.ClearAdvancedFilters,
         is MyListingsEvent.ShowFilterSheet,
         is MyListingsEvent.RefreshListings,

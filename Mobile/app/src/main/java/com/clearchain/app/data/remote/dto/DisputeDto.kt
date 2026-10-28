@@ -10,7 +10,7 @@ data class DisputeData(
     val ngoStatement: String? = null,
     val groceryStatement: String? = null,
     val photoEvidenceUrl: String? = null,
-    val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
+    val status: String, // open, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
     val createdAt: String
 )
@@ -55,7 +55,7 @@ data class DisputeListItemData(
     val ngoStatement: String? = null,
     val groceryStatement: String? = null,
     val photoEvidenceUrl: String? = null,
-    val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
+    val status: String, // open, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
     val createdAt: String
 )
@@ -80,7 +80,7 @@ data class MyDisputeData(
     val reason: String,
     val ngoStatement: String? = null,
     val photoEvidenceUrl: String? = null,
-    val status: String, // open, under_review, resolved_ngo, resolved_grocery, dismissed
+    val status: String, // open, resolved_ngo, resolved_grocery, dismissed
     val adminResolution: String? = null,
     val createdAt: String
 )

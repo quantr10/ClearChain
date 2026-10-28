@@ -2,6 +2,7 @@ package com.clearchain.app.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.clearchain.app.data.local.SettingsStore
 import com.clearchain.app.data.local.dao.ListingDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.entity.toDomain
@@ -21,18 +22,21 @@ import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class ListingRepositoryImpl @Inject constructor(
     private val listingApi: ListingApi,
     private val imageAnalysisApi: ImageAnalysisApi,
     private val listingDao: ListingDao,
     private val userDao: UserDao,
+    private val settingsStore: SettingsStore,
     @ApplicationContext private val context: Context
 ) : ListingRepository {
 
     override suspend fun createListing(
         title: String,
         description: String,
+        notes: String,
         category: String,
         quantity: Int,
         unit: String,
@@ -44,6 +48,7 @@ class ListingRepositoryImpl @Inject constructor(
                 CreateListingRequest(
                     title,
                     description,
+                    notes,
                     category,
                     quantity,
                     unit,
@@ -124,6 +129,7 @@ class ListingRepositoryImpl @Inject constructor(
         id: String,
         title: String,
         description: String,
+        notes: String,
         category: String,
         quantity: Int,
         unit: String,
@@ -136,6 +142,7 @@ class ListingRepositoryImpl @Inject constructor(
                 CreateListingRequest(
                     title,
                     description,
+                    notes,
                     category,
                     quantity,
                     unit,
@@ -206,7 +213,10 @@ class ListingRepositoryImpl @Inject constructor(
             val response = try {
                 val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
                 val multipartBody = MultipartBody.Part.createFormData("image", file.name, requestBody)
-                imageAnalysisApi.analyzeImage(multipartBody)
+                // Suggestions come back in the app's language so they can go straight into the form.
+                val language = settingsStore.language.first()
+                    .toRequestBody("text/plain".toMediaTypeOrNull())
+                imageAnalysisApi.analyzeImage(multipartBody, language)
             } finally {
                 // Must run even if the call throws, or a failed analysis leaks this file.
                 file.delete()

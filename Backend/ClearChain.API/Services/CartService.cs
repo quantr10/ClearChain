@@ -401,6 +401,7 @@ public class CartService : ICartService
                 ? DateTime.SpecifyKind(sourceListing.ExpirationDate.Value, DateTimeKind.Utc)
                 : null,
             ClearanceDeadline = DateTime.SpecifyKind(sourceListing.ClearanceDeadline, DateTimeKind.Utc),
+            Description = sourceListing.Description,
             Notes = sourceListing.Notes,
             PhotoUrl = sourceListing.PhotoUrl,
             PickupTimeStart = sourceListing.PickupTimeStart,

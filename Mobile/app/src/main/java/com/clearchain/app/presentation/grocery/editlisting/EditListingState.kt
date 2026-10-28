@@ -4,6 +4,7 @@ data class EditListingState(
     val listingId: String = "",
     val title: String = "",
     val description: String = "",
+    val notes: String = "",
     val category: String = "FRUITS",
     val quantity: String = "",
     val unit: String = "kg",

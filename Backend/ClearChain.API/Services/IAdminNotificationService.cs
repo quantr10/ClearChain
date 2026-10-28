@@ -4,6 +4,7 @@ public interface IAdminNotificationService
 {
     Task NotifyNewOrganizationRegisteredAsync(OrganizationRegisteredNotification notification);
     Task NotifyTransactionCompletedAsync(TransactionCompletedNotification notification);
+    Task NotifyNewDisputeAsync(NewDisputeNotification notification);
     Task NotifyStatsUpdatedAsync(PlatformStatsNotification stats);
     Task NotifySystemAlertAsync(SystemAlertNotification alert);
 }
@@ -30,6 +31,17 @@ public class TransactionCompletedNotification
     public int Quantity { get; set; }
     public string Unit { get; set; } = string.Empty;
     public DateTime CompletedAt { get; set; }
+}
+
+// Field names match the mobile app's NewDisputeNotification.
+public class NewDisputeNotification
+{
+    public string DisputeId { get; set; } = string.Empty;
+    public string PickupRequestId { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty; // key, see DisputeReasons
+    public string ReasonLabel { get; set; } = string.Empty;
+    public string NgoName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
 }
 
 public class PlatformStatsNotification

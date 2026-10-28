@@ -34,7 +34,6 @@
     <string name="error_reset_code_failed">Không gửi được mã đặt lại</string>
     <string name="error_reset_password_failed">Không đặt lại được mật khẩu</string>
     <string name="label_or">hoặc</string>
-    <string name="label_from_date">Từ %1$s</string>
     <string name="label_request_count_short">%1$d yêu cầu</string>
     <string name="remember_me">Ghi nhớ đăng nhập</string>
     <string name="password_strength_weak">Yếu</string>
@@ -74,7 +73,6 @@
     <string name="dispute_reason">Vấn đề gì đã xảy ra?</string>
     <string name="dispute_photo">Thêm ảnh bằng chứng</string>
     <string name="dispute_status_open">Đang mở</string>
-    <string name="dispute_status_under_review">Đang xem xét</string>
     <string name="dispute_status_resolved">Đã giải quyết</string>
     <string name="dispute_status_dismissed">Đã đóng</string>
 
@@ -124,7 +122,6 @@
     <string name="grocery_dashboard_subtitle">Quản lý danh sách thực phẩm dư thừa của bạn</string>
     <string name="role_ngo">Tổ chức</string>
     <string name="role_grocery">Cửa hàng</string>
-    <string name="section_recent_activity">Hoạt động gần đây</string>
     <string name="action_browse_food">Duyệt thực phẩm</string>
     <string name="action_browse_food_subtitle">Tìm thực phẩm dư thừa gần đây</string>
     <string name="action_my_requests">Yêu cầu của tôi</string>
@@ -237,7 +234,6 @@
     <string name="label_notes">Ghi chú</string>
     <string name="view_full_request">Xem yêu cầu lấy hàng đầy đủ</string>
     <string name="loading_source_info">Đang tải thông tin nguồn…</string>
-    <string name="status_expired_info">Mục này đã hết hạn — vui lòng xử lý đúng cách.</string>
     <string name="section_item_details">Chi tiết mục</string>
     <string name="dialog_close">Đóng</string>
     <string name="share_item_label">Chia sẻ nhãn mục</string>
@@ -338,6 +334,7 @@
     <string name="label_title_placeholder">Ví dụ: Bánh mì tươi các loại</string>
     <string name="label_description">Mô tả</string>
     <string name="label_description_placeholder">Mô tả các mặt hàng thực phẩm…</string>
+    <string name="label_notes_placeholder">Tình trạng, cách bảo quản hoặc lưu ý khác (không bắt buộc)…</string>
     <string name="label_expiry_date">Ngày hết hạn *</string>
     <string name="label_pickup_hours_from_profile">Giờ nhận hàng</string>
     <string name="label_pickup_hours_not_set">Chưa đặt — thêm giờ hoạt động trong Hồ sơ</string>
@@ -354,21 +351,16 @@
 
     <!-- Browse Listings -->
     <string name="action_clear_all">Xóa tất cả</string>
-    <string name="filter_quantity_range">Khoảng số lượng</string>
     <string name="action_apply_filters">Áp dụng bộ lọc</string>
     <string name="filter_category">Danh mục</string>
-    <string name="filter_expiry_within">Hết hạn trong</string>
-    <string name="filter_has_requests">Chỉ có yêu cầu lấy hàng</string>
+    <string name="filter_dispute">Tranh chấp</string>
+    <string name="filter_dispute_unresolved">Chưa giải quyết</string>
+    <string name="filter_dispute_resolved">Đã giải quyết</string>
     <string name="filter_pickup_date">Ngày lấy hàng</string>
     <string name="filter_listing_category">Danh mục sản phẩm</string>
     <string name="filter_org_type">Loại tổ chức</string>
-    <string name="filter_expiry_urgency">Mức độ hết hạn</string>
-    <string name="filter_min_freshness">Độ tươi tối thiểu</string>
-    <string name="filter_max_distance">Khoảng cách tối đa</string>
-    <string name="filter_date_range">Phạm vi ngày</string>
+    <string name="filter_expires_by">Hết hạn trước ngày</string>
     <string name="filter_any">Tất cả</string>
-    <string name="filter_default">Mặc định</string>
-    <string name="filter_past">Đã qua</string>
     <string name="hint_search_organizations">Tìm kiếm tổ chức…</string>
 
     <!-- Inventory -->
@@ -431,15 +423,9 @@
     <string name="analytics_pickup_completion_rate">Tỷ lệ hoàn thành lấy hàng</string>
 
     <!-- Admin Dashboard compound strings -->
-    <string name="admin_org_total_verified">Tổng: %1$d  •  Đã xác minh: %2$d</string>
     <!-- Date range presets -->
     <string name="preset_all_time">Tất cả thời gian</string>
     <string name="preset_this_week">Tuần này</string>
-    <string name="preset_this_month">Tháng này</string>
-    <string name="preset_this_quarter">Quý này</string>
-    <string name="preset_custom">Tùy chỉnh</string>
-    <string name="label_select_start_date">Chọn ngày bắt đầu</string>
-    <string name="label_select_end_date">Chọn ngày kết thúc</string>
 
     <!-- Inventory / distribution -->
     <string name="action_mark_distributed">Đánh dấu đã phân phối</string>
@@ -536,9 +522,6 @@
     <string name="dispute_admin_resolution">Ghi chú giải quyết</string>
     <string name="dispute_photo_evidence">Ảnh bằng chứng</string>
     <string name="dispute_reason_section">Lý do</string>
-    <string name="dispute_start_review">Bắt đầu xem xét</string>
-    <string name="snack_dispute_review_started">Đã chuyển khiếu nại sang đang xem xét</string>
-    <string name="error_start_review_failed">Không thể bắt đầu xem xét</string>
     <string name="dispute_mark_resolved">Đánh dấu đã giải quyết</string>
     <string name="action_send_email">Gửi email</string>
     <string name="action_call">Gọi điện</string>
@@ -753,6 +736,7 @@
     <string name="snack_item_added">Đã thêm mặt hàng vào kho</string>
     <string name="snack_new_admin_notification">%1$s mới: %2$s</string>
     <string name="snack_new_transaction">Giao dịch: %1$s</string>
+    <string name="snack_new_dispute">Khiếu nại mới: %1$s từ %2$s</string>
     <string name="snack_stats_refreshed">Đã làm mới thống kê</string>
     <string name="snack_dashboard_refreshed">Đã làm mới bảng điều khiển</string>
     <string name="snack_profile_refreshed">Đã làm mới hồ sơ</string>
@@ -789,7 +773,6 @@
     <string name="label_email">Email</string>
     <string name="msg_not_provided">Chưa cung cấp</string>
     <string name="label_overdue">Quá hạn</string>
-    <string name="label_to">Đến</string>
     <string name="label_view_document">Xem tài liệu</string>
 
     <!-- Verification checklist items -->
@@ -876,12 +859,6 @@
     <string name="sort_expiring_later">Hết hạn muộn hơn</string>
 
     <!-- Admin activity titles and descriptions -->
-    <string name="activity_title_new_org">%1$s mới đã đăng ký</string>
-    <string name="activity_title_transaction">Giao dịch hoàn thành</string>
-    <string name="activity_title_stats_updated">Thống kê nền tảng đã cập nhật</string>
-    <string name="activity_desc_new_org">%1$s từ %2$s</string>
-    <string name="activity_desc_transaction">%1$s nhận %2$s %3$s từ %4$s</string>
-    <string name="activity_desc_stats">%1$s tổng, %2$s hoàn thành hôm nay</string>
     <string name="cd_org_type">Tổ chức %1$s</string>
     <string name="error_delete_listing_failed">Không thể xóa danh sách</string>
 
@@ -1011,22 +988,17 @@
     <string name="stats_analytics_title">Thống kê &amp; Phân tích</string>
     <string name="stats_all_time_subtitle">Toàn bộ dữ liệu từ khi nền tảng hoạt động</string>
     <string name="stats_period_range">%1$s – %2$s</string>
-    <plurals name="stats_period_days">
-        <item quantity="other">%1$d ngày gần nhất</item>
-    </plurals>
+    <string name="filter_time_period">Khoảng thời gian</string>
+    <string name="period_day">Ngày</string>
+    <string name="period_week">Tuần</string>
+    <string name="period_month">Tháng</string>
+    <string name="period_yesterday">Hôm qua</string>
+    <string name="period_last_week">Tuần trước</string>
+    <string name="period_week_of">Tuần từ %1$s</string>
+    <string name="cd_previous_period">Kỳ trước</string>
+    <string name="cd_next_period">Kỳ sau</string>
     <string name="action_retry">Thử lại</string>
 
-    <string name="section_timing">Tốc độ bàn giao</string>
-    <string name="timing_to_ready">Tạo yêu cầu → sẵn sàng</string>
-    <string name="timing_to_pickup">Tạo yêu cầu → đã lấy hàng</string>
-    <string name="timing_to_confirm">Lấy hàng → xác nhận nhận</string>
-    <string name="timing_p90">10%% chậm nhất mất hơn</string>
-    <string name="timing_within_24h">Hoàn tất trong một ngày</string>
-    <string name="timing_within_24h_detail">%1$d%% lượt lấy hàng hoàn tất trong vòng một ngày</string>
-    <plurals name="timing_sample">
-        <item quantity="other">Trung vị trên %1$d lượt lấy hàng đã hoàn tất</item>
-    </plurals>
-    <string name="timing_no_data">Kỳ này chưa có lượt lấy hàng nào hoàn tất nên chưa đo được thời gian.</string>
 
     <string name="section_live_backlog">Đang chờ xử lý</string>
     <string name="backlog_note">Số liệu thời gian thực, không phụ thuộc khoảng thời gian đã chọn.</string>
@@ -1056,10 +1028,7 @@
     <!-- ── Thống kê admin: các chuỗi trước đây chỉ có bản tiếng Anh ── -->
     <string name="stats_unavailable">Chưa có số liệu</string>
     <string name="stats_unavailable_subtitle">Số liệu sẽ xuất hiện khi các tổ chức bắt đầu đăng tin và thu nhận thực phẩm.</string>
-    <string name="stat_pending_verification">%1$d hồ sơ chờ duyệt</string>
-    <plurals name="stat_pending_verification_aged">
-        <item quantity="other">%1$d hồ sơ chờ duyệt · lâu nhất %2$d ngày</item>
-    </plurals>
+    <string name="stat_awaiting_verification">Chờ xác minh</string>
     <string name="chart_no_activity">Kỳ này chưa có lượt lấy hàng nào hoàn tất.</string>
     <string name="chart_no_requests">Kỳ này chưa có yêu cầu lấy hàng nào.</string>
     <string name="chart_top_groceries">Cửa hàng theo số lượt lấy hàng hoàn tất</string>

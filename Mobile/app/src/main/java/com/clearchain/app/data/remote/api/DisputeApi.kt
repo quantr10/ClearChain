@@ -31,10 +31,6 @@ interface DisputeApi {
         @Query("pickupRequestId") pickupRequestId: String? = null
     ): DisputeListResponse
 
-    // Admin only — moves an open dispute to under_review.
-    @PUT("disputes/{id}/review")
-    suspend fun startReview(@Path("id") id: String): DisputeListItemResponse
-
     @PUT("disputes/{id}/resolve")
     suspend fun resolveDispute(
         @Path("id") id: String,

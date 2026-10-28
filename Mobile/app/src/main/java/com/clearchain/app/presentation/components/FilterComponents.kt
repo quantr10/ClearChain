@@ -7,8 +7,10 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -334,6 +336,28 @@ private fun HeaderChip(
     }
 }
 
+// ── FILTER SHEET CONTENT ─────────────────────────────────────────────────────
+
+/**
+ * The scrolling body of an advanced-filters bottom sheet. Switches off the 48.dp
+ * min-touch-target inflation, as [HeaderChip] does, so the 32.dp chips sit on the 8.dp
+ * rhythm instead of 8.dp of dead space above and below every chip row.
+ */
+@Composable
+fun FilterSheetContent(content: @Composable ColumnScope.() -> Unit) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = content
+        )
+    }
+}
+
 // ── FILTER SECTION WRAPPER ───────────────────────────────────────────────────
 
 @Composable
@@ -349,8 +373,48 @@ fun FilterSection(
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         content()
+    }
+}
+
+// ── DATE FILTER ──────────────────────────────────────────────────────────────
+
+/**
+ * A filter-sheet date field that opens the calendar. Holds an ISO `yyyy-MM-dd` date, or
+ * null for any date; the clear button sets it back to null.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateFilterField(
+    date: String?,
+    onDateChanged: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = "",
+    selectableDates: SelectableDates = DatePickerDefaults.AllDates
+) {
+    DatePickerField(
+        value = date.orEmpty(),
+        onDateSelected = { onDateChanged(it) },
+        modifier = modifier,
+        label = label,
+        placeholder = stringResource(R.string.filter_any),
+        selectableDates = selectableDates,
+        onClearDate = { onDateChanged(null) }
+    )
+}
+
+/** The "Expires by" filter shared by the listing, inventory and request filter sheets. */
+@Composable
+fun ExpiresByFilterSection(
+    expiresBy: String?,
+    onExpiresByChanged: (String?) -> Unit
+) {
+    FilterSection(title = stringResource(R.string.filter_expires_by)) {
+        DateFilterField(
+            date = expiresBy,
+            onDateChanged = onExpiresByChanged,
+            selectableDates = TodayOrLaterDates
+        )
     }
 }
 

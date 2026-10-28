@@ -28,7 +28,8 @@ builder.Configuration.AddEnvironmentVariables();
 var requiredConfigKeys = new[]
 {
     "DATABASE_URL", "JWT_SECRET_KEY", "JWT_ISSUER", "JWT_AUDIENCE",
-    "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "AZURE_VISION_ENDPOINT", "AZURE_VISION_KEY"
+    "SUPABASE_URL", "SUPABASE_SERVICE_KEY",
+    "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_KEY", "AZURE_OPENAI_DEPLOYMENT"
 };
 var missingConfigKeys = requiredConfigKeys
     .Where(key => string.IsNullOrWhiteSpace(builder.Configuration[key]))
@@ -90,7 +91,8 @@ builder.Services.AddScoped<IListingNotificationService, ListingNotificationServi
 builder.Services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
 builder.Services.AddScoped<IAdminNotificationService, AdminNotificationService>();
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
-builder.Services.AddScoped<IImageAnalysisService, AzureVisionService>();
+// Singleton: the OpenAI ChatClient is thread-safe and meant to be reused across requests.
+builder.Services.AddSingleton<IImageAnalysisService, AzureOpenAIFoodAnalysisService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

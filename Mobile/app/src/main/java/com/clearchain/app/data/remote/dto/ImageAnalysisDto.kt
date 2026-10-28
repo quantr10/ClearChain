@@ -15,6 +15,7 @@ data class AnalyzeImageResponse(
 @Serializable
 data class FoodAnalysisData(
     val title: String,
+    val description: String = "",
     val category: String,
     val expiryDate: String,
     val notes: String,

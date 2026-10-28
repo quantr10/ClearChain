@@ -16,6 +16,7 @@ import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -46,6 +47,7 @@ class AdminAnalyticsViewModel @Inject constructor(
 
     init {
         load(isRefresh = false)
+        loadActiveDates()
         observeLiveUpdates()
     }
 
@@ -59,32 +61,64 @@ class AdminAnalyticsViewModel @Inject constructor(
                 signalRService.listingDeleted,
                 signalRService.pickupRequestCancelled,
                 signalRService.newOrganizationRegistered
-            ).collect { load(isRefresh = false, silent = true) }
+            ).collect {
+                load(isRefresh = false, silent = true)
+                loadActiveDates()
+            }
         }
     }
 
     fun onEvent(event: AdminAnalyticsEvent) {
         when (event) {
             AdminAnalyticsEvent.Load -> load(isRefresh = false)
-            AdminAnalyticsEvent.Refresh -> load(isRefresh = true)
+            AdminAnalyticsEvent.Refresh -> {
+                load(isRefresh = true)
+                loadActiveDates()
+            }
             AdminAnalyticsEvent.ExportPdf -> exportPdf()
             AdminAnalyticsEvent.FocusConsumed -> _state.update { it.copy(focusedSection = null) }
-            is AdminAnalyticsEvent.SelectPeriod -> {
-                if (event.period != _state.value.period) {
-                    _state.update { it.copy(period = event.period) }
-                    load(isRefresh = false)
+            AdminAnalyticsEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
+            AdminAnalyticsEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
+            is AdminAnalyticsEvent.PeriodTypeSelected -> setPeriod(AnalyticsPeriod(event.type))
+            AdminAnalyticsEvent.PreviousPeriod -> {
+                val current = _state.value
+                if (current.period.canGoBack(current.firstDataDate)) {
+                    setPeriod(current.period.copy(offset = current.period.offset + 1))
                 }
             }
+            AdminAnalyticsEvent.NextPeriod -> {
+                val period = _state.value.period
+                if (period.canGoForward) setPeriod(period.copy(offset = period.offset - 1))
+            }
+            AdminAnalyticsEvent.ClearFilters -> setPeriod(AnalyticsPeriod())
+        }
+    }
+
+    private fun setPeriod(period: AnalyticsPeriod) {
+        if (period == _state.value.period) return
+        _state.update { it.copy(period = period) }
+        load(isRefresh = false)
+    }
+
+    private fun loadActiveDates() {
+        viewModelScope.launch {
+            // Only bounds how far back the period can step; without it stepping back is
+            // simply unbounded, so a failure here stays quiet.
+            runCatching { adminApi.getStatisticsActiveDates().data }
+                .onSuccess { dates ->
+                    val first = dates.minOrNull()?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                    _state.update { it.copy(firstDataDate = first) }
+                }
         }
     }
 
     private fun load(isRefresh: Boolean, silent: Boolean = false) {
-        val period = _state.value.period
+        val range = _state.value.requestRange
         viewModelScope.launch {
             if (!silent) {
                 _state.update {
                     it.copy(
-                        // A period switch keeps the old figures on screen rather than blanking
+                        // A range change keeps the old figures on screen rather than blanking
                         // the page; only a cold start gets the spinner.
                         isLoading = !isRefresh && it.data == null,
                         isRefreshing = isRefresh,
@@ -94,11 +128,15 @@ class AdminAnalyticsViewModel @Inject constructor(
             }
 
             try {
-                val loaded = adminApi.getDetailedStatistics(preset = period.preset).data
+                val loaded = if (range == null) {
+                    adminApi.getDetailedStatistics(preset = "all").data
+                } else {
+                    adminApi.getDetailedStatistics(from = range.first, to = range.second, preset = "custom").data
+                }
 
-                // A period change raced against this response would show the wrong figures
-                // under the new chip, so a stale answer is dropped.
-                if (_state.value.period != period) return@launch
+                // A range change raced against this response would show the wrong figures
+                // under the new range, so a stale answer is dropped.
+                if (_state.value.requestRange != range) return@launch
 
                 _state.update {
                     it.copy(
@@ -134,7 +172,7 @@ class AdminAnalyticsViewModel @Inject constructor(
         }
         if (_state.value.isExporting) return
 
-        val periodLabel = string(_state.value.period.labelRes)
+        val periodLabel = _state.value.period.description(context.resources)
         _state.update { it.copy(isExporting = true) }
 
         viewModelScope.launch {
@@ -210,13 +248,6 @@ class AdminAnalyticsViewModel @Inject constructor(
         }
 
         fun pct(value: Double) = "${(value * 100).roundToInt()}%"
-        fun hours(value: Double?) = value?.let {
-            when {
-                it < 1 -> "${(it * 60).roundToInt()}m"
-                it < 48 -> "${it.roundToInt()}h"
-                else -> "${(it / 24).roundToInt()}d"
-            }
-        } ?: "-"
 
         canvas.drawText(string(R.string.pdf_stats_title), MARGIN, y, titlePaint)
         y += 22f
@@ -227,15 +258,6 @@ class AdminAnalyticsViewModel @Inject constructor(
                 periodLabel
             )
         )
-
-        val t = data.timing
-        heading(string(R.string.section_timing))
-        line(string(R.string.timing_to_ready), hours(t.medianHoursToReady))
-        line(string(R.string.timing_to_pickup), hours(t.medianHoursToPickup))
-        line(string(R.string.timing_to_confirm), hours(t.medianHoursToConfirm))
-        line(string(R.string.timing_p90), hours(t.p90HoursToPickup))
-        line(string(R.string.timing_within_24h), pct(t.completedWithin24hRate))
-        note(context.resources.getQuantityString(R.plurals.timing_sample, t.sampleSize, t.sampleSize))
 
         val b = data.backlog
         heading(string(R.string.section_live_backlog))

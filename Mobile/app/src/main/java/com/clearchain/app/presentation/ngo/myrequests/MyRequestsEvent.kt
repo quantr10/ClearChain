@@ -29,6 +29,7 @@ sealed class MyRequestsEvent {
     object ShowFilterSheet : MyRequestsEvent()
     object HideFilterSheet : MyRequestsEvent()
     data class FilterCategoryChanged(val category: String?) : MyRequestsEvent()
-    data class FilterPickupDatePresetChanged(val preset: String?) : MyRequestsEvent()
+    data class FilterPickupDateChanged(val date: String?) : MyRequestsEvent()
+    data class FilterExpiresByChanged(val date: String?) : MyRequestsEvent()
     object ClearAdvancedFilters : MyRequestsEvent()
 }

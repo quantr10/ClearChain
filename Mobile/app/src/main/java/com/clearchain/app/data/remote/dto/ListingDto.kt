@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 data class CreateListingRequest(
     val title: String,
     val description: String,
+    val notes: String,
     val category: String,
     val quantity: Int,
     val unit: String,
@@ -39,6 +40,7 @@ data class ListingData(
     val groceryProfilePictureUrl: String? = null,
     val title: String,
     val description: String,
+    val notes: String = "",
     val category: String,
     val quantity: Int,
     val unit: String,
@@ -80,6 +82,7 @@ fun ListingData.toDomain(): Listing {
         groceryProfilePictureUrl = groceryProfilePictureUrl,
         title = title,
         description = description,
+        notes = notes,
         category = when (category.uppercase()) {
             "FRUITS" -> FoodCategory.FRUITS
             "VEGETABLES" -> FoodCategory.VEGETABLES

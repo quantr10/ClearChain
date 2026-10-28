@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.StickyNote2
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -121,6 +122,21 @@ fun EditListingScreen(
                             imeAction = ImeAction.Next,
                             isError = state.descriptionError != null,
                             errorMessage = state.descriptionError,
+                            enabled = !busy,
+                            singleLine = false,
+                            minLines = 2,
+                            maxLines = 4
+                        )
+                    }
+
+                    // ── Notes ────────────────────────────────────────────────────
+                    FieldCard(label = stringResource(R.string.label_notes)) {
+                        ClearChainTextField(
+                            value = state.notes,
+                            onValueChange = { viewModel.onEvent(EditListingEvent.NotesChanged(it)) },
+                            placeholder = stringResource(R.string.label_notes_placeholder),
+                            leadingIcon = Icons.AutoMirrored.Filled.StickyNote2,
+                            imeAction = ImeAction.Next,
                             enabled = !busy,
                             singleLine = false,
                             minLines = 2,

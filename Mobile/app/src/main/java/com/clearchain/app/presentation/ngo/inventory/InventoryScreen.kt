@@ -263,14 +263,7 @@ private fun InventoryFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -290,8 +283,7 @@ private fun InventoryFilterSheet(
             }
 
             // Category
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_category), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            FilterSection(title = stringResource(R.string.filter_category)) {
                 androidx.compose.foundation.layout.FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -311,41 +303,10 @@ private fun InventoryFilterSheet(
                 }
             }
 
-            // Expiry urgency
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_expiry_urgency), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(null to "Any", 1 to "Today", 2 to "48h", 3 to "3 days", 7 to "7 days")
-                        .forEach { (days, label) ->
-                            FilterChip(
-                                selected = state.filterExpiryWithinDays == days,
-                                onClick = { onEvent(InventoryEvent.FilterExpiryWithinDaysChanged(days)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
-            }
-
-            // Quantity range
-            val qtyLabel = when {
-                state.filterMinQty > 0.0 && state.filterMaxQty != null ->
-                    "${state.filterMinQty.toInt()}–${state.filterMaxQty.toInt()} units"
-                state.filterMinQty > 0.0 -> "Min ${state.filterMinQty.toInt()} units"
-                state.filterMaxQty != null -> "Up to ${state.filterMaxQty.toInt()} units"
-                else -> "Any quantity"
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("${stringResource(R.string.filter_quantity_range)}: $qtyLabel", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                RangeSlider(
-                    value = state.filterMinQty.toFloat()..(state.filterMaxQty?.toFloat() ?: 500f),
-                    onValueChange = { range ->
-                        onEvent(InventoryEvent.FilterMinQtyChanged(range.start.toDouble()))
-                        onEvent(InventoryEvent.FilterMaxQtyChanged(if (range.endInclusive >= 500f) null else range.endInclusive.toDouble()))
-                    },
-                    valueRange = 0f..500f,
-                    steps = 49
-                )
-            }
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(InventoryEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),

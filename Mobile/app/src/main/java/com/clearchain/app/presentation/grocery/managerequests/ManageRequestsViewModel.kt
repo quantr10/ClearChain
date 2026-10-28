@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.signalr.SignalRService
+import com.clearchain.app.domain.model.hasItemExpiringBy
 import com.clearchain.app.domain.model.itemTitles
 import com.clearchain.app.domain.model.searchText
 import com.clearchain.app.domain.usecase.pickuprequest.ApprovePickupRequestUseCase
@@ -85,12 +86,16 @@ class ManageRequestsViewModel @Inject constructor(
                 _state.update { it.copy(filterCategory = event.category) }
                 applyFilters()
             }
-            is ManageRequestsEvent.FilterPickupDatePresetChanged -> {
-                _state.update { it.copy(filterPickupDatePreset = event.preset) }
+            is ManageRequestsEvent.FilterPickupDateChanged -> {
+                _state.update { it.copy(filterPickupDate = event.date) }
+                applyFilters()
+            }
+            is ManageRequestsEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
                 applyFilters()
             }
             ManageRequestsEvent.ClearAdvancedFilters -> {
-                _state.update { it.copy(filterCategory = null, filterPickupDatePreset = null) }
+                _state.update { it.copy(filterCategory = null, filterPickupDate = null, filterExpiresBy = null) }
                 applyFilters()
             }
 
@@ -156,24 +161,14 @@ class ManageRequestsViewModel @Inject constructor(
             filtered = filtered.filter { it.listingCategory == cat }
         }
 
-        current.filterPickupDatePreset?.let { preset ->
-            val today = java.time.LocalDate.now()
-            filtered = when (preset) {
-                "today" -> filtered.filter { it.pickupDate.take(10) == today.toString() }
-                "this_week" -> filtered.filter {
-                    runCatching {
-                        val d = java.time.LocalDate.parse(it.pickupDate.take(10))
-                        !d.isBefore(today) && !d.isAfter(today.plusDays(6))
-                    }.getOrDefault(false)
-                }
-                "next_30" -> filtered.filter {
-                    runCatching {
-                        val d = java.time.LocalDate.parse(it.pickupDate.take(10))
-                        !d.isBefore(today) && !d.isAfter(today.plusDays(29))
-                    }.getOrDefault(false)
-                }
-                else -> filtered
-            }
+        // Pickup on the picked date
+        current.filterPickupDate?.let { date ->
+            filtered = filtered.filter { it.pickupDate.take(10) == date }
+        }
+
+        // Any product expiring on or before the picked date
+        current.filterExpiresBy?.let { date ->
+            filtered = filtered.filter { it.hasItemExpiringBy(date) }
         }
 
         filtered = when (current.selectedSort.value) {

@@ -8,10 +8,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.InventoryItem
 import com.clearchain.app.domain.model.InventoryStatus
@@ -29,99 +34,107 @@ fun InventoryItemCard(
     var showDistributeDialog by remember { mutableStateOf(false) }
     DismissWhenFinished(isDistributing) { showDistributeDialog = false }
 
+    val daysUntilExpiry = remember(item.expiryDate) { daysUntil(item.expiryDate) }
+    // A distributed item has left the shelf, so its expiry no longer needs a warning.
+    val tracksExpiry = item.status != InventoryStatus.DISTRIBUTED
+
     ClearChainCard(modifier = modifier, onClick = onClick) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            // ── Header ───────────────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+        Column {
+            // ── Photo, same layout as ListingCard ────────────────────────────
+            val imageUrl = item.photoUrl?.takeIf { it.isNotBlank() }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
             ) {
-                ProductThumbnail(
-                    imageUrl = item.photoUrl,
-                    contentDescription = item.productName,
-                    size = 48.dp
-                )
-                Spacer(Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (imageUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl).crossfade(true).build(),
+                        contentDescription = item.productName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        loading = { FoodImagePlaceholder(Modifier.fillMaxSize()) },
+                        error = { FoodImagePlaceholder(Modifier.fillMaxSize()) }
+                    )
+                } else {
+                    FoodImagePlaceholder(Modifier.fillMaxSize())
+                }
+
+                if (tracksExpiry) {
+                    ExpiryUrgencyBanner(daysUntilExpiry, Modifier.align(Alignment.BottomCenter))
+                }
+
+                Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                    InventoryStatusBadge(item.status)
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // ── Name + category ──────────────────────────────────────────
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
                         text = item.productName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     InventoryCategoryBadge(category = item.category)
                 }
-                Spacer(Modifier.width(8.dp))
-                InventoryStatusBadge(item.status)
-            }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // ── Details grid ─────────────────────────────────────────────────
-            val expiryColor = if (item.status == InventoryStatus.ACTIVE) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            CompactInventoryRow(
-                icon = Icons.Default.Scale,
-                text = "${item.quantity} ${item.unit}",
-                textColor = MaterialTheme.colorScheme.onSurface
-            )
-            CompactInventoryRow(
-                icon = Icons.Default.Event,
-                text = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(item.expiryDate)),
-                textColor = expiryColor
-            )
-            CompactInventoryRow(
-                icon = Icons.Default.Inventory,
-                text = "${stringResource(R.string.inventory_step_received)}: ${DateTimeUtils.formatDate(item.receivedAt)}"
-            )
-            item.distributedAt?.let {
+                // ── Details grid ─────────────────────────────────────────────
                 CompactInventoryRow(
-                    icon = Icons.Default.CheckCircle,
-                    text = "${stringResource(R.string.inventory_step_distributed)}: ${DateTimeUtils.formatDate(it)}"
+                    icon = Icons.Default.Scale,
+                    text = "${item.quantity} ${item.unit}",
+                    textColor = MaterialTheme.colorScheme.onSurface
                 )
-            }
-
-            // ── Action / Status notice ───────────────────────────────────────
-            when (item.status) {
-                InventoryStatus.ACTIVE -> {
-                    if (onDistribute != null) {
-                        ClearChainButton(
-                            text = stringResource(R.string.action_mark_distributed),
-                            onClick = { showDistributeDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isDistributing,
-                            icon = Icons.Default.VolunteerActivism
-                        )
-                    }
+                CompactInventoryRow(
+                    icon = Icons.Default.Event,
+                    text = if (tracksExpiry) {
+                        expiryLabel(daysUntilExpiry, item.expiryDate)
+                    } else {
+                        stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(item.expiryDate))
+                    },
+                    textColor = if (tracksExpiry) expiryTextColor(daysUntilExpiry) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                CompactInventoryRow(
+                    icon = Icons.Default.Inventory,
+                    text = "${stringResource(R.string.inventory_step_received)}: ${DateTimeUtils.formatDate(item.receivedAt)}"
+                )
+                item.distributedAt?.let {
+                    CompactInventoryRow(
+                        icon = Icons.Default.CheckCircle,
+                        text = "${stringResource(R.string.inventory_step_distributed)}: ${DateTimeUtils.formatDate(it)}"
+                    )
                 }
-                InventoryStatus.EXPIRED -> {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
-                            Text(
-                                stringResource(R.string.status_expired_info),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
+
+                // ── Action / Status notice ───────────────────────────────────
+                when (item.status) {
+                    InventoryStatus.ACTIVE -> {
+                        if (onDistribute != null) {
+                            ClearChainButton(
+                                text = stringResource(R.string.action_mark_distributed),
+                                onClick = { showDistributeDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isDistributing,
+                                icon = Icons.Default.VolunteerActivism
                             )
                         }
                     }
+                    // The red "Expired" strip on the photo already says it.
+                    InventoryStatus.EXPIRED, InventoryStatus.DISTRIBUTED -> {}
                 }
-                InventoryStatus.DISTRIBUTED -> {}
             }
         }
     }

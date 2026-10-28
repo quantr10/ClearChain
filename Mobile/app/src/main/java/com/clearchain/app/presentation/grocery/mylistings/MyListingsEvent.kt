@@ -17,8 +17,7 @@ sealed class MyListingsEvent {
     // Advanced filter sheet
     object ShowFilterSheet : MyListingsEvent()
     object HideFilterSheet : MyListingsEvent()
-    data class FilterExpiryWithinDaysChanged(val days: Int?) : MyListingsEvent()
-    data class FilterHasRequestsChanged(val enabled: Boolean) : MyListingsEvent()
+    data class FilterExpiresByChanged(val date: String?) : MyListingsEvent()
     object ClearAdvancedFilters : MyListingsEvent()
 
     // Bulk selection

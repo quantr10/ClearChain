@@ -7,6 +7,7 @@ using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace ClearChain.API.Controllers;
 
@@ -142,6 +143,8 @@ public class AdminController : ControllerBase
         var totalOrgs = await orgs.CountAsync();
         var totalGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery");
         var totalNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo");
+        var pendingGroceries = await orgs.CountAsync(o => o.Type.ToLower() == "grocery" && o.VerificationStatus == "pending");
+        var pendingNgos = await orgs.CountAsync(o => o.Type.ToLower() == "ngo" && o.VerificationStatus == "pending");
 
         var activeListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
         var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
@@ -159,6 +162,8 @@ public class AdminController : ControllerBase
             TotalOrganizations = totalOrgs,
             TotalGroceries = totalGroceries,
             TotalNgos = totalNgos,
+            PendingGroceries = pendingGroceries,
+            PendingNgos = pendingNgos,
 
             ActiveListings = activeListings,
             ReservedListings = reservedListings,
@@ -205,6 +210,16 @@ public class AdminController : ControllerBase
             .AsNoTracking()
             .ToDictionaryAsync(l => l.Id);
 
+        // A pickup can only be disputed once (see DisputesController); taking the newest still
+        // gives a sensible answer should older data hold more than one.
+        var disputes = await _context.Disputes
+            .AsNoTracking()
+            .Select(d => new { d.PickupRequestId, d.Status, d.CreatedAt })
+            .ToListAsync();
+        var disputeStatusByRequest = disputes
+            .GroupBy(d => d.PickupRequestId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(d => d.CreatedAt).First().Status);
+
         var responseData = new List<PickupRequestData>();
 
         foreach (var pr in pickupRequests)
@@ -242,6 +257,7 @@ public class AdminController : ControllerBase
                 RequiresRefrigeration = pr.RequiresRefrigeration,
                 IsFragile = pr.IsFragile,
                 IsHeavy = pr.IsHeavy,
+                DisputeStatus = disputeStatusByRequest.GetValueOrDefault(pr.Id),
                 Items = pr.Items.Select(PickupRequestItemData.From).ToList()
             });
         }
@@ -412,7 +428,7 @@ public class AdminController : ControllerBase
             PendingVerifications = pendingOrgs.Count,
             OldestPendingVerificationDays = oldestPendingDays,
             // Both states still sit on an admin's desk, which is what this queue counts.
-            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open" || d.Status == "under_review")
+            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open")
         };
 
         var data = new AdminStatisticsData
@@ -464,11 +480,40 @@ public class AdminController : ControllerBase
                 Ngos = orgs.Count(o => o.Type.ToLower() == "ngo"),
                 Verified = orgs.Count(o => o.Verified),
                 PendingVerification = pendingOrgs.Count,
+                PendingGroceries = pendingOrgs.Count(o => o.Type.ToLower() == "grocery"),
+                PendingNgos = pendingOrgs.Count(o => o.Type.ToLower() == "ngo"),
                 OldestPendingDays = oldestPendingDays
             }
         };
 
         return Ok(new AdminStatisticsResponse { Data = data });
+    }
+
+    // The UTC days on which something the period-scoped statistics count happened: a
+    // request raised or handed over, a review written, a dispute opened. The app's
+    // range picker only offers these days, so a range never starts or ends on a blank.
+    [HttpGet("statistics/active-dates")]
+    public async Task<ActionResult<StatsActiveDatesResponse>> GetStatisticsActiveDates()
+    {
+        var requests = await _context.PickupRequests
+            .AsNoTracking()
+            .Select(pr => new { pr.RequestedAt, CompletedAt = pr.Status == PickupRequestStatus.Completed
+                ? pr.ConfirmedReceivedAt ?? pr.MarkedPickedUpAt
+                : null })
+            .ToListAsync();
+        var reviews = await _context.Reviews.AsNoTracking().Select(r => r.CreatedAt).ToListAsync();
+        var disputes = await _context.Disputes.AsNoTracking().Select(d => d.CreatedAt).ToListAsync();
+
+        var dates = requests.Select(r => r.RequestedAt)
+            .Concat(requests.Where(r => r.CompletedAt.HasValue).Select(r => r.CompletedAt!.Value))
+            .Concat(reviews)
+            .Concat(disputes)
+            .Select(at => at.ToString("yyyy-MM-dd"))
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+
+        return Ok(new StatsActiveDatesResponse { Data = dates });
     }
 
     // ── Statistics helpers ───────────────────────────────────────────────────
@@ -503,14 +548,14 @@ public class AdminController : ControllerBase
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
     // ── GET api/admin/disputes ───────────────────────────────────────────────
-    // Admin alert feed: open disputes
+    // Admin alert feed: every dispute still waiting on the admin (status open).
+    // Not capped: the dashboard shows the first five and its sheet lists them all.
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
     {
         var disputes = await _context.Disputes
-            .Where(d => d.Status == "open" || d.Status == "under_review")
+            .Where(d => d.Status == "open")
             .OrderByDescending(d => d.CreatedAt)
-            .Take(30)
             .ToListAsync();
 
         // Reason is stored as a key; the label is what an admin should read.
@@ -520,6 +565,10 @@ public class AdminController : ControllerBase
             severity = "high",
             id = d.Id.ToString(),
             title = $"Dispute: {DisputeReasons.Label(d.Reason)}",
+            // The key lets the app show the reason in its own language; the request id is where
+            // the admin resolves the dispute.
+            reason = d.Reason,
+            pickupRequestId = d.PickupRequestId.ToString(),
             body = d.NgoStatement ?? "",
             status = d.Status,
             createdAt = d.CreatedAt.ToString("o")
@@ -532,10 +581,13 @@ public class AdminController : ControllerBase
 
     private static (DateTime? start, DateTime? end) ResolveRange(string? from, string? to, string preset)
     {
-        if (!string.IsNullOrEmpty(from) && DateTime.TryParse(from, out var f) &&
-            !string.IsNullOrEmpty(to) && DateTime.TryParse(to, out var t))
+        // A bare "yyyy-MM-dd" is a UTC day, like every preset below; parsing it as the
+        // server's local time would shift the range on any host not running in UTC.
+        const DateTimeStyles utc = DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal;
+        if (!string.IsNullOrEmpty(from) && DateTime.TryParse(from, CultureInfo.InvariantCulture, utc, out var f) &&
+            !string.IsNullOrEmpty(to) && DateTime.TryParse(to, CultureInfo.InvariantCulture, utc, out var t))
         {
-            return (f.ToUniversalTime(), t.ToUniversalTime().AddDays(1).AddSeconds(-1));
+            return (f, t.AddDays(1).AddSeconds(-1));
         }
 
         var now = DateTime.UtcNow;

@@ -48,6 +48,22 @@ public class AdminNotificationService : IAdminNotificationService
         }
     }
 
+    public async Task NotifyNewDisputeAsync(NewDisputeNotification notification)
+    {
+        try
+        {
+            await _hubContext.Clients
+                .Group("admins")
+                .SendAsync("NewDisputeCreated", notification);
+
+            _logger.LogInformation($"Notified admins: New dispute - {notification.DisputeId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending NewDisputeCreated notification");
+        }
+    }
+
     public async Task NotifyStatsUpdatedAsync(PlatformStatsNotification stats)
     {
         try

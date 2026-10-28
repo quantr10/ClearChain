@@ -659,14 +659,7 @@ private fun AdvancedFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -729,81 +722,10 @@ private fun AdvancedFilterSheet(
                 }
             }
 
-            // Quantity range
-            FilterSection(title = stringResource(R.string.filter_quantity_range)) {
-                val qtyLabel = when {
-                    state.filterMinQuantity > 0 && state.filterMaxQuantity != null ->
-                        "${state.filterMinQuantity}-${state.filterMaxQuantity} units"
-                    state.filterMinQuantity > 0 -> "Min ${state.filterMinQuantity} units"
-                    state.filterMaxQuantity != null -> "Up to ${state.filterMaxQuantity} units"
-                    else -> stringResource(R.string.filter_any)
-                }
-                Text(qtyLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                RangeSlider(
-                    value = state.filterMinQuantity.toFloat()..(state.filterMaxQuantity?.toFloat() ?: 200f),
-                    onValueChange = { range ->
-                        onEvent(BrowseListingsEvent.FilterMinQuantityChanged(range.start.toInt()))
-                        onEvent(
-                            BrowseListingsEvent.FilterMaxQuantityChanged(
-                                if (range.endInclusive >= 200f) null else range.endInclusive.toInt()
-                            )
-                        )
-                    },
-                    valueRange = 0f..200f,
-                    steps = 19
-                )
-            }
-
-            // Expiring within
-            FilterSection(title = stringResource(R.string.filter_expiry_within)) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(null to stringResource(R.string.filter_any), 1 to "Today", 3 to "3 days", 7 to "1 week", 14 to "2 weeks")
-                        .forEach { (days, label) ->
-                            FilterChip(
-                                selected = state.filterMaxExpiryDays == days,
-                                onClick = { onEvent(BrowseListingsEvent.FilterMaxExpiryDaysChanged(days)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
-            }
-
-            // Minimum freshness
-            FilterSection(title = stringResource(R.string.filter_min_freshness)) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(0 to stringResource(R.string.filter_any), 1 to "1+ day", 2 to "2+ days", 3 to "3+ days", 7 to "7+ days")
-                        .forEach { (days, label) ->
-                            FilterChip(
-                                selected = state.filterMinExpiryDays == days,
-                                onClick = { onEvent(BrowseListingsEvent.FilterMinExpiryDaysChanged(days)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
-            }
-
-            // Max distance
-            FilterSection(title = stringResource(R.string.filter_max_distance)) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(null to stringResource(R.string.filter_default), 2 to "2 km", 5 to "5 km", 10 to "10 km", 20 to "20 km")
-                        .forEach { (km, label) ->
-                            FilterChip(
-                                selected = state.filterMaxDistanceKm == km,
-                                onClick = { onEvent(BrowseListingsEvent.FilterMaxDistanceChanged(km)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
-            }
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(BrowseListingsEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),

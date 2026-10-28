@@ -5,6 +5,7 @@ import android.net.Uri
 sealed class CreateListingEvent {
     data class TitleChanged(val title: String) : CreateListingEvent()
     data class DescriptionChanged(val description: String) : CreateListingEvent()
+    data class NotesChanged(val notes: String) : CreateListingEvent()
     data class CategoryChanged(val category: String) : CreateListingEvent()
     data class QuantityChanged(val quantity: String) : CreateListingEvent()
     data class UnitChanged(val unit: String) : CreateListingEvent()

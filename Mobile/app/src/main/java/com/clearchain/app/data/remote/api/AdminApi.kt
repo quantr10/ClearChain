@@ -32,6 +32,9 @@ interface AdminApi {
         @Query("preset") preset: String = "all"
     ): AdminDetailedStatsResponse
 
+    @GET("admin/statistics/active-dates")
+    suspend fun getStatisticsActiveDates(): StatsActiveDatesResponse
+
     @GET("admin/alerts")
     suspend fun getAlertFeed(): AdminAlertFeedResponse
 

@@ -22,9 +22,7 @@ sealed class InventoryEvent {
     // Advanced filter sheet
     object ShowFilterSheet : InventoryEvent()
     object HideFilterSheet : InventoryEvent()
-    data class FilterExpiryWithinDaysChanged(val days: Int?) : InventoryEvent()
-    data class FilterMinQtyChanged(val min: Double) : InventoryEvent()
-    data class FilterMaxQtyChanged(val max: Double?) : InventoryEvent()
+    data class FilterExpiresByChanged(val date: String?) : InventoryEvent()
     object ClearAdvancedFilters : InventoryEvent()
 
     data class DistributeItem(val itemId: String) : InventoryEvent()

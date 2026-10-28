@@ -149,35 +149,15 @@ class BrowseListingsViewModel @Inject constructor(
             // Advanced filters
             BrowseListingsEvent.ShowFilterSheet -> _state.update { it.copy(showFilterSheet = true) }
             BrowseListingsEvent.HideFilterSheet -> _state.update { it.copy(showFilterSheet = false) }
-            is BrowseListingsEvent.FilterMinQuantityChanged -> {
-                _state.update { it.copy(filterMinQuantity = event.min) }
-                applyFilters()
-            }
-            is BrowseListingsEvent.FilterMaxQuantityChanged -> {
-                _state.update { it.copy(filterMaxQuantity = event.max) }
-                applyFilters()
-            }
-            is BrowseListingsEvent.FilterMinExpiryDaysChanged -> {
-                _state.update { it.copy(filterMinExpiryDays = event.days) }
-                applyFilters()
-            }
-            is BrowseListingsEvent.FilterMaxExpiryDaysChanged -> {
-                _state.update { it.copy(filterMaxExpiryDays = event.days) }
-                applyFilters()
-            }
-            is BrowseListingsEvent.FilterMaxDistanceChanged -> {
-                _state.update { it.copy(filterMaxDistanceKm = event.km) }
+            is BrowseListingsEvent.FilterExpiresByChanged -> {
+                _state.update { it.copy(filterExpiresBy = event.date) }
                 applyFilters()
             }
             BrowseListingsEvent.ClearAdvancedFilters -> {
                 _state.update {
                     it.copy(
                         selectedCategory = null,
-                        filterMinQuantity = 0,
-                        filterMaxQuantity = null,
-                        filterMinExpiryDays = 0,
-                        filterMaxExpiryDays = null,
-                        filterMaxDistanceKm = null,
+                        filterExpiresBy = null,
                         showFavoritesOnly = false
                     )
                 }
@@ -348,11 +328,7 @@ class BrowseListingsViewModel @Inject constructor(
     private fun applyFilters() {
         val s = _state.value
 
-        val listFiltered = applyCommonFilters(s.allListings, s).let { result ->
-            s.filterMaxDistanceKm?.let { maxKm ->
-                result.filter { it.distanceKm == null || it.distanceKm <= maxKm }
-            } ?: result
-        }.applySorting(s)
+        val listFiltered = applyCommonFilters(s.allListings, s).applySorting(s)
 
         val mapFiltered = applyCommonFilters(s.allMapListings, s).applySorting(s)
 
@@ -373,24 +349,13 @@ class BrowseListingsViewModel @Inject constructor(
         }
         s.selectedCategory?.let { cat -> result = result.filter { it.category.name == cat } }
         if (s.showFavoritesOnly) result = result.filter { it.id in s.favoritedIds }
-        if (s.filterMinQuantity > 0) result = result.filter { it.quantity >= s.filterMinQuantity }
-        s.filterMaxQuantity?.let { max -> result = result.filter { it.quantity <= max } }
-        if (s.filterMinExpiryDays > 0) {
-            val today = java.time.LocalDate.now()
+        // Expires on or before the picked date
+        s.filterExpiresBy?.let { date ->
+            val limit = java.time.LocalDate.parse(date)
             result = result.filter { listing ->
                 runCatching {
-                    val expiry = java.time.LocalDate.parse(listing.expiryDate.take(10))
-                    java.time.temporal.ChronoUnit.DAYS.between(today, expiry) >= s.filterMinExpiryDays
-                }.getOrDefault(true)
-            }
-        }
-        s.filterMaxExpiryDays?.let { maxDays ->
-            val today = java.time.LocalDate.now()
-            result = result.filter { listing ->
-                runCatching {
-                    val expiry = java.time.LocalDate.parse(listing.expiryDate.take(10))
-                    java.time.temporal.ChronoUnit.DAYS.between(today, expiry) in 0..maxDays
-                }.getOrDefault(true)
+                    !java.time.LocalDate.parse(listing.expiryDate.take(10)).isAfter(limit)
+                }.getOrDefault(false)
             }
         }
         return result

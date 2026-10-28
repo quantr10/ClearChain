@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -172,14 +170,7 @@ private fun ManageRequestsFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -199,8 +190,7 @@ private fun ManageRequestsFilterSheet(
             }
 
             // Listing category
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_listing_category), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            FilterSection(title = stringResource(R.string.filter_listing_category)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = state.filterCategory == null,
@@ -217,20 +207,18 @@ private fun ManageRequestsFilterSheet(
                 }
             }
 
-            // Pickup date preset
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_pickup_date), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(null to "Any", "today" to "Today", "this_week" to "This week", "next_30" to "Next 30 days")
-                        .forEach { (preset, label) ->
-                            FilterChip(
-                                selected = state.filterPickupDatePreset == preset,
-                                onClick = { onEvent(ManageRequestsEvent.FilterPickupDatePresetChanged(preset)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
+            // Pickup date
+            FilterSection(title = stringResource(R.string.filter_pickup_date)) {
+                DateFilterField(
+                    date = state.filterPickupDate,
+                    onDateChanged = { onEvent(ManageRequestsEvent.FilterPickupDateChanged(it)) }
+                )
             }
+
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(ManageRequestsEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),

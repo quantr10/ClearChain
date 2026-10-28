@@ -37,6 +37,8 @@ data class PickupRequest(
     val listingDescription: String? = null,
     val groceryLocation: String? = null,
     val distanceKm: Double? = null,
+    // Latest dispute's status (open, resolved_ngo, resolved_grocery, dismissed); only sent to admins.
+    val disputeStatus: String? = null,
     val items: List<PickupRequestItem> = emptyList(),
     // Only sent to admins; used for the call / email buttons on the admin detail screen.
     val ngoEmail: String? = null,

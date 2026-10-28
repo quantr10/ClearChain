@@ -28,12 +28,11 @@ enum class NgoDisputeReason(val key: String, @StringRes val labelRes: Int) {
 
 private data class DisputeBadgeStyle(val bg: Color, val onBg: Color, @StringRes val labelRes: Int)
 
-/** Open and under-review read as pending, dismissed as expired, and any resolution as available. */
+/** Open reads as pending, dismissed as expired, and any resolution as available. */
 @Composable
 fun DisputeStatusBadge(status: String) {
     val style = when (status) {
         "open" -> DisputeBadgeStyle(StatusColors.PendingBg, StatusColors.PendingOnBg, R.string.dispute_status_open)
-        "under_review" -> DisputeBadgeStyle(StatusColors.ReservedBg, StatusColors.ReservedOnBg, R.string.dispute_status_under_review)
         "dismissed" -> DisputeBadgeStyle(StatusColors.ExpiredBg, StatusColors.ExpiredOnBg, R.string.dispute_status_dismissed)
         else -> DisputeBadgeStyle(StatusColors.AvailableBg, StatusColors.AvailableOnBg, R.string.dispute_status_resolved)
     }

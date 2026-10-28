@@ -74,8 +74,8 @@ fun MyListingsScreen(
     BackHandler(state.isSelectionMode) { viewModel.onEvent(MyListingsEvent.ToggleSelectionMode) }
     BlockBackWhile(state.isBulkOperating)
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+    FabScaffold(
+        snackbarHostState = snackbarHostState,
         // Bulk action bottom bar
         bottomBar = {
             AnimatedVisibility(
@@ -387,14 +387,7 @@ private fun MyListingsFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -414,8 +407,7 @@ private fun MyListingsFilterSheet(
             }
 
             // Category
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_category), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = state.selectedCategory == null,
@@ -432,33 +424,10 @@ private fun MyListingsFilterSheet(
                 }
             }
 
-            // Expiry within
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.filter_expiry_within), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(null to "Any", 1 to "1 day", 3 to "3 days", 7 to "7 days", 14 to "2 weeks")
-                        .forEach { (days, label) ->
-                            FilterChip(
-                                selected = state.filterExpiryWithinDays == days,
-                                onClick = { onEvent(MyListingsEvent.FilterExpiryWithinDaysChanged(days)) },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                            )
-                        }
-                }
-            }
-
-            // Has pickup requests
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(stringResource(R.string.filter_has_requests), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Switch(
-                    checked = state.filterHasRequests,
-                    onCheckedChange = { onEvent(MyListingsEvent.FilterHasRequestsChanged(it)) }
-                )
-            }
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(MyListingsEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),

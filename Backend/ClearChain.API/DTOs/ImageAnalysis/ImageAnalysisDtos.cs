@@ -22,6 +22,12 @@ public class FoodAnalysisData
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
+    /// Store-style product copy: what it is, variety, pack size, typical use (for Description field)
+    /// Example: "Sliced whole wheat sandwich bread, 500 g loaf. Soft and hearty, ideal for toast and sandwiches."
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
     /// Food category detected by AI (for Category field)
     /// Must match: FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER
     /// </summary>
@@ -34,8 +40,8 @@ public class FoodAnalysisData
     public string ExpiryDate { get; set; } = string.Empty;
 
     /// <summary>
-    /// Food condition notes from AI analysis (for Description field)
-    /// Example: "Fresh bread, golden brown crust, good condition"
+    /// Visible condition and storage advice (for Notes field)
+    /// Example: "Fresh loaf with an intact crust. Store in an airtight bag at room temperature."
     /// </summary>
     public string Notes { get; set; } = string.Empty;
 

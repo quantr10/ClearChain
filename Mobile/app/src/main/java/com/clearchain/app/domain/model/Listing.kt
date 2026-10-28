@@ -14,6 +14,8 @@ data class Listing(
     val groceryProfilePictureUrl: String? = null,
     val title: String,
     val description: String,
+    // Condition and storage advice, kept apart from the product description
+    val notes: String = "",
     val category: FoodCategory,
     val quantity: Int,
     val unit: String,

@@ -23,11 +23,7 @@ sealed class BrowseListingsEvent {
     // Advanced filters
     object ShowFilterSheet : BrowseListingsEvent()
     object HideFilterSheet : BrowseListingsEvent()
-    data class FilterMinQuantityChanged(val min: Int) : BrowseListingsEvent()
-    data class FilterMaxQuantityChanged(val max: Int?) : BrowseListingsEvent()
-    data class FilterMinExpiryDaysChanged(val days: Int) : BrowseListingsEvent()
-    data class FilterMaxExpiryDaysChanged(val days: Int?) : BrowseListingsEvent()
-    data class FilterMaxDistanceChanged(val km: Int?) : BrowseListingsEvent()
+    data class FilterExpiresByChanged(val date: String?) : BrowseListingsEvent()
     object ClearAdvancedFilters : BrowseListingsEvent()
 
     // Map/list toggle

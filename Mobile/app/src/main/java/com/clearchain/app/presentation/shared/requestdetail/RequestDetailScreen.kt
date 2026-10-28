@@ -122,7 +122,6 @@ data class RequestDetailState(
     val isSubmittingDispute: Boolean = false,
     // Admin's view of the dispute on this pickup, plus the actions that move it along.
     val adminDispute: DisputeListItemData? = null,
-    val isStartingReview: Boolean = false,
     val showResolveDialog: Boolean = false,
     val resolveOutcome: String = "resolved_ngo",
     val resolveGroceryStatement: String = "",
@@ -356,23 +355,6 @@ class RequestDetailViewModel @Inject constructor(
                     _state.update { it.copy(adminDispute = response.data.firstOrNull()) }
                 }
                 .onFailure { reportPartialFailure() }
-        }
-    }
-
-    fun startDisputeReview(requestId: String) {
-        val dispute = _state.value.adminDispute ?: return
-        if (_state.value.isStartingReview) return
-        viewModelScope.launch {
-            _state.update { it.copy(isStartingReview = true) }
-            try {
-                disputeApi.startReview(dispute.id)
-                _state.update { it.copy(isStartingReview = false) }
-                loadAdminDispute(requestId)
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dispute_review_started)))
-            } catch (e: Exception) {
-                _state.update { it.copy(isStartingReview = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_start_review_failed)))
-            }
         }
     }
 
@@ -698,7 +680,8 @@ fun RequestDetailScreen(
         }
     }
 
-    Scaffold(
+    FabScaffold(
+        snackbarHostState = snackbarHostState,
         floatingActionButton = {
             if (isChatVisible) {
                 SmallFloatingActionButton(
@@ -713,7 +696,6 @@ fun RequestDetailScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -750,7 +732,6 @@ fun RequestDetailScreen(
                         onSubmitDispute = { reason, statement, photo ->
                             viewModel.submitDispute(requestId, reason, statement, photo)
                         },
-                        onStartDisputeReview = { viewModel.startDisputeReview(requestId) },
                         onOpenResolveDialog = { viewModel.openResolveDialog() },
                         onApprove = { viewModel.approve(requestId) },
                         onReject = { viewModel.showRejectDialog() },
@@ -781,7 +762,6 @@ private fun RequestDetailContent(
     onOpenDispute: () -> Unit,
     onCloseDispute: () -> Unit,
     onSubmitDispute: (NgoDisputeReason, String, Uri?) -> Unit,
-    onStartDisputeReview: () -> Unit,
     onOpenResolveDialog: () -> Unit,
     onApprove: () -> Unit,
     onReject: () -> Unit,
@@ -1011,8 +991,6 @@ private fun RequestDetailContent(
         state.adminDispute?.let { dispute ->
             AdminDisputeSection(
                 dispute = dispute,
-                isStartingReview = state.isStartingReview,
-                onStartReview = onStartDisputeReview,
                 onResolve = onOpenResolveDialog
             )
         }
@@ -1031,7 +1009,14 @@ private fun RequestDetailContent(
             SectionCard(stringResource(R.string.section_about_us)) {
                 if (address != null) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClickLabel = stringResource(R.string.action_get_directions)) {
+                                openInGoogleMaps(
+                                    context,
+                                    mapsQuery(groceryProfile.latitude, groceryProfile.longitude, address)
+                                )
+                            },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -1045,20 +1030,10 @@ private fun RequestDetailContent(
                             address,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
-                        )
-                        ClearChainActionIconButton(
-                            icon = Icons.Default.Navigation,
-                            contentDescription = stringResource(R.string.action_get_directions),
-                            onClick = {
-                                openInGoogleMaps(
-                                    context,
-                                    mapsQuery(groceryProfile.latitude, groceryProfile.longitude, address)
-                                )
-                            }
                         )
                     }
                 }

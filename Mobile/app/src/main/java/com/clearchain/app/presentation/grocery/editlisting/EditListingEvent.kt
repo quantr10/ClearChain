@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.grocery.editlisting
 sealed class EditListingEvent {
     data class TitleChanged(val title: String) : EditListingEvent()
     data class DescriptionChanged(val description: String) : EditListingEvent()
+    data class NotesChanged(val notes: String) : EditListingEvent()
     data class CategoryChanged(val category: String) : EditListingEvent()
     data class QuantityChanged(val quantity: String) : EditListingEvent()
     data class UnitChanged(val unit: String) : EditListingEvent()

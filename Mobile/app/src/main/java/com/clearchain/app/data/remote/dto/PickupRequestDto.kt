@@ -54,6 +54,7 @@ data class PickupRequestData(
     val listingDescription: String? = null,
     val groceryLocation: String? = null,
     val distanceKm: Double? = null,
+    val disputeStatus: String? = null,
     val items: List<PickupRequestItemData> = emptyList()
 )
 
@@ -112,6 +113,7 @@ fun PickupRequestData.toDomain(): PickupRequest {
         listingDescription = listingDescription,
         groceryLocation = groceryLocation,
         distanceKm = distanceKm,
+        disputeStatus = disputeStatus,
         items = items.map {
             PickupRequestItem(
                 id = it.id,

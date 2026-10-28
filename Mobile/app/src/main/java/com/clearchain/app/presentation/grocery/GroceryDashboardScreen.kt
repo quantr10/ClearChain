@@ -90,6 +90,19 @@ fun GroceryDashboardScreen(
                                     co2EstimateKg = stats.co2EstimateKg
                                 )
                             }
+
+                            // ── Listings ─────────────────────────────────────────
+                            // The store's own listings, laid out like the admin home's.
+                            val listings = stats.listingStatus
+                            DashboardSection(title = stringResource(R.string.section_listings)) {
+                                StatOverview(
+                                    hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), listings.open),
+                                    secondary = listOf(
+                                        StatTile(Icons.Default.Bookmark, stringResource(R.string.stat_reserved), listings.reserved),
+                                        StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), listings.expired)
+                                    )
+                                )
+                            }
                         }
 
                         // ── Weekly Pickups ───────────────────────────────────────

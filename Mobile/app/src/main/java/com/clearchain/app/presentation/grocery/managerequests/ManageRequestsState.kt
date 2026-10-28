@@ -33,7 +33,8 @@ data class ManageRequestsState(
     // Advanced filter sheet
     val showFilterSheet: Boolean = false,
     val filterCategory: String? = null,
-    val filterPickupDatePreset: String? = null, // null/"today"/"this_week"/"next_30"
+    val filterPickupDate: String? = null, // yyyy-MM-dd; null = any date
+    val filterExpiresBy: String? = null, // yyyy-MM-dd; null = any date
 
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -44,5 +45,6 @@ data class ManageRequestsState(
     val requests: List<PickupRequest> get() = filteredRequests
     val activeFilterCount: Int get() =
         (if (filterCategory != null) 1 else 0) +
-            (if (filterPickupDatePreset != null) 1 else 0)
+            (if (filterPickupDate != null) 1 else 0) +
+            (if (filterExpiresBy != null) 1 else 0)
 }

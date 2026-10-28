@@ -16,6 +16,8 @@ public class ClearanceListing
     public string Unit { get; set; } = string.Empty;
     public DateTime? ExpirationDate { get; set; }
     public DateTime ClearanceDeadline { get; set; }
+    // Description is about the product itself; Notes covers its condition and how to store it.
+    public string? Description { get; set; }
     public string? Notes { get; set; }
     public string? PhotoUrl { get; set; }
 

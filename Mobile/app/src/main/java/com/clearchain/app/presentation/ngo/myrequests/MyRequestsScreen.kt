@@ -8,9 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -247,14 +245,7 @@ private fun MyRequestsFilterSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        FilterSheetContent {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -302,31 +293,16 @@ private fun MyRequestsFilterSheet(
 
             // Pickup date
             FilterSection(title = stringResource(R.string.filter_pickup_date)) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(
-                        null to stringResource(R.string.filter_any),
-                        "TODAY" to stringResource(R.string.preset_today),
-                        "WEEK" to stringResource(R.string.preset_this_week),
-                        "MONTH" to stringResource(R.string.preset_this_month),
-                        "PAST" to stringResource(R.string.filter_past)
-                    ).forEach { (preset, label) ->
-                        FilterChip(
-                            selected = state.filterPickupDatePreset == preset,
-                            onClick = {
-                                onEvent(
-                                    MyRequestsEvent.FilterPickupDatePresetChanged(
-                                        if (state.filterPickupDatePreset == preset) null else preset
-                                    )
-                                )
-                            },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
-                }
+                DateFilterField(
+                    date = state.filterPickupDate,
+                    onDateChanged = { onEvent(MyRequestsEvent.FilterPickupDateChanged(it)) }
+                )
             }
+
+            ExpiresByFilterSection(
+                expiresBy = state.filterExpiresBy,
+                onExpiresByChanged = { onEvent(MyRequestsEvent.FilterExpiresByChanged(it)) }
+            )
 
             ClearChainButton(
                 text = stringResource(R.string.action_apply_filters),

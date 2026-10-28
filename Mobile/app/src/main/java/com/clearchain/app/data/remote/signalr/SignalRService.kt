@@ -138,6 +138,9 @@ class SignalRService @Inject constructor(
     private val _transactionCompleted = eventFlow<TransactionCompletedNotification>()
     val transactionCompleted: SharedFlow<TransactionCompletedNotification> = _transactionCompleted.asSharedFlow()
 
+    private val _newDisputeCreated = eventFlow<NewDisputeNotification>()
+    val newDisputeCreated: SharedFlow<NewDisputeNotification> = _newDisputeCreated.asSharedFlow()
+
     private val _statsUpdated = eventFlow<PlatformStatsNotification>()
     val statsUpdated: SharedFlow<PlatformStatsNotification> = _statsUpdated.asSharedFlow()
 
@@ -457,6 +460,11 @@ class SignalRService @Inject constructor(
             _transactionCompleted.tryEmit(notification)
         }, TransactionCompletedNotification::class.java)
 
+        on("NewDisputeCreated", { notification: NewDisputeNotification ->
+            Log.d(TAG, "📢 NewDisputeCreated: ${notification.disputeId}")
+            _newDisputeCreated.tryEmit(notification)
+        }, NewDisputeNotification::class.java)
+
         on("StatsUpdated", { stats: PlatformStatsNotification ->
             Log.d(TAG, "📢 StatsUpdated: ${stats.totalDonations} total donations")
             _statsUpdated.tryEmit(stats)
@@ -571,6 +579,15 @@ data class TransactionCompletedNotification(
     val quantity: Int,
     val unit: String,
     val completedAt: String
+)
+
+data class NewDisputeNotification(
+    val disputeId: String,
+    val pickupRequestId: String,
+    val reason: String,
+    val reasonLabel: String,
+    val ngoName: String,
+    val createdAt: String
 )
 
 data class PlatformStatsNotification(

@@ -8,14 +8,14 @@ sealed class TransactionsEvent {
     data class StatusFilterChanged(val status: String?) : TransactionsEvent()
     data class SortOptionChanged(val option: SortOption) : TransactionsEvent()
 
-    // Date range
-    data class DatePresetSelected(val preset: String?) : TransactionsEvent() // null = clear
-    data class CustomDateSelected(val dateStr: String) : TransactionsEvent() // "yyyy-MM-dd"
-    data class ShowDatePicker(val forStart: Boolean) : TransactionsEvent()
-    object HideDatePicker : TransactionsEvent()
-
     object ExportCsv : TransactionsEvent()
 
+    // Advanced filter sheet
     object ShowFilterSheet : TransactionsEvent()
     object HideFilterSheet : TransactionsEvent()
+    data class ToggleDisputeFilter(val filter: DisputeFilter) : TransactionsEvent()
+    data class FilterCategoryChanged(val category: String?) : TransactionsEvent()
+    data class FilterPickupDateChanged(val date: String?) : TransactionsEvent()
+    data class FilterExpiresByChanged(val date: String?) : TransactionsEvent()
+    object ClearAdvancedFilters : TransactionsEvent()
 }

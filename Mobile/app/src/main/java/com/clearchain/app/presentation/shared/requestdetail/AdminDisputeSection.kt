@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,15 +24,13 @@ import com.clearchain.app.presentation.dispute.DisputeStatusBadge
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
 
 /**
- * The dispute on a pickup, as the admin sees it: where it stands (open, under review, resolved),
- * what the NGO reported, and the action that moves it to the next step. The party contact
+ * The dispute on a pickup, as the admin sees it: where it stands (open or one of the outcomes),
+ * what the NGO reported, and, while it is open, the button that resolves it. The party contact
  * details are already on the request screen, so they are not repeated here.
  */
 @Composable
 internal fun AdminDisputeSection(
     dispute: DisputeListItemData,
-    isStartingReview: Boolean,
-    onStartReview: () -> Unit,
     onResolve: () -> Unit
 ) {
     DisputeSummaryCard(
@@ -44,15 +41,9 @@ internal fun AdminDisputeSection(
         adminResolution = dispute.adminResolution,
         photoUrl = dispute.photoEvidenceUrl
     ) {
-        when (dispute.status) {
-            "open" -> ClearChainButton(
-                text = stringResource(R.string.dispute_start_review),
-                icon = Icons.Default.Visibility,
-                onClick = onStartReview,
-                loading = isStartingReview,
-                enabled = !isStartingReview
-            )
-            "under_review" -> ClearChainButton(
+        // An open dispute is resolved directly; there is no review step to claim it first.
+        if (dispute.status == "open") {
+            ClearChainButton(
                 text = stringResource(R.string.dispute_mark_resolved),
                 icon = Icons.Default.CheckCircle,
                 onClick = onResolve

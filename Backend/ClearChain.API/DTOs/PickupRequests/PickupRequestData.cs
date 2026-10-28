@@ -37,6 +37,11 @@ public class PickupRequestData
     public string? GroceryLocation { get; set; }
     /// <summary>Grocery to NGO, in km. Null when either side has no coordinates.</summary>
     public double? DistanceKm { get; set; }
+    /// <summary>
+    /// Status of the request's latest dispute (open, resolved_ngo, resolved_grocery, dismissed); null
+    /// when it has none. Only filled on the admin list, which filters on it.
+    /// </summary>
+    public string? DisputeStatus { get; set; }
     public List<PickupRequestItemData> Items { get; set; } = new();
 }
 

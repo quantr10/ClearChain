@@ -36,7 +36,8 @@ public class ListingsController : ControllerBase
         GroceryName = listing.Grocery?.Name ?? "",
         GroceryProfilePictureUrl = listing.Grocery?.ProfilePictureUrl,
         Title = listing.ProductName,
-        Description = listing.Notes ?? "",
+        Description = listing.Description ?? "",
+        Notes = listing.Notes ?? "",
         Category = listing.Category,
         Quantity = (int)listing.Quantity,
         Unit = listing.Unit,
@@ -283,7 +284,8 @@ public class ListingsController : ControllerBase
             Unit = request.Unit,
             ExpirationDate = expiryDateUtc,
             ClearanceDeadline = clearanceDeadlineUtc,
-            Notes = request.Description,
+            Description = request.Description,
+            Notes = request.Notes,
             Status = ListingStatus.Open,
             PhotoUrl = string.IsNullOrEmpty(request.ImageUrl) ? null : request.ImageUrl,
             PickupTimeStart = pickupTimeStart,
@@ -565,7 +567,8 @@ public class ListingsController : ControllerBase
         listing.Unit = request.Unit;
         listing.ExpirationDate = expiryDateUtc;
         listing.ClearanceDeadline = clearanceDeadlineUtc;
-        listing.Notes = request.Description;
+        listing.Description = request.Description;
+        listing.Notes = request.Notes;
         listing.PhotoUrl = resolvedPhotoUrl;
         listing.UpdatedAt = DateTime.UtcNow;
 

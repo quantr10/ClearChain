@@ -8,10 +8,13 @@ public class CreateListingRequest
     [StringLength(200, MinimumLength = 3)]
     public string Title { get; set; } = string.Empty;
 
+    // What the product is; Notes is its condition and how to store it.
     public string Description { get; set; } = string.Empty;
 
-    // Matches the mobile app's FoodCategory enum and AzureVisionService's detector output
-    // (PACKAGED replaced CANNED_GOODS there; keep both vocabularies in sync).
+    public string Notes { get; set; } = string.Empty;
+
+    // Matches the mobile app's FoodCategory enum and the category enum in
+    // AzureOpenAIFoodAnalysisService's response schema (keep all three vocabularies in sync).
     [Required]
     [RegularExpression(@"^(FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER)$")]
     public string Category { get; set; } = string.Empty;

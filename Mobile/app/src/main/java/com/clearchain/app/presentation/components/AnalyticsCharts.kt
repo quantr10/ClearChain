@@ -174,9 +174,9 @@ fun DonutChart(
         horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         if (legendFirst) {
-            // No weight here: the legend keeps its own width so the ring follows it
-            // instead of being pushed out to the trailing edge.
-            DonutLegend(visible, footnote)
+            // The legend takes the free width, so the ring sits on the card's trailing
+            // edge and the legend's counts line up in a column just before it.
+            DonutLegend(visible, footnote, Modifier.weight(1f))
             DonutRing(visible, total, centerValue, centerLabel, diameter)
         } else {
             DonutRing(visible, total, centerValue, centerLabel, diameter)
@@ -242,7 +242,9 @@ private fun DonutLegend(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         visible.forEach { slice ->
+            // Label on the left, count right-aligned, so the counts form a column.
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -253,11 +255,17 @@ private fun DonutLegend(
                         .background(slice.color)
                 )
                 Text(
-                    "${slice.label}: ${slice.value}",
+                    slice.label,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    slice.value.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

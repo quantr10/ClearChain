@@ -14,7 +14,8 @@ sealed class ManageRequestsEvent {
     object ShowFilterSheet : ManageRequestsEvent()
     object HideFilterSheet : ManageRequestsEvent()
     data class FilterCategoryChanged(val category: String?) : ManageRequestsEvent()
-    data class FilterPickupDatePresetChanged(val preset: String?) : ManageRequestsEvent()
+    data class FilterPickupDateChanged(val date: String?) : ManageRequestsEvent()
+    data class FilterExpiresByChanged(val date: String?) : ManageRequestsEvent()
     object ClearAdvancedFilters : ManageRequestsEvent()
 
     data class ApproveRequest(val requestId: String) : ManageRequestsEvent()

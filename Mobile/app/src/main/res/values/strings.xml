@@ -33,7 +33,6 @@
     <string name="error_reset_code_failed">Couldn\'t send the reset code</string>
     <string name="error_reset_password_failed">Couldn\'t reset your password</string>
     <string name="label_or">or</string>
-    <string name="label_from_date">From %1$s</string>
     <string name="label_request_count_short" tools:ignore="PluralsCandidate">%1$d req</string>
     <string name="remember_me">Remember me</string>
     <string name="password_strength_weak">Weak</string>
@@ -74,7 +73,6 @@
     <string name="dispute_reason">What went wrong?</string>
     <string name="dispute_photo">Add photo evidence</string>
     <string name="dispute_status_open">Open</string>
-    <string name="dispute_status_under_review">Under review</string>
     <string name="dispute_status_resolved">Resolved</string>
     <string name="dispute_status_dismissed">Dismissed</string>
 
@@ -130,7 +128,6 @@
     <string name="grocery_dashboard_subtitle">Manage your surplus food listings</string>
     <string name="role_ngo">NGO</string>
     <string name="role_grocery">Grocery</string>
-    <string name="section_recent_activity">Recent Activity</string>
     <string name="action_browse_food">Browse Food</string>
     <string name="action_browse_food_subtitle">Find available surplus food nearby</string>
     <string name="action_my_requests">My Requests</string>
@@ -255,7 +252,6 @@
     <string name="label_notes">Notes</string>
     <string name="view_full_request">View Full Pickup Request</string>
     <string name="loading_source_info">Loading source info…</string>
-    <string name="status_expired_info">This item has expired — dispose of properly.</string>
     <string name="not_yet_distributed">Not yet distributed</string>
     <string name="section_item_details">Item Details</string>
     <string name="dialog_close">Close</string>
@@ -358,6 +354,7 @@
     <string name="label_title_placeholder">e.g. Fresh Bread Assortment</string>
     <string name="label_description">Description</string>
     <string name="label_description_placeholder">Describe the food items…</string>
+    <string name="label_notes_placeholder">Condition, storage tips or anything else (optional)…</string>
     <string name="label_expiry_date">Expiry Date *</string>
     <string name="label_pickup_hours_from_profile">Pickup hours</string>
     <string name="label_pickup_hours_not_set">Not set — add operating hours in your Profile</string>
@@ -374,21 +371,16 @@
 
     <!-- Browse Listings -->
     <string name="action_clear_all">Clear All</string>
-    <string name="filter_quantity_range">Quantity range</string>
     <string name="action_apply_filters">Apply Filters</string>
     <string name="filter_category">Category</string>
-    <string name="filter_expiry_within">Expiry within</string>
-    <string name="filter_has_requests">Has pickup requests only</string>
+    <string name="filter_dispute">Dispute</string>
+    <string name="filter_dispute_unresolved">Unresolved</string>
+    <string name="filter_dispute_resolved">Resolved</string>
     <string name="filter_pickup_date">Pickup date</string>
     <string name="filter_listing_category">Listing category</string>
     <string name="filter_org_type">Organization type</string>
-    <string name="filter_expiry_urgency">Expiry urgency</string>
-    <string name="filter_min_freshness">Minimum freshness</string>
-    <string name="filter_max_distance">Max distance</string>
-    <string name="filter_date_range">Date range</string>
+    <string name="filter_expires_by">Expires by</string>
     <string name="filter_any">Any</string>
-    <string name="filter_default">Default</string>
-    <string name="filter_past">Past</string>
     <string name="hint_search_organizations">Search organizations…</string>
 
     <!-- Inventory -->
@@ -452,16 +444,10 @@
     <string name="analytics_pickup_completion_rate">Pickup completion rate</string>
 
     <!-- Admin Dashboard compound strings -->
-    <string name="admin_org_total_verified">Total: %1$d  •  Verified: %2$d</string>
 
     <!-- Date range presets -->
     <string name="preset_all_time">All time</string>
     <string name="preset_this_week">This week</string>
-    <string name="preset_this_month">This month</string>
-    <string name="preset_this_quarter">This quarter</string>
-    <string name="preset_custom">Custom</string>
-    <string name="label_select_start_date">Select start date</string>
-    <string name="label_select_end_date">Select end date</string>
 
     <!-- Inventory / distribution -->
     <string name="action_mark_distributed">Mark as Distributed</string>
@@ -560,9 +546,6 @@
     <string name="dispute_admin_resolution">Resolution note</string>
     <string name="dispute_photo_evidence">Photo evidence</string>
     <string name="dispute_reason_section">Reason</string>
-    <string name="dispute_start_review">Start review</string>
-    <string name="snack_dispute_review_started">Dispute moved to under review</string>
-    <string name="error_start_review_failed">Could not start the review</string>
     <string name="dispute_mark_resolved">Mark resolved</string>
     <string name="action_send_email">Send email</string>
     <string name="action_call">Call</string>
@@ -800,6 +783,7 @@
     <string name="snack_item_added">Item added to inventory</string>
     <string name="snack_new_admin_notification">New %1$s: %2$s</string>
     <string name="snack_new_transaction">Transaction: %1$s</string>
+    <string name="snack_new_dispute">New dispute: %1$s from %2$s</string>
     <string name="snack_stats_refreshed">Statistics refreshed</string>
     <string name="snack_dashboard_refreshed">Dashboard refreshed</string>
     <string name="snack_profile_refreshed">Profile refreshed</string>
@@ -836,7 +820,6 @@
     <string name="label_email">Email</string>
     <string name="msg_not_provided">Not provided</string>
     <string name="label_overdue">Overdue</string>
-    <string name="label_to">To</string>
     <string name="label_view_document">View Document</string>
     <string name="label_org_transfer">%1$s → %2$s</string>
     <string name="label_unknown_item">Unknown item</string>
@@ -931,12 +914,6 @@
     <string name="sort_expiring_later">Expiring Later</string>
 
     <!-- Admin activity titles and descriptions -->
-    <string name="activity_title_new_org">New %1$s registered</string>
-    <string name="activity_title_transaction">Transaction completed</string>
-    <string name="activity_title_stats_updated">Platform stats updated</string>
-    <string name="activity_desc_new_org">%1$s from %2$s</string>
-    <string name="activity_desc_transaction">%1$s received %2$s %3$s from %4$s</string>
-    <string name="activity_desc_stats">%1$s total, %2$s completed today</string>
     <string name="cd_org_type">%1$s organization</string>
     <string name="error_delete_listing_failed">Failed to delete listing</string>
 
@@ -1071,35 +1048,24 @@
     <string name="chart_top_groceries">Stores by pickups completed</string>
     <string name="chart_top_ngos">NGOs by pickups completed</string>
 
-    <string name="stat_pending_verification" tools:ignore="PluralsCandidate">%1$d awaiting verification</string>
-    <plurals name="stat_pending_verification_aged">
-        <item quantity="one">%1$d awaiting verification · oldest %2$d day</item>
-        <item quantity="other">%1$d awaiting verification · oldest %2$d days</item>
-    </plurals>
+    <string name="stat_awaiting_verification">Awaiting verification</string>
     <string name="chart_no_requests">No pickup requests in this period.</string>
 
     <!-- ── Admin stats & analytics screen ── -->
     <string name="stats_analytics_title">Stats &amp; Analytics</string>
     <string name="stats_all_time_subtitle">Everything since the platform opened</string>
     <string name="stats_period_range">%1$s – %2$s</string>
-    <plurals name="stats_period_days">
-        <item quantity="one">Last %1$d day</item>
-        <item quantity="other">Last %1$d days</item>
-    </plurals>
+    <string name="filter_time_period">Time period</string>
+    <string name="period_day">Day</string>
+    <string name="period_week">Week</string>
+    <string name="period_month">Month</string>
+    <string name="period_yesterday">Yesterday</string>
+    <string name="period_last_week">Last week</string>
+    <string name="period_week_of">Week of %1$s</string>
+    <string name="cd_previous_period">Previous period</string>
+    <string name="cd_next_period">Next period</string>
     <string name="action_retry">Try again</string>
 
-    <string name="section_timing">Hand-over speed</string>
-    <string name="timing_to_ready">Request → marked ready</string>
-    <string name="timing_to_pickup">Request → collected</string>
-    <string name="timing_to_confirm">Collected → confirmed</string>
-    <string name="timing_p90">Slowest 10%% took over</string>
-    <string name="timing_within_24h">Finished within a day</string>
-    <string name="timing_within_24h_detail">%1$d%% of pickups finished within a day</string>
-    <plurals name="timing_sample">
-        <item quantity="one">Medians across %1$d completed pickup</item>
-        <item quantity="other">Medians across %1$d completed pickups</item>
-    </plurals>
-    <string name="timing_no_data">No pickups completed in this period, so there is nothing to time.</string>
 
     <string name="section_live_backlog">Waiting right now</string>
     <string name="backlog_note">Live figures. Not affected by the period above.</string>

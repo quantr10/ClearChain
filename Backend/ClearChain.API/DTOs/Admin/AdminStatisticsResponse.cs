@@ -14,6 +14,12 @@ public class AdminStatisticsResponse
     public AdminStatisticsData Data { get; set; } = new();
 }
 
+/// <summary>UTC days ("yyyy-MM-dd", ascending) that have any period-scoped activity.</summary>
+public class StatsActiveDatesResponse
+{
+    public List<string> Data { get; set; } = new();
+}
+
 public class AdminStatisticsData
 {
     public StatsPeriodDto Period { get; set; } = new();
@@ -138,6 +144,10 @@ public class StatsOrganizationsDto
     public int Ngos { get; set; }
     public int Verified { get; set; }
     public int PendingVerification { get; set; }
+    /// <summary>The PendingVerification split by type, so a chart can show the queue as its
+    /// own slice without counting an applicant under its type as well.</summary>
+    public int PendingGroceries { get; set; }
+    public int PendingNgos { get; set; }
     /// <summary>Age of the longest-waiting unverified application, in days.</summary>
     public int? OldestPendingDays { get; set; }
 }

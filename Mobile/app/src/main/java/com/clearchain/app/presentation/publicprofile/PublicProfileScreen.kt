@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.SnackbarHost
@@ -376,36 +375,12 @@ private fun ContactInformationSection(profile: PublicProfileData) {
     if (fullAddress != null || hours != null) {
         SectionCard(stringResource(R.string.section_location_hours)) {
             fullAddress?.let {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ContactLinkRow(
+                    Icons.Default.Place,
+                    it,
+                    onClickLabel = stringResource(R.string.action_get_directions)
                 ) {
-                    Icon(
-                        Icons.Default.Place,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    ClearChainActionIconButton(
-                        icon = Icons.Default.Navigation,
-                        contentDescription = stringResource(R.string.action_get_directions),
-                        onClick = {
-                            openInGoogleMaps(
-                                context,
-                                mapsQuery(profile.latitude, profile.longitude, it)
-                            )
-                        }
-                    )
+                    openInGoogleMaps(context, mapsQuery(profile.latitude, profile.longitude, it))
                 }
             }
             hours?.let {
@@ -450,11 +425,16 @@ private fun ContactInformationSection(profile: PublicProfileData) {
 }
 
 @Composable
-private fun ContactLinkRow(icon: ImageVector, text: String, onClick: () -> Unit) {
+private fun ContactLinkRow(
+    icon: ImageVector,
+    text: String,
+    onClickLabel: String? = null,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClickLabel = onClickLabel, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -469,13 +449,9 @@ private fun ContactLinkRow(icon: ImageVector, text: String, onClick: () -> Unit)
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
-        )
-        Icon(
-            Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-            modifier = Modifier.size(14.dp)
         )
     }
 }

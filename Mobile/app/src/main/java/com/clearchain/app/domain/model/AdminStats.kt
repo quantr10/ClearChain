@@ -5,6 +5,9 @@ data class AdminStats(
     val totalOrganizations: Int,
     val totalGroceries: Int,
     val totalNgos: Int,
+    /** Of [totalGroceries] and [totalNgos], those still awaiting verification. */
+    val pendingGroceries: Int = 0,
+    val pendingNgos: Int = 0,
 
     // Listing stats
     val activeListings: Int,
