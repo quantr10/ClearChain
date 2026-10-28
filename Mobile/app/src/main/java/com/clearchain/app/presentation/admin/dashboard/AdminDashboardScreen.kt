@@ -91,7 +91,6 @@ fun AdminDashboardScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                // ── Gradient admin header ────────────────────────────────────────
                 DashboardWelcomeHeader(
                     userName = userName,
                     subtitle = stringResource(R.string.system_health),
@@ -112,7 +111,7 @@ fun AdminDashboardScreen(
                     if (state.isLoading && state.stats == null) {
                         LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
                     } else {
-                        // ── Platform stats ───────────────────────────────────────
+                        // ── Platform stats ───────────────────────────────────
                         state.stats?.let { stats ->
                             // Listing supply only. Request counts live in the status breakdown
                             // and the completion meter below, so they are not repeated here.
@@ -195,7 +194,7 @@ fun AdminDashboardScreen(
                             }
                         }
 
-                        // ── Request Status Bar Chart ─────────────────────────────
+                        // ── Request status bar chart ─────────────────────────
                         state.stats?.let { stats ->
                             val barData = listOf(
                                 BarData(stringResource(R.string.status_pending), stats.pendingRequests, StatusColors.Pending),
@@ -214,7 +213,7 @@ fun AdminDashboardScreen(
                                 }
                             }
 
-                            // ── Org Type Donut Chart ─────────────────────────────
+                            // ── Org type donut chart ─────────────────────────
                             if (stats.totalOrganizations > 0) {
                                 DrillDownSection(
                                     title = stringResource(R.string.section_organizations),
@@ -238,7 +237,7 @@ fun AdminDashboardScreen(
                         }
                     }
 
-                    // ── Alert feed ───────────────────────────────────────────────
+                    // ── Alert feed ───────────────────────────────────────────
                     // Above the quick actions: open disputes are the one thing here that
                     // waits on the admin.
                     if (state.alertFeedItems.isNotEmpty()) {
@@ -260,7 +259,7 @@ fun AdminDashboardScreen(
                         }
                     }
 
-                    // ── Quick actions ────────────────────────────────────────────
+                    // ── Quick actions ────────────────────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DashboardActionCard(
                             icon = Icons.Default.VerifiedUser,

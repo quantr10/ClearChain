@@ -21,10 +21,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-// Fail fast on missing required config rather than the previous behavior, where each of
-// these was only checked the first time a request happened to need it (a scoped service
-// constructor throwing InvalidOperationException) — so a missing var surfaced as a random
-// 500 on whichever endpoint hit it first, possibly hours after a bad deploy.
+// Fail fast on missing required config. Left to the first scoped service that needs a value
+// (its constructor throws), a missing one only surfaces as a 500 on that endpoint, possibly
+// hours after a bad deploy.
 var requiredConfigKeys = new[]
 {
     "DATABASE_URL", "JWT_SECRET_KEY", "JWT_ISSUER", "JWT_AUDIENCE",
@@ -41,10 +40,6 @@ if (missingConfigKeys.Count > 0)
         "Set these in .env (see .env.example) or as environment variables.");
 }
 
-// Serilog was referenced in the project but never wired up (ILogger<T> was writing to
-// the default console provider only) — this makes it the actual logging pipeline the
-// project's own README describes, with the same rolling daily file the app already had
-// a stray leftover of.
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
@@ -59,7 +54,7 @@ var connectionString = builder.Configuration["DATABASE_URL"];
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// ── Hangfire Configuration (Background Jobs) ─────────────────────────────────
+// ── Background jobs (Hangfire) ───────────────────────────────────────────────
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -67,21 +62,19 @@ builder.Services.AddHangfire(config => config
     .UsePostgreSqlStorage(options =>
         options.UseNpgsqlConnection(connectionString)));
 
-// Add Hangfire server with custom options
 builder.Services.AddHangfireServer(options =>
 {
-    options.WorkerCount = 5; // Number of concurrent jobs
+    options.WorkerCount = 5;
     options.ServerName = "ClearChain-Notifications";
 });
 
-// Register NotificationJobs for dependency injection
 builder.Services.AddScoped<NotificationJobs>();
 
-// IHttpClientFactory — SupabaseStorageService's uploads were building a raw `new
-// HttpClient()` per call, the classic socket-exhaustion/DNS-staleness anti-pattern.
+// ── Application services ─────────────────────────────────────────────────────
+// Storage uploads draw pooled handlers from IHttpClientFactory; a new HttpClient per call
+// exhausts sockets and holds on to stale DNS.
 builder.Services.AddHttpClient();
 
-// Add Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
@@ -97,11 +90,11 @@ builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Add SignalR with custom user ID provider
+// ── SignalR ──────────────────────────────────────────────────────────────────
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
-// Configure JWT Authentication
+// ── Authentication ───────────────────────────────────────────────────────────
 var jwtSecretKey = builder.Configuration["JWT_SECRET_KEY"];
 var jwtIssuer = builder.Configuration["JWT_ISSUER"];
 var jwtAudience = builder.Configuration["JWT_AUDIENCE"];
@@ -149,6 +142,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// ── Controllers, Swagger and CORS ────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -215,11 +209,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// ── Scheduled Jobs — staggered 5 min apart to avoid DB contention ────────────
-// Service-based API (not the static RecurringJob.* one): JobStorage.Current is only
-// set once Hangfire is actually resolved from DI, which UseHangfireDashboard below
-// (moved after UseAuthentication/UseAuthorization) no longer guarantees has happened
-// by this point.
+// ── Scheduled jobs, staggered 5 min apart to avoid DB contention ─────────────
+// The service-based API rather than the static RecurringJob.*: JobStorage.Current is only set
+// once Hangfire is resolved from DI, and UseHangfireDashboard, which would do that, runs later.
 var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
 recurringJobs.AddOrUpdate<NotificationJobs>(
     "check-expiring-listings",
@@ -251,7 +243,7 @@ recurringJobs.AddOrUpdate<NotificationJobs>(
     "20 0 * * *",  // 00:20 UTC — after the listing sweeps, so released stock lands on fresh rows
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
-// ── Housekeeping — separate window from the notification jobs ────────────────
+// ── Housekeeping, in a separate window from the notification jobs ────────────
 recurringJobs.AddOrUpdate<NotificationJobs>(
     "cleanup-refresh-tokens",
     job => job.CleanupExpiredRefreshTokens(),
@@ -277,6 +269,7 @@ recurringJobs.AddOrUpdate<NotificationJobs>(
     "0 * * * *",   // hourly
     new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
+// ── Middleware and endpoints ─────────────────────────────────────────────────
 app.UseCors("ClearChainPolicy");
 
 app.UseHttpsRedirection();
@@ -284,11 +277,10 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ── Hangfire Dashboard — restricted to admin role ────────────────────────────
-// Access: https://your-domain/hangfire (append ?access_token=<jwt> — a browser tab
-// can't send an Authorization header). Must come after UseAuthentication/UseAuthorization
-// so HangfireAuthorizationFilter sees a populated HttpContext.User; before this, the
-// filter always saw an unauthenticated request and denied everyone, admins included.
+// Hangfire dashboard, admins only. Open https://your-domain/hangfire?access_token=<jwt>: a
+// browser tab can't send an Authorization header. It must come after UseAuthentication and
+// UseAuthorization so HangfireAuthorizationFilter sees a populated HttpContext.User; any
+// earlier and the filter denies everyone, admins included.
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     AppPath = "/",

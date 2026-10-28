@@ -27,7 +27,7 @@ public class OrganizationDto
     public string? ProfilePictureUrl { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
 
-    // ── Onboarding verification document ─────────────────────────────────────
+    // Onboarding verification document
     public string? DocumentUrl { get; set; }
 
     public double? Latitude { get; set; }

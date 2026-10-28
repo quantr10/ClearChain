@@ -127,7 +127,6 @@ fun ListingCard(
                     topRightAction?.invoke()
                 }
 
-                // Description
                 if (listing.description.isNotBlank()) {
                     Text(
                         listing.description,
@@ -173,7 +172,6 @@ fun ListingCard(
                     )
                 }
 
-                // Pickup time
                 if (showPickupTime) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -245,7 +243,6 @@ fun ListingCard(
                     listing.distanceKm?.let { DistanceBadge(it) }
                 }
 
-                // Actions
                 secondaryActions?.let {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

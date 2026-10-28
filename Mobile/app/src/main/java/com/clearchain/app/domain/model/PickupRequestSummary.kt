@@ -1,13 +1,11 @@
 package com.clearchain.app.domain.model
 
-/**
- * A pickup request's [PickupRequest.items] are the source of truth for what it moves; the
- * `listing*` fields on the request itself are only a summary the server derives from them
- * (see PickupRequestSummary on the API side).
- *
- * These helpers are the one place that knows how to read a request's contents, so screens
- * can't each invent their own rule.
- */
+// A pickup request's items are the source of truth for what it moves; the `listing*` fields
+// on the request itself are only a summary the server derives from them (see
+// PickupRequestSummary on the API side).
+//
+// These helpers are the one place that knows how to read a request's contents, so screens
+// can't each invent their own rule.
 
 /**
  * The request's contents as displayable lines.

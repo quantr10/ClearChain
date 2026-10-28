@@ -20,7 +20,7 @@ public class ReviewsController : ControllerBase
         _context = context;
     }
 
-    // POST api/reviews — NGO or Grocery submits a review for a completed pickup
+    /// <summary>Either party reviews the other on a completed pickup.</summary>
     [HttpPost]
     public async Task<IActionResult> SubmitReview([FromBody] SubmitReviewRequest request)
     {
@@ -43,7 +43,7 @@ public class ReviewsController : ControllerBase
         if (request.Rating < 1 || request.Rating > 5)
             return BadRequest(new { message = "Rating must be between 1 and 5" });
 
-        // Reviewer always rates the other party
+        // The reviewer always rates the other party.
         var reviewedId = pickup.NgoId == userId ? pickup.GroceryId : pickup.NgoId;
 
         var review = new Review
@@ -63,9 +63,11 @@ public class ReviewsController : ControllerBase
         return Ok(new { message = "Review submitted successfully", data = MapToDto(review) });
     }
 
-    // GET api/reviews/pickup/{pickupRequestId} — the reviews left on one pickup (at most one per
-    // side). Readable by admins and by the two organizations on the pickup; anyone else gets the
-    // same "not found" as for a pickup that does not exist.
+    /// <summary>
+    /// The reviews left on one pickup (at most one per side). Readable by admins and by the two
+    /// organizations on the pickup; anyone else gets the same "not found" as for a pickup that
+    /// does not exist.
+    /// </summary>
     [HttpGet("pickup/{pickupRequestId}")]
     public async Task<IActionResult> GetReviewsForPickup(Guid pickupRequestId)
     {

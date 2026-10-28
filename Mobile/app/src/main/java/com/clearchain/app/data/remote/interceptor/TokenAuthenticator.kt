@@ -21,10 +21,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Transparently refreshes an expired access token on a 401 and retries the original request
- * once. Access tokens expire after JWT_EXPIRY_MINUTES (60 min server-side) and nothing else in
- * the app renewed them automatically before this — AuthInterceptor just attaches whatever
- * token is cached, and RetryInterceptor only retries 429/5xx. Any request made after being
- * idle for over an hour used to fail outright with a raw 401.
+ * once. Access tokens expire after JWT_EXPIRY_MINUTES (60 min server-side) and nothing else
+ * renews them: AuthInterceptor just attaches whatever token is cached, and RetryInterceptor
+ * only retries 429/5xx.
  *
  * Uses its own bare OkHttpClient for the refresh call itself, separate from the app's main
  * client this Authenticator is attached to — calling /auth/refresh through the main client

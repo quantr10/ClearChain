@@ -77,13 +77,15 @@ class GroceryDashboardViewModel @Inject constructor(
         }
     }
 
-    /** Reloads every dashboard section concurrently and suspends until all have settled,
-     *  so pull-to-refresh keeps its spinner until the stats, activity, and today's summary
-     *  are actually up to date.
+    /**
+     * Reloads every dashboard section concurrently and suspends until all have settled, so
+     * pull-to-refresh keeps its spinner until the stats, activity, and today's summary are
+     * actually up to date.
      *
-     *  Every section writes through [MutableStateFlow.update]: these loaders run in
-     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
-     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
+     * Every section writes through [MutableStateFlow.update]: these loaders run in parallel and
+     * each one only owns a few fields, so a plain `_state.value = ... .copy()` would read a
+     * snapshot, then overwrite whatever a sibling wrote in the meantime.
+     */
     private suspend fun loadAll(): Boolean {
         val results = coroutineScope {
             listOf(
@@ -100,8 +102,10 @@ class GroceryDashboardViewModel @Inject constructor(
         return false !in results
     }
 
-    // Collected rather than read once, so a new avatar or a renamed store shows
-    // up here as soon as the cached user changes.
+    /**
+     * Collected rather than read once, so a new avatar or a renamed store shows up here as soon
+     * as the cached user changes.
+     */
     private fun observeUser() {
         viewModelScope.launch {
             try {

@@ -26,7 +26,7 @@ data class Organization(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ── Document fields ──────────────────────────────────────────────────────
+    // Onboarding verification document
     val documentUrl: String? = null,
     val documentMimeType: String? = null
 ) {

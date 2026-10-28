@@ -29,7 +29,6 @@ public class OrganizationService : IOrganizationService
         _emailService = emailService;
     }
 
-    // ── handles new fields ───────────────────────────────────────────────────
     public async Task<(bool Success, string Message)> UpdateProfileAsync(
         Guid userId, UpdateProfileRequest request)
     {
@@ -41,7 +40,7 @@ public class OrganizationService : IOrganizationService
         if (!emailOk)
             return (false, emailError);
 
-        // Update only provided fields (existing)
+        // Only the fields the request carries are changed.
         if (!string.IsNullOrEmpty(request.Name)) user.Name = request.Name;
         if (!string.IsNullOrEmpty(request.Phone)) user.Phone = request.Phone;
         if (!string.IsNullOrEmpty(request.Address)) user.Address = request.Address;
@@ -75,9 +74,7 @@ public class OrganizationService : IOrganizationService
         return (true, resubmitted ? "Profile updated and resubmitted for review" : "Profile updated successfully");
     }
 
-    /// <summary>
-    /// Applies a requested email change to <paramref name="user"/> without saving.
-    /// </summary>
+    /// <summary>Applies a requested email change to <paramref name="user"/> without saving.</summary>
     /// <remarks>
     /// The address is the login identifier and carries a unique index, so a collision
     /// is rejected here rather than left to surface as a database error. Clearing

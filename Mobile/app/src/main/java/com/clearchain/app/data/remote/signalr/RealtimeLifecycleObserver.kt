@@ -16,9 +16,9 @@ import kotlinx.coroutines.launch
  * foreground rather than to any one screen.
  *
  * This exists because screen-scoped ownership cannot work: the service is a singleton shared by
- * every view model, so whichever screen closed first took real-time down for all the rest. The
- * process lifecycle is the only scope that matches what the connection actually is — one
- * connection, alive while the user is looking at the app.
+ * every view model, so whichever screen closed first would take real-time down for all the
+ * rest. The process lifecycle is the only scope that matches what the connection actually is —
+ * one connection, alive while the user is looking at the app.
  *
  * Backgrounding disconnects on purpose. A socket held open behind a locked screen drains
  * battery for events the user cannot see, and anything that happens while away arrives as a

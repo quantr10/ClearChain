@@ -2,9 +2,7 @@ using System.Text.Json;
 
 namespace ClearChain.API.Common;
 
-/// <summary>
-/// Parsers for listing and organization fields that are stored as free-form strings.
-/// </summary>
+/// <summary>Parsers for listing and organization fields that are stored as free-form strings.</summary>
 public static class ListingFields
 {
     /// <summary>

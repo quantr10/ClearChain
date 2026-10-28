@@ -15,16 +15,13 @@ data class RegisterState(
     val passwordError: String? = null,
     val confirmPasswordError: String? = null,
 
-    // UI State
+    // UI state
     val isLoading: Boolean = false,
 
-    // Password strength meter
     val passwordStrength: PasswordStrength = PasswordStrength.NONE,
 
-    // Email submit error state
     val emailAlreadyExists: Boolean = false,
 
-    // Terms of service
     val tosAccepted: Boolean = false,
     val tosError: Boolean = false
 )

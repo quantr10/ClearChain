@@ -4,7 +4,6 @@ import com.clearchain.app.BuildConfig
 
 object Constants {
 
-    // API
     /**
      * Base URL for the REST API, taken from API_BASE_URL in local.properties.
      *

@@ -28,7 +28,7 @@ import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.HapticUtils
 
-// ── SEARCH BAR ───────────────────────────────────────────────────────────────
+// ── Search bar ───────────────────────────────────────────────────────────────
 
 @Composable
 fun SearchBar(
@@ -161,7 +161,7 @@ fun ListScreenHeader(
     )
 }
 
-// ── SORT DROPDOWN  (tonal pill that opens a menu, as in Settings) ────────────
+// ── Sort dropdown: a tonal pill that opens a menu, as in Settings ────────────
 
 @Composable
 fun SortDropdown(
@@ -184,8 +184,8 @@ fun SortDropdown(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Box {
-            // A clickable Surface pads itself out to the 48.dp touch-target size, which made this row
-            // 48.dp tall and pushed the 32.dp pill 8.dp away from the rows above and below it. The
+            // A clickable Surface pads itself out to the 48.dp touch-target size, which would make this
+            // row 48.dp tall and push the 32.dp pill 8.dp away from the rows above and below it. The
             // header's search row switches that off for the same reason. Taps still reach the pill:
             // Compose widens the hit area to 48.dp on its own.
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
@@ -256,7 +256,7 @@ fun SortDropdown(
     }
 }
 
-// ── FILTER CHIPS ROW ─────────────────────────────────────────────────────────
+// ── Filter chips row ─────────────────────────────────────────────────────────
 
 @Composable
 fun FilterChipsRow(
@@ -336,7 +336,7 @@ private fun HeaderChip(
     }
 }
 
-// ── FILTER SHEET CONTENT ─────────────────────────────────────────────────────
+// ── Filter sheet content ─────────────────────────────────────────────────────
 
 /**
  * The scrolling body of an advanced-filters bottom sheet. Switches off the 48.dp
@@ -358,7 +358,7 @@ fun FilterSheetContent(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
-// ── FILTER SECTION WRAPPER ───────────────────────────────────────────────────
+// ── Filter section wrapper ───────────────────────────────────────────────────
 
 @Composable
 fun FilterSection(
@@ -377,7 +377,7 @@ fun FilterSection(
     }
 }
 
-// ── DATE FILTER ──────────────────────────────────────────────────────────────
+// ── Date filter ──────────────────────────────────────────────────────────────
 
 /**
  * A filter-sheet date field that opens the calendar. Holds an ISO `yyyy-MM-dd` date, or
@@ -418,7 +418,7 @@ fun ExpiresByFilterSection(
     }
 }
 
-// ── RESULTS COUNT + SORT ROW ─────────────────────────────────────────────────
+// ── Results count and sort row ───────────────────────────────────────────────
 
 @Composable
 fun ResultsCountAndSort(
@@ -459,12 +459,12 @@ fun ResultsCountAndSort(
     }
 }
 
-// ── DATA CLASSES ─────────────────────────────────────────────────────────────
+// ── Data classes ─────────────────────────────────────────────────────────────
 
 data class SortOption(val value: String, @StringRes val labelResId: Int)
 data class FilterChipData(val value: String?, val label: String = "", @StringRes val labelResId: Int? = null)
 
-// ── COMMON SORT OPTIONS ──────────────────────────────────────────────────────
+// ── Common sort options ──────────────────────────────────────────────────────
 
 object CommonSortOptions {
     val CREATED_DATE_DESC = SortOption("date_desc", R.string.sort_newest)

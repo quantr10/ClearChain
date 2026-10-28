@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Derived impact metrics computed from stats
+/** Impact metrics derived from the stats. */
 data class ImpactMetrics(
     val kgSaved: Int,
     val mealsProvided: Int,
@@ -94,15 +94,15 @@ class NgoDashboardViewModel @Inject constructor(
         }
     }
 
-    /** Reloads every dashboard section concurrently and suspends until all have settled,
-     *  so pull-to-refresh keeps its spinner until the impact tracker, weekly goal, stats,
-     *  activity, and nearby listings are actually up to date.
+    /**
+     * Reloads every dashboard section concurrently and suspends until all have settled, so
+     * pull-to-refresh keeps its spinner until the impact tracker, weekly goal, stats, activity,
+     * and nearby listings are actually up to date.
      *
-     *  Every section writes through [MutableStateFlow.update]: these loaders run in
-     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
-     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime —
-     *  which is how the freshly loaded user name and coordinates (and with them the nearby
-     *  map) used to blink in and then vanish again. */
+     * Every section writes through [MutableStateFlow.update]: these loaders run in parallel and
+     * each one only owns a few fields, so a plain `_state.value = ... .copy()` would read a
+     * snapshot, then overwrite whatever a sibling wrote in the meantime.
+     */
     private suspend fun loadAll(): Boolean {
         val results = coroutineScope {
             listOf(
@@ -120,8 +120,10 @@ class NgoDashboardViewModel @Inject constructor(
         return false !in results
     }
 
-    // Collected rather than read once, so a new avatar or a renamed organization
-    // shows up here as soon as the cached user changes.
+    /**
+     * Collected rather than read once, so a new avatar or a renamed organization shows up here
+     * as soon as the cached user changes.
+     */
     private fun observeUser() {
         viewModelScope.launch {
             try {
@@ -146,9 +148,7 @@ class NgoDashboardViewModel @Inject constructor(
     private suspend fun loadStats(): Boolean {
         try {
             val s = organizationApi.getMyStats().data
-            // The API counts the last seven days off the hand-over date. This used to be
-            // `totalCompleted % 20`, which moved with the all-time total and told the
-            // reader nothing about their week.
+            // The API counts the last seven days off the hand-over date.
             _state.update { it.copy(stats = s, weeklyCompleted = s.completedThisWeek) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load stats", e)

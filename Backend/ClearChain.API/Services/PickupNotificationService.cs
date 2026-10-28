@@ -21,7 +21,6 @@ public class PickupNotificationService : IPickupNotificationService
     {
         try
         {
-            // Notify grocery (receiver)
             await _hubContext.Clients
                 .Group($"user_{request.GroceryId}")
                 .SendAsync("PickupRequestCreated", request);
@@ -46,12 +45,11 @@ public class PickupNotificationService : IPickupNotificationService
                 Timestamp = DateTime.UtcNow
             };
 
-            // Notify both NGO and Grocery
             await _hubContext.Clients
                 .Groups($"user_{request.NgoId}", $"user_{request.GroceryId}")
                 .SendAsync("PickupRequestStatusChanged", notification);
 
-            // Also notify specific pickup request room
+            // Anyone with this request's detail screen open.
             await _hubContext.Clients
                 .Group($"pickup_{request.Id}")
                 .SendAsync("PickupRequestUpdated", request);
@@ -69,7 +67,6 @@ public class PickupNotificationService : IPickupNotificationService
     {
         try
         {
-            // Notify both parties
             await _hubContext.Clients
                 .Groups($"user_{request.NgoId}", $"user_{request.GroceryId}")
                 .SendAsync("PickupRequestCancelled", request);

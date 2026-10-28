@@ -101,8 +101,7 @@ class ProfileViewModel @Inject constructor(
             // Load profile and activity concurrently
             val profileJob = async {
                 runCatching { loadProfileSuspend() }.onFailure { e ->
-                    // Without this the spinner never stops: isLoading was set true and
-                    // nothing else would clear it.
+                    // Without this the spinner never stops: nothing else clears isLoading.
                     _state.update {
                         it.copy(isLoading = false, error = ApiErrorUtils.messageOr(e, context.getString(R.string.error_generic)))
                     }
@@ -347,9 +346,8 @@ class ProfileViewModel @Inject constructor(
             try {
                 val bytes = ImageUtils.compressToBytes(context, uri)
                 val fileName = "avatar_${System.currentTimeMillis()}.jpg"
-                // The repository writes the new URL into the cached user; going
-                // through the API directly left every screen on the old avatar
-                // until the next login refreshed the cache.
+                // The repository writes the new URL into the cached user; going through the API
+                // directly would leave every screen on the old avatar until the next login.
                 organizationRepository.uploadAvatar(bytes, fileName, "image/jpeg").getOrThrow()
                 loadProfile()
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_avatar_updated)))

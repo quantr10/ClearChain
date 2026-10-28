@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 // ── State ────────────────────────────────────────────────────────────────────
+
 data class PublicProfileState(
     val profile: PublicProfileData? = null,
     val moreFromStore: List<Listing> = emptyList(),
@@ -65,6 +66,7 @@ data class PublicProfileState(
 )
 
 // ── ViewModel ────────────────────────────────────────────────────────────────
+
 @HiltViewModel
 class PublicProfileViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -135,6 +137,7 @@ class PublicProfileViewModel @Inject constructor(
 }
 
 // ── Screen ───────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublicProfileScreen(
@@ -189,10 +192,8 @@ fun PublicProfileScreen(
                                     modifier = Modifier.padding(ScreenPadding),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    // ── Header ───────────────────────────────────
                                     PublicProfileHeader(profile)
 
-                                    // ── Description ──────────────────────────────
                                     if (!profile.description.isNullOrBlank()) {
                                         SectionCard(stringResource(R.string.about)) {
                                             Text(
@@ -205,7 +206,6 @@ fun PublicProfileScreen(
 
                                     ProfileStatsGrid(profile)
 
-                                    // ── Contact / Location & Hours ───────────────
                                     ContactInformationSection(profile)
 
                                     if (profile.type.equals("grocery", ignoreCase = true) &&

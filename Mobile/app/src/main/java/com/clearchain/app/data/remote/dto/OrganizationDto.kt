@@ -3,8 +3,6 @@ package com.clearchain.app.data.remote.dto
 import android.annotation.SuppressLint
 import kotlinx.serialization.Serializable
 
-// NGO stats: activeRequests, distributed, availableFood, totalCompleted
-// Grocery stats: activeListings, pendingRequests, completed, foodSaved
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class DashboardStatsData(

@@ -25,6 +25,6 @@ interface AuthRepository {
     suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit>
     suspend fun getCurrentUser(): Flow<Organization?>
 
-    /** Re-fetch the signed-in org from GET /auth/me and refresh the local cache. */
+    /** Re-fetches the signed-in org from GET /auth/me and refreshes the local cache. */
     suspend fun refreshCurrentUser(): Result<Organization>
 }

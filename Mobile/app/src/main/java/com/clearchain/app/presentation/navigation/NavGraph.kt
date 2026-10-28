@@ -78,7 +78,6 @@ fun NavGraph(
         modifier = modifier
     ) {
         // ── Auth ─────────────────────────────────────────────────────────────
-
         composable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             SplashScreen(navController = navController)
@@ -141,7 +140,6 @@ fun NavGraph(
         }
 
         // ── Grocery ──────────────────────────────────────────────────────────
-
         composable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             VerificationGate(navController)
@@ -177,7 +175,6 @@ fun NavGraph(
         }
 
         // ── NGO ──────────────────────────────────────────────────────────────
-
         composable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             VerificationGate(navController)
@@ -250,7 +247,6 @@ fun NavGraph(
         }
 
         // ── Detail screens ───────────────────────────────────────────────────
-
         composable(
             route = Screen.ListingDetail.route,
             arguments = listOf(navArgument("listingId") { type = NavType.StringType }),
@@ -309,7 +305,6 @@ fun NavGraph(
         }
 
         // ── Admin ────────────────────────────────────────────────────────────
-
         composable(
             route = Screen.AdminDashboard.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin" })
@@ -357,7 +352,6 @@ fun NavGraph(
         }
 
         // ── Shared ───────────────────────────────────────────────────────────
-
         composable(Screen.Analytics.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             AnalyticsScreen(onNavigateBack = { navController.navigateUp() })

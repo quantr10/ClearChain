@@ -13,7 +13,7 @@ data class MyRequestsState(
     val allRequests: List<PickupRequest> = emptyList(),
     val filteredRequests: List<PickupRequest> = emptyList(),
 
-    // Search, Sort, Filter
+    // Search, sort and filter
     val searchQuery: String = "",
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(

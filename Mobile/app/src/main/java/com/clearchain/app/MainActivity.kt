@@ -69,12 +69,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Handle notification deep link FIRST
+        // Saved before setContent so the splash screen finds the pending deep link.
         handleNotificationIntent(intent)
 
         enableEdgeToEdge()
 
-        // Request notification permission
         requestNotificationPermission()
 
         // The mirror is seeded here so an install that picked a theme before the mirror
@@ -153,7 +152,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ✅ Handle new intents when app is already running
+    /** A notification tapped while the app is already running arrives here rather than in onCreate. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -170,14 +169,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // ✅ Handle notification deep link
     private fun handleNotificationIntent(intent: Intent) {
         val screen = intent.getStringExtra("screen")
         val requestId = intent.getStringExtra("requestId")
 
         Log.d(TAG, "📱 Intent received - screen: $screen, requestId: $requestId")
 
-        // Store deep link data to be handled after login check
+        // Stored for the splash screen to act on once it has checked the session.
         if (screen != null) {
             getSharedPreferences("deeplink", MODE_PRIVATE).edit {
                 putString("pending_screen", screen)

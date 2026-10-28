@@ -134,15 +134,16 @@ class AdminDashboardViewModel @Inject constructor(
         }
     }
 
-    /** Reloads every dashboard section concurrently and suspends until all have settled,
-     *  so pull-to-refresh keeps its spinner until the statistics and alert feed are
-     *  actually up to date. Returns whether every section loaded; any
-     *  failure is reported once, the same way the NGO and grocery dashboards do it — an
-     *  empty alert feed must not pass for "no alerts".
+    /**
+     * Reloads every dashboard section concurrently and suspends until all have settled, so
+     * pull-to-refresh keeps its spinner until the statistics and alert feed are actually up to
+     * date. Returns whether every section loaded; any failure is reported once, the same way the
+     * NGO and grocery dashboards do it — an empty alert feed must not pass for "no alerts".
      *
-     *  Every section writes through [MutableStateFlow.update]: these loaders run in
-     *  parallel and each one only owns a few fields, so a plain `_state.value = ... .copy()`
-     *  would read a snapshot, then overwrite whatever a sibling wrote in the meantime. */
+     * Every section writes through [MutableStateFlow.update]: these loaders run in parallel and
+     * each one only owns a few fields, so a plain `_state.value = ... .copy()` would read a
+     * snapshot, then overwrite whatever a sibling wrote in the meantime.
+     */
     private suspend fun loadAll(): Boolean {
         val results = coroutineScope {
             listOf(

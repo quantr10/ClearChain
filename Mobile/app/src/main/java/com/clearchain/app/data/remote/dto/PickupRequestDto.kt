@@ -70,7 +70,8 @@ data class PickupRequestItemData(
     val listingPhotoUrl: String? = null
 )
 
-// Extension function
+// ── Domain mapping ───────────────────────────────────────────────────────────
+
 fun PickupRequestData.toDomain(): PickupRequest {
     return PickupRequest(
         id = id,

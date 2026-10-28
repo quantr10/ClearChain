@@ -22,6 +22,5 @@ sealed class ManageRequestsEvent {
     data class RejectRequest(val requestId: String) : ManageRequestsEvent()
     data class MarkReady(val requestId: String) : ManageRequestsEvent()
 
-    // CSV export
     object ExportCsv : ManageRequestsEvent()
 }

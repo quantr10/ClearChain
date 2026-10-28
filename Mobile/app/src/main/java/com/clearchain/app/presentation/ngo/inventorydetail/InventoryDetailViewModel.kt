@@ -19,7 +19,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-// ── ViewModel ────────────────────────────────────────────────────────────────
 @HiltViewModel
 class InventoryDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -48,8 +47,8 @@ class InventoryDetailViewModel @Inject constructor(
     }
 
     /**
-     * The server broadcasts per-item changes to `item_{id}`, a group nothing joined before — so
-     * an item edited on another device left this screen showing stale values indefinitely.
+     * Joins the item's room: the server broadcasts per-item changes to `item_{id}`, so without it
+     * an item edited on another device would leave this screen showing stale values.
      */
     private fun observeSignalR(itemId: String) {
         if (joinedItemId == itemId) return

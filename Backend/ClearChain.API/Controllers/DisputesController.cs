@@ -34,7 +34,7 @@ public class DisputesController : ControllerBase
         _adminNotificationService = adminNotificationService;
     }
 
-    // POST api/disputes — NGO opens a dispute on a completed pickup
+    /// <summary>An NGO opens a dispute on one of its completed pickups.</summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> OpenDispute(
@@ -110,8 +110,10 @@ public class DisputesController : ControllerBase
         return Ok(new { message = "Dispute opened successfully", data = MapToDto(dispute) });
     }
 
-    // GET api/disputes/mine — the NGO's own disputes, so the app can tell whether a pickup has
-    // already been reported and show how the admin resolved it.
+    /// <summary>
+    /// The NGO's own disputes, so the app can tell whether a pickup has already been reported
+    /// and show how the admin resolved it.
+    /// </summary>
     [HttpGet("mine")]
     public async Task<IActionResult> GetMyDisputes()
     {
@@ -129,9 +131,11 @@ public class DisputesController : ControllerBase
         });
     }
 
-    // GET api/disputes — admin only. There is no in-app negotiation between the NGO and the
-    // grocery, so this hands the admin everything needed (both parties' contact details, the
-    // pickup context, the evidence) to resolve it by phone or email instead.
+    /// <summary>
+    /// Admin only. There is no in-app negotiation between the NGO and the grocery, so this
+    /// hands the admin everything needed (both parties' contact details, the pickup context,
+    /// the evidence) to resolve it by phone or email instead.
+    /// </summary>
     [HttpGet]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetDisputes([FromQuery] string? status = null, [FromQuery] Guid? pickupRequestId = null)
@@ -162,9 +166,11 @@ public class DisputesController : ControllerBase
         });
     }
 
-    // PUT api/disputes/{id}/resolve — admin only. Closes out a dispute the admin has already
-    // handled outside the app; there is no customer-facing resolution workflow. An open dispute
-    // goes straight here: there is no separate review step to claim it first.
+    /// <summary>
+    /// Admin only. Closes out a dispute the admin has already handled outside the app; there
+    /// is no customer-facing resolution workflow. An open dispute goes straight here: there is
+    /// no separate review step to claim it first.
+    /// </summary>
     [HttpPut("{id}/resolve")]
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> ResolveDispute(Guid id, [FromBody] ResolveDisputeRequest request)
@@ -233,8 +239,10 @@ public class DisputesController : ControllerBase
         CreatedAt = d.CreatedAt.ToString("o")
     };
 
-    // A pickup holds one line per listing; older single-listing pickups only carry the snapshot
-    // fields on the request itself, so fall back to those when there are no item rows.
+    /// <summary>
+    /// A pickup holds one line per listing; older single-listing pickups only carry the snapshot
+    /// fields on the request itself, so fall back to those when there are no item rows.
+    /// </summary>
     private static List<DisputeListingItem> MapListingItems(PickupRequest? pr)
     {
         if (pr == null) return new();

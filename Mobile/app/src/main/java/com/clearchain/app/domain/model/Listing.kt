@@ -14,7 +14,7 @@ data class Listing(
     val groceryProfilePictureUrl: String? = null,
     val title: String,
     val description: String,
-    // Condition and storage advice, kept apart from the product description
+    /** Condition and storage advice, kept apart from the product description. */
     val notes: String = "",
     val category: FoodCategory,
     val quantity: Int,
@@ -27,18 +27,18 @@ data class Listing(
     val location: String,
     val createdAt: String,
 
-    // ── Distance from NGO location ───────────────────────────────────────────
+    /** From the NGO's search location, in km. */
     val distanceKm: Double? = null,
 
-    // ── Analytics ────────────────────────────────────────────────────────────
+    // Analytics
     val viewCount: Int = 0,
     val requestCount: Int = 0,
 
-    // Grocery store coordinates for map pins
+    // Grocery coordinates, for map pins
     val groceryLatitude: Double? = null,
     val groceryLongitude: Double? = null,
 
-    // Operating hours — live from grocery's profile (not stored on listing)
+    /** The grocery's operating hours, read live from its profile rather than stored on the listing. */
     val groceryHours: String? = null
 )
 

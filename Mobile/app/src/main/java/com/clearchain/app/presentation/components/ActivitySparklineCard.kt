@@ -143,7 +143,6 @@ fun ActivitySparklineCard(
                 return h - normalized * h * 0.85f - h * 0.05f
             }
 
-            // Fill path
             val fillPath = Path().apply {
                 moveTo(xAt(0), h)
                 lineTo(xAt(0), yAt(chartData[0].second))
@@ -164,7 +163,6 @@ fun ActivitySparklineCard(
                 )
             )
 
-            // Line path
             val linePath = Path().apply {
                 moveTo(xAt(0), yAt(chartData[0].second))
                 for (i in 1 until n) {
@@ -178,7 +176,6 @@ fun ActivitySparklineCard(
                 style = Stroke(width = 3f)
             )
 
-            // Dots
             chartData.forEachIndexed { i, (_, v) ->
                 drawCircle(
                     color = if (hasData) dotColor else dotColor.copy(alpha = 0.35f),

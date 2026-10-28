@@ -9,7 +9,7 @@ data class InventoryState(
     val allItems: List<InventoryItem> = emptyList(),
     val filteredItems: List<InventoryItem> = emptyList(),
 
-    // Search, Sort, Filter
+    // Search, sort and filter
     val searchQuery: String = "",
     val selectedSort: SortOption = CommonSortOptions.DISTRIBUTED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
@@ -23,7 +23,6 @@ data class InventoryState(
 
     val selectedStatusTab: InventoryStatus? = InventoryStatus.ACTIVE,
 
-    // Category as CHIPS (food categories)
     val selectedCategory: String? = null,
 
     val isLoading: Boolean = false,

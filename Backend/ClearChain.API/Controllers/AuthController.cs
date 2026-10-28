@@ -204,7 +204,6 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
-    // ── GET api/auth/me ──────────────────────────────────────────────────────
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
@@ -262,7 +261,6 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Password changed successfully" });
     }
 
-    // GET api/auth/check-email?email=...
     [HttpGet("check-email")]
     public async Task<IActionResult> CheckEmailAvailable([FromQuery] string email)
     {
@@ -273,7 +271,6 @@ public class AuthController : ControllerBase
         return Ok(new { available, message });
     }
 
-    // DELETE api/auth/account
     [Authorize]
     [HttpDelete("account")]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)

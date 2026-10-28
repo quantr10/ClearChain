@@ -27,24 +27,24 @@ public class Organization
     public string? PickupInstructions { get; set; }   // Grocery only
     public string? Description { get; set; }          // Both roles
 
-    // ── Auth security ────────────────────────────────────────────────────────
+    // Auth security
     public int FailedLoginCount { get; set; } = 0;
     public DateTime? LockoutUntil { get; set; }
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; }
 
-    // ── Email verification ───────────────────────────────────────────────────
+    // Email verification
     public bool EmailVerified { get; set; } = false;
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiry { get; set; }
     public int EmailVerificationAttempts { get; set; } = 0;
 
-    // ── Password reset ───────────────────────────────────────────────────────
+    // Password reset
     public string? PasswordResetToken { get; set; }       // BCrypt hash of the emailed code
     public DateTime? PasswordResetTokenExpiry { get; set; }
     public int PasswordResetAttempts { get; set; } = 0;
 
-    // ── Onboarding document ──────────────────────────────────────────────────
+    // Onboarding verification document
     public string? DocumentUrl { get; set; }        // Verification doc (business reg / charity cert)
     public string? DocumentMimeType { get; set; }
 

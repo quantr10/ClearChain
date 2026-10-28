@@ -12,7 +12,7 @@ data class CreateListingState(
     val unit: String = "kg",
     val expiryDate: String = "",
 
-    // Grocery's operating hours (loaded from profile, not editable here)
+    /** The grocery's operating hours, loaded from its profile and not editable here. */
     val groceryHours: String? = null,
 
     // Errors
@@ -22,18 +22,17 @@ data class CreateListingState(
     val unitError: String? = null,
     val expiryDateError: String? = null,
 
-    // UI State
+    // UI state
     val isLoading: Boolean = false,
     val showCategoryDropdown: Boolean = false,
     val showUnitDropdown: Boolean = false,
 
-    // AI Image Analysis
+    // AI image analysis
     val selectedImageUri: Uri? = null,
     val isAnalyzing: Boolean = false,
     val analysisResult: FoodAnalysisData? = null,
     val showImagePicker: Boolean = false,
     val analysisError: String? = null,
 
-    // Preview
     val isPreviewMode: Boolean = false
 )

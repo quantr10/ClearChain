@@ -81,7 +81,7 @@ data class AdminStatsResponse(
     val data: AdminStatsDto
 )
 
-// ── Extension: DTO → Domain ──────────────────────────────────────────────────
+// ── Domain mapping ───────────────────────────────────────────────────────────
 
 fun AdminStatsDto.toDomain(): AdminStats {
     return AdminStats(

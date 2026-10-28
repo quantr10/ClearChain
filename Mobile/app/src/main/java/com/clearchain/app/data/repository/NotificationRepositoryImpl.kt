@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.map
  *
  * Reads come from Room so the inbox renders instantly and works offline. Writes go to the
  * server first and are mirrored locally, because read state has to survive a reinstall and be
- * consistent across a user's devices — a local-only inbox showed every notification as unread
- * again on a new phone, and lost anything that arrived while the app was force-stopped.
+ * consistent across a user's devices — a local-only inbox would show every notification as
+ * unread again on a new phone, and lose anything that arrived while the app was force-stopped.
  */
 class NotificationRepositoryImpl @Inject constructor(
     private val notificationDao: NotificationDao,

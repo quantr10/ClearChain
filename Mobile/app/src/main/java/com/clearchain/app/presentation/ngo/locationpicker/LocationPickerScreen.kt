@@ -316,7 +316,7 @@ class LocationPickerViewModel @Inject constructor(
     }
 }
 
-// ── SCREEN ───────────────────────────────────────────────────────────────────
+// ── Screen ───────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -362,7 +362,6 @@ fun LocationPickerScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        // Show loading while initializing
         if (state.isInitializing) {
             LoadingState(
                 modifier = Modifier.fillMaxSize().padding(padding),
@@ -407,7 +406,7 @@ fun LocationPickerScreen(
                 )
             }
 
-            // ── MAP ──────────────────────────────────────────────────────────
+            // ── Map ──────────────────────────────────────────────────────────
             Box(Modifier.fillMaxWidth().weight(0.45f)) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
@@ -437,7 +436,7 @@ fun LocationPickerScreen(
                 }
             }
 
-            // ── CONTROLS ─────────────────────────────────────────────────────
+            // ── Controls ─────────────────────────────────────────────────────
             Column(
                 Modifier.fillMaxWidth().weight(0.55f).verticalScroll(rememberScrollState()).padding(ScreenPadding),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

@@ -54,7 +54,7 @@ public class ListingsController : ControllerBase
         GroceryHours = listing.Grocery?.Hours
     };
 
-    // ── GetAllListings with geospatial filter ────────────────────────────────
+    /// <summary>Unarchived listings, filterable by status, category, grocery and radius around a point.</summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<ListingsResponse>> GetAllListings(
@@ -87,7 +87,7 @@ public class ListingsController : ControllerBase
             query = query.Where(l => l.GroceryId == groceryGuid);
         }
 
-        // Bounding box pre-filter: eliminates distant rows before Haversine in memory
+        // Bounding box pre-filter: eliminates distant rows before Haversine in memory.
         if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
         {
             var deltaLat = radiusKm.Value / 111.0;
@@ -108,7 +108,6 @@ public class ListingsController : ControllerBase
             .OrderByDescending(l => l.CreatedAt)
             .ToListAsync();
 
-        // Map to DTOs and calculate distance if location provided
         var listingDtos = listings.Select(l =>
         {
             var dto = MapListingToDto(l);
@@ -125,7 +124,6 @@ public class ListingsController : ControllerBase
             return dto;
         }).ToList();
 
-        // Filter by radius if specified
         if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
         {
             var withinRadius = listingDtos
@@ -159,7 +157,7 @@ public class ListingsController : ControllerBase
         });
     }
 
-    // ── Haversine distance calculation ───────────────────────────────────────
+    /// <summary>Great-circle distance between two coordinates, in km.</summary>
     private static double CalculateHaversineDistance(
         double lat1, double lon1, double lat2, double lon2)
     {

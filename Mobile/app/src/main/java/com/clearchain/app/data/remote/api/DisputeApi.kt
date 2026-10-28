@@ -20,11 +20,11 @@ interface DisputeApi {
         @Part photo: MultipartBody.Part?
     ): DisputeResponse
 
-    // The NGO's own disputes, used to tell whether a pickup has already been reported.
+    /** The NGO's own disputes, used to tell whether a pickup has already been reported. */
     @GET("disputes/mine")
     suspend fun getMyDisputes(): MyDisputeListResponse
 
-    // Admin only — the server enforces the role check.
+    /** Admin only; the server enforces the role. */
     @GET("disputes")
     suspend fun getDisputes(
         @Query("status") status: String? = null,

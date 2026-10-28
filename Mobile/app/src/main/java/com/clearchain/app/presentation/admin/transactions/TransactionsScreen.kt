@@ -141,9 +141,7 @@ fun TransactionsScreen(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Transactions filter bottom sheet
-// -----------------------------------------------------------------------------
+// ── Transactions filter bottom sheet ─────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -173,7 +171,7 @@ private fun TransactionsFilterSheet(
                 }
             }
 
-            // Dispute — first, since a disputed pickup is what an admin most often hunts for
+            // Dispute first: a disputed pickup is what an admin most often hunts for.
             FilterSection(title = stringResource(R.string.filter_dispute)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -190,7 +188,6 @@ private fun TransactionsFilterSheet(
                 }
             }
 
-            // Food category
             FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -217,7 +214,6 @@ private fun TransactionsFilterSheet(
                 }
             }
 
-            // Pickup date
             FilterSection(title = stringResource(R.string.filter_pickup_date)) {
                 DateFilterField(
                     date = state.filterPickupDate,
@@ -239,9 +235,7 @@ private fun TransactionsFilterSheet(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Transaction card
-// -----------------------------------------------------------------------------
+// ── Transaction card ─────────────────────────────────────────────────────────
 
 @Composable
 private fun TransactionCard(
@@ -257,7 +251,7 @@ private fun TransactionCard(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // -- Header: who gave to whom + status ----------------------------
+            // ── Header: who gave to whom, and status ─────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,7 +286,7 @@ private fun TransactionCard(
                 }
             }
 
-            // -- What was moved -----------------------------------------------
+            // ── What was moved ───────────────────────────────────────────────
             if (transaction.items.isNotEmpty()) {
                 RequestItemsPreview(transaction)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

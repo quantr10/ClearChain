@@ -208,7 +208,7 @@ class ListingRepositoryImpl @Inject constructor(
             // compressImage always re-encodes to JPEG regardless of the source format
             // (see ImageUtils.compressImage), so the real content type is always jpeg —
             // matching what uploadFoodImage below declares, and what the backend's
-            // Content-Type-based whitelist for /analyze now expects.
+            // Content-Type allow-list for /analyze expects.
             val file = ImageUtils.compressImage(context, imageUri)
             val response = try {
                 val requestBody = file.asRequestBody("image/jpeg".toMediaTypeOrNull())

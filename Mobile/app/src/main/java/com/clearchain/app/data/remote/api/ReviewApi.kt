@@ -10,7 +10,7 @@ interface ReviewApi {
     @POST("reviews")
     suspend fun submitReview(@Body request: SubmitReviewRequest): SubmitReviewResponse
 
-    // The reviews left on one pickup (at most one per side).
+    /** The reviews left on one pickup, at most one per side. */
     @GET("reviews/pickup/{id}")
     suspend fun getReviewsForPickup(@Path("id") id: String): ReviewsResponse
 }

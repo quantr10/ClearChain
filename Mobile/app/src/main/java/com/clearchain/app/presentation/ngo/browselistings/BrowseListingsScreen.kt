@@ -119,8 +119,7 @@ fun BrowseListingsScreen(
                 .trackGlobalTouch(touchTracker)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // -- Static header --------------------------------------------------
-
+                // ── Static header ────────────────────────────────────────────
                 ListScreenHeader {
                     // Row 1: Search + location pin + filter
                     ListHeaderSearchRow(
@@ -185,7 +184,7 @@ fun BrowseListingsScreen(
                     }
                 }
 
-                // -- Content --------------------------------------------------------
+                // ── Content ──────────────────────────────────────────────────
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allListings.isEmpty() ->
@@ -212,9 +211,7 @@ fun BrowseListingsScreen(
     }
 }
 
-// -----------------------------------------------------------------------------
-// List view
-// -----------------------------------------------------------------------------
+// ── List view ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ListingsListView(
@@ -302,9 +299,7 @@ private fun ListingsListView(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Map view
-// -----------------------------------------------------------------------------
+// ── Map view ─────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -344,7 +339,7 @@ private fun GroceryMapView(
             cameraPositionState = cameraPositionState,
             uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
             properties = MapProperties(),
-            // Tapping empty map closes the pop-up, as tapping outside the old sheet did.
+            // Tapping empty map closes the pop-up.
             onMapClick = {
                 if (state.selectedGroceryKey != null) viewModel.onEvent(BrowseListingsEvent.DismissGrocerySheet)
             }
@@ -478,10 +473,10 @@ private fun GroceryMapView(
     }
 }
 
-// Custom grocery pin composable content
+/** Pixel size of the avatar bitmap drawn into a grocery map pin. */
 private const val AVATAR_PIN_PX = 132
 
-// Pop-up card showing listings for a tapped grocery pin
+/** Pop-up card showing the listings of a tapped grocery pin. */
 @Composable
 private fun GroceryPinPopup(
     listings: List<Listing>,
@@ -646,9 +641,7 @@ private fun GroceryPinPopup(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Advanced Filter Bottom Sheet
-// -----------------------------------------------------------------------------
+// ── Advanced filter bottom sheet ─────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -679,7 +672,6 @@ private fun AdvancedFilterSheet(
                 }
             }
 
-            // Saved listings
             FilterSection(title = stringResource(R.string.saved_listings)) {
                 FilterChip(
                     selected = state.showFavoritesOnly,
@@ -695,7 +687,6 @@ private fun AdvancedFilterSheet(
                 )
             }
 
-            // Category
             FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

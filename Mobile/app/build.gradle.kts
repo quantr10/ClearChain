@@ -20,7 +20,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Read from local.properties
         val properties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {

@@ -148,6 +148,3 @@ data class AdminAlertItem(
     val status: String,
     val createdAt: String
 )
-
-// ── Today summary ────────────────────────────────────────────────────────────
-// TodaySummaryResponse and TodaySummaryData are defined in OrganizationDto.kt

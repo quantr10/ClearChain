@@ -35,8 +35,8 @@ class LoginUseCase @Inject constructor(
         if (result.isSuccess) {
             // Ask Firebase for the token rather than reading the local cache. The cache is only
             // written by FCMService.onNewToken, which does not fire when Firebase hands back a
-            // token it already had — after a reinstall that left Room empty, reading the cache
-            // here found nothing and the device was never registered for push.
+            // token it already had — after a reinstall that leaves Room empty, reading the cache
+            // here would find nothing and the device would never be registered for push.
             registerFCMTokenUseCase()
                 .onFailure { Log.w(TAG, "Push registration failed after login: ${it.message}") }
 

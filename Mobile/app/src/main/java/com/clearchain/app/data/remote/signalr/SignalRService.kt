@@ -27,9 +27,7 @@ import kotlinx.coroutines.sync.withLock
  * Ownership matters here. This is a `@Singleton`, so its connection is shared by every screen —
  * which means no screen may tear it down. [connect] and [disconnect] belong to
  * [com.clearchain.app.data.remote.signalr.RealtimeLifecycleObserver] and the auth flow alone;
- * view models only collect the flows. (Every view model used to call `disconnect()` from
- * `onCleared()`, so navigating away from any one screen killed real-time updates for all the
- * others.)
+ * view models only collect the flows.
  *
  * Connecting blocks the calling thread — the SignalR Java client is Rx-based and its
  * `Completable`s are awaited, not suspended on — so all of it runs on [Dispatchers.IO].
@@ -94,7 +92,7 @@ class SignalRService @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    // Pickup Request Events
+    // Pickup request events
     private val _pickupRequestCreated = eventFlow<PickupRequestData>()
     val pickupRequestCreated: SharedFlow<PickupRequestData> = _pickupRequestCreated.asSharedFlow()
 
@@ -108,7 +106,7 @@ class SignalRService @Inject constructor(
     private val _pickupRequestUpdated = eventFlow<PickupRequestData>()
     val pickupRequestUpdated: SharedFlow<PickupRequestData> = _pickupRequestUpdated.asSharedFlow()
 
-    // Listing Events
+    // Listing events
     private val _listingCreated = eventFlow<ListingData>()
     val listingCreated: SharedFlow<ListingData> = _listingCreated.asSharedFlow()
 
@@ -121,7 +119,7 @@ class SignalRService @Inject constructor(
     private val _listingQuantityChanged = eventFlow<ListingQuantityNotification>()
     val listingQuantityChanged: SharedFlow<ListingQuantityNotification> = _listingQuantityChanged.asSharedFlow()
 
-    // Inventory Events
+    // Inventory events
     private val _inventoryItemAdded = eventFlow<InventoryItemData>()
     val inventoryItemAdded: SharedFlow<InventoryItemData> = _inventoryItemAdded.asSharedFlow()
 
@@ -131,7 +129,7 @@ class SignalRService @Inject constructor(
     private val _inventoryItemExpired = eventFlow<InventoryItemData>()
     val inventoryItemExpired: SharedFlow<InventoryItemData> = _inventoryItemExpired.asSharedFlow()
 
-    // Admin Events
+    // Admin events
     private val _newOrganizationRegistered = eventFlow<OrganizationRegisteredNotification>()
     val newOrganizationRegistered: SharedFlow<OrganizationRegisteredNotification> = _newOrganizationRegistered.asSharedFlow()
 
@@ -212,8 +210,8 @@ class SignalRService @Inject constructor(
         }
 
         // A failed *first* attempt needs the retry loop too. onClosed only fires for a
-        // connection that was once open, so without this a server that was down at launch left
-        // the app offline until the user happened to background and foreground it.
+        // connection that was once open, so without this a server that was down at launch would
+        // leave the app offline until the user happened to background and foreground it.
         scheduleReconnect()
     }
 
@@ -345,8 +343,8 @@ class SignalRService @Inject constructor(
                 Log.d(TAG, "ℹ️ $name hub not accessible for this account")
             } else {
                 // State is not set here: openAll decides once, after every hub has been
-                // tried, whether the app is connected at all. Setting it per-hub produced a
-                // value that was always overwritten before anything could observe it.
+                // tried, whether the app is connected at all. A per-hub value would always be
+                // overwritten before anything could observe it.
                 Log.e(TAG, "❌ Failed to connect to $name hub: ${e.message}", e)
             }
             existing
@@ -483,8 +481,7 @@ class SignalRService @Inject constructor(
         }, NotificationData::class.java)
     }
 
-    // Per-entity rooms
-    //
+    // ── Per-entity rooms ─────────────────────────────────────────────────────
     // Joining a room is what makes the server's `pickup_{id}` / `listing_{id}` / `item_{id}`
     // broadcasts reachable at all — those groups have no members until a client asks to join.
 
@@ -535,14 +532,16 @@ class SignalRService @Inject constructor(
     }
 }
 
-// Pickup Request notifications
+// ── Pickup request payloads ──────────────────────────────────────────────────
+
 data class StatusChangeNotification(
     val request: PickupRequestData,
     val newStatus: String,
     val timestamp: String
 )
 
-// Listing notifications
+// ── Listing payloads ─────────────────────────────────────────────────────────
+
 data class ListingDeletedNotification(
     val listingId: String,
     val timestamp: String
@@ -555,13 +554,15 @@ data class ListingQuantityNotification(
     val timestamp: String
 )
 
-// Inventory notifications
+// ── Inventory payloads ───────────────────────────────────────────────────────
+
 data class InventoryDistributedNotification(
     val itemId: String,
     val timestamp: String
 )
 
-// Admin notifications
+// ── Admin payloads ───────────────────────────────────────────────────────────
+
 data class OrganizationRegisteredNotification(
     val name: String,
     val type: String,

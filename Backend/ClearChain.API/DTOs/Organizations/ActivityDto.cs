@@ -6,7 +6,7 @@ public class ActivityDto
 
     /// <summary>
     /// One of: listing_created | pickup_request | pickup_approved |
-    ///         pickup_ready | pickup_completed | pickup_cancelled | inventory_received
+    ///         pickup_ready | pickup_completed | pickup_cancelled | inventory_received.
     /// </summary>
     public string Type { get; set; } = string.Empty;
 

@@ -26,9 +26,11 @@ import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.ui.theme.ButtonShape
 
-// Screen-wide touch signal used to collapse an expanded cart stepper: every touch-down
-// anywhere on screen bumps `tick`, and carries the position + root coordinate space so a
-// listener can tell whether that touch landed on its own stepper (and should be ignored).
+/**
+ * Screen-wide touch signal used to collapse an expanded cart stepper: every touch-down
+ * anywhere on screen bumps `tick`, and carries the position + root coordinate space so a
+ * listener can tell whether that touch landed on its own stepper (and should be ignored).
+ */
 data class GlobalTouch(
     val tick: Int,
     val position: Offset?,

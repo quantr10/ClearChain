@@ -204,7 +204,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
         };
     }
 
-    // The v1 API lives under /openai/v1/ on the resource endpoint and needs no api-version.
+    /// <summary>The v1 API lives under /openai/v1/ on the resource endpoint and needs no api-version.</summary>
     private static Uri ToV1Endpoint(string endpoint)
     {
         var trimmed = endpoint.TrimEnd('/');

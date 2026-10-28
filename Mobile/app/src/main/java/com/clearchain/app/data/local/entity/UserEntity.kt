@@ -28,11 +28,12 @@ data class UserEntity(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ── Onboarding verification document ─────────────────────────────────────
+    // Onboarding verification document
     val documentUrl: String? = null
 )
 
-// CANONICAL mapping functions — used everywhere, no duplicates
+// ── Domain mapping ───────────────────────────────────────────────────────────
+
 fun UserEntity.toDomain(): Organization {
     return Organization(
         id = id, name = name,

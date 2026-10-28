@@ -9,7 +9,7 @@ data class BrowseListingsState(
     val allListings: List<Listing> = emptyList(),
     val filteredListings: List<Listing> = emptyList(),
 
-    // Search, Sort, Filter
+    // Search, sort and filter
     val searchQuery: String = "",
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
@@ -42,7 +42,6 @@ data class BrowseListingsState(
     val showFilterSheet: Boolean = false,
     val filterExpiresBy: String? = null, // yyyy-MM-dd; null = any date
 
-    // Map / list toggle
     val showMapView: Boolean = false,
 
     // Map view — all listings without radius filter

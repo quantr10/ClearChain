@@ -44,7 +44,6 @@ public class InventoryController : ControllerBase
         };
     }
 
-    // GET: api/inventory/my
     [HttpGet("my")]
     public async Task<ActionResult<InventoryListResponse>> GetMyInventory(
         [FromQuery] string? status = null)
@@ -57,7 +56,6 @@ public class InventoryController : ControllerBase
         var query = _context.Inventories
             .Where(i => i.NgoId == userId);
 
-        // Filter by status if provided
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<InventoryStatus>(status, ignoreCase: true, out var statusEnum))
         {
             query = query.Where(i => i.Status == statusEnum);
@@ -76,7 +74,6 @@ public class InventoryController : ControllerBase
         });
     }
 
-    // PUT: api/inventory/{id}/distribute
     [HttpPut("{id}/distribute")]
     public async Task<ActionResult<InventoryItemResponse>> DistributeItem(Guid id)
     {
@@ -118,7 +115,6 @@ public class InventoryController : ControllerBase
         });
     }
 
-    // POST: api/inventory/update-expired
     [HttpPost("update-expired")]
     public async Task<ActionResult> UpdateExpiredItems()
     {

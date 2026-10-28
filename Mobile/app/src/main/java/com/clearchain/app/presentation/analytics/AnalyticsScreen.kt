@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 // ── ViewModel ────────────────────────────────────────────────────────────────
+
 data class AnalyticsState(
     val stats: DashboardStatsData? = null,
     val orgType: OrganizationType = OrganizationType.GROCERY,
@@ -120,6 +121,7 @@ class AnalyticsViewModel @Inject constructor(
 }
 
 // ── Screen ───────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
@@ -261,9 +263,7 @@ private fun NgoAnalytics(
         co2Estimate = s.co2EstimateKg
     )
 
-    // A ring, not bars: these three are parts of one whole, and the old third bar was
-    // not even part of it - "Available" counted every open listing on the platform, which
-    // is a marketplace figure, not something this NGO holds.
+    // A ring, not bars: these three are parts of one whole, all of it food this NGO holds.
     val inventory = s.inventoryStatus
     SectionCard(stringResource(R.string.analytics_inventory_status)) {
         DonutChart(
@@ -310,8 +310,10 @@ private fun NgoAnalytics(
     RequestStatusSection(s.requestStatus)
 }
 
-// Request status breakdown — the same chart the admin report shows, scoped to the
-// one organization looking at it.
+/**
+ * Request status breakdown — the same chart the admin report shows, scoped to the one
+ * organization looking at it.
+ */
 
 @Composable
 private fun RequestStatusSection(status: RequestStatusCounts) {
@@ -331,8 +333,10 @@ private fun RequestStatusSection(status: RequestStatusCounts) {
     }
 }
 
-// Impact section — shared by GroceryAnalytics and NgoAnalytics: Food Saved,
-// Meals Saved, and CO₂ Reduced as three ImpactStatCell columns.
+/**
+ * Impact section, shared by GroceryAnalytics and NgoAnalytics: food saved, meals saved and
+ * CO₂ reduced as three ImpactStatCell columns.
+ */
 
 @Composable
 private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate: Int) {
@@ -344,9 +348,6 @@ private fun AnalyticsImpactSection(kgSaved: Int, mealsEstimate: Int, co2Estimate
         )
     }
 }
-
-// Shared section card — matches AccountDetailScreen / RequestDetailScreen.
-// Card title uses the same labelSmall/Bold heading as every other section across the app.
 
 /** Matches the rhythm of [WeeklyGoalCard], which the rate cards sit alongside. */
 private val RATE_CARD_SPACING = 12.dp

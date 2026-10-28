@@ -79,7 +79,7 @@ fun EditListingScreen(
                     val expiryInvalid = state.expiryDate.isBlank()
                     val canSave = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
-                    // ── Photo (read-only) ────────────────────────────────────────
+                    // ── Photo, read-only ─────────────────────────────────────
                     if (state.imageUrl.isNotBlank()) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -98,7 +98,6 @@ fun EditListingScreen(
                         }
                     }
 
-                    // ── Title ────────────────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_title)) {
                         ClearChainTextField(
                             value = state.title,
@@ -112,7 +111,6 @@ fun EditListingScreen(
                         )
                     }
 
-                    // ── Description ──────────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_description)) {
                         ClearChainTextField(
                             value = state.description,
@@ -129,7 +127,6 @@ fun EditListingScreen(
                         )
                     }
 
-                    // ── Notes ────────────────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_notes)) {
                         ClearChainTextField(
                             value = state.notes,
@@ -144,7 +141,6 @@ fun EditListingScreen(
                         )
                     }
 
-                    // ── Category ─────────────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_category)) {
                         val iconTint = if (!busy) {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -202,7 +198,6 @@ fun EditListingScreen(
                         }
                     }
 
-                    // ── Quantity + Unit ──────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_quantity_short)) {
                         val iconTint = if (!busy) {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -293,7 +288,6 @@ fun EditListingScreen(
                         }
                     }
 
-                    // ── Expiry Date ──────────────────────────────────────────────
                     FieldCard(label = stringResource(R.string.label_expiry_date)) {
                         DatePickerField(
                             value = state.expiryDate,
@@ -306,7 +300,6 @@ fun EditListingScreen(
                         )
                     }
 
-                    // ── Pickup Hours (read-only from profile) ────────────────────
                     FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -337,7 +330,7 @@ fun EditListingScreen(
                         }
                     }
 
-                    // ── Cancel + Save buttons ────────────────────────────────────
+                    // ── Cancel and save buttons ──────────────────────────────
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -22,7 +22,7 @@ public class InventoryHub : Hub
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} connected to InventoryHub");
 
-        // Join user-specific group (for NGO's inventory)
+        // The NGO's own inventory updates arrive on its user group.
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
@@ -44,7 +44,6 @@ public class InventoryHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    // Client can join specific inventory item room
     public async Task JoinInventoryItemRoom(string itemId)
     {
         // Without this check, any authenticated org that knows or guesses an inventory

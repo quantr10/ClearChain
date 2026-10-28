@@ -18,8 +18,6 @@ public class PickupRequestsController : ControllerBase
         _service = service;
     }
 
-    // ── DELETE api/pickuprequests/{id} ───────────────────────────────────────
-
     [HttpDelete("{id}")]
     public async Task<ActionResult> CancelPickupRequest(Guid id)
     {
@@ -31,8 +29,6 @@ public class PickupRequestsController : ControllerBase
 
         return Ok(new PickupRequestResponse { Message = "Pickup request cancelled successfully", Data = result.Data! });
     }
-
-    // ── PUT api/pickuprequests/{id}/picked-up ────────────────────────────────
 
     [HttpPut("{id}/picked-up")]
     [Consumes("multipart/form-data")]
@@ -59,8 +55,6 @@ public class PickupRequestsController : ControllerBase
         return Ok(response);
     }
 
-    // ── GET api/pickuprequests/ngo/my ────────────────────────────────────────
-
     [HttpGet("ngo/my")]
     public async Task<ActionResult<PickupRequestsResponse>> GetMyPickupRequests(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -73,8 +67,6 @@ public class PickupRequestsController : ControllerBase
 
         return Ok(result.ListData);
     }
-
-    // ── GET api/pickuprequests/grocery/my ────────────────────────────────────
 
     [HttpGet("grocery/my")]
     public async Task<ActionResult<PickupRequestsResponse>> GetGroceryPickupRequests(
@@ -89,8 +81,6 @@ public class PickupRequestsController : ControllerBase
         return Ok(result.ListData);
     }
 
-    // ── GET api/pickuprequests/{id} ──────────────────────────────────────────
-
     [HttpGet("{id}")]
     public async Task<ActionResult<PickupRequestResponse>> GetPickupRequestById(Guid id)
     {
@@ -104,8 +94,6 @@ public class PickupRequestsController : ControllerBase
         return Ok(new PickupRequestResponse { Message = "Pickup request retrieved successfully", Data = result.Data! });
     }
 
-    // ── PUT api/pickuprequests/{id}/approve ──────────────────────────────────
-
     [HttpPut("{id}/approve")]
     public async Task<ActionResult<PickupRequestResponse>> ApprovePickupRequest(Guid id)
     {
@@ -117,8 +105,6 @@ public class PickupRequestsController : ControllerBase
 
         return Ok(new PickupRequestResponse { Message = "Pickup request approved successfully", Data = result.Data! });
     }
-
-    // ── PUT api/pickuprequests/{id}/ready ────────────────────────────────────
 
     [HttpPut("{id}/ready")]
     public async Task<ActionResult<PickupRequestResponse>> MarkReadyForPickup(Guid id)

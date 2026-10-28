@@ -19,7 +19,6 @@ public class AdminHub : Hub
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"Admin {userId} connected to AdminHub");
 
-        // All admins join "admins" group
         await Groups.AddToGroupAsync(Context.ConnectionId, "admins");
 
         await base.OnConnectedAsync();

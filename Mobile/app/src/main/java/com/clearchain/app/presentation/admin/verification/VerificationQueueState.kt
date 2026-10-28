@@ -20,10 +20,8 @@ data class VerificationQueueState(
     val showFilterSheet: Boolean = false,
     val filterOrgType: String? = null, // null = all, "GROCERY"/"NGO"
 
-    // Status filter
     val selectedStatus: String? = "PENDING", // null = all
 
-    // Sort
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
         CommonSortOptions.CREATED_DATE_DESC,

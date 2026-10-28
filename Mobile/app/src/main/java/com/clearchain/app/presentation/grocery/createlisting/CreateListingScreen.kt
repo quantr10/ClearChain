@@ -91,7 +91,7 @@ fun CreateListingScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.isPreviewMode) {
-                // ── Preview Mode ─────────────────────────────────────────────
+                // ── Preview mode ─────────────────────────────────────────────
                 val previewListing = remember(
                     state.title,
                     state.description,
@@ -139,10 +139,8 @@ fun CreateListingScreen(
                 val expiryInvalid = state.expiryDate.isBlank()
                 val canCreate = !titleInvalid && !descInvalid && !qtyInvalid && !expiryInvalid
 
-                // ── AI Photo Analysis ────────────────────────────────────────
                 AiAnalysisCard(state = state, viewModel = viewModel)
 
-                // ── Title ────────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_title)) {
                     ClearChainTextField(
                         value = state.title,
@@ -156,7 +154,6 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Description ──────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_description)) {
                     ClearChainTextField(
                         value = state.description,
@@ -173,7 +170,6 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Notes ────────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_notes)) {
                     ClearChainTextField(
                         value = state.notes,
@@ -188,7 +184,6 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Category ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_category)) {
                     val enabled = !state.isLoading && !state.isAnalyzing
                     val iconTint = if (enabled) {
@@ -247,7 +242,6 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Quantity ─────────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_quantity_short)) {
                     val enabled = !state.isLoading && !state.isAnalyzing
                     val iconTint = if (enabled) {
@@ -339,7 +333,6 @@ fun CreateListingScreen(
                     }
                 }
 
-                // ── Expiry Date ──────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_expiry_date)) {
                     DatePickerField(
                         value = state.expiryDate,
@@ -352,7 +345,6 @@ fun CreateListingScreen(
                     )
                 }
 
-                // ── Pickup Hours ─────────────────────────────────────────────
                 FieldCard(label = stringResource(R.string.label_pickup_hours_from_profile)) {
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -408,7 +400,8 @@ fun CreateListingScreen(
     }
 }
 
-// ── AI Analysis Card ─────────────────────────────────────────────────────────
+// ── AI analysis card ─────────────────────────────────────────────────────────
+
 @Composable
 private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingViewModel) {
     Card(
@@ -542,7 +535,6 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                        // Detail rows
                         AiDetailRow(
                             Icons.Default.Category,
                             stringResource(R.string.label_category),
@@ -570,7 +562,7 @@ private fun AiAnalysisCard(state: CreateListingState, viewModel: CreateListingVi
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                        // Two buttons
+                        // Actions
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)

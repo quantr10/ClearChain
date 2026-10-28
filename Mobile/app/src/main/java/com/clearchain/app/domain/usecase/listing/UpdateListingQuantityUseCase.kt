@@ -1,5 +1,3 @@
-// domain/usecase/listing/UpdateListingQuantityUseCase.kt - NEW FILE:
-
 package com.clearchain.app.domain.usecase.listing
 
 import com.clearchain.app.domain.model.Listing

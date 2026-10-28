@@ -75,8 +75,7 @@ fun MyRequestsScreen(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // -- Upload loading banner --------------------------
-                // -- Upload error banner + retry --------------------
+                // Upload error banner with retry
                 AnimatedVisibility(
                     visible = state.uploadError != null,
                     enter = fadeIn(),
@@ -232,9 +231,7 @@ fun MyRequestsScreen(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Advanced filter bottom sheet
-// -----------------------------------------------------------------------------
+// ── Advanced filter bottom sheet ─────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -264,7 +261,6 @@ private fun MyRequestsFilterSheet(
                 }
             }
 
-            // Food category
             FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -291,7 +287,6 @@ private fun MyRequestsFilterSheet(
                 }
             }
 
-            // Pickup date
             FilterSection(title = stringResource(R.string.filter_pickup_date)) {
                 DateFilterField(
                     date = state.filterPickupDate,
@@ -313,9 +308,7 @@ private fun MyRequestsFilterSheet(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Request card on its own surface
-// -----------------------------------------------------------------------------
+// ── Request card on its own surface ──────────────────────────────────────────
 
 @Composable
 private fun RequestCardWithExtras(

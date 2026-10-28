@@ -1,5 +1,3 @@
-// ── InventoryEvent.kt - UPDATED WITH CATEGORY FILTER & STATUS TAB ────────────
-
 package com.clearchain.app.presentation.ngo.inventory
 
 import com.clearchain.app.domain.model.InventoryStatus
@@ -9,14 +7,14 @@ sealed class InventoryEvent {
     object LoadInventory : InventoryEvent()
     object RefreshInventory : InventoryEvent()
 
-    // Search & Sort
+    // Search and sort
     data class SearchQueryChanged(val query: String) : InventoryEvent()
     data class SortOptionChanged(val option: SortOption) : InventoryEvent()
 
-    // Status as TAB (changed from chip)
+    // Status tabs
     data class StatusTabChanged(val status: InventoryStatus?) : InventoryEvent()
 
-    // Category as CHIP (food categories)
+    // Category chips
     data class CategoryFilterChanged(val category: String?) : InventoryEvent()
 
     // Advanced filter sheet

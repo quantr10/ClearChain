@@ -12,8 +12,10 @@ data class PickupRequest(
     val listingId: String,
     val ngoId: String,
     val ngoName: String,
-    // Not persisted in the Room cache: offline the party card falls back to the
-    // initial anyway, since the image itself needs the network.
+    /**
+     * Not persisted in the Room cache: offline the party card falls back to the initial anyway,
+     * since the image itself needs the network.
+     */
     val ngoProfilePictureUrl: String? = null,
     val groceryId: String,
     val groceryName: String,
@@ -37,7 +39,7 @@ data class PickupRequest(
     val listingDescription: String? = null,
     val groceryLocation: String? = null,
     val distanceKm: Double? = null,
-    // Latest dispute's status (open, resolved_ngo, resolved_grocery, dismissed); only sent to admins.
+    /** Latest dispute's status (open, resolved_ngo, resolved_grocery, dismissed); only sent to admins. */
     val disputeStatus: String? = null,
     val items: List<PickupRequestItem> = emptyList(),
     // Only sent to admins; used for the call / email buttons on the admin detail screen.

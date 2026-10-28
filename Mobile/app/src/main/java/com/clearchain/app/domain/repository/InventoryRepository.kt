@@ -10,7 +10,6 @@ interface InventoryRepository {
 
     suspend fun distributeItem(id: String): Result<InventoryItem>
 
-    /** Marks the NGO's own expired-but-still-active items as expired server-side. Returns
-     * how many were updated. */
+    /** Marks the NGO's own expired-but-still-active items as expired server-side; returns how many. */
     suspend fun updateExpiredItems(): Result<Int>
 }

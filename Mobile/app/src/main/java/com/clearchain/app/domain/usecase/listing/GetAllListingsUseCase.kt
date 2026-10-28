@@ -7,7 +7,6 @@ import javax.inject.Inject
 class GetAllListingsUseCase @Inject constructor(
     private val listingRepository: ListingRepository
 ) {
-    // ── Added location params ────────────────────────────────────────────────
     suspend operator fun invoke(
         status: String? = null,
         category: String? = null,

@@ -35,9 +35,7 @@ public class OrganizationsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get dashboard stats for the current user (NGO or Grocery).
-    /// </summary>
+    /// <summary>Dashboard stats for the current user, NGO or grocery.</summary>
     [HttpGet("my/stats")]
     public async Task<IActionResult> GetMyStats()
     {
@@ -221,7 +219,7 @@ public class OrganizationsController : ControllerBase
     }
 
     /// <summary>
-    /// Get the current user's activity for the last <paramref name="days"/> days (default 7,
+    /// The current user's activity for the last <paramref name="days"/> days (default 7,
     /// clamped to 1–90). The 7-day default matches the dashboard's "Actions this week" sparkline;
     /// the analytics screen requests a wider window.
     /// Grocery: listings created + pickup requests received.
@@ -243,7 +241,6 @@ public class OrganizationsController : ControllerBase
 
         if (org.Type == "grocery")
         {
-            // Listings created in the window
             var listings = await _context.ClearanceListings
                 .Where(l => l.GroceryId == userGuid && l.CreatedAt >= cutoff)
                 .OrderByDescending(l => l.CreatedAt)
@@ -262,7 +259,6 @@ public class OrganizationsController : ControllerBase
                 });
             }
 
-            // Pickup requests received in the window (with NGO name via navigation)
             var requests = await _context.PickupRequests
                 .Include(pr => pr.Ngo)
                 .Where(pr => pr.GroceryId == userGuid && pr.RequestedAt >= cutoff)
@@ -310,7 +306,6 @@ public class OrganizationsController : ControllerBase
         }
         else if (org.Type == "ngo")
         {
-            // Pickup requests made in the window (with Grocery name via navigation)
             var requests = await _context.PickupRequests
                 .Include(pr => pr.Grocery)
                 .Where(pr => pr.NgoId == userGuid && pr.RequestedAt >= cutoff)
@@ -356,7 +351,6 @@ public class OrganizationsController : ControllerBase
                 });
             }
 
-            // Inventory items received in the window
             var inventory = await _context.Inventories
                 .Where(i => i.NgoId == userGuid && i.ReceivedAt >= cutoff)
                 .OrderByDescending(i => i.ReceivedAt)
@@ -385,8 +379,8 @@ public class OrganizationsController : ControllerBase
     }
 
     /// <summary>
-    /// Get public profile for any organization (viewable by any authenticated user)
-    /// Includes average rating and review count for grocery stores.
+    /// Any organization's public profile, readable by every authenticated user. Groceries also
+    /// carry their average rating and review count.
     /// </summary>
     [HttpGet("{id}/public")]
     public async Task<IActionResult> GetPublicProfile(Guid id)
@@ -464,9 +458,7 @@ public class OrganizationsController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// An NGO's all-time pickup record: total requests, completed pickups and completion rate.
-    /// </summary>
+    /// <summary>An NGO's all-time pickup record: total requests, completed pickups and completion rate.</summary>
     [HttpGet("{id}/reputation")]
     public async Task<IActionResult> GetNgoReputation(Guid id)
     {
@@ -489,9 +481,7 @@ public class OrganizationsController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Today's pickups for the dashboard: approved or ready pickups scheduled for today.
-    /// </summary>
+    /// <summary>Today's pickups for the dashboard: approved or ready pickups scheduled for today.</summary>
     [HttpGet("my/today-summary")]
     public async Task<IActionResult> GetTodaySummary()
     {
@@ -525,7 +515,6 @@ public class OrganizationsController : ControllerBase
             return Ok(new { data = new { upcomingPickups = groceryUpcomingPickups } });
         }
 
-        // NGO today summary
         var upcomingPickups = await _context.PickupRequests
             .Include(pr => pr.Grocery)
             .Where(pr => pr.NgoId == userGuid
@@ -545,9 +534,7 @@ public class OrganizationsController : ControllerBase
         return Ok(new { data = new { upcomingPickups } });
     }
 
-    /// <summary>
-    /// Upload/replace profile avatar
-    /// </summary>
+    /// <summary>Uploads the caller's profile avatar, replacing any existing one.</summary>
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAvatar(IFormFile avatar)
@@ -641,9 +628,6 @@ public class OrganizationsController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Update current user's profile
-    /// </summary>
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {

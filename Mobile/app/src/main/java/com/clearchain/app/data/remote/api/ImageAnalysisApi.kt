@@ -12,7 +12,7 @@ interface ImageAnalysisApi {
     @POST("imageanalysis/analyze")
     suspend fun analyzeImage(
         @Part image: MultipartBody.Part,
-        // "en" or "vi": the language the suggested title and notes come back in
+        // "en" or "vi": the language the suggested title and notes come back in.
         @Part("language") language: RequestBody
     ): AnalyzeImageResponse
 

@@ -27,9 +27,7 @@ import com.clearchain.app.presentation.notifications.NotificationBell
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 
-/**
- * Gradient welcome header used at the top of dashboards.
- */
+/** Gradient welcome header used at the top of dashboards. */
 @Composable
 fun DashboardWelcomeHeader(
     userName: String,

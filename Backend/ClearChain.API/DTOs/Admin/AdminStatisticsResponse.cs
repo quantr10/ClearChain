@@ -1,14 +1,15 @@
 namespace ClearChain.API.DTOs.Admin;
 
-// Payload for the admin Stats & Analytics screen.
-//
-// Two kinds of number live here and they must not be mixed up:
-//   * period figures - counted over the requested date range (Headline, Funnel,
-//                      Leaderboards, Timing, Quality).
-//   * live figures   - the state of the platform right now, independent of the
-//                      range (Backlog, and the Organizations register totals).
-// Everything here is measured from the database; nothing is modelled or estimated.
-
+/// <summary>
+/// Payload for the admin Stats &amp; Analytics screen.
+///
+/// Two kinds of number live here and they must not be mixed up:
+///   * period figures - counted over the requested date range (Headline, Funnel,
+///                      Leaderboards, Timing, Quality).
+///   * live figures   - the state of the platform right now, independent of the
+///                      range (Backlog, and the Organizations register totals).
+/// Everything here is measured from the database; nothing is modelled or estimated.
+/// </summary>
 public class AdminStatisticsResponse
 {
     public AdminStatisticsData Data { get; set; } = new();
@@ -144,8 +145,10 @@ public class StatsOrganizationsDto
     public int Ngos { get; set; }
     public int Verified { get; set; }
     public int PendingVerification { get; set; }
-    /// <summary>The PendingVerification split by type, so a chart can show the queue as its
-    /// own slice without counting an applicant under its type as well.</summary>
+    /// <summary>
+    /// The PendingVerification split by type, so a chart can show the queue as its own slice
+    /// without counting an applicant under its type as well.
+    /// </summary>
     public int PendingGroceries { get; set; }
     public int PendingNgos { get; set; }
     /// <summary>Age of the longest-waiting unverified application, in days.</summary>

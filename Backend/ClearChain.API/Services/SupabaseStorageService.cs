@@ -36,12 +36,10 @@ public class SupabaseStorageService : IStorageService
     {
         try
         {
-            // Generate unique filename
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             var extension = Path.GetExtension(fileName);
             var uniqueFileName = $"{timestamp}_{Guid.NewGuid()}{extension}";
 
-            // Convert stream to byte array
             using var memoryStream = new MemoryStream();
             await fileStream.CopyToAsync(memoryStream);
             var fileBytes = memoryStream.ToArray();
@@ -67,7 +65,6 @@ public class SupabaseStorageService : IStorageService
                 throw new Exception($"Upload failed: {errorContent}");
             }
 
-            // Get public URL
             var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{PICKUP_PROOFS_BUCKET}/{uniqueFileName}";
 
             _logger.LogInformation($"Upload successful. URL: {publicUrl}");
@@ -83,12 +80,10 @@ public class SupabaseStorageService : IStorageService
     {
         try
         {
-            // Generate unique filename with grocery ID for organization
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             var extension = Path.GetExtension(fileName);
             var uniqueFileName = $"{groceryId}/{timestamp}_{Guid.NewGuid()}{extension}";
 
-            // Convert stream to byte array
             using var memoryStream = new MemoryStream();
             await fileStream.CopyToAsync(memoryStream);
             var fileBytes = memoryStream.ToArray();
@@ -114,7 +109,6 @@ public class SupabaseStorageService : IStorageService
                 throw new Exception($"Upload failed: {errorContent}");
             }
 
-            // Get public URL
             var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{FOOD_IMAGES_BUCKET}/{uniqueFileName}";
 
             _logger.LogInformation($"Food image upload successful. URL: {publicUrl}");

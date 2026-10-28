@@ -19,7 +19,8 @@ import com.clearchain.app.util.sendEmail
 
 /**
  * One party of a transaction for admin screens: avatar and name with the role underneath, and
- * small round contact buttons, sized like the other action buttons on the detail screens. The avatar opens the party's public profile.
+ * small round contact buttons, sized like the other action buttons on the detail screens. The
+ * avatar opens the party's public profile.
  */
 @Composable
 fun PartyContactRow(

@@ -17,7 +17,6 @@ interface PickupRequestRepository {
 
     suspend fun markReadyForPickup(id: String): Result<PickupRequest>
 
-    // ✅ NEW METHOD (with photo)
     suspend fun confirmPickupWithPhoto(
         id: String,
         photoUri: Uri

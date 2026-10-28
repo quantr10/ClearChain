@@ -3,14 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClearChain.API.Common;
 
-/// <summary>
-/// Helpers shared by the API controllers.
-/// </summary>
+/// <summary>Helpers shared by the API controllers.</summary>
 public static class ControllerBaseExtensions
 {
-    /// <summary>
-    /// Reads the caller's organization id from the JWT subject claim.
-    /// </summary>
+    /// <summary>Reads the caller's organization id from the JWT subject claim.</summary>
     /// <remarks>
     /// Returns false rather than throwing when the claim is missing or malformed: an
     /// endpoint reached without a usable identity answers 401, and that is a caller

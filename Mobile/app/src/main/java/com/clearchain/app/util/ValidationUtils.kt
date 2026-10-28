@@ -19,10 +19,8 @@ object ValidationUtils {
     }
 
     /**
-     * Shared by onboarding and profile-edit (previously two different rules — onboarding
-     * required a leading "+" and validated digit count, profile-edit only checked overall
-     * string length — so a number valid from one screen could be rejected re-entering
-     * the other). An optional leading "+", 10-15 digits, with common separators allowed.
+     * An optional leading "+", 10-15 digits, with common separators allowed. Shared by
+     * onboarding and profile edit, so a number accepted on one screen is accepted on the other.
      */
     fun isValidPhone(phone: String): Boolean {
         val trimmed = phone.trim()

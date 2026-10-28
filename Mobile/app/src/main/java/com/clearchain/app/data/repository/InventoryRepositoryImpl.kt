@@ -11,11 +11,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
 /**
- * Was missing entirely — every inventory read/write went straight to [InventoryApi] with no
- * offline fallback, unlike Listings and PickupRequests, even though [InventoryDao] already
- * existed fully wired for it (just never called by anything). Follows the same pattern as
- * [ListingRepositoryImpl]/[PickupRequestRepositoryImpl]: write-through the cache on success,
- * fall back to it on a network failure.
+ * Inventory backed by the [InventoryDao] cache, following the same pattern as
+ * [ListingRepositoryImpl] and [PickupRequestRepositoryImpl]: write through the cache on
+ * success, fall back to it on a network failure.
  */
 class InventoryRepositoryImpl @Inject constructor(
     private val inventoryApi: InventoryApi,

@@ -19,7 +19,6 @@ public class NotificationsController : ControllerBase
         _context = context;
     }
 
-    // GET api/notifications?page=1&pageSize=20
     [HttpGet]
     public async Task<IActionResult> GetMyNotifications(
         [FromQuery] int page = 1,
@@ -65,7 +64,6 @@ public class NotificationsController : ControllerBase
         });
     }
 
-    // PUT api/notifications/{id}/read
     [HttpPut("{id}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id)
     {
@@ -82,7 +80,6 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = "Marked as read", data = NotificationDto.From(notification) });
     }
 
-    // PUT api/notifications/read-all
     [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
@@ -95,7 +92,7 @@ public class NotificationsController : ControllerBase
         return Ok(new { message = $"{marked} notifications marked as read" });
     }
 
-    // DELETE api/notifications — clears the caller's whole inbox
+    /// <summary>Clears the caller's whole inbox.</summary>
     [HttpDelete]
     public async Task<IActionResult> DeleteAllNotifications()
     {

@@ -11,7 +11,7 @@ data class MyListingsState(
     val allListings: List<Listing> = emptyList(),
     val filteredListings: List<Listing> = emptyList(),
 
-    // Search, Sort, Filter
+    // Search, sort and filter
     val searchQuery: String = "",
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(

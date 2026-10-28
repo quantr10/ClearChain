@@ -7,7 +7,7 @@ sealed class MyRequestsEvent {
     object LoadRequests : MyRequestsEvent()
     object RefreshRequests : MyRequestsEvent()
 
-    // Search, Sort, Filter
+    // Search, sort and filter
     data class SearchQueryChanged(val query: String) : MyRequestsEvent()
     data class SortOptionChanged(val option: SortOption) : MyRequestsEvent()
     data class StatusFilterChanged(val status: String?) : MyRequestsEvent()
@@ -22,7 +22,6 @@ sealed class MyRequestsEvent {
     object RetryFailedUpload : MyRequestsEvent()
     object DismissUploadError : MyRequestsEvent()
 
-    // CSV export
     object ExportCsv : MyRequestsEvent()
 
     // Advanced filter sheet

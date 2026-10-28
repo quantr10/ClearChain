@@ -172,8 +172,8 @@ class TransactionsViewModel @Inject constructor(
                     )
                 }
                 // Re-applies whatever status/date/search filter is active — this runs on
-                // every SignalR event, so skipping it silently reset the admin's filters
-                // to "show everything" each time a transaction event arrived.
+                // every SignalR event, so skipping it would reset the admin's filters to
+                // "show everything" each time a transaction event arrived.
                 applyFilters()
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false) }
@@ -222,7 +222,6 @@ class TransactionsViewModel @Inject constructor(
         val currentState = _state.value
         var filtered = currentState.allTransactions
 
-        // Filter by status
         currentState.selectedStatus?.let { status ->
             filtered = filtered.filter { it.status.name == status }
         }
@@ -246,7 +245,6 @@ class TransactionsViewModel @Inject constructor(
             filtered = filtered.filter { it.hasItemExpiringBy(date) }
         }
 
-        // Filter by search query
         if (currentState.searchQuery.isNotBlank()) {
             val query = currentState.searchQuery.lowercase()
             filtered = filtered.filter { transaction ->

@@ -21,8 +21,10 @@ data class DisputeResponse(
     val data: DisputeData? = null
 )
 
-/** Contact details for one side of a dispute — an admin resolves these by phone/email, so
- * there is no in-app negotiation flow between the NGO and the grocery. */
+/**
+ * Contact details for one side of a dispute — an admin resolves disputes by phone or email,
+ * since there is no in-app negotiation flow between the NGO and the grocery.
+ */
 @Serializable
 data class DisputePartyContact(
     val id: String,

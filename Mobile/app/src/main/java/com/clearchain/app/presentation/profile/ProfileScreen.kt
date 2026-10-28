@@ -369,7 +369,7 @@ private fun ProfileHero(
     }
 }
 
-// ── Change Password Dialog ───────────────────────────────────────────────────
+// ── Change password dialog ───────────────────────────────────────────────────
 
 @Composable
 private fun ChangePasswordDialog(
@@ -467,8 +467,6 @@ private fun ChangePasswordDialog(
     }
 }
 
-// ── Account stats card ───────────────────────────────────────────────────────
-
 // ── Logout dialog ────────────────────────────────────────────────────────────
 
 @Composable
@@ -488,7 +486,7 @@ private fun LogoutDialog(
     )
 }
 
-// ── Delete Account dialog ────────────────────────────────────────────────────
+// ── Delete account dialog ────────────────────────────────────────────────────
 
 @Composable
 private fun DeleteAccountDialog(

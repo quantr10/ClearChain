@@ -1,9 +1,6 @@
 namespace ClearChain.API.DTOs.ImageAnalysis;
 
-/// <summary>
-/// Response for analyze food image endpoint
-/// Contains auto-fill data for CreateListingRequest
-/// </summary>
+/// <summary>Response of the analyze endpoint: auto-fill data for a CreateListingRequest.</summary>
 public class AnalyzeImageResponse
 {
     public bool Success { get; set; }
@@ -11,53 +8,40 @@ public class AnalyzeImageResponse
     public FoodAnalysisData? Data { get; set; }
 }
 
-/// <summary>
-/// AI-analyzed food data ready to auto-fill CreateListingRequest
-/// </summary>
+/// <summary>What the model read off the photo, field by field, for the create-listing form.</summary>
 public class FoodAnalysisData
 {
-    /// <summary>
-    /// Product name detected by AI (for Title field)
-    /// </summary>
+    /// <summary>Product name; fills Title.</summary>
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// Store-style product copy: what it is, variety, pack size, typical use (for Description field)
+    /// Store-style product copy (what it is, variety, pack size, typical use); fills Description.
     /// Example: "Sliced whole wheat sandwich bread, 500 g loaf. Soft and hearty, ideal for toast and sandwiches."
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// Food category detected by AI (for Category field)
-    /// Must match: FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER
+    /// Food category; fills Category. One of
+    /// FRUITS|VEGETABLES|DAIRY|BAKERY|MEAT|SEAFOOD|PACKAGED|BEVERAGES|OTHER.
     /// </summary>
     public string Category { get; set; } = string.Empty;
 
-    /// <summary>
-    /// AI-estimated expiry date (for ExpiryDate field)
-    /// Format: yyyy-MM-dd
-    /// </summary>
+    /// <summary>Expiry date read off the label or estimated, as yyyy-MM-dd; fills ExpiryDate.</summary>
     public string ExpiryDate { get; set; } = string.Empty;
 
     /// <summary>
-    /// Visible condition and storage advice (for Notes field)
+    /// Visible condition and storage advice; fills Notes.
     /// Example: "Fresh loaf with an intact crust. Store in an airtight bag at room temperature."
     /// </summary>
     public string Notes { get; set; } = string.Empty;
 
-    /// <summary>
-    /// AI confidence score (0.0 - 1.0)
-    /// </summary>
+    /// <summary>The model's confidence in its reading, 0.0-1.0.</summary>
     public double Confidence { get; set; }
 
-    /// <summary>
-    /// Quality score (0-100)
-    /// </summary>
+    /// <summary>Visible freshness, 0-100.</summary>
     public double FreshnessScore { get; set; }
 
-    /// <summary>
-    /// Quality grade (A/B/C/D)
-    /// </summary>
+    /// <summary>Quality grade: A, B, C or D.</summary>
     public string QualityGrade { get; set; } = string.Empty;
 }
 

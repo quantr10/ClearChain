@@ -12,7 +12,6 @@ public class ApplicationDbContext : DbContext
     {
     }
 
-    // DbSets
     public DbSet<Organization> Organizations { get; set; } = null!;
     public DbSet<ClearanceListing> ClearanceListings { get; set; } = null!;
     public DbSet<PickupRequest> PickupRequests { get; set; } = null!;
@@ -33,7 +32,7 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Map to lowercase table names
+        // ── Table names, all lowercase ───────────────────────────────────────
         modelBuilder.Entity<Organization>().ToTable("organizations");
         modelBuilder.Entity<ClearanceListing>().ToTable("clearancelistings");
         modelBuilder.Entity<PickupRequest>().ToTable("pickuprequests");
@@ -50,6 +49,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<CartItem>().ToTable("cartitems");
         modelBuilder.Entity<PickupRequestItem>().ToTable("pickuprequestitems");
 
+        // ── Concurrency tokens ───────────────────────────────────────────────
         // Postgres's xmin system column as an optimistic concurrency token — no migration
         // needed, it already exists on every row. Without this, two concurrent requests
         // against the same listing/group can both read the same Quantity/TotalAvailable,
@@ -57,14 +57,14 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<ClearanceListing>().Property<uint>("xmin").IsRowVersion();
         modelBuilder.Entity<ListingGroup>().Property<uint>("xmin").IsRowVersion();
 
-        // Configure ListingGroup - ClearanceListing relationship
+        // ── ListingGroup ─────────────────────────────────────────────────────
         modelBuilder.Entity<ListingGroup>()
             .HasMany(lg => lg.ChildListings)
             .WithOne(cl => cl.Group)
             .HasForeignKey(cl => cl.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure FCMToken - Organization relationship
+        // ── FCMToken ─────────────────────────────────────────────────────────
         modelBuilder.Entity<FCMToken>()
             .HasOne(f => f.Organization)
             .WithMany()
@@ -74,14 +74,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<FCMToken>()
             .HasIndex(f => f.OrganizationId);
 
-        // PickupRequest → Ngo
+        // ── PickupRequest ────────────────────────────────────────────────────
         modelBuilder.Entity<PickupRequest>()
             .HasOne(pr => pr.Ngo)
             .WithMany()
             .HasForeignKey(pr => pr.NgoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // PickupRequest → Grocery
         modelBuilder.Entity<PickupRequest>()
             .HasOne(pr => pr.Grocery)
             .WithMany()
@@ -127,7 +126,7 @@ public class ApplicationDbContext : DbContext
             .HasOne(s => s.Listing).WithMany().HasForeignKey(s => s.ListingId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SavedListing>().HasIndex(s => new { s.NgoId, s.ListingId }).IsUnique();
 
-        // Cart
+        // ── Cart ─────────────────────────────────────────────────────────────
         modelBuilder.Entity<Cart>()
             .HasOne(c => c.Ngo).WithMany().HasForeignKey(c => c.NgoId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Cart>()
@@ -144,7 +143,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<CartItem>()
             .HasIndex(ci => ci.GroceryId);
 
-        // Multi-listing pickup request items
+        // ── PickupRequestItem ────────────────────────────────────────────────
         modelBuilder.Entity<PickupRequestItem>()
             .HasOne(i => i.PickupRequest).WithMany(r => r.Items).HasForeignKey(i => i.PickupRequestId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<PickupRequestItem>()
@@ -158,15 +157,14 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PickupRequestItem>()
             .HasIndex(i => i.ListingGroupId);
 
-
-        // Indexes
+        // ── Other indexes ────────────────────────────────────────────────────
         modelBuilder.Entity<Organization>()
             .HasIndex(o => o.Email).IsUnique();
 
         modelBuilder.Entity<ClearanceListing>()
             .HasIndex(cl => cl.Status);
 
-        // Enum → lowercase string converters (match existing DB values)
+        // ── Enums, stored as the lowercase strings already in the database ───
         var listingStatusConverter = new ValueConverter<ListingStatus, string>(
             v => v.ToString().ToLower(),
             v => Enum.Parse<ListingStatus>(v, true));
@@ -191,10 +189,10 @@ public class ApplicationDbContext : DbContext
             .Property(i => i.Status)
             .HasConversion(inventoryStatusConverter);
 
-        // Inventory had no FK/index on NgoId at all — the single most-queried column on
-        // this table (GetMyInventory, dashboard stats, distribute, expiry sweep all filter
-        // by it). Configured by property rather than a navigation property since Inventory
-        // doesn't expose one.
+        // ── Inventory ────────────────────────────────────────────────────────
+        // NgoId is the most-queried column on this table (GetMyInventory, dashboard stats,
+        // distribute and the expiry sweep all filter by it), hence the FK and index. Configured
+        // by property since Inventory exposes no navigation property.
         modelBuilder.Entity<Inventory>()
             .HasOne<Organization>()
             .WithMany()
@@ -210,7 +208,7 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(i => i.PickupRequestId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Map all column names to lowercase
+        // ── Column names, all lowercase ──────────────────────────────────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
             foreach (var property in entity.GetProperties())

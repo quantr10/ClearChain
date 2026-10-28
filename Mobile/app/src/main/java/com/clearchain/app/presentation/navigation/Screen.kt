@@ -45,6 +45,7 @@ sealed class Screen(val route: String) {
     }
 
     // ── Detail screens (parameterized) ───────────────────────────────────────
+
     object ListingDetail : Screen("listing_detail/{listingId}") {
         fun createRoute(listingId: String) = "listing_detail/$listingId"
     }

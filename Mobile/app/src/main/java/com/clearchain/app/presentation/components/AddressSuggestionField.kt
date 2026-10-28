@@ -136,7 +136,6 @@ fun AddressSuggestionField(
             fieldShape = fieldShape
         )
 
-        // Suggestions dropdown
         if (showSuggestions) {
             Popup(
                 alignment = Alignment.TopStart,

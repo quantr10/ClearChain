@@ -282,7 +282,6 @@ private fun InventoryFilterSheet(
                 }
             }
 
-            // Category
             FilterSection(title = stringResource(R.string.filter_category)) {
                 androidx.compose.foundation.layout.FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -316,5 +315,3 @@ private fun InventoryFilterSheet(
         }
     }
 }
-
-// ── Category breakdown horizontal bar chart ──────────────────────────────────

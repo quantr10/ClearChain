@@ -56,8 +56,7 @@ public class NotificationJobs
         _logger = logger;
     }
 
-    // ── Job #1 — Listings expiring tomorrow ──────────────────────────────────
-
+    /// <summary>Warns groceries about open listings that expire tomorrow.</summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     public async Task CheckExpiringListings()
@@ -88,8 +87,7 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #2 — Listings past their expiry date ─────────────────────────────
-
+    /// <summary>Marks open listings past their expiry date expired, broadcasts it and tells the grocery.</summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     public async Task CheckExpiredListings()
@@ -142,8 +140,7 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #3 — Inventory expiring in two days ──────────────────────────────
-
+    /// <summary>Warns NGOs about active inventory that expires in two days.</summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     public async Task CheckExpiringInventory()
@@ -170,8 +167,7 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #4 — Inventory past its expiry date ──────────────────────────────
-
+    /// <summary>Marks active inventory past its expiry date expired, broadcasts it and tells the NGO.</summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     public async Task CheckExpiredInventory()
@@ -207,8 +203,6 @@ public class NotificationJobs
             _logger.LogInformation("✅ [Hangfire] Expired {Count} inventory items", expiredItems.Count);
         });
     }
-
-    // ── Job #5 — Pending requests whose pickup date has come and gone ────────
 
     /// <summary>
     /// A pending request holds a reserved slice of a listing. Left alone after its pickup date
@@ -254,11 +248,10 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #6 — Daily platform stats for the admin dashboard ────────────────
-
     /// <summary>
-    /// Stats are otherwise only pushed when a transaction completes, so an admin watching a
-    /// quiet dashboard sees numbers that drift further out of date the longer they look.
+    /// Pushes fresh platform stats to the admin dashboard. Stats are otherwise only pushed when a
+    /// transaction completes, so an admin watching a quiet dashboard would see numbers that drift
+    /// further out of date the longer they look.
     /// </summary>
     [AutomaticRetry(Attempts = 2, DelaysInSeconds = new[] { 60, 300 })]
     [DisableConcurrentExecution(timeoutInSeconds: 300)]
@@ -284,8 +277,7 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #7 — Refresh token sweep ─────────────────────────────────────────
-
+    /// <summary>Deletes revoked or expired refresh tokens created more than 30 days ago.</summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
     [DisableConcurrentExecution(timeoutInSeconds: 600)]
     public async Task CleanupExpiredRefreshTokens()
@@ -302,8 +294,6 @@ public class NotificationJobs
             _logger.LogInformation("✅ [Hangfire] Deleted {Count} expired/revoked refresh tokens", deleted);
         });
     }
-
-    // ── Job #8 — Stale device token sweep ────────────────────────────────────
 
     /// <summary>
     /// FCM reports uninstalled devices only when something is actually sent to them, so a user
@@ -327,10 +317,8 @@ public class NotificationJobs
         });
     }
 
-    // ── Job #9 — Notification inbox sweep ────────────────────────────────────
-
     /// <summary>
-    /// Every notification the platform sends is now persisted, so this table grows with usage
+    /// Every notification the platform sends is persisted, so this table grows with usage
     /// and needs a ceiling. One age limit applies to all of them, read or not — see
     /// <see cref="NotificationRetentionPolicy"/>.
     /// </summary>

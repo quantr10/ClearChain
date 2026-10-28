@@ -8,7 +8,6 @@ import javax.inject.Inject
 class ConfirmPickupUseCase @Inject constructor(
     private val repository: PickupRequestRepository
 ) {
-    // With photo
     suspend operator fun invoke(
         requestId: String,
         photoUri: Uri

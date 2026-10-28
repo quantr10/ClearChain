@@ -85,7 +85,6 @@ class LoginViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { (user, _) ->
-                    // Save or clear remember-me preference
                     authPreferenceStore.saveRememberMe(
                         enabled = currentState.rememberMe,
                         email = if (currentState.rememberMe) currentState.email else ""
@@ -114,7 +113,7 @@ class LoginViewModel @Inject constructor(
                             it.copy(isLoading = false, isLockedOut = true, lockoutMinutes = lockoutMinutes)
                         }
                     } else {
-                        // Route each error to the appropriate field instead of a banner
+                        // Route each error to the appropriate field instead of a banner.
                         val systemMsg = ApiErrorUtils.systemMessage(context, raw)
 
                         val (emailErr, passwordErr) = when {

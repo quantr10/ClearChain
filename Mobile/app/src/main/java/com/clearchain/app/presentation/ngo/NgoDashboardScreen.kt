@@ -87,7 +87,7 @@ fun NgoDashboardScreen(
                         modifier = Modifier.padding(ScreenPadding),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // ── Impact ───────────────────────────────────────────────
+                        // ── Impact ───────────────────────────────────────────
                         // First card on the page: what the organization has actually achieved
                         // leads, before today's workload.
                         DashboardSection(title = stringResource(R.string.analytics_impact)) {
@@ -98,7 +98,7 @@ fun NgoDashboardScreen(
                             )
                         }
 
-                        // ── Inventory ────────────────────────────────────────────
+                        // ── Inventory ────────────────────────────────────────
                         // What the NGO holds, laid out like the listings tiles on the
                         // grocery and admin homes.
                         state.stats?.inventoryStatus?.let { inventory ->
@@ -113,7 +113,7 @@ fun NgoDashboardScreen(
                             }
                         }
 
-                        // ── Nearby Listings Mini-Map ─────────────────────────────
+                        // ── Nearby listings mini-map ─────────────────────────
                         val mapListings = state.availableListings.filter {
                             it.groceryLatitude != null && it.groceryLongitude != null
                         }
@@ -131,7 +131,7 @@ fun NgoDashboardScreen(
                             }
                         }
 
-                        // ── Weekly Goal ──────────────────────────────────────────
+                        // ── Weekly goal ──────────────────────────────────────
                         DashboardSection(title = "") {
                             WeeklyGoalCard(
                                 completed = state.weeklyCompleted,
@@ -140,7 +140,7 @@ fun NgoDashboardScreen(
                             )
                         }
 
-                        // ── Upcoming Pickups ─────────────────────────────────────
+                        // ── Upcoming pickups ─────────────────────────────────
                         val upcoming = state.todaySummary?.upcomingPickups.orEmpty()
                         if (upcoming.isNotEmpty()) {
                             DashboardSection(title = "") {
@@ -151,7 +151,7 @@ fun NgoDashboardScreen(
                             }
                         }
 
-                        // ── Activity Trend + Recent Activity ─────────────────────
+                        // ── Activity trend and recent activity ───────────────
                         val sparklineData = buildDailyActivityCounts(state.activities)
                         DashboardSection(title = "") {
                             ActivitySparklineCard(
@@ -172,7 +172,7 @@ fun NgoDashboardScreen(
                             }
                         }
 
-                        // ── Quick Actions ────────────────────────────────────────
+                        // ── Quick actions ────────────────────────────────────
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             DashboardActionCard(
                                 icon = Icons.Default.RestaurantMenu,
@@ -210,7 +210,7 @@ fun NgoDashboardScreen(
     }
 }
 
-// ── Activity History Bottom Sheet (shared between NGO and Grocery) ───────────
+// ── Activity history bottom sheet, shared by NGO and grocery ─────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -273,7 +273,7 @@ internal fun ActivityHistorySheet(
     }
 }
 
-// ── Upcoming Pickups Timeline ────────────────────────────────────────────────
+// ── Upcoming pickups timeline ────────────────────────────────────────────────
 
 @Composable
 private fun UpcomingPickupsTimeline(
@@ -378,7 +378,7 @@ private fun PickupTimelineItem(pickup: UpcomingPickupData, isLast: Boolean) {
     }
 }
 
-// ── Nearby Listings Mini-Map ─────────────────────────────────────────────────
+// ── Nearby listings mini-map ─────────────────────────────────────────────────
 
 @Composable
 private fun NearbyListingsMiniMap(
@@ -502,7 +502,7 @@ private fun NearbyListingsMiniMap(
     }
 }
 
-// ── Activity Feed Item ───────────────────────────────────────────────────────
+// ── Activity feed ────────────────────────────────────────────────────────────
 
 @Composable
 internal fun ActivityFeedItem(item: ActivityItemData) {
@@ -582,8 +582,6 @@ internal fun ActivityFeedItem(item: ActivityItemData) {
         }
     }
 }
-
-// ── Grocery Pin Content (for map markers) ────────────────────────────────────
 
 @Composable
 internal fun ActivityFeedList(

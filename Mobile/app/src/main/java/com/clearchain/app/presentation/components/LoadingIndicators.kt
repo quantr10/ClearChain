@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/*
+/**
  * The app has exactly three ways to show that it is waiting. Pick by asking
  * "what is waiting?" — the indicator always sits where the result will appear.
  *

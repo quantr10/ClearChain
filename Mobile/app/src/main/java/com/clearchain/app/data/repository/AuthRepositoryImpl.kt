@@ -5,8 +5,8 @@ import com.clearchain.app.data.local.dao.NotificationDao
 import com.clearchain.app.data.local.dao.UserDao
 import com.clearchain.app.data.local.database.ClearChainDatabase
 import com.clearchain.app.data.local.entity.AuthTokenEntity
-import com.clearchain.app.data.local.entity.toDomain // CANONICAL from UserEntity.kt
-import com.clearchain.app.data.local.entity.toEntity // CANONICAL from UserEntity.kt
+import com.clearchain.app.data.local.entity.toDomain
+import com.clearchain.app.data.local.entity.toEntity
 import com.clearchain.app.data.remote.api.AuthApi
 import com.clearchain.app.data.remote.dto.*
 import com.clearchain.app.domain.model.AuthTokens
@@ -130,17 +130,16 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout(): Result<Unit> {
         return try {
-            // Revoke refresh token on server before clearing local state
+            // Revoke the refresh token on the server before clearing local state.
             val tokens = authTokenDao.getTokens()
             if (tokens?.refreshToken != null) {
                 try {
-                    // Sending this device's FCM token lets the server unregister it —
-                    // without it, this device kept receiving the departing account's
-                    // push notifications until the stale-token sweep or another login.
+                    // Sending this device's FCM token lets the server unregister it, so the
+                    // device stops receiving the departing account's push notifications.
                     val fcmToken = database.fcmTokenDao().getToken()
                     authApi.logout(LogoutRequest(tokens.refreshToken, fcmToken))
                 } catch (_: Exception) {
-                    // Non-fatal: local state is still cleared even if server call fails
+                    // Non-fatal: local state is still cleared even if the server call fails.
                 }
             }
             authTokenDao.clearTokens()
@@ -161,7 +160,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): Flow<Organization?> {
-        return userDao.getCurrentUserFlow().map { it?.toDomain() } // uses canonical from UserEntity.kt
+        return userDao.getCurrentUserFlow().map { it?.toDomain() }
     }
 
     override suspend fun refreshCurrentUser(): Result<Organization> {
@@ -174,6 +173,3 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 }
-
-// NOTE: Private duplicate toEntity()/toDomain() functions REMOVED.
-// Now imported from com.clearchain.app.data.local.entity.UserEntity

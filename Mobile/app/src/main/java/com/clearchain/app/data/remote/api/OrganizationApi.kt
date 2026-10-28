@@ -57,7 +57,7 @@ interface OrganizationApi {
     @GET("organizations/my/stats")
     suspend fun getMyStats(): DashboardStatsResponse
 
-    // days: activity window. 7 (default) matches the dashboard sparkline; analytics passes a wider window.
+    /** [days] is the activity window: 7 (the default) matches the dashboard sparkline; analytics asks for more. */
     @GET("organizations/my/activity")
     suspend fun getMyActivity(@Query("days") days: Int = 7): ActivityResponse
 

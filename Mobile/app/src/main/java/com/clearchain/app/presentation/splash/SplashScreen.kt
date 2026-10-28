@@ -89,8 +89,7 @@ fun SplashScreen(
                 if (pendingScreen != null) {
                     prefs.edit { clear() }
 
-                    // A pickup-request push carries the specific request's id — route
-                    // straight to it instead of the generic list it used to fall back to.
+                    // A pickup-request push carries the specific request's id, so route straight to it.
                     if ((pendingScreen == "my_requests" || pendingScreen == "grocery_requests") &&
                         pendingRequestId != null
                     ) {

@@ -19,9 +19,10 @@ data class InventoryItemResponse(
     val data: InventoryItemData
 )
 
-// The backend's POST /inventory/update-expired returns { message, count } — no `data` field.
-// InventoryItemResponse (which requires one) was being used for this call, so every response
-// failed to deserialize and the endpoint always reported failure even on a successful sweep.
+/**
+ * The response of POST /inventory/update-expired, which is `{ message, count }` with no `data`
+ * field, so InventoryItemResponse cannot deserialize it.
+ */
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class UpdateExpiredItemsResponse(
@@ -46,7 +47,8 @@ data class InventoryItemData(
     val photoUrl: String? = null
 )
 
-// Extension function to convert DTO to Domain
+// ── Domain mapping ───────────────────────────────────────────────────────────
+
 fun InventoryItemData.toDomain(): InventoryItem {
     return InventoryItem(
         id = id,

@@ -52,18 +52,18 @@ data class ListingData(
     val location: String,
     val createdAt: String,
 
-    // ── Distance from NGO ────────────────────────────────────────────────────
+    /** From the NGO's search location, in km. */
     val distanceKm: Double? = null,
 
-    // ── Analytics ────────────────────────────────────────────────────────────
+    // Analytics
     val viewCount: Int = 0,
     val requestCount: Int = 0,
 
-    // ── Grocery coordinates (for map pins) ───────────────────────────────────
+    // Grocery coordinates, for map pins
     val groceryLatitude: Double? = null,
     val groceryLongitude: Double? = null,
 
-    // ── Grocery operating hours (live from profile) ──────────────────────────
+    /** The grocery's operating hours, read live from its profile. */
     val groceryHours: String? = null
 )
 
@@ -73,7 +73,8 @@ data class UpdateListingQuantityRequest(
     val newQuantity: Int
 )
 
-// mapping function — includes distanceKm
+// ── Domain mapping ───────────────────────────────────────────────────────────
+
 fun ListingData.toDomain(): Listing {
     return Listing(
         id = id,
@@ -111,7 +112,6 @@ fun ListingData.toDomain(): Listing {
         location = location,
         createdAt = createdAt,
         distanceKm = distanceKm,
-        // Analytics
         viewCount = viewCount,
         requestCount = requestCount,
         groceryLatitude = groceryLatitude,

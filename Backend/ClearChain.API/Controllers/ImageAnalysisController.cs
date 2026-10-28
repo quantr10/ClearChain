@@ -6,9 +6,7 @@ using ClearChain.API.DTOs.ImageAnalysis;
 
 namespace ClearChain.API.Controllers;
 
-/// <summary>
-/// AI-powered food image analysis for auto-filling listing forms
-/// </summary>
+/// <summary>AI food image analysis that auto-fills the create-listing form.</summary>
 [ApiController]
 [Route("api/[controller]")]
 public class ImageAnalysisController : ControllerBase
@@ -17,14 +15,18 @@ public class ImageAnalysisController : ControllerBase
     private readonly IStorageService _storageService;
     private readonly ILogger<ImageAnalysisController> _logger;
 
-    // Formats accepted by /analyze specifically — this is what's sent to the Azure OpenAI
-    // vision model, which reads JPEG, PNG, WEBP and non-animated GIF. It's declared
-    // independently from StorageBucketPolicy (used by /upload below) so the model's formats
-    // and the "food-images" bucket's config can each change on their own.
+    /// <summary>
+    /// Formats accepted by /analyze specifically — this is what's sent to the Azure OpenAI
+    /// vision model, which reads JPEG, PNG, WEBP and non-animated GIF. It's declared
+    /// independently from StorageBucketPolicy (used by /upload below) so the model's formats
+    /// and the "food-images" bucket's config can each change on their own.
+    /// </summary>
     private static readonly string[] AnalyzeAllowedMimeTypes =
         { "image/jpeg", "image/png", "image/webp", "image/gif" };
-    // The app compresses photos well below this; the cap keeps request size and image
-    // token cost bounded for anything else.
+    /// <summary>
+    /// The app compresses photos well below this; the cap keeps request size and image token
+    /// cost bounded for anything else.
+    /// </summary>
     private const long AnalyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB
 
     public ImageAnalysisController(
@@ -37,9 +39,7 @@ public class ImageAnalysisController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Analyze food image with AI and get auto-fill data for CreateListingRequest
-    /// </summary>
+    /// <summary>Analyzes a food photo and returns auto-fill data for a CreateListingRequest.</summary>
     /// <remarks>
     /// POST /api/imageanalysis/analyze (multipart: image, optional language "en" or "vi")
     ///
@@ -74,7 +74,6 @@ public class ImageAnalysisController : ControllerBase
     {
         try
         {
-            // Get grocery ID from JWT
             if (!this.TryGetUserId(out var groceryId))
             {
                 return Unauthorized(new AnalyzeImageResponse
@@ -84,7 +83,6 @@ public class ImageAnalysisController : ControllerBase
                 });
             }
 
-            // Validate image file
             if (image == null || image.Length == 0)
             {
                 return BadRequest(new AnalyzeImageResponse
@@ -94,7 +92,6 @@ public class ImageAnalysisController : ControllerBase
                 });
             }
 
-            // Check file size
             if (image.Length > AnalyzeMaxFileSize)
             {
                 return BadRequest(new AnalyzeImageResponse
@@ -104,8 +101,8 @@ public class ImageAnalysisController : ControllerBase
                 });
             }
 
-            // Check content type (not file extension — the extension can lie about what's
-            // actually inside the file; the browser/OS-reported MIME type is what matters).
+            // The reported MIME type, not the file extension: an extension can lie about what is
+            // actually inside the file.
             if (!AnalyzeAllowedMimeTypes.Contains(image.ContentType?.ToLowerInvariant()))
             {
                 return BadRequest(new AnalyzeImageResponse
@@ -117,7 +114,6 @@ public class ImageAnalysisController : ControllerBase
 
             _logger.LogInformation($"🔍 Analyzing image for grocery {groceryId}: {image.FileName}");
 
-            // Analyze image with AI
             // Anything other than Vietnamese falls back to English, the app's default language.
             var outputLanguage = string.Equals(language, "vi", StringComparison.OrdinalIgnoreCase) ? "vi" : "en";
             var result = await _analysisService.AnalyzeFoodImageAsync(image, groceryId, outputLanguage);
@@ -142,9 +138,7 @@ public class ImageAnalysisController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Upload food image to Supabase storage (called before creating listing)
-    /// </summary>
+    /// <summary>Uploads a food image to Supabase storage; called before the listing is created.</summary>
     [HttpPost("upload")]
     [Authorize]
     [ProducesResponseType(typeof(UploadImageResponse), 200)]

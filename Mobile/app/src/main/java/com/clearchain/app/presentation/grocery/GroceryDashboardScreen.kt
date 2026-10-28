@@ -79,7 +79,7 @@ fun GroceryDashboardScreen(
                         modifier = Modifier.padding(ScreenPadding),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // ── Impact ───────────────────────────────────────────────
+                        // ── Impact ───────────────────────────────────────────
                         // First card on the page: what the store has actually rescued leads,
                         // before today's workload.
                         state.stats?.let { stats ->
@@ -91,7 +91,7 @@ fun GroceryDashboardScreen(
                                 )
                             }
 
-                            // ── Listings ─────────────────────────────────────────
+                            // ── Listings ─────────────────────────────────────
                             // The store's own listings, laid out like the admin home's.
                             val listings = stats.listingStatus
                             DashboardSection(title = stringResource(R.string.section_listings)) {
@@ -105,7 +105,7 @@ fun GroceryDashboardScreen(
                             }
                         }
 
-                        // ── Weekly Pickups ───────────────────────────────────────
+                        // ── Weekly pickups ───────────────────────────────────
                         // The same card the NGO home shows: both sides of a hand-over count
                         // the same completed pickup.
                         DashboardSection(title = "") {
@@ -116,7 +116,7 @@ fun GroceryDashboardScreen(
                             )
                         }
 
-                        // ── Today's Pickups ──────────────────────────────────────
+                        // ── Today's pickups ──────────────────────────────────
                         val upcomingPickups = state.todaySummary?.upcomingPickups.orEmpty()
                         if (upcomingPickups.isNotEmpty()) {
                             DashboardSection(title = "") {
@@ -127,7 +127,7 @@ fun GroceryDashboardScreen(
                             }
                         }
 
-                        // ── Activity Trend + Recent Activity ─────────────────────
+                        // ── Activity trend and recent activity ───────────────
                         val sparklineData = buildDailyActivityCounts(state.activities)
                         DashboardSection(title = "") {
                             ActivitySparklineCard(
@@ -148,7 +148,7 @@ fun GroceryDashboardScreen(
                             }
                         }
 
-                        // ── Quick actions ────────────────────────────────────────
+                        // ── Quick actions ────────────────────────────────────
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             DashboardActionCard(
                                 icon = Icons.Default.AddCircle,
@@ -186,7 +186,7 @@ fun GroceryDashboardScreen(
     }
 }
 
-// ── Today's Pickups timeline (Grocery side — shows incoming NGO pickups) ─────
+// ── Today's pickups timeline: incoming NGO pickups ───────────────────────────
 
 @Composable
 private fun GroceryUpcomingPickupsTimeline(

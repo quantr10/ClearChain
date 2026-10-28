@@ -241,7 +241,7 @@ private fun OnboardingHeader(
     }
 }
 
-// ── Step 1: Phone + Description + Contact Person ─────────────────────────────
+// ── Step 1: phone, description, contact person ───────────────────────────────
 
 @Composable
 private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel) {
@@ -296,7 +296,7 @@ private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 }
 
-// ── Step 2: Address + City + Hours + Pickup Instructions + Document Upload ───
+// ── Step 2: address, city, hours, pickup instructions, document upload ───────
 
 @Composable
 private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel) {
@@ -518,7 +518,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 }
 
-// ── Step 3: Celebration ──────────────────────────────────────────────────────
+// ── Step 3: celebration ──────────────────────────────────────────────────────
 
 @Composable
 private fun Step3Content() {

@@ -14,8 +14,7 @@ import java.io.File
 
 /**
  * The pickup receipt shared by [com.clearchain.app.presentation.ngo.myrequests.MyRequestsViewModel]
- * and [com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen] — previously
- * duplicated in both, which is how they diverged (one copy had a mojibake-corrupted "…").
+ * and [com.clearchain.app.presentation.shared.requestdetail.RequestDetailScreen].
  *
  * A pickup can hold several listings, so the receipt lists every requested item and starts a new
  * page when they do not fit on one.

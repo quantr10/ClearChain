@@ -7,7 +7,6 @@ public class CustomUserIdProvider : IUserIdProvider
 {
     public string? GetUserId(HubConnectionContext connection)
     {
-        // Get user ID from JWT claims
         return connection.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 }

@@ -74,7 +74,6 @@ fun ListingDetailScreen(
     }
 
     // ── Dialogs ──────────────────────────────────────────────────────────────
-
     if (state.showDeleteConfirm) {
         ConfirmDialog(
             icon = Icons.Default.DeleteForever,
@@ -196,7 +195,7 @@ fun ListingDetailScreen(
                         val images = listOfNotNull(listing.imageUrl?.takeIf { it.isNotBlank() })
                         val displayQty = state.availabilityOverride ?: listing.quantity
 
-                        // ── Expiry logic ─────────────────────────────────────────
+                        // ── Expiry logic ─────────────────────────────────────
                         val daysUntilExpiry: Long = remember(listing.expiryDate) {
                             try {
                                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(listing.expiryDate)!!
@@ -239,7 +238,7 @@ fun ListingDetailScreen(
                         Column(
                             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                         ) {
-                            // ── IMAGE AREA  (200dp) ──────────────────────────────
+                            // ── Image area ───────────────────────────────────
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 12.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -268,12 +267,12 @@ fun ListingDetailScreen(
                                         }
                                     }
 
-                                    // ── Status badge — top-left ──────────────────────
+                                    // ── Status badge — top-left ──────────────
                                     Box(modifier = Modifier.align(Alignment.TopStart).padding(8.dp)) {
                                         ListingStatusBadge(listing.status)
                                     }
 
-                                    // ── Action buttons — top-right, horizontal row ────
+                                    // ── Action buttons — top-right, horizontal row ───
                                     Row(
                                         modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -375,12 +374,12 @@ fun ListingDetailScreen(
                                 }
                             }
 
-                            // ── CONTENT BELOW IMAGE ──────────────────────────────
+                            // ── Content below the image ──────────────────────
                             Column(
                                 modifier = Modifier.padding(ScreenPadding),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // ── Title ────────────────────────────────────────
+                                // ── Title ────────────────────────────────────
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -397,7 +396,7 @@ fun ListingDetailScreen(
                                     CategoryBadge(listing.category)
                                 }
 
-                                // ── Description card ─────────────────────────────
+                                // ── Description card ─────────────────────────
                                 if (listing.description.isNotBlank()) {
                                     SectionCard(stringResource(R.string.label_description)) {
                                         Text(
@@ -410,7 +409,7 @@ fun ListingDetailScreen(
                                     }
                                 }
 
-                                // ── Notes card ───────────────────────────────────
+                                // ── Notes card ───────────────────────────────
                                 if (listing.notes.isNotBlank()) {
                                     SectionCard(stringResource(R.string.label_notes)) {
                                         Text(
@@ -423,7 +422,7 @@ fun ListingDetailScreen(
                                     }
                                 }
 
-                                // ── Details card ─────────────────────────────────
+                                // ── Details card ─────────────────────────────
                                 SectionCard(stringResource(R.string.section_details)) {
                                     CompactDetailRow(Icons.Default.ShoppingCart, "$displayQty ${listing.unit}")
                                     CompactDetailRow(
@@ -440,7 +439,7 @@ fun ListingDetailScreen(
                                     }
                                 }
 
-                                // ── Grocery actions: archive/restore + delete ────
+                                // ── Grocery actions: archive/restore + delete ───
                                 if (isGrocery && listing.status in setOf(ListingStatus.AVAILABLE, ListingStatus.ARCHIVED, ListingStatus.EXPIRED)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -475,7 +474,7 @@ fun ListingDetailScreen(
                                     }
                                 }
 
-                                // ── Contact + Location & Hours cards (NGO only) ──
+                                // ── Contact + Location & Hours cards (NGO only) ───
                                 if (!isGrocery) {
                                     val profile = state.groceryProfile
                                     val email = profile?.email?.takeIf { it.isNotBlank() }
@@ -599,7 +598,7 @@ fun ListingDetailScreen(
                                     }
                                 }
 
-                                // Similar listings card (NGO only)
+                                // ── Similar listings card (NGO only) ─────────
                                 if (!isGrocery && state.similarListings.isNotEmpty()) {
                                     SectionCard(stringResource(R.string.section_similar_listings)) {
                                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -662,9 +661,3 @@ private fun DetailImageCarousel(images: List<String>, title: String, onTap: (Str
         }
     }
 }
-
-// ── Circular action button overlaid on image — white icon on dark circle ─────
-
-// ── Section card ─────────────────────────────────────────────────────────────
-
-// ── Compact detail row — same visual as ListingCard rows ─────────────────────

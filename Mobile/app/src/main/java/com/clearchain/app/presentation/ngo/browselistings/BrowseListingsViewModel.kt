@@ -40,7 +40,7 @@ class BrowseListingsViewModel @Inject constructor(
     val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
-        // First: check DataStore for saved preference, THEN decide if location is set
+        // First check DataStore for a saved preference, then decide whether a location is set.
         viewModelScope.launch {
             val firstPref = locationPreferenceStore.locationPreference.first()
 
@@ -62,7 +62,7 @@ class BrowseListingsViewModel @Inject constructor(
             }
         }
 
-        // Then: observe ongoing changes (when user returns from LocationPicker with new preference)
+        // Then observe later changes, e.g. the user returning from LocationPicker with a new preference.
         viewModelScope.launch {
             locationPreferenceStore.locationPreference
                 .drop(1) // Skip the first emission (already handled above)

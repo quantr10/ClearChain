@@ -182,7 +182,7 @@ public class PickupRequestService : IPickupRequestService
                 .FirstOrDefaultAsync(l => l.Id == pickupRequest.ListingId.Value)
             : null;
 
-        // Upload outside transaction
+        // Uploaded before the transaction opens, so a slow upload never holds it.
         string proofPhotoUrl;
         try
         {

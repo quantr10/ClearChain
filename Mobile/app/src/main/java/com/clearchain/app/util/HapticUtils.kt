@@ -9,13 +9,13 @@ import androidx.core.content.getSystemService
 
 object HapticUtils {
 
-    /** Short tap — confirm actions, button press */
+    /** Short tap — confirm actions, button press. */
     fun confirm(context: Context) = vibrate(context, 40)
 
-    /** Light tick — selection change, toggle */
+    /** Light tick — selection change, toggle. */
     fun tick(context: Context) = vibrate(context, 15)
 
-    /** Double bump — destructive action warning */
+    /** Double bump — destructive action warning. */
     fun warning(context: Context) {
         vibrate(context, 30)
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -23,7 +23,7 @@ object HapticUtils {
         }, 80)
     }
 
-    /** Pull-to-refresh snap */
+    /** Pull-to-refresh snap. */
     fun refresh(context: Context) = vibrate(context, 25)
 
     private fun vibrate(context: Context, durationMs: Long) {

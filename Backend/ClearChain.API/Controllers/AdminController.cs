@@ -32,8 +32,6 @@ public class AdminController : ControllerBase
         [FromQuery] string? type = null,
         [FromQuery] bool? verified = null)
     {
-        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
-        // an admin — this used to re-fetch and re-check the same thing on every action.
         var query = _context.Organizations.Where(o => !o.IsDeleted);
 
         if (!string.IsNullOrEmpty(type))
@@ -75,12 +73,12 @@ public class AdminController : ControllerBase
         });
     }
 
-    // PUT: api/admin/organizations/{id}/verify  — approve an organization
+    /// <summary>Approves an organization.</summary>
     [HttpPut("organizations/{id}/verify")]
     public async Task<ActionResult<OrganizationResponse>> VerifyOrganization(Guid id)
         => await SetVerification(id, approved: true, reason: null);
 
-    // PUT: api/admin/organizations/{id}/unverify  — reject an organization (optional reason)
+    /// <summary>Rejects an organization, with an optional reason.</summary>
     [HttpPut("organizations/{id}/unverify")]
     public async Task<ActionResult<OrganizationResponse>> UnverifyOrganization(
         Guid id, [FromBody] RejectOrganizationRequest? body = null)
@@ -88,8 +86,6 @@ public class AdminController : ControllerBase
 
     private async Task<ActionResult<OrganizationResponse>> SetVerification(Guid id, bool approved, string? reason)
     {
-        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
-        // an admin — this used to re-fetch and re-check the same thing on every action.
         var organization = await _context.Organizations.FindAsync(id);
         if (organization == null)
             return NotFound(new { message = "Organization not found" });
@@ -133,9 +129,6 @@ public class AdminController : ControllerBase
     [HttpGet("statistics/overview")]
     public async Task<ActionResult<AdminStatsOverviewResponse>> GetStatisticsOverview()
     {
-        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
-        // an admin — this used to re-fetch and re-check the same thing on every action.
-
         // Admin accounts live in the same table but are not organizations on the
         // platform, so they stay out of every count the dashboard charts.
         var orgs = _context.Organizations.Where(o => !o.IsDeleted && o.Type.ToLower() != "admin");
@@ -187,8 +180,6 @@ public class AdminController : ControllerBase
     [HttpGet("pickuprequests")]
     public async Task<ActionResult<PickupRequestsResponse>> GetAllPickupRequests()
     {
-        // [Authorize(Roles = "admin")] on the controller already guarantees the caller is
-        // an admin — this used to re-fetch and re-check the same thing on every action.
         var pickupRequests = await _context.PickupRequests
             .Include(pr => pr.Ngo)
             .Include(pr => pr.Grocery)
@@ -269,16 +260,17 @@ public class AdminController : ControllerBase
         });
     }
 
-    // ── GET api/admin/statistics?from=&to=&preset= ───────────────────────────
-    // Operational analytics for the admin Stats & Analytics screen.
-    //
-    // Two clocks run here and keeping them apart is what makes the numbers mean
-    // something:
-    //   * the funnel is a cohort - requests *created* in the period, and where each
-    //     one stands today. Only that way do the stages add up to the requests.
-    //   * timings and the leaderboards are events - pickups *completed* in the
-    //     period, whenever they happened to be requested.
-    // Backlog is neither: it is the queue as it stands right now.
+    /// <summary>
+    /// Operational analytics for the admin Stats &amp; Analytics screen.
+    ///
+    /// Two clocks run here and keeping them apart is what makes the numbers mean
+    /// something:
+    ///   * the funnel is a cohort - requests *created* in the period, and where each
+    ///     one stands today. Only that way do the stages add up to the requests.
+    ///   * timings and the leaderboards are events - pickups *completed* in the
+    ///     period, whenever they happened to be requested.
+    /// Backlog is neither: it is the queue as it stands right now.
+    /// </summary>
     [HttpGet("statistics")]
     public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics(
         [FromQuery] string? from = null,
@@ -489,9 +481,11 @@ public class AdminController : ControllerBase
         return Ok(new AdminStatisticsResponse { Data = data });
     }
 
-    // The UTC days on which something the period-scoped statistics count happened: a
-    // request raised or handed over, a review written, a dispute opened. The app's
-    // range picker only offers these days, so a range never starts or ends on a blank.
+    /// <summary>
+    /// The UTC days on which something the period-scoped statistics count happened: a
+    /// request raised or handed over, a review written, a dispute opened. The app's
+    /// range picker only offers these days, so a range never starts or ends on a blank.
+    /// </summary>
     [HttpGet("statistics/active-dates")]
     public async Task<ActionResult<StatsActiveDatesResponse>> GetStatisticsActiveDates()
     {
@@ -528,8 +522,10 @@ public class AdminController : ControllerBase
         Guid GroceryId,
         Guid NgoId)
     {
-        /// <summary>When the hand-over actually happened, falling back down the chain of
-        /// timestamps an older record may be missing.</summary>
+        /// <summary>
+        /// When the hand-over actually happened, falling back down the chain of timestamps an
+        /// older record may be missing.
+        /// </summary>
         public DateTime CompletedAt => ConfirmedReceivedAt ?? MarkedPickedUpAt ?? RequestedAt;
     }
 
@@ -547,9 +543,12 @@ public class AdminController : ControllerBase
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
-    // ── GET api/admin/disputes ───────────────────────────────────────────────
-    // Admin alert feed: every dispute still waiting on the admin (status open).
-    // Not capped: the dashboard shows the first five and its sheet lists them all.
+    // ── Alert feed ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Every dispute still waiting on the admin (status open). Not capped: the dashboard
+    /// shows the first five and its sheet lists them all.
+    /// </summary>
     [HttpGet("alerts")]
     public async Task<IActionResult> GetAlertFeed()
     {

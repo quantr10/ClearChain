@@ -33,7 +33,7 @@ class RetryInterceptor @Inject constructor() : Interceptor {
         response.code == 429 || response.code in 500..599
 
     private fun retryDelayMs(response: Response, attempt: Int): Long {
-        // Honour Retry-After header (in seconds) when provided
+        // Honour the Retry-After header (in seconds) when provided.
         val retryAfter = response.header("Retry-After")?.toLongOrNull()
         if (retryAfter != null) return (retryAfter * 1000).coerceAtMost(30_000)
 

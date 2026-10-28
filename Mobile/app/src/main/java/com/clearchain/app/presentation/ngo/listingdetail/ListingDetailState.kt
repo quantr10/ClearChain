@@ -14,7 +14,7 @@ data class ListingDetailState(
 
     val similarListings: List<Listing> = emptyList(),
 
-    // Real-time availability override from SignalR
+    /** Real-time availability override from SignalR. */
     val availabilityOverride: Int? = null,
 
     // NGO: save/favourite

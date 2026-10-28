@@ -91,7 +91,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 private const val PICKUP_CHECKLIST_SIZE = 5
 
-// -- State --
+// ── State ────────────────────────────────────────────────────────────────────
+
 data class RequestDetailState(
     val request: PickupRequest? = null,
     val isLoading: Boolean = false,
@@ -131,7 +132,8 @@ data class RequestDetailState(
     val allChecked: Boolean get() = checkedItems.size == PICKUP_CHECKLIST_SIZE
 }
 
-// -- ViewModel --
+// ── ViewModel ────────────────────────────────────────────────────────────────
+
 @HiltViewModel
 class RequestDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -152,8 +154,10 @@ class RequestDetailViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // In-session guard: prevents the auto-sheet from firing more than once
-    // even if loadMyReview is called multiple times (e.g. after submitReview).
+    /**
+     * In-session guard: keeps the auto-sheet from firing more than once, even if loadMyReview
+     * runs again (e.g. after submitReview).
+     */
     private var autoSheetShownFor: String? = null
 
     /** Room this screen joined, so it can be left when the screen goes away. */
@@ -184,7 +188,7 @@ class RequestDetailViewModel @Inject constructor(
         if (joinedRequestId == requestId) return
 
         // The server broadcasts detail updates to `pickup_{id}`, a group with no members until
-        // a client joins it. Nothing joined it before, so those broadcasts went nowhere.
+        // a client joins it.
         viewModelScope.launch { signalRService.joinPickupRequestRoom(requestId) }
         joinedRequestId = requestId
 
@@ -328,7 +332,7 @@ class RequestDetailViewModel @Inject constructor(
                 val uri = withContext(Dispatchers.IO) { PickupReceiptPdf.build(context, req) }
                 _uiEvent.send(UiEvent.ShareFile(uri, title = context.getString(R.string.snack_receipt_title, req.listingTitle)))
             } catch (e: Exception) {
-                // Logged because the snackbar alone hid why this failed for a long time.
+                // Logged: the snackbar alone doesn't say why this failed.
                 Log.e("RequestDetail", "Could not generate the pickup receipt", e)
                 _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_receipt_failed)))
             } finally {
@@ -533,7 +537,8 @@ class RequestDetailViewModel @Inject constructor(
     }
 }
 
-// -- Screen --
+// ── Screen ───────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RequestDetailScreen(
@@ -749,7 +754,8 @@ fun RequestDetailScreen(
     }
 }
 
-// -- Main content --
+// ── Main content ─────────────────────────────────────────────────────────────
+
 @Composable
 private fun RequestDetailContent(
     req: PickupRequest,
@@ -774,7 +780,7 @@ private fun RequestDetailContent(
     groceryProfile: PublicProfileData? = null
 ) {
     val context = LocalContext.current
-    // -- Expiry computation (same logic as RequestCard) --
+    // Expiry, computed as in RequestCard
     val daysUntilExpiry: Long? = remember(req.listingExpiryDate) {
         val raw = req.listingExpiryDate ?: return@remember null
         try {
@@ -808,7 +814,7 @@ private fun RequestDetailContent(
         }
     }
 
-    // -- Pickup timestamp --
+    // Pickup timestamp
     val timestampText = stringResource(
         R.string.label_pickup_on_at,
         DateTimeUtils.formatDate(req.pickupDate),
@@ -829,7 +835,7 @@ private fun RequestDetailContent(
             .padding(ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // -- 1. Avatar + party name card (with action buttons top-right) --
+        // ── Avatar and party name card, with action buttons top-right ────────
         val showReceiptBtn = isMyRequest && req.status == PickupRequestStatus.COMPLETED
         val partyName = if (isGrocery) req.ngoName else req.groceryName
 
@@ -942,10 +948,10 @@ private fun RequestDetailContent(
             )
         }
 
-        // -- 2. Lifecycle timeline (already a Card) --
+        // ── Lifecycle timeline ───────────────────────────────────────────────
         LifecycleTimeline(request = req)
 
-        // -- 4. Description card --
+        // ── Description card ─────────────────────────────────────────────────
         if (!req.listingDescription.isNullOrBlank()) {
             SectionCard(stringResource(R.string.label_description)) {
                 Text(
@@ -956,7 +962,7 @@ private fun RequestDetailContent(
             }
         }
 
-        // -- 5. Request Info card --
+        // ── Request info card ────────────────────────────────────────────────
         if (req.items.isNotEmpty()) {
             SectionCard(
                 title = stringResource(R.string.cart_requested_items),
@@ -995,7 +1001,7 @@ private fun RequestDetailContent(
             )
         }
 
-        // -- 5b. About Us card (NGO only) --
+        // ── About us card (NGO only) ─────────────────────────────────────────
         if (isNgo && groceryProfile != null) {
             // Street (up to the first comma, in case the stored address already includes
             // the city) + city + state + ZIP, on one line - matches Location & Hours.
@@ -1061,7 +1067,7 @@ private fun RequestDetailContent(
             }
         }
 
-        // -- 7. Action buttons --
+        // ── Action buttons ───────────────────────────────────────────────────
         // Only the button whose call is in flight spins; its siblings are disabled.
         val busy = state.pendingAction != null
         if (isMyRequest) {
@@ -1121,7 +1127,7 @@ private fun RequestDetailContent(
             }
         }
 
-        // -- 8. Rating card (NGO: submit rating; Grocery and admin: view the received rating) --
+        // ── Rating card (NGO: submit a rating; grocery and admin: view the one received) ───
         if (req.status == PickupRequestStatus.COMPLETED && isMyRequest && isNgo) {
             val myReview = state.myReview
             if (myReview != null) {
@@ -1176,7 +1182,7 @@ private fun RequestDetailContent(
             }
         }
 
-        // -- 8b. Dispute (NGO): the report already filed, or the prompt to file one --
+        // ── Dispute (NGO): the report already filed, or the prompt to file one ───
         if (showDisputeButton) {
             val myDispute = state.myDispute
             if (myDispute != null) {
@@ -1207,7 +1213,7 @@ private fun RequestDetailContent(
             }
         }
 
-        // -- 9. Proof Photo card (completed) --
+        // ── Proof photo card (completed) ─────────────────────────────────────
         if (req.status == PickupRequestStatus.COMPLETED && req.proofPhotoUrl != null) {
             SectionCard(stringResource(R.string.proof_photo)) {
                 ZoomablePhoto(url = req.proofPhotoUrl)
@@ -1216,7 +1222,8 @@ private fun RequestDetailContent(
     }
 }
 
-// -- Compact section label --
+// ── Compact section label ────────────────────────────────────────────────────
+
 @Composable
 private fun RequestedItemRow(
     item: PickupRequestItem,
@@ -1293,7 +1300,8 @@ private fun RequestedItemRow(
     }
 }
 
-// -- Zoomable proof photo --
+// ── Zoomable proof photo ─────────────────────────────────────────────────────
+
 @Composable
 private fun ZoomablePhoto(url: String) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -1329,7 +1337,8 @@ private fun ZoomablePhoto(url: String) {
     }
 }
 
-// -- Lifecycle Timeline --
+// ── Lifecycle timeline ───────────────────────────────────────────────────────
+
 @Composable
 private fun LifecycleTimeline(request: PickupRequest) {
     val icons = listOf(
@@ -1353,7 +1362,7 @@ private fun LifecycleTimeline(request: PickupRequest) {
     val isNegativeStatus = request.status == PickupRequestStatus.CANCELLED ||
         request.status == PickupRequestStatus.REJECTED
 
-    // -- Current-stage text --
+    // Current-stage text
     val statusTitle = when (request.status) {
         PickupRequestStatus.PENDING -> stringResource(R.string.label_status_submitted)
         PickupRequestStatus.APPROVED -> stringResource(R.string.label_status_approved)
@@ -1459,7 +1468,8 @@ private fun LifecycleTimeline(request: PickupRequest) {
     }
 }
 
-// -- Chat Section --
+// ── Chat section ─────────────────────────────────────────────────────────────
+
 @Composable
 private fun ChatSection(
     messages: List<MessageData>,
@@ -1615,7 +1625,8 @@ private fun ChatBubble(message: MessageData, isMine: Boolean) {
     }
 }
 
-// -- Dispute dialog --
+// ── Dispute dialog ───────────────────────────────────────────────────────────
+
 @Composable
 private fun DisputeDialog(
     isSubmitting: Boolean,
@@ -1729,7 +1740,8 @@ private fun DisputeDialog(
     }
 }
 
-// -- Rating dialog --
+// ── Rating dialog ────────────────────────────────────────────────────────────
+
 @Composable
 private fun RatingDialog(
     isSubmitting: Boolean,

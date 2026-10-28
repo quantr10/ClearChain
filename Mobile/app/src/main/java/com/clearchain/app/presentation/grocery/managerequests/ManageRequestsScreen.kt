@@ -189,7 +189,6 @@ private fun ManageRequestsFilterSheet(
                 }
             }
 
-            // Listing category
             FilterSection(title = stringResource(R.string.filter_listing_category)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -207,7 +206,6 @@ private fun ManageRequestsFilterSheet(
                 }
             }
 
-            // Pickup date
             FilterSection(title = stringResource(R.string.filter_pickup_date)) {
                 DateFilterField(
                     date = state.filterPickupDate,

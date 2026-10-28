@@ -6,7 +6,7 @@ sealed class MyListingsEvent {
     object LoadListings : MyListingsEvent()
     object RefreshListings : MyListingsEvent()
 
-    // Search & Sort
+    // Search and sort
     data class SearchQueryChanged(val query: String) : MyListingsEvent()
     data class SortOptionChanged(val option: SortOption) : MyListingsEvent()
 

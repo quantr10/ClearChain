@@ -89,7 +89,7 @@ fun SettingsScreen(
                 )
             }
 
-            // ── General ───────────────────────────────────────────────────
+            // ── General ──────────────────────────────────────────────────────
             item {
                 DashboardSection(title = stringResource(R.string.settings_general)) {
                     SettingsDropdownRow(
@@ -119,7 +119,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Notifications ─────────────────────────────────────────────
+            // ── Notifications ────────────────────────────────────────────────
             item {
                 DashboardSection(title = stringResource(R.string.notifications_settings)) {
                     // Admin never transacts (no listings, pickups or inventory of its own), so
@@ -175,7 +175,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── About ─────────────────────────────────────────────────────
+            // ── About ────────────────────────────────────────────────────────
             item {
                 val termsUrl = stringResource(R.string.url_terms_of_service)
                 val privacyUrl = stringResource(R.string.url_privacy_policy)

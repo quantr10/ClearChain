@@ -245,8 +245,8 @@ class ListingDetailViewModel @Inject constructor(
 
     private fun observeSignalR(listingId: String) {
         // loadListing() calls this on every reload (including after a successful quantity
-        // update), so without this guard each reload added another permanent room join plus
-        // two more listingUpdated/listingQuantityChanged collectors that were never cancelled.
+        // update), so without this guard each reload would add another permanent room join plus
+        // two more listingUpdated/listingQuantityChanged collectors that are never cancelled.
         if (joinedListingId == listingId) return
 
         // The server's `listing_{id}` group has no members until someone joins it, so without
@@ -272,7 +272,7 @@ class ListingDetailViewModel @Inject constructor(
         }
     }
 
-    // ── Save/Favourite ───────────────────────────────────────────────────────
+    // ── Save/favourite ───────────────────────────────────────────────────────
 
     private fun toggleSave() {
         val listing = _state.value.listing ?: return

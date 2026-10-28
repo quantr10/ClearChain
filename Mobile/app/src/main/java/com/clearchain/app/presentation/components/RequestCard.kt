@@ -92,8 +92,6 @@ fun RequestCard(
                 PickupStatusBadge(request.status)
             }
 
-            // Details
-
             if (request.items.isNotEmpty()) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 RequestItemsPreview(request)
@@ -214,8 +212,6 @@ fun RequestCard(
         )
     }
 }
-
-// Compact detail row
 
 /**
  * The listing expiry line both request cards show. The wording stays the same at any
@@ -338,8 +334,6 @@ fun RequestItemsPreview(request: PickupRequest) {
     }
 }
 
-// Grocery-side action buttons
-
 @Composable
 private fun GroceryRequestActions(
     request: PickupRequest,
@@ -412,8 +406,6 @@ private fun GroceryRequestActions(
         else -> {}
     }
 }
-
-// NGO-side action buttons
 
 @Composable
 private fun NgoRequestActions(

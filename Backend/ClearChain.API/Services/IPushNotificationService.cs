@@ -15,7 +15,7 @@ namespace ClearChain.API.Services;
 /// </summary>
 public interface IPushNotificationService
 {
-    // ── Pickup Request Notifications ─────────────────────────────────────────
+    // ── Pickup request notifications ─────────────────────────────────────────
     Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestAutoCancelledNotification(Guid ngoId, PickupRequestData request);
@@ -25,17 +25,17 @@ public interface IPushNotificationService
     Task SendPickupCompletedNotification(Guid userId, PickupRequestData request);
     Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit);
 
-    // ── Listing Notifications ────────────────────────────────────────────────
+    // ── Listing notifications ────────────────────────────────────────────────
     Task SendNewListingNotificationToAllNGOs(ListingData listing);
     Task SendListingCreatedConfirmationNotification(Guid groceryId, ListingData listing);
     Task SendListingExpiringSoonNotification(Guid groceryId, ListingData listing);
     Task SendListingExpiredNotification(Guid groceryId, ListingData listing);
 
-    // ── Inventory Notifications ──────────────────────────────────────────────
+    // ── Inventory notifications ──────────────────────────────────────────────
     Task SendInventoryExpiringSoonNotification(Guid ngoId, InventoryItemData item);
     Task SendInventoryExpiredNotification(Guid ngoId, InventoryItemData item);
 
-    // ── User Onboarding & Admin Notifications ────────────────────────────────
+    // ── Onboarding and admin notifications ───────────────────────────────────
     Task SendWelcomeNotification(OrganizationData organization);
     Task SendNewRegistrationAlertToAdmins(OrganizationData organization);
     Task SendResubmissionAlertToAdmins(OrganizationData organization);
@@ -44,7 +44,9 @@ public interface IPushNotificationService
     Task SendNewDisputeAlertToAdmins(Guid disputeId, string reason, string initiatorName);
     Task SendDisputeResolvedNotification(Guid userId, Guid pickupRequestId, string reason, string status, string? adminResolution, string screen);
 
-    // ── Generic sender — persists, pushes and broadcasts one notification ────
+    // ── Generic sender ───────────────────────────────────────────────────────
+
+    /// <summary>Persists, pushes and broadcasts one notification.</summary>
     Task SendNotificationAsync(Guid userId, string title, string body, Dictionary<string, string> data);
 
     /// <summary>

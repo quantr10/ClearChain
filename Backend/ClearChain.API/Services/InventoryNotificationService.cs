@@ -21,7 +21,6 @@ public class InventoryNotificationService : IInventoryNotificationService
     {
         try
         {
-            // Notify NGO that owns this inventory
             await _hubContext.Clients
                 .Group($"user_{item.NgoId}")
                 .SendAsync("InventoryItemAdded", item);

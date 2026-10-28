@@ -13,7 +13,7 @@ data class TransactionsState(
     val searchQuery: String = "",
     val selectedStatus: String? = null,
 
-    // Sort (by submission date — matches the default sort loadTransactions() already applies)
+    /** Defaults to submission date, the order loadTransactions() already applies. */
     val selectedSort: SortOption = CommonSortOptions.CREATED_DATE_DESC,
     val availableSortOptions: List<SortOption> = listOf(
         CommonSortOptions.CREATED_DATE_DESC,
@@ -22,7 +22,7 @@ data class TransactionsState(
 
     // Filter sheet
     val showFilterSheet: Boolean = false,
-    // Toggles like the NGO "Saved only" chip: none on = every transaction, with or without a dispute.
+    /** Toggles like the NGO "Saved only" chip: none on = every transaction, with or without a dispute. */
     val filterDisputes: Set<DisputeFilter> = emptySet(),
     val filterCategory: String? = null,
     val filterPickupDate: String? = null, // yyyy-MM-dd; null = any date
@@ -31,7 +31,7 @@ data class TransactionsState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
 
-    // Flagged: PENDING transactions older than 3 days
+    /** Pending transactions older than 3 days. */
     val flaggedIds: Set<String> = emptySet()
 ) {
     val activeFilterCount: Int get() =

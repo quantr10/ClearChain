@@ -25,7 +25,7 @@ class OrganizationRepositoryImpl @Inject constructor(
             val url = api.uploadDocument(part).data?.url
                 ?: return Result.failure(IllegalStateException("Upload succeeded but no URL returned"))
 
-            // Reflect the new document URL in the local cache
+            // Reflect the new document URL in the local cache.
             userDao.getCurrentUser()?.let { current ->
                 userDao.insertUser(current.copy(documentUrl = url))
             }
@@ -83,7 +83,7 @@ class OrganizationRepositoryImpl @Inject constructor(
             )
             api.updateProfile(request)
 
-            // local cache
+            // Reflect the edit in the local cache.
             val currentUser = userDao.getCurrentUser()
             if (currentUser != null) {
                 userDao.insertUser(

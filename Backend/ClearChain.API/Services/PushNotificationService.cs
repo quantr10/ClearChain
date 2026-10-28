@@ -59,9 +59,9 @@ public class PushNotificationService : IPushNotificationService
 
             try
             {
-                // An app created by an earlier instance still counts as initialized — the old
-                // code only set the flag on the branch that created it, so every later instance
-                // fell through and silently skipped every push.
+                // An app created by an earlier instance still counts as initialized. Setting the
+                // flag only when this instance creates it would leave every later instance
+                // silently skipping every push.
                 if (FirebaseApp.DefaultInstance != null)
                 {
                     _firebaseInitialized = true;
@@ -92,7 +92,7 @@ public class PushNotificationService : IPushNotificationService
         }
     }
 
-    // ── Pickup Request Notifications ─────────────────────────────────────────
+    // ── Pickup request notifications ─────────────────────────────────────────
 
     public Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request) =>
         SendNotificationAsync(
@@ -189,7 +189,7 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "inventory" }
             });
 
-    // ── Listing Notifications ────────────────────────────────────────────────
+    // ── Listing notifications ────────────────────────────────────────────────
 
     public Task SendNewListingNotificationToAllNGOs(ListingData listing) =>
         SendToOrganizationType(
@@ -204,10 +204,12 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "browse_listings" }
             });
 
-    // Confirms to the grocery that just posted it that the listing is live. Unlike the NGO
-    // broadcast above, this is a receipt of the grocery's own action, not discretionary
-    // content - so it isn't gated by the "new listings nearby" preference (which only
-    // applies to NGOs anyway).
+    /// <summary>
+    /// Confirms to the grocery that just posted it that the listing is live. Unlike the NGO
+    /// broadcast above, this is a receipt of the grocery's own action, not discretionary
+    /// content - so it isn't gated by the "new listings nearby" preference (which only
+    /// applies to NGOs anyway).
+    /// </summary>
     public Task SendListingCreatedConfirmationNotification(Guid groceryId, ListingData listing) =>
         SendNotificationAsync(
             groceryId,
@@ -244,7 +246,7 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "my_listings" }
             });
 
-    // ── Inventory Notifications ──────────────────────────────────────────────
+    // ── Inventory notifications ──────────────────────────────────────────────
 
     public Task SendInventoryExpiringSoonNotification(Guid ngoId, InventoryItemData item) =>
         SendNotificationAsync(
@@ -270,7 +272,7 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "inventory" }
             });
 
-    // ── User Onboarding & Admin Notifications ────────────────────────────────
+    // ── Onboarding and admin notifications ───────────────────────────────────
 
     public Task SendWelcomeNotification(OrganizationData organization)
     {
@@ -359,8 +361,10 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "admin_alerts" }
             });
 
-    // "Favor" framing would read backwards depending on which party receives it, so the outcome
-    // is spelled out in the third person — correct for both recipients without inverting it.
+    /// <summary>
+    /// "Favor" framing would read backwards depending on which party receives it, so the outcome
+    /// is spelled out in the third person — correct for both recipients without inverting it.
+    /// </summary>
     public Task SendDisputeResolvedNotification(Guid userId, Guid pickupRequestId, string reason, string status, string? adminResolution, string screen)
     {
         var outcome = status switch
@@ -600,8 +604,8 @@ public class PushNotificationService : IPushNotificationService
     }
 
     /// <summary>
-    /// Deletes only the tokens FCM actually rejected. The old code wiped every token the user
-    /// had as soon as one came back unregistered, which logged out their other devices too.
+    /// Deletes only the tokens FCM actually rejected, so one unregistered device never takes the
+    /// user's other devices out of notifications with it.
     /// </summary>
     private async Task PruneRejectedTokensAsync(List<string> batch, BatchResponse response)
     {

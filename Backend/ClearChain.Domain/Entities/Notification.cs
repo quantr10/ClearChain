@@ -3,7 +3,7 @@ namespace ClearChain.Domain.Entities;
 public class Notification
 {
     public Guid Id { get; set; }
-    public Guid RecipientId { get; set; }       // Organization receiving this notification
+    public Guid RecipientId { get; set; }
     public string Type { get; set; } = string.Empty;   // new_listing, request_update, expiry_reminder, etc.
     public string Title { get; set; } = string.Empty;
     public string Body { get; set; } = string.Empty;

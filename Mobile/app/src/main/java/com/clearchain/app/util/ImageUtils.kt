@@ -16,9 +16,8 @@ object ImageUtils {
     private const val QUALITY = 80 // JPEG quality %
 
     /**
-     * Compress an image from a Uri to a temporary File.
-     * Down-scales to MAX_WIDTH/MAX_HEIGHT while preserving aspect ratio,
-     * then re-encodes as JPEG at QUALITY%.
+     * Compresses an image from a Uri to a temporary File: down-scales to MAX_WIDTH/MAX_HEIGHT
+     * while preserving aspect ratio, then re-encodes as JPEG at QUALITY%.
      */
     fun compressImage(context: Context, uri: Uri): File {
         val inputStream = context.contentResolver.openInputStream(uri)
@@ -39,9 +38,7 @@ object ImageUtils {
         return outFile
     }
 
-    /**
-     * Compress to a ByteArray (useful for direct upload streams).
-     */
+    /** Compresses to a ByteArray, for direct upload streams. */
     fun compressToBytes(context: Context, uri: Uri): ByteArray {
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: error("Cannot open input stream for $uri")

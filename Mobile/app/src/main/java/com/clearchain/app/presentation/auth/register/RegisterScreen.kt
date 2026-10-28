@@ -186,7 +186,7 @@ fun RegisterScreen(
                         enabled = !state.isLoading
                     )
 
-                    // ── Terms of Service checkbox ────────────────────────────
+                    // ── Terms of service checkbox ────────────────────────────
                     val tosAgreePrefix = stringResource(R.string.tos_agree_prefix)
                     val tosTerms = stringResource(R.string.terms_of_service)
                     val tosAnd = stringResource(R.string.tos_agree_and)

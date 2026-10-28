@@ -21,14 +21,14 @@ public class ListingData
     public string Location { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
 
-    // ── Distance from NGO's search location ──────────────────────────────────
+    /// <summary>From the NGO's search location, in km.</summary>
     public double? DistanceKm { get; set; }
 
-    // ── Analytics ────────────────────────────────────────────────────────────
+    // Analytics
     public int ViewCount { get; set; }
     public int RequestCount { get; set; }
 
-    // ── Grocery coordinates (for map pins) ───────────────────────────────────
+    // Grocery coordinates, for map pins
     public double? GroceryLatitude { get; set; }
     public double? GroceryLongitude { get; set; }
 }

@@ -1,4 +1,3 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.jetbrainsKotlinAndroid) apply false
@@ -20,7 +19,7 @@ plugins {
 // are annotated with a trailing comment in place.
 val ktlintRules = mapOf(
     // 120 stays the guide in .editorconfig, but ktlint cannot wrap a long line,
-    // it can only fail on one. 327 lines are over, several of them Compose
+    // it can only fail on one. Many lines are over, several of them Compose
     // argument lists past 900 characters, so this is left to the author.
     "max_line_length" to "off",
     "ktlint_standard_no-wildcard-imports" to "disabled",

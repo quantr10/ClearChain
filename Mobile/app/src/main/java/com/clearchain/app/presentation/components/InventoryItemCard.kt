@@ -119,7 +119,7 @@ fun InventoryItemCard(
                     )
                 }
 
-                // ── Action / Status notice ───────────────────────────────────
+                // ── Action / status notice ───────────────────────────────────
                 when (item.status) {
                     InventoryStatus.ACTIVE -> {
                         if (onDistribute != null) {

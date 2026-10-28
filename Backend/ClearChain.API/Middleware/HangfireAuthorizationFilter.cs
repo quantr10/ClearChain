@@ -8,11 +8,9 @@ public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
     {
         var httpContext = context.GetHttpContext();
 
-        // Must be authenticated
         if (!httpContext.User.Identity?.IsAuthenticated ?? true)
             return false;
 
-        // Must be an admin
         return httpContext.User.IsInRole("admin");
     }
 }

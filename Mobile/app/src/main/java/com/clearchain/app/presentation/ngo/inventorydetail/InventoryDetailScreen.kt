@@ -32,7 +32,8 @@ import com.clearchain.app.util.DateTimeUtils
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-// --- Screen ---
+// ── Screen ───────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryDetailScreen(
@@ -189,7 +190,7 @@ fun InventoryDetailScreen(
                                 )
                             }
 
-                            // -- Source Traceability ----------------
+                            // ── Source traceability ──────────────────────────
                             state.relatedRequest?.let { request ->
                                 SectionCard(stringResource(R.string.section_source), contentSpacing = 8.dp) {
                                     InventoryDetailRow(
@@ -271,7 +272,7 @@ fun InventoryDetailScreen(
     }
 }
 
-// -- Edit Item Content ---------------------------------------------------------
+// ── Edit item content ────────────────────────────────────────────────────────
 
 @Composable
 private fun InventoryHeroCard(
@@ -526,7 +527,7 @@ private fun expirySummaryColor(status: InventoryStatus, daysUntilExpiry: Long?):
     }
 }
 
-// -- QR Label Dialog ----------------------------------------------------------
+// ── QR label dialog ──────────────────────────────────────────────────────────
 
 @Composable
 private fun QrLabelDialog(
@@ -603,7 +604,7 @@ private fun LabelRow(label: String, value: String) {
     }
 }
 
-// Generate a deterministic grid pattern from the item ID for QR visual
+/** A deterministic grid pattern derived from the item id, drawn as a QR-like visual (not scannable). */
 private fun generateQrMatrix(seed: String, size: Int): Array<BooleanArray> {
     val matrix = Array(size) { BooleanArray(size) }
     val bytes = seed.toByteArray()

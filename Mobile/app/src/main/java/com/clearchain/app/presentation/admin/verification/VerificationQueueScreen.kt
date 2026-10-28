@@ -47,7 +47,6 @@ fun VerificationQueueScreen(
         }
     }
 
-    // Approval checklist dialog
     state.showChecklistForId?.let {
         ApprovalChecklistDialog(
             checkedItems = state.checkedItems,
@@ -59,7 +58,6 @@ fun VerificationQueueScreen(
         )
     }
 
-    // Rejection dialog
     state.showRejectDialogForId?.let {
         RejectOrgDialog(
             reason = state.rejectionReason,
@@ -128,7 +126,6 @@ fun VerificationQueueScreen(
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.fillMaxSize()) {
                 ListScreenHeader {
-                    // Search + filter
                     ListHeaderSearchRow(
                         query = state.searchQuery,
                         onQueryChange = { viewModel.onEvent(VerificationQueueEvent.SearchQueryChanged(it)) },
@@ -152,7 +149,7 @@ fun VerificationQueueScreen(
                         }
                     }
 
-                    // Status filter tabs (no counts — counts shown below)
+                    // No counts on the status tabs; they are shown below.
                     FilterChipsRow(
                         tabs = listOf(
                             null to stringResource(R.string.filter_all),
@@ -253,8 +250,8 @@ fun VerificationQueueScreen(
         }
     }
 }
-// Advanced filter sheet
-// -----------------------------------------------------------------------------
+
+// ── Advanced filter sheet ────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -284,7 +281,6 @@ private fun VerificationFilterSheet(
                 }
             }
 
-            // Organization type
             FilterSection(title = stringResource(R.string.filter_org_type)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(null to stringResource(R.string.filter_all), "GROCERY" to "Grocery", "NGO" to "NGO")
@@ -354,8 +350,7 @@ private fun OrganizationCard(
             // sits underneath as a filled-tonal pill — the same soft chip the profile
             // screens use for a role, so admin/NGO/grocery reads the same everywhere.
             // The two chips form a deliberate pair: identity = solid tonal, state =
-            // light 15%-alpha wash. City is no longer up here; it moves to the contact
-            // block below, after the phone.
+            // light 15%-alpha wash.
             val typeAccent = when (organization.type) {
                 OrganizationType.GROCERY -> MaterialTheme.colorScheme.onSecondaryContainer
                 OrganizationType.NGO -> MaterialTheme.colorScheme.onTertiaryContainer
@@ -529,9 +524,7 @@ private fun OrganizationCard(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Approval checklist dialog
-// -----------------------------------------------------------------------------
+// ── Approval checklist dialog ────────────────────────────────────────────────
 
 @Composable
 private fun ApprovalChecklistDialog(
@@ -572,8 +565,8 @@ private fun ApprovalChecklistDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Same shrunk touch target as the "Remember me" checkbox on Login —
-                    // the default Checkbox reserves ~40dp for its touch target, which is
-                    // what made these rows look far apart despite the 4dp Column spacing.
+                    // the default Checkbox reserves ~40dp for its touch target, which would
+                    // make these rows look far apart despite the 4dp Column spacing.
                     Checkbox(
                         checked = idx in checkedItems,
                         onCheckedChange = { onToggle(idx) },
@@ -591,9 +584,7 @@ private fun ApprovalChecklistDialog(
     }
 }
 
-// -----------------------------------------------------------------------------
-// Rejection dialog with template reasons
-// -----------------------------------------------------------------------------
+// ── Rejection dialog with template reasons ───────────────────────────────────
 
 @Composable
 private fun RejectOrgDialog(
@@ -628,7 +619,6 @@ private fun RejectOrgDialog(
             modifier = Modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Template chips
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 rejectionTemplates.forEach { template ->
                     SuggestionChip(

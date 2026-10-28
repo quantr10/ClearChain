@@ -134,7 +134,7 @@ fun LoginScreen(
                         enabled = !state.isLoading && !state.isLockedOut
                     )
 
-                    // ── Remember me + Forgot password row ────────────────────
+                    // ── Remember me + forgot password row ────────────────────
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -165,7 +165,7 @@ fun LoginScreen(
                         )
                     }
 
-                    // ── Lockout / system error banner ────────────────────────
+                    // ── Sign in ──────────────────────────────────────────────
                     ClearChainButton(
                         text = stringResource(R.string.sign_in),
                         onClick = { viewModel.onEvent(LoginEvent.Login) },

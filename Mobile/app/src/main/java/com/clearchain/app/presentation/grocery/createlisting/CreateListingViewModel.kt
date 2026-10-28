@@ -148,7 +148,7 @@ class CreateListingViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            // Upload image first if user selected one
+            // Upload the image first, if the user picked one.
             var finalImageUrl: String? = null
 
             val imageUri = currentState.selectedImageUri
@@ -163,12 +163,11 @@ class CreateListingViewModel @Inject constructor(
                     onFailure = { error ->
                         _state.update { it.copy(isLoading = false) }
                         _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_image_upload_failed, error.message ?: "")))
-                        return@launch // Stop if upload fails
+                        return@launch
                     }
                 )
             }
 
-            // Create listing with uploaded imageUrl
             val result = createListingUseCase(
                 title = currentState.title,
                 description = currentState.description,

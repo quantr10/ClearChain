@@ -76,7 +76,6 @@ fun MyListingsScreen(
 
     FabScaffold(
         snackbarHostState = snackbarHostState,
-        // Bulk action bottom bar
         bottomBar = {
             AnimatedVisibility(
                 visible = state.isSelectionMode &&
@@ -350,7 +349,7 @@ fun MyListingsScreen(
                                                     enabled = !state.isBulkOperating
                                                 )
                                             }
-                                        } // end Box
+                                        }
 
                                         if (showEditQty) {
                                             EditQuantityDialog(
@@ -406,7 +405,6 @@ private fun MyListingsFilterSheet(
                 }
             }
 
-            // Category
             FilterSection(title = stringResource(R.string.filter_category)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(

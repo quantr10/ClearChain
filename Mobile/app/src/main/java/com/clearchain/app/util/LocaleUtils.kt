@@ -14,7 +14,7 @@ import java.util.Locale
  * once AppCompat has recorded a Context of its own — which happens when an `AppCompatActivity`
  * or `AppCompatDelegate` is created. [com.clearchain.app.MainActivity] is a plain
  * `ComponentActivity`, so neither holds and the call silently does nothing: the language
- * preference was stored but never applied.
+ * preference would be stored but never applied.
  *
  * Overriding the Configuration ourselves applies the choice directly and behaves the same on
  * every supported API level. The system language picker is not an alternative route in either

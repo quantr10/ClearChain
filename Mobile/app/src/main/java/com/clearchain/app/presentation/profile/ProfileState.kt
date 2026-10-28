@@ -10,13 +10,11 @@ data class ProfileState(
     val averageRating: Double = 0.0,
     val reviewCount: Int = 0,
 
-    // ── Activity feed ────────────────────────────────────────────────────────
     val activity: List<ActivityItem> = emptyList(),
 
-    // ── Password change ──────────────────────────────────────────────────────
     val isChangingPassword: Boolean = false,
 
-    // ── Edit mode ────────────────────────────────────────────────────────────
+    // Edit mode
     val isEditing: Boolean = false,
     val editName: String = "",
     val editEmail: String = "",
@@ -33,7 +31,7 @@ data class ProfileState(
     val editLat: Double? = null,
     val editLng: Double? = null,
 
-    // ── Edit validation errors ───────────────────────────────────────────────
+    // Edit validation errors
     val editNameError: String? = null,
     val editEmailError: String? = null,
     val editPhoneError: String? = null,
@@ -47,9 +45,7 @@ data class ProfileState(
 
     val isSavingProfile: Boolean = false,
 
-    // Delete account
     val isDeletingAccount: Boolean = false,
 
-    // Avatar upload
     val isUploadingAvatar: Boolean = false
 )

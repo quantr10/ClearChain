@@ -1,5 +1,3 @@
-// ── DashboardActionCard.kt — Quick action item on dashboards ─────────────────
-
 package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.layout.*

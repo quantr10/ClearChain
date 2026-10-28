@@ -67,7 +67,6 @@ fun FullPhotoDialog(
                 contentScale = ContentScale.Fit
             )
 
-            // Close button
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier

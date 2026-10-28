@@ -9,7 +9,8 @@ public interface IAdminNotificationService
     Task NotifySystemAlertAsync(SystemAlertNotification alert);
 }
 
-// Notification DTOs
+// ── Notification payloads ────────────────────────────────────────────────────
+
 public class OrganizationRegisteredNotification
 {
     public string OrganizationId { get; set; } = string.Empty;
@@ -33,7 +34,7 @@ public class TransactionCompletedNotification
     public DateTime CompletedAt { get; set; }
 }
 
-// Field names match the mobile app's NewDisputeNotification.
+/// <summary>Field names match the mobile app's NewDisputeNotification.</summary>
 public class NewDisputeNotification
 {
     public string DisputeId { get; set; } = string.Empty;

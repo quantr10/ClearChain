@@ -46,15 +46,11 @@ class MyRequestsViewModel @Inject constructor(
         setupSignalR()
     }
 
-    // Setup SignalR real-time updates
     private fun setupSignalR() {
-        // Listen for status changes
         viewModelScope.launch {
             signalRService.pickupRequestStatusChanged.collect { notification ->
-                // Auto-refresh list
                 loadRequests()
 
-                // Show notification to user
                 val statusMessage = when (notification.newStatus.lowercase()) {
                     "approved" -> context.getString(R.string.snack_your_request_approved)
                     "ready" -> context.getString(R.string.snack_food_ready_pickup)
@@ -67,7 +63,6 @@ class MyRequestsViewModel @Inject constructor(
             }
         }
 
-        // Listen for cancellations
         viewModelScope.launch {
             signalRService.pickupRequestCancelled.collect {
                 loadRequests()

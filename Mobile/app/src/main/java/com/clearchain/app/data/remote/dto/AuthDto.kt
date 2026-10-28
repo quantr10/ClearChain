@@ -74,7 +74,7 @@ data class OrganizationDto(
     val contactPerson: String? = null,
     val pickupInstructions: String? = null,
     val description: String? = null,
-    // ── Onboarding verification document ─────────────────────────────────────
+    // Onboarding verification document
     val documentUrl: String? = null
 )
 
@@ -126,7 +126,8 @@ data class EmailAvailabilityResponse(val available: Boolean, val message: String
 @Serializable
 data class DeleteAccountRequest(val password: String)
 
-// ── toDomain() includes new fields ───────────────────────────────────────────
+// ── Domain mapping ───────────────────────────────────────────────────────────
+
 fun OrganizationDto.toDomain(): Organization {
     return Organization(
         id = id, name = name,

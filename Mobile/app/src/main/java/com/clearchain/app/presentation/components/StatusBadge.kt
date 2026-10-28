@@ -1,5 +1,3 @@
-// ── StatusBadge.kt — Unified status badges for all domain types ──────────────
-
 package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.layout.*
@@ -98,8 +96,10 @@ fun InventoryStatusBadge(status: InventoryStatus) {
     StatusBadge(style.label, style.backgroundColor, style.contentColor, icon = style.icon)
 }
 
-// Shared category → color mapping, reused anywhere a FoodCategory needs a swatch
-// (badges, bar charts, legends) so the same category always reads the same color.
+/**
+ * Shared category → color mapping, reused anywhere a FoodCategory needs a swatch (badges, bar
+ * charts, legends) so the same category always reads the same color.
+ */
 fun FoodCategory.chartColor(): Color = when (this) {
     FoodCategory.FRUITS -> CategoryColors.Fruits
     FoodCategory.VEGETABLES -> CategoryColors.Vegetables

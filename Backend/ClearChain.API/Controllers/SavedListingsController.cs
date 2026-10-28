@@ -20,7 +20,6 @@ public class SavedListingsController : ControllerBase
         _context = context;
     }
 
-    // POST api/savedlistings/{listingId} — Save a listing
     [HttpPost("{listingId}")]
     public async Task<IActionResult> SaveListing(Guid listingId)
     {
@@ -46,7 +45,6 @@ public class SavedListingsController : ControllerBase
         return Ok(new { message = "Listing saved" });
     }
 
-    // DELETE api/savedlistings/{listingId} — Unsave a listing
     [HttpDelete("{listingId}")]
     public async Task<IActionResult> UnsaveListing(Guid listingId)
     {
@@ -63,7 +61,7 @@ public class SavedListingsController : ControllerBase
         return Ok(new { message = "Listing unsaved" });
     }
 
-    // GET api/savedlistings/ids — Get list of saved listing IDs (for UI toggle state)
+    /// <summary>Ids of the caller's saved listings, which drive the app's save toggles.</summary>
     [HttpGet("ids")]
     public async Task<IActionResult> GetSavedListingIds()
     {

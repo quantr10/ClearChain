@@ -18,13 +18,12 @@ public class ListingHub : Hub
         var userId = Context.UserIdentifier;
         _logger.LogInformation($"User {userId} connected to ListingHub");
 
-        // Join user-specific group
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
         }
 
-        // Join "all_listings" group for browse feature
+        // The browse screen's live feed.
         await Groups.AddToGroupAsync(Context.ConnectionId, "all_listings");
 
         await base.OnConnectedAsync();
@@ -45,7 +44,6 @@ public class ListingHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    // Client can join specific listing room for detailed updates
     public async Task JoinListingRoom(string listingId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"listing_{listingId}");

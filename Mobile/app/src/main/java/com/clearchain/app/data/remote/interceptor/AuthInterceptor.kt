@@ -13,12 +13,10 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
-        // Get token from database
         val token = runBlocking {
             tokenDao.getTokens()?.accessToken
         }
 
-        // If token exists, add Authorization header
         val newRequest = if (token != null) {
             request.newBuilder()
                 .addHeader("Authorization", "Bearer $token")

@@ -19,7 +19,6 @@ interface ListingRepository {
 
     suspend fun getMyListings(page: Int = 1, pageSize: Int = 20): Result<List<Listing>>
 
-    // ── Added location params ────────────────────────────────────────────────
     suspend fun getAllListings(
         status: String? = null,
         category: String? = null,

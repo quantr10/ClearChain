@@ -56,7 +56,7 @@ class InventoryViewModel @Inject constructor(
             InventoryEvent.LoadInventory -> loadInventory()
             InventoryEvent.RefreshInventory -> refreshInventory()
 
-            // Search & Sort
+            // Search and sort
             is InventoryEvent.SearchQueryChanged -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 applyFilters()
@@ -66,13 +66,13 @@ class InventoryViewModel @Inject constructor(
                 applyFilters()
             }
 
-            // Status Tab
+            // Status tab
             is InventoryEvent.StatusTabChanged -> {
                 _state.update { it.copy(selectedStatusTab = event.status) }
                 applyFilters()
             }
 
-            // Category Filter
+            // Category filter
             is InventoryEvent.CategoryFilterChanged -> {
                 _state.update { it.copy(selectedCategory = event.category) }
                 applyFilters()
@@ -152,7 +152,7 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // expired items first
+            // Expire overdue items first, so the list reflects them.
             updateExpiredItemsUseCase()
 
             val result = getMyInventoryUseCase()
@@ -181,7 +181,7 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
 
-            // expired items first
+            // Expire overdue items first, so the list reflects them.
             updateExpiredItemsUseCase()
 
             val result = getMyInventoryUseCase()
@@ -209,12 +209,10 @@ class InventoryViewModel @Inject constructor(
         val current = _state.value
         var filtered = current.allItems
 
-        // Apply STATUS TAB filter (first priority)
         current.selectedStatusTab?.let { status ->
             filtered = filtered.filter { it.status == status }
         }
 
-        // Apply search
         if (current.searchQuery.isNotBlank()) {
             val query = current.searchQuery.lowercase()
             filtered = filtered.filter { item ->
@@ -223,7 +221,6 @@ class InventoryViewModel @Inject constructor(
             }
         }
 
-        // Apply CATEGORY CHIP filter
         current.selectedCategory?.let { category ->
             filtered = filtered.filter { item ->
                 item.category.equals(category, ignoreCase = true) ||
@@ -231,7 +228,7 @@ class InventoryViewModel @Inject constructor(
             }
         }
 
-        // Advanced: expires on or before the picked date
+        // Expires on or before the picked date
         current.filterExpiresBy?.let { date ->
             val limit = java.time.LocalDate.parse(date)
             filtered = filtered.filter { item ->
@@ -241,8 +238,6 @@ class InventoryViewModel @Inject constructor(
             }
         }
 
-
-        // Apply sort
         filtered = when (current.selectedSort.value) {
             "date_desc" -> filtered.sortedByDescending { it.receivedAt }
             "date_asc" -> filtered.sortedBy { it.receivedAt }

@@ -33,7 +33,6 @@ class SplashViewModel @Inject constructor(
         }
     }
 
-    // Method to get current user
     suspend fun getCurrentUser(): Organization? {
         // Best-effort: pull the latest verification status from the server so an
         // admin approval/rejection is reflected without a full re-login. Falls back

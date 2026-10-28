@@ -21,7 +21,6 @@ public class ListingNotificationService : IListingNotificationService
     {
         try
         {
-            // Notify all users browsing listings
             await _hubContext.Clients
                 .Group("all_listings")
                 .SendAsync("ListingCreated", listing);
@@ -38,7 +37,6 @@ public class ListingNotificationService : IListingNotificationService
     {
         try
         {
-            // Notify all users and specific listing room
             await _hubContext.Clients
                 .Groups("all_listings", $"listing_{listing.Id}")
                 .SendAsync("ListingUpdated", listing);

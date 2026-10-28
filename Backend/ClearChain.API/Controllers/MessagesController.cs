@@ -19,7 +19,7 @@ public class MessagesController : ControllerBase
         _context = context;
     }
 
-    // GET api/messages/pickup/{requestId} — Get conversation for a pickup request
+    /// <summary>The conversation on a pickup request. Reading it marks the caller's unread messages read.</summary>
     [HttpGet("pickup/{requestId}")]
     public async Task<IActionResult> GetMessages(Guid requestId)
     {
@@ -37,7 +37,6 @@ public class MessagesController : ControllerBase
             .OrderBy(m => m.SentAt)
             .ToListAsync();
 
-        // Mark unread as read for this user
         var unread = messages.Where(m => m.ReceiverId == userId && !m.IsRead).ToList();
         foreach (var msg in unread) msg.IsRead = true;
         if (unread.Any()) await _context.SaveChangesAsync();
@@ -49,7 +48,6 @@ public class MessagesController : ControllerBase
         });
     }
 
-    // POST api/messages/pickup/{requestId} — Send a message
     [HttpPost("pickup/{requestId}")]
     public async Task<IActionResult> SendMessage(Guid requestId, [FromBody] SendMessageRequest request)
     {
@@ -80,7 +78,7 @@ public class MessagesController : ControllerBase
         _context.Messages.Add(msg);
         await _context.SaveChangesAsync();
 
-        // Reload sender name
+        // Loaded so the response carries the sender's name.
         msg.Sender = await _context.Organizations.FindAsync(userId);
 
         return Ok(new { message = "Message sent", data = MapToDto(msg) });

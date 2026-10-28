@@ -19,9 +19,11 @@ class SettingsViewModel @Inject constructor(
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
-    // Emitted once the new language is on disk. The Activity has to be rebuilt for a locale
-    // change to reach already-resolved resources, and only the screen can do that — but it must
-    // not do it before the write lands, or attachBaseContext would read the previous value back.
+    /**
+     * Emitted once the new language is on disk. The Activity has to be rebuilt for a locale
+     * change to reach already-resolved resources, and only the screen can do that — but it must
+     * not do it before the write lands, or attachBaseContext would read the previous value back.
+     */
     private val _languageApplied = Channel<Unit>()
     val languageApplied = _languageApplied.receiveAsFlow()
 

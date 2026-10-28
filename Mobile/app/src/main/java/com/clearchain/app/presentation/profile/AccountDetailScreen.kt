@@ -210,7 +210,6 @@ private fun AccountDetailEditContent(
             .padding(ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // ── Organization Name ────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.org_name_label)) {
             ClearChainTextField(
                 value = state.editName,
@@ -224,7 +223,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Description ──────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.label_description), isOptional = true) {
             ClearChainTextField(
                 value = state.editDescription,
@@ -239,7 +237,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Email ────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.label_email)) {
             ClearChainTextField(
                 value = state.editEmail,
@@ -254,7 +251,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Phone ────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_phone_label)) {
             ClearChainTextField(
                 value = state.editPhone,
@@ -269,7 +265,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── Address ──────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_address_label)) {
             AddressSuggestionField(
                 value = state.editAddress,
@@ -289,7 +284,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── City ─────────────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_city_label)) {
             ClearChainTextField(
                 value = state.editLocation,
@@ -303,7 +297,6 @@ private fun AccountDetailEditContent(
             )
         }
 
-        // ── State + ZIP ──────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_state_label)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -335,7 +328,6 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Opening Hours ────────────────────────────────────────────────────
         FieldCard(label = stringResource(R.string.onboarding_hours_label)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -364,7 +356,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Pickup Instructions (Grocery only) ───────────────────────────────
+        // ── Pickup instructions (grocery only) ───────────────────────────────
         if (state.user?.type == OrganizationType.GROCERY) {
             FieldCard(
                 label = stringResource(R.string.onboarding_pickup_instructions_label),
@@ -384,7 +376,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Contact Person (NGO / Grocery) ───────────────────────────────────
+        // ── Contact person (NGO and grocery) ─────────────────────────────────
         if (isNgoOrGrocery) {
             FieldCard(label = stringResource(R.string.label_contact_person)) {
                 ClearChainTextField(
@@ -400,7 +392,7 @@ private fun AccountDetailEditContent(
             }
         }
 
-        // ── Cancel + Save buttons ────────────────────────────────────────────
+        // ── Cancel and save buttons ──────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)

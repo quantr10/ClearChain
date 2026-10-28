@@ -24,7 +24,6 @@ interface ListingApi {
         @Path("id") id: String
     ): ListingResponse
 
-    // ── Added lat/lng/radiusKm query params ──────────────────────────────────
     @GET("listings")
     suspend fun getAllListings(
         @Query("status") status: String? = null,

@@ -27,8 +27,10 @@ public class AuthService : IAuthService
     private const int PasswordResetCodeMinutes = 15;
     private const int PasswordResetResendSeconds = 60;
 
-    // Same reply whether or not the address has an account, so this endpoint can't be
-    // used to find out who is registered.
+    /// <summary>
+    /// Same reply whether or not the address has an account, so this endpoint can't be used to
+    /// find out who is registered.
+    /// </summary>
     private const string PasswordResetRequestedMessage =
         "If an account exists for that email, we've sent a reset code.";
 
@@ -330,7 +332,6 @@ public class AuthService : IAuthService
         if (user.IsDeleted)
             return (false, "This account has been deleted", null);
 
-        // Check lockout
         if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
         {
             var remaining = (int)(user.LockoutUntil.Value - DateTime.UtcNow).TotalMinutes + 1;
@@ -339,7 +340,6 @@ public class AuthService : IAuthService
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            // Track failed attempts
             user.FailedLoginCount++;
             if (user.FailedLoginCount >= 5)
             {
@@ -351,7 +351,6 @@ public class AuthService : IAuthService
             return (false, "Invalid email or password", null);
         }
 
-        // Reset failed count on success
         user.FailedLoginCount = 0;
         user.LockoutUntil = null;
         user.UpdatedAt = DateTime.UtcNow;
@@ -466,13 +465,12 @@ public class AuthService : IAuthService
         if (user.PasswordHash == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return (false, "Incorrect password");
 
-        // Soft-delete: keep data for audit, mark as deleted
+        // Soft delete: the row stays for audit.
         user.IsDeleted = true;
         user.DeletedAt = DateTime.UtcNow;
         user.Email = $"deleted_{userId}@clearchain.deleted"; // free up email slot
         user.UpdatedAt = DateTime.UtcNow;
 
-        // Revoke all refresh tokens
         var tokens = await _context.RefreshTokens
             .Where(t => t.OrganizationId == userId && !t.IsRevoked)
             .ToListAsync();
@@ -482,7 +480,6 @@ public class AuthService : IAuthService
         return (true, "Account deleted successfully");
     }
 
-    // ── includes new fields ──────────────────────────────────────────────────
     private static OrganizationDto MapToDto(Organization org)
     {
         return new OrganizationDto
@@ -503,7 +500,6 @@ public class AuthService : IAuthService
             ProfilePictureUrl = org.ProfilePictureUrl,
             CreatedAt = org.CreatedAt.ToString("o"),
             DocumentUrl = org.DocumentUrl,
-            // NEW
             Latitude = org.Latitude,
             Longitude = org.Longitude,
             ContactPerson = org.ContactPerson,
