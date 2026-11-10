@@ -71,7 +71,9 @@ with.
 **Admins**
 - Verification queue for new organizations, with approve/reject and a reason, exportable
   as CSV
-- Platform statistics by day, week or month, and system alerts
+- Platform statistics since launch, exportable as PDF: requests by stage, stores and NGOs
+  ranked by pickups and by rating, and disputes by reason, outcome and time to resolve
+- System alerts on the admin dashboard
 - Every transaction on the platform, with filters and CSV export
 - Dispute resolution, with a live alert when one is filed and both parties notified of the
   outcome
@@ -330,7 +332,7 @@ ClearChain/
 │   │   ├── Services/                Business logic, storage, email, push, image analysis
 │   │   ├── Hubs/                    SignalR hubs
 │   │   ├── Jobs/                    Hangfire recurring jobs
-│   │   ├── Middleware/              Error handling, Hangfire auth, verified-org filter
+│   │   ├── Middleware/              Error handling, Hangfire auth, verified-org filter, deleted-account token check
 │   │   ├── Common/                  Shared helpers and policies
 │   │   ├── Program.cs               Startup, DI, auth, CORS, jobs, hub routes
 │   │   └── .env.example             Every configuration variable the API reads
@@ -356,11 +358,17 @@ ClearChain/
 - Email verification and password reset both use 6-digit emailed codes. A code lasts 15
   minutes and is cancelled after five wrong tries.
 - Resetting a password signs out every device.
+- Deleting an account signs it out everywhere: its refresh tokens are revoked at once and
+  its access tokens are refused within a minute.
+- A deleted account's profile and completed pickups are kept for audit. Its open pickups
+  end and the other party is notified: a grocery's requests are rejected and its listings
+  removed, and an NGO's requests are cancelled, putting the stock back on offer.
 
 ### Verification gate
 
 Endpoints that create activity (listings, pickup requests, checkout) carry
-`[RequireVerifiedOrganization]` and refuse organizations an admin hasn't approved.
+`[RequireVerifiedOrganization]` and refuse organizations an admin hasn't approved. The check
+reads the database on every call, so a deleted account is refused at once.
 
 ### Realtime and offline
 
