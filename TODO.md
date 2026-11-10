@@ -160,27 +160,6 @@ provides, and the Organizations card below it uses a donut.
 
 ## Format and lint
 
-### `dotnet format` still reports 22 naming findings
-
-`dotnet format Backend/ClearChain.sln --verify-no-changes` fails only on `IDE1006`. The naming
-code fix doesn't support Fix All in Solution, so `dotnet format` can't apply it.
-
-- **What they are:** 14 `private const` and 8 `private static readonly` fields. All but two are
-  PascalCase, the usual .NET convention for these. The `.editorconfig` rule
-  `private_fields_underscored` covers every private field, so it wants `_camelCase` for them too.
-- **Where:**
-  - `Services/AuthService.cs` (5)
-  - `Services/AzureOpenAIFoodAnalysisService.cs` (3)
-  - 2 each in `Controllers/AdminController.cs`, `Controllers/ImageAnalysisController.cs`,
-    `Jobs/NotificationJobs.cs`, `Services/PushNotificationService.cs` and
-    `Services/SupabaseStorageService.cs`
-  - 1 each in `Common/StorageBucketPolicy.cs`, `Controllers/DisputesController.cs`,
-    `DTOs/Disputes/DisputeReasons.cs` and `Middleware/DeletedAccountTokenCheck.cs`
-- **Decision:** either narrow the rule to instance and non-readonly fields and add a PascalCase
-  rule for `const` and `static readonly` fields (then only `PICKUP_PROOFS_BUCKET` and
-  `FOOD_IMAGES_BUCKET` in `SupabaseStorageService.cs` need renaming), or rename all 22 to
-  `_camelCase`.
-
 ### Dependency and SDK version warnings
 
 The 22 lint warnings that remain report newer versions or the target API level. They need a

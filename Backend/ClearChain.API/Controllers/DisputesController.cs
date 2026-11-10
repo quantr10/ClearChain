@@ -20,7 +20,7 @@ public class DisputesController : ControllerBase
     private readonly IPushNotificationService _pushNotificationService;
     private readonly IAdminNotificationService _adminNotificationService;
 
-    private static readonly string[] ClosedStatuses = { "resolved_ngo", "resolved_grocery", "dismissed" };
+    private static readonly string[] _closedStatuses = { "resolved_ngo", "resolved_grocery", "dismissed" };
 
     public DisputesController(
         ApplicationDbContext context,
@@ -153,7 +153,7 @@ public class DisputesController : ControllerBase
 
         // "resolved" is the closed tab: every outcome an admin can record, not one exact status.
         if (status == "resolved")
-            query = query.Where(d => ClosedStatuses.Contains(d.Status));
+            query = query.Where(d => _closedStatuses.Contains(d.Status));
         else if (!string.IsNullOrEmpty(status))
             query = query.Where(d => d.Status == status);
 
@@ -190,7 +190,7 @@ public class DisputesController : ControllerBase
         if (dispute.Status != "open")
             return BadRequest(new { message = $"Cannot resolve a dispute with status '{dispute.Status}'" });
 
-        if (!ClosedStatuses.Contains(request.Status))
+        if (!_closedStatuses.Contains(request.Status))
             return BadRequest(new { message = "Unknown resolution outcome" });
 
         dispute.Status = request.Status;

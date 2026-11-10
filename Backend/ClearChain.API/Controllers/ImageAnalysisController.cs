@@ -21,13 +21,13 @@ public class ImageAnalysisController : ControllerBase
     /// independently from StorageBucketPolicy (used by /upload below) so the model's formats
     /// and the "food-images" bucket's config can each change on their own.
     /// </summary>
-    private static readonly string[] AnalyzeAllowedMimeTypes =
+    private static readonly string[] _analyzeAllowedMimeTypes =
         { "image/jpeg", "image/png", "image/webp", "image/gif" };
     /// <summary>
     /// The app compresses photos well below this; the cap keeps request size and image token
     /// cost bounded for anything else.
     /// </summary>
-    private const long AnalyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB
+    private const long _analyzeMaxFileSize = 4 * 1024 * 1024; // 4 MB
 
     public ImageAnalysisController(
         IImageAnalysisService analysisService,
@@ -92,23 +92,23 @@ public class ImageAnalysisController : ControllerBase
                 });
             }
 
-            if (image.Length > AnalyzeMaxFileSize)
+            if (image.Length > _analyzeMaxFileSize)
             {
                 return BadRequest(new AnalyzeImageResponse
                 {
                     Success = false,
-                    Message = $"Image too large. Maximum size is {AnalyzeMaxFileSize / 1024 / 1024} MB"
+                    Message = $"Image too large. Maximum size is {_analyzeMaxFileSize / 1024 / 1024} MB"
                 });
             }
 
             // The reported MIME type, not the file extension: an extension can lie about what is
             // actually inside the file.
-            if (!AnalyzeAllowedMimeTypes.Contains(image.ContentType?.ToLowerInvariant()))
+            if (!_analyzeAllowedMimeTypes.Contains(image.ContentType?.ToLowerInvariant()))
             {
                 return BadRequest(new AnalyzeImageResponse
                 {
                     Success = false,
-                    Message = $"Invalid file type. Allowed: {string.Join(", ", AnalyzeAllowedMimeTypes)}"
+                    Message = $"Invalid file type. Allowed: {string.Join(", ", _analyzeAllowedMimeTypes)}"
                 });
             }
 

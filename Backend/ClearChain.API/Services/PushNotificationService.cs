@@ -27,13 +27,13 @@ namespace ClearChain.API.Services;
 public class PushNotificationService : IPushNotificationService
 {
     /// <summary>FCM rejects multicasts larger than this.</summary>
-    private const int MulticastBatchSize = 500;
+    private const int _multicastBatchSize = 500;
 
     private readonly ApplicationDbContext _context;
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<PushNotificationService> _logger;
 
-    private static readonly object InitLock = new();
+    private static readonly object _initLock = new();
     private static bool _firebaseInitialized;
 
     public PushNotificationService(
@@ -52,7 +52,7 @@ public class PushNotificationService : IPushNotificationService
     {
         if (_firebaseInitialized) return;
 
-        lock (InitLock)
+        lock (_initLock)
         {
             if (_firebaseInitialized) return;
 
@@ -581,9 +581,9 @@ public class PushNotificationService : IPushNotificationService
         };
         if (notificationId != null) payload["notificationId"] = notificationId;
 
-        for (var offset = 0; offset < tokens.Count; offset += MulticastBatchSize)
+        for (var offset = 0; offset < tokens.Count; offset += _multicastBatchSize)
         {
-            var batch = tokens.Skip(offset).Take(MulticastBatchSize).ToList();
+            var batch = tokens.Skip(offset).Take(_multicastBatchSize).ToList();
 
             try
             {

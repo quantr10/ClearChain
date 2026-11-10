@@ -10,18 +10,18 @@ namespace ClearChain.API.Common;
 /// </summary>
 public static class StorageBucketPolicy
 {
-    private static readonly string[] ImageTypes =
+    private static readonly string[] _imageTypes =
     {
         "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"
     };
 
     // avatars, disputes, inventory-photos, pickup-proofs, food-images — all 5 MB, images only
     public const long ImageMaxBytes = 5 * 1024 * 1024;
-    public static readonly string[] ImageMimeTypes = ImageTypes;
+    public static readonly string[] ImageMimeTypes = _imageTypes;
 
     // documents — 10 MB, images + PDF + Word docs
     public const long DocumentMaxBytes = 10 * 1024 * 1024;
-    public static readonly string[] DocumentMimeTypes = ImageTypes
+    public static readonly string[] DocumentMimeTypes = _imageTypes
         .Concat(new[]
         {
             "application/pdf",

@@ -24,16 +24,16 @@ public interface IAuthService
 
 public class AuthService : IAuthService
 {
-    private const int MaxEmailVerificationAttempts = 5;
-    private const int MaxPasswordResetAttempts = 5;
-    private const int PasswordResetCodeMinutes = 15;
-    private const int PasswordResetResendSeconds = 60;
+    private const int _maxEmailVerificationAttempts = 5;
+    private const int _maxPasswordResetAttempts = 5;
+    private const int _passwordResetCodeMinutes = 15;
+    private const int _passwordResetResendSeconds = 60;
 
     /// <summary>
     /// Same reply whether or not the address has an account, so this endpoint can't be used to
     /// find out who is registered.
     /// </summary>
-    private const string PasswordResetRequestedMessage =
+    private const string _passwordResetRequestedMessage =
         "If an account exists for that email, we've sent a reset code.";
 
     private readonly ApplicationDbContext _context;
@@ -168,7 +168,7 @@ public class AuthService : IAuthService
         if (!BCrypt.Net.BCrypt.Verify(code, user.EmailVerificationToken))
         {
             user.EmailVerificationAttempts++;
-            if (user.EmailVerificationAttempts >= MaxEmailVerificationAttempts)
+            if (user.EmailVerificationAttempts >= _maxEmailVerificationAttempts)
             {
                 // Too many wrong guesses — invalidate the code outright instead of leaving
                 // it brute-forceable for the rest of its 15-minute window.
@@ -243,17 +243,17 @@ public class AuthService : IAuthService
             .FirstOrDefaultAsync(o => o.Email.ToLower() == email.ToLower() && !o.IsDeleted);
 
         if (user == null || user.PasswordHash == null)
-            return (true, PasswordResetRequestedMessage);
+            return (true, _passwordResetRequestedMessage);
 
         // A code issued in the last minute is still on its way — don't mail another one,
         // so the endpoint can't be used to flood someone's inbox.
-        var issuedAt = user.PasswordResetTokenExpiry?.AddMinutes(-PasswordResetCodeMinutes);
-        if (issuedAt > DateTime.UtcNow.AddSeconds(-PasswordResetResendSeconds))
-            return (true, PasswordResetRequestedMessage);
+        var issuedAt = user.PasswordResetTokenExpiry?.AddMinutes(-_passwordResetCodeMinutes);
+        if (issuedAt > DateTime.UtcNow.AddSeconds(-_passwordResetResendSeconds))
+            return (true, _passwordResetRequestedMessage);
 
         var code = VerificationCodeGenerator.Generate();
         user.PasswordResetToken = BCrypt.Net.BCrypt.HashPassword(code);
-        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(PasswordResetCodeMinutes);
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddMinutes(_passwordResetCodeMinutes);
         user.PasswordResetAttempts = 0;
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
@@ -268,7 +268,7 @@ public class AuthService : IAuthService
             return (false, "Couldn't send the reset email. Please try again shortly.");
         }
 
-        return (true, PasswordResetRequestedMessage);
+        return (true, _passwordResetRequestedMessage);
     }
 
     public async Task<(bool Success, string Message)> ResetPasswordAsync(string email, string code, string newPassword)
@@ -285,7 +285,7 @@ public class AuthService : IAuthService
         if (!BCrypt.Net.BCrypt.Verify(code, user.PasswordResetToken))
         {
             user.PasswordResetAttempts++;
-            if (user.PasswordResetAttempts >= MaxPasswordResetAttempts)
+            if (user.PasswordResetAttempts >= _maxPasswordResetAttempts)
             {
                 // Same rule as email verification: burn the code rather than leave it
                 // guessable for the rest of its window.

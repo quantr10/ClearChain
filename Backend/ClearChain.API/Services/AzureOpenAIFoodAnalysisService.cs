@@ -15,7 +15,7 @@ namespace ClearChain.API.Services;
 /// </summary>
 public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
 {
-    private const string SystemPrompt = """
+    private const string _systemPrompt = """
         You inspect photos that grocery stores take of surplus food they are about to list for
         donation to NGOs. Look only at what is visible in the photo and never invent text you
         cannot read.
@@ -53,7 +53,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
           Mention it when the expiry date was read from the label. Plain text, no emoji.
         """;
 
-    private static readonly BinaryData ResponseSchema = BinaryData.FromString("""
+    private static readonly BinaryData _responseSchema = BinaryData.FromString("""
         {
           "type": "object",
           "properties": {
@@ -79,7 +79,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
         }
         """);
 
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly ChatClient _chatClient;
     private readonly ChatCompletionOptions _completionOptions;
@@ -111,7 +111,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
         _completionOptions = new ChatCompletionOptions
         {
             ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
-                "food_listing", ResponseSchema, jsonSchemaIsStrict: true)
+                "food_listing", _responseSchema, jsonSchemaIsStrict: true)
         };
 
         // Only reasoning models accept this; leave it unset for the others or they reject the call.
@@ -140,7 +140,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
 
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage(SystemPrompt),
+            new SystemChatMessage(_systemPrompt),
             new UserChatMessage(
                 ChatMessageContentPart.CreateTextPart(
                     $"Today is {today:yyyy-MM-dd}. Write title, description and notes in {outputLanguage}."),
@@ -172,7 +172,7 @@ public class AzureOpenAIFoodAnalysisService : IImageAnalysisService
             throw new InvalidOperationException("AI analysis couldn't read this photo. Please try another one.");
         }
 
-        var answer = JsonSerializer.Deserialize<ModelAnswer>(completion.Content[0].Text, JsonOptions)
+        var answer = JsonSerializer.Deserialize<ModelAnswer>(completion.Content[0].Text, _jsonOptions)
             ?? throw new InvalidOperationException("AI analysis returned an empty answer. Please try again.");
 
         if (!answer.IsFood)

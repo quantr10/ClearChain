@@ -13,11 +13,11 @@ namespace ClearChain.API.Middleware;
 ///
 /// The answer is cached so this doesn't add a database round trip to every request. The deletion
 /// itself writes the cache through <see cref="MarkDeleted"/>, so the instance that served it
-/// refuses the account at once; any other instance catches up within <see cref="CacheFor"/>.
+/// refuses the account at once; any other instance catches up within <see cref="_cacheFor"/>.
 /// </summary>
 public static class DeletedAccountTokenCheck
 {
-    private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan _cacheFor = TimeSpan.FromMinutes(1);
 
     private static string CacheKey(Guid userId) => $"account_deleted_{userId}";
 
@@ -30,7 +30,7 @@ public static class DeletedAccountTokenCheck
             CacheKey(userId),
             entry =>
             {
-                entry.AbsoluteExpirationRelativeToNow = CacheFor;
+                entry.AbsoluteExpirationRelativeToNow = _cacheFor;
                 return services.GetRequiredService<ApplicationDbContext>().Organizations
                     .AsNoTracking()
                     .AnyAsync(o => o.Id == userId && o.IsDeleted);
@@ -41,5 +41,5 @@ public static class DeletedAccountTokenCheck
 
     /// <summary>Records a deletion once it is saved, replacing any cached "not deleted" answer.</summary>
     public static void MarkDeleted(IMemoryCache cache, Guid userId) =>
-        cache.Set(CacheKey(userId), true, CacheFor);
+        cache.Set(CacheKey(userId), true, _cacheFor);
 }

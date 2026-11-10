@@ -25,10 +25,10 @@ namespace ClearChain.API.Jobs;
 public class NotificationJobs
 {
     /// <summary>Devices that haven't checked in for this long are assumed uninstalled.</summary>
-    private const int StaleTokenDays = 60;
+    private const int _staleTokenDays = 60;
 
     /// <summary>How far past its pickup date a still-pending request is given up on.</summary>
-    private const int StaleRequestGraceDays = 2;
+    private const int _staleRequestGraceDays = 2;
 
     private readonly ApplicationDbContext _context;
     private readonly IPushNotificationService _pushService;
@@ -219,7 +219,7 @@ public class NotificationJobs
     {
         await RunGuarded(nameof(ExpireStalePickupRequests), async () =>
         {
-            var cutoff = DateTime.UtcNow.Date.AddDays(-StaleRequestGraceDays);
+            var cutoff = DateTime.UtcNow.Date.AddDays(-_staleRequestGraceDays);
 
             var stale = await _context.PickupRequests
                 .Where(p => p.Status == PickupRequestStatus.Pending && p.PickupDate.Date < cutoff)
@@ -298,7 +298,7 @@ public class NotificationJobs
     /// <summary>
     /// FCM reports uninstalled devices only when something is actually sent to them, so a user
     /// who stops opening the app leaves tokens behind that are never pushed to and never
-    /// pruned. Anything not re-registered in <see cref="StaleTokenDays"/> days is dropped; a
+    /// pruned. Anything not re-registered in <see cref="_staleTokenDays"/> days is dropped; a
     /// device still in use refreshes its token every launch.
     /// </summary>
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 300, 900 })]
@@ -307,7 +307,7 @@ public class NotificationJobs
     {
         await RunGuarded(nameof(PruneStaleFcmTokens), async () =>
         {
-            var cutoff = DateTime.UtcNow.AddDays(-StaleTokenDays);
+            var cutoff = DateTime.UtcNow.AddDays(-_staleTokenDays);
 
             var deleted = await _context.FCMTokens
                 .Where(t => t.UpdatedAt < cutoff)

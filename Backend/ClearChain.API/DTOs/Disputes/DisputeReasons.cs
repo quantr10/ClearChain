@@ -6,7 +6,7 @@ namespace ClearChain.API.DTOs.Disputes;
 /// </summary>
 public static class DisputeReasons
 {
-    private static readonly IReadOnlyDictionary<string, string> NgoLabels = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<string, string> _ngoLabels = new Dictionary<string, string>
     {
         ["poor_condition"] = "Poor food condition",
         ["wrong_items"] = "Wrong items received",
@@ -16,11 +16,11 @@ public static class DisputeReasons
         ["other"] = "Other",
     };
 
-    public static bool IsValidNgoReason(string? key) => key is not null && NgoLabels.ContainsKey(key);
+    public static bool IsValidNgoReason(string? key) => key is not null && _ngoLabels.ContainsKey(key);
 
     /// <summary>
     /// English label for a stored reason key. A value that isn't a known key is returned unchanged,
     /// so rows written before keys were introduced still read sensibly.
     /// </summary>
-    public static string Label(string reason) => NgoLabels.TryGetValue(reason, out var label) ? label : reason;
+    public static string Label(string reason) => _ngoLabels.TryGetValue(reason, out var label) ? label : reason;
 }

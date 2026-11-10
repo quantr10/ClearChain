@@ -410,8 +410,8 @@ public class AdminController : ControllerBase
         double? Rating,
         int RatingCount);
 
-    private const int LeaderboardSize = 10;
-    private const int MinRatingsToRank = 3;
+    private const int _leaderboardSize = 10;
+    private const int _minRatingsToRank = 3;
 
     /// <summary>The top stores and NGOs by pickups completed and by rating received.</summary>
     private static StatsLeaderboardsDto BuildLeaderboards(
@@ -426,7 +426,7 @@ public class AdminController : ControllerBase
             // Everyone with a pickup to their name, and everyone of this type rated often enough to rank.
             var pool = completedBy.Select(g => g.Key)
                 .Concat(ratings.Values
-                    .Where(r => r.Count >= MinRatingsToRank
+                    .Where(r => r.Count >= _minRatingsToRank
                              && profiles.TryGetValue(r.OrgId, out var p)
                              && string.Equals(p.Type, type, StringComparison.OrdinalIgnoreCase))
                     .Select(r => r.OrgId))
@@ -447,7 +447,7 @@ public class AdminController : ControllerBase
             {
                 ByPickups = Rank(pool, s => s.Pickups, s => s.Rating ?? 0, profiles),
                 ByRating = Rank(
-                    pool.Where(s => s.RatingCount >= MinRatingsToRank),
+                    pool.Where(s => s.RatingCount >= _minRatingsToRank),
                     s => Math.Round(s.Rating ?? 0, 1),
                     s => s.RatingCount,
                     profiles)
@@ -458,7 +458,7 @@ public class AdminController : ControllerBase
         {
             Groceries = Board("grocery", r => r.GroceryId),
             Ngos = Board("ngo", r => r.NgoId),
-            MinRatingsToRank = MinRatingsToRank
+            MinRatingsToRank = _minRatingsToRank
         };
     }
 
@@ -478,7 +478,7 @@ public class AdminController : ControllerBase
             .OrderByDescending(score)
             .ThenByDescending(tieBreak)
             .ThenBy(s => profiles.GetValueOrDefault(s.Id)?.Name, StringComparer.OrdinalIgnoreCase)
-            .Take(LeaderboardSize)
+            .Take(_leaderboardSize)
             .ToList();
 
         var ranked = new List<StatsLeaderDto>(top.Count);

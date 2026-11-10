@@ -14,8 +14,8 @@ public class SupabaseStorageService : IStorageService
     private readonly ILogger<SupabaseStorageService> _logger;
     private readonly string _supabaseUrl;
     private readonly string _supabaseKey;
-    private const string PICKUP_PROOFS_BUCKET = "pickup-proofs";
-    private const string FOOD_IMAGES_BUCKET = "food-images";
+    private const string _pickupProofsBucket = "pickup-proofs";
+    private const string _foodImagesBucket = "food-images";
 
     public SupabaseStorageService(
         IHttpClientFactory httpClientFactory,
@@ -50,7 +50,7 @@ public class SupabaseStorageService : IStorageService
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
 
-            var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{PICKUP_PROOFS_BUCKET}/{uniqueFileName}";
+            var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{_pickupProofsBucket}/{uniqueFileName}";
 
             using var content = new ByteArrayContent(fileBytes);
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
@@ -65,7 +65,7 @@ public class SupabaseStorageService : IStorageService
                 throw new Exception($"Upload failed: {errorContent}");
             }
 
-            var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{PICKUP_PROOFS_BUCKET}/{uniqueFileName}";
+            var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{_pickupProofsBucket}/{uniqueFileName}";
 
             _logger.LogInformation($"Upload successful. URL: {publicUrl}");
             return publicUrl;
@@ -94,7 +94,7 @@ public class SupabaseStorageService : IStorageService
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_supabaseKey}");
             httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
 
-            var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{FOOD_IMAGES_BUCKET}/{uniqueFileName}";
+            var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{_foodImagesBucket}/{uniqueFileName}";
 
             using var content = new ByteArrayContent(fileBytes);
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
@@ -109,7 +109,7 @@ public class SupabaseStorageService : IStorageService
                 throw new Exception($"Upload failed: {errorContent}");
             }
 
-            var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{FOOD_IMAGES_BUCKET}/{uniqueFileName}";
+            var publicUrl = $"{_supabaseUrl}/storage/v1/object/public/{_foodImagesBucket}/{uniqueFileName}";
 
             _logger.LogInformation($"Food image upload successful. URL: {publicUrl}");
             return publicUrl;
