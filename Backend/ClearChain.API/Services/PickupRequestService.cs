@@ -176,16 +176,9 @@ public class PickupRequestService : IPickupRequestService
 
         foreach (var request in openRequests)
         {
-            var listing = request.ListingId.HasValue
-                ? await _context.ClearanceListings
-                    .Include(l => l.Group)
-                    .FirstOrDefaultAsync(l => l.Id == request.ListingId.Value)
-                : null;
-
             request.Status = PickupRequestStatus.Cancelled;
             request.CancellationReason = "The NGO closed its account";
-            request.ListingId = null;
-            await ReleaseReservationAsync(request, listing);
+            await ReleaseReservationAsync(request);
         }
 
         return openRequests;
@@ -230,20 +223,13 @@ public class PickupRequestService : IPickupRequestService
 
         bool isGroceryRejecting = pr.GroceryId == callerId;
 
-        var listing = pr.ListingId.HasValue
-            ? await _context.ClearanceListings
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l => l.Id == pr.ListingId.Value)
-            : null;
-
         await using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
             pr.Status = isGroceryRejecting ? PickupRequestStatus.Rejected : PickupRequestStatus.Cancelled;
             pr.CancellationReason = reason;
-            pr.ListingId = null;
 
-            await ReleaseReservationAsync(pr, listing);
+            await ReleaseReservationAsync(pr);
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
@@ -546,7 +532,7 @@ public class PickupRequestService : IPickupRequestService
 
     public async Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize)
     {
-        var (clampedPage, clampedSize) = Clamp(page, pageSize);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 100);
         var baseQuery = _context.PickupRequests.Where(pr => pr.NgoId == ngoId);
         var total = await baseQuery.CountAsync();
 
@@ -555,16 +541,16 @@ public class PickupRequestService : IPickupRequestService
             .Include(pr => pr.Grocery)
             .Include(pr => pr.Items)
             .OrderByDescending(pr => pr.RequestedAt)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToListAsync();
 
-        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, clampedPage, clampedSize));
+        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, paging));
     }
 
     public async Task<PickupRequestServiceResult> GetGroceryRequestsAsync(Guid groceryId, int page, int pageSize)
     {
-        var (clampedPage, clampedSize) = Clamp(page, pageSize);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 100);
         var baseQuery = _context.PickupRequests.Where(pr => pr.GroceryId == groceryId);
         var total = await baseQuery.CountAsync();
 
@@ -573,11 +559,11 @@ public class PickupRequestService : IPickupRequestService
             .Include(pr => pr.Grocery)
             .Include(pr => pr.Items)
             .OrderByDescending(pr => pr.RequestedAt)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToListAsync();
 
-        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, clampedPage, clampedSize));
+        return new PickupRequestServiceResult(true, ListData: ToPagedResponse(items, total, paging));
     }
 
     public async Task<PickupRequestServiceResult> ApproveAsync(Guid requestId, Guid groceryId)
@@ -654,9 +640,6 @@ public class PickupRequestService : IPickupRequestService
     private static PickupRequestServiceResult Fail(PickupRequestServiceError error, string message) =>
         new(false, error, message);
 
-    private static (int page, int size) Clamp(int page, int pageSize) =>
-        (Math.Max(1, page), Math.Clamp(pageSize, 1, 100));
-
     private static PickupRequestData MapToData(
         PickupRequest pr,
         string? proofPhotoUrl = null,
@@ -720,25 +703,28 @@ public class PickupRequestService : IPickupRequestService
     }
 
     private static PickupRequestsResponse ToPagedResponse(
-        List<PickupRequest> items, int total, int page, int pageSize)
+        List<PickupRequest> items, int total, PageRequest paging)
     {
         return new PickupRequestsResponse
         {
             Message = "Pickup requests retrieved successfully",
             Data = items.Select(pr => MapToData(pr)).ToList(),
             Total = total,
-            Page = page,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)total / pageSize)
+            Page = paging.Page,
+            PageSize = paging.Size,
+            TotalPages = paging.TotalPages(total)
         };
     }
 
     /// <summary>
-    /// Puts what a request reserved back on offer and clears its references to the reservation.
-    /// <paramref name="listing"/> is the reservation of a request that predates cart items.
+    /// Puts what a request reserved back on offer and clears its references to the reservation:
+    /// its items' reserved listings, or for a request that predates cart items, its ListingId.
     /// </summary>
-    private async Task ReleaseReservationAsync(PickupRequest pr, ClearanceListing? listing)
+    private async Task ReleaseReservationAsync(PickupRequest pr)
     {
+        var legacyListingId = pr.ListingId;
+        pr.ListingId = null;
+
         if (pr.Items.Any())
         {
             var reservedIds = pr.Items
@@ -767,9 +753,13 @@ public class PickupRequestService : IPickupRequestService
                 item.ReservedListingId = null;
             }
         }
-        else if (listing?.Group != null)
+        else if (legacyListingId.HasValue)
         {
-            await SmartMergeOnCancel(listing, listing.Group);
+            var listing = await _context.ClearanceListings
+                .Include(l => l.Group)
+                .FirstOrDefaultAsync(l => l.Id == legacyListingId.Value);
+            if (listing?.Group != null)
+                await SmartMergeOnCancel(listing, listing.Group);
         }
     }
 

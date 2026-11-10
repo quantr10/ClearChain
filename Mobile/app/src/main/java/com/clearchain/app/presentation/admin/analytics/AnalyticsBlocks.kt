@@ -14,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.presentation.components.AvatarImage
 import com.clearchain.app.presentation.components.DashboardSection
@@ -31,7 +33,6 @@ internal fun AnalyticsCard(
     section: AnalyticsSection,
     title: String,
     highlighted: AnalyticsSection?,
-    action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isHighlighted = highlighted == section
@@ -42,7 +43,6 @@ internal fun AnalyticsCard(
     DashboardSection(
         title = title,
         modifier = Modifier.border(2.dp, borderColor, RoundedCornerShape(16.dp)),
-        action = action,
         content = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
         }
@@ -69,6 +69,30 @@ internal fun EmptyChartNote(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(vertical = 12.dp)
     )
+}
+
+/**
+ * A rounded track filled to [fraction] in [color]. Silent to accessibility services: the
+ * figure beside it is what they read out.
+ */
+@Composable
+internal fun MeterBar(fraction: Float, color: Color, height: Dp, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(height / 2)
+    Box(
+        modifier = modifier
+            .height(height)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clearAndSetSemantics {}
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .clip(shape)
+                .background(color)
+        )
+    }
 }
 
 // ── Leaderboard ──────────────────────────────────────────────────────────────
@@ -117,22 +141,14 @@ internal fun LeaderRow(
             )
         }
         // Starts under the name, so the bars of every row share one baseline.
-        Box(
+        MeterBar(
+            fraction = fraction,
+            color = color,
+            height = 4.dp,
             modifier = Modifier
                 .padding(start = LeaderBadge + LeaderGap + LEADER_AVATAR_SIZE.dp + LeaderGap)
                 .fillMaxWidth()
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Box(
-                Modifier
-                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(color)
-            )
-        }
+        )
     }
 }
 

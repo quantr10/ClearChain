@@ -15,13 +15,13 @@ import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.util.DownloadsExport
 import com.clearchain.app.util.UiEvent
+import com.clearchain.app.util.ellipsize
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -52,20 +52,19 @@ class AdminAnalyticsViewModel @Inject constructor(
     }
 
     /**
-     * Anything that moves food, membership or trust changes the figures, so the screen
-     * follows along.
+     * Pickups, membership and disputes are what the figures count, so the screen follows
+     * them. Listings aren't counted, so their events are left out. Conflated, so a burst of
+     * events (an account closing ends all its requests at once) costs one reload, not one each.
      */
     private fun observeLiveUpdates() {
         viewModelScope.launch {
             merge(
                 signalRService.pickupRequestCreated,
                 signalRService.transactionCompleted,
-                signalRService.listingCreated,
-                signalRService.listingDeleted,
                 signalRService.pickupRequestCancelled,
                 signalRService.newOrganizationRegistered,
                 signalRService.newDisputeCreated
-            ).collect { load(isRefresh = false, silent = true) }
+            ).conflate().collect { fetch(isRefresh = false, silent = true) }
         }
     }
 
@@ -78,47 +77,53 @@ class AdminAnalyticsViewModel @Inject constructor(
         }
     }
 
+    private fun load(isRefresh: Boolean) {
+        viewModelScope.launch { fetch(isRefresh, silent = false) }
+    }
+
     /** Always the whole history: the screen has no period to pick. */
-    private fun load(isRefresh: Boolean, silent: Boolean = false) {
-        viewModelScope.launch {
-            if (!silent) {
-                _state.update {
-                    it.copy(
-                        // Only a cold start gets the spinner; a reload keeps the figures on screen.
-                        isLoading = !isRefresh && it.data == null,
-                        isRefreshing = isRefresh,
-                        error = null
-                    )
-                }
+    private suspend fun fetch(isRefresh: Boolean, silent: Boolean) {
+        if (!silent) {
+            _state.update {
+                it.copy(
+                    // Only a cold start gets the spinner; a reload keeps the figures on screen.
+                    isLoading = !isRefresh && it.data == null,
+                    isRefreshing = isRefresh,
+                    error = null
+                )
             }
+        }
 
-            try {
-                val loaded = adminApi.getDetailedStatistics().data
+        try {
+            val loaded = adminApi.getDetailedStatistics().data
 
-                _state.update {
-                    it.copy(
-                        data = loaded ?: it.data,
-                        isLoading = false,
-                        isRefreshing = false
-                    )
-                }
-                if (isRefresh) {
-                    _uiEvent.send(UiEvent.ShowSnackbar(string(R.string.snack_stats_refreshed)))
-                }
-            } catch (e: Exception) {
-                val msg = e.message ?: string(R.string.error_load_statistics)
-                if (_state.value.data == null) {
-                    _state.update { it.copy(error = msg, isLoading = false, isRefreshing = false) }
-                } else {
-                    _state.update { it.copy(isLoading = false, isRefreshing = false) }
-                    if (!silent) _uiEvent.send(UiEvent.ShowSnackbar(msg))
-                }
+            _state.update {
+                it.copy(
+                    data = loaded ?: it.data,
+                    isLoading = false,
+                    isRefreshing = false
+                )
+            }
+            if (isRefresh) {
+                _uiEvent.send(UiEvent.ShowSnackbar(string(R.string.snack_stats_refreshed)))
+            }
+        } catch (e: Exception) {
+            val msg = e.message ?: string(R.string.error_load_statistics)
+            if (_state.value.data == null) {
+                _state.update { it.copy(error = msg, isLoading = false, isRefreshing = false) }
+            } else {
+                _state.update { it.copy(isLoading = false, isRefreshing = false) }
+                if (!silent) _uiEvent.send(UiEvent.ShowSnackbar(msg))
             }
         }
     }
 
     private fun string(resId: Int, vararg args: Any): String =
         context.getString(resId, *args)
+
+    /** The form of plurals [resId] for [count], formatted with [args]. */
+    private fun plural(resId: Int, count: Int, vararg args: Any): String =
+        context.resources.getQuantityString(resId, count, *args)
 
     // ── PDF export ───────────────────────────────────────────────────────────
 
@@ -190,16 +195,10 @@ class AdminAnalyticsViewModel @Inject constructor(
             y += 16f
         }
 
-        /** Cuts [text] with an ellipsis so a long name can't run into the value column. */
-        fun fit(text: String, width: Float): String {
-            if (bodyPaint.measureText(text) <= width) return text
-            val kept = bodyPaint.breakText(text, true, width - bodyPaint.measureText("…"), null)
-            return text.take(kept) + "…"
-        }
-
         fun line(label: String, value: String) {
             if (y > PAGE_H - 60) newPage()
-            canvas.drawText(fit(label, VALUE_X - MARGIN - 8f), MARGIN, y, bodyPaint)
+            // Cut short, so a long name can't run into the value column.
+            canvas.drawText(bodyPaint.ellipsize(label, VALUE_X - MARGIN - 8f), MARGIN, y, bodyPaint)
             canvas.drawText(value, VALUE_X, y, bodyPaint)
             y += 15f
         }
@@ -210,7 +209,6 @@ class AdminAnalyticsViewModel @Inject constructor(
             y += 13f
         }
 
-        fun pct(value: Double?) = value?.let { "${(it * 100).roundToInt()}%" } ?: "-"
         fun rating(value: Double?) = value?.let { formatRating(it) } ?: "-"
 
         canvas.drawText(string(R.string.pdf_stats_title), MARGIN, y, titlePaint)
@@ -223,7 +221,7 @@ class AdminAnalyticsViewModel @Inject constructor(
             )
         )
 
-        // ── Request status ──
+        // ── Request status ───────────────────────────────────────────────────
         val f = data.funnel
         heading(string(R.string.section_request_status_breakdown))
         line(string(R.string.status_pending), "${f.pending}")
@@ -233,28 +231,30 @@ class AdminAnalyticsViewModel @Inject constructor(
         line(string(R.string.status_cancelled), "${f.cancelled}")
         line(string(R.string.status_rejected), "${f.rejected}")
 
-        // ── Leaderboards ──
+        // ── Leaderboards ─────────────────────────────────────────────────────
         val unknown = string(R.string.label_unknown_item)
+        fun ranking(side: String, metricRes: Int, leaders: List<StatsLeader>, value: (StatsLeader) -> String) {
+            if (leaders.isEmpty()) return
+            heading(string(R.string.pdf_leaderboard_heading, side, string(metricRes)))
+            leaders.forEach { l -> line("${l.rank}. ${l.name.ifBlank { unknown }}", value(l)) }
+        }
         listOf(
             string(R.string.org_type_groceries) to data.leaderboards.groceries,
             string(R.string.org_type_ngos) to data.leaderboards.ngos
         ).forEach { (side, board) ->
-            listOf<Triple<Int, List<StatsLeader>, (StatsLeader) -> String>>(
-                Triple(R.string.leaderboard_metric_pickups, board.byPickups, { l -> "${l.completedPickups}" }),
-                Triple(R.string.leaderboard_metric_rating, board.byRating, { l -> "${rating(l.averageRating)} (${l.ratingCount})" })
-            ).forEach { (metricRes, leaders, value) ->
-                if (leaders.isEmpty()) return@forEach
-                heading(string(R.string.pdf_leaderboard_heading, side, string(metricRes)))
-                leaders.forEach { l -> line("${l.rank}. ${l.name.ifBlank { unknown }}", value(l)) }
+            ranking(side, R.string.leaderboard_metric_pickups, board.byPickups) { "${it.completedPickups}" }
+            ranking(side, R.string.leaderboard_metric_rating, board.byRating) {
+                "${rating(it.averageRating)} (${it.ratingCount})"
             }
         }
-        note(string(R.string.leaderboard_rating_note, data.leaderboards.minRatingsToRank))
+        val minRatings = data.leaderboards.minRatingsToRank
+        note(plural(R.plurals.leaderboard_rating_note, minRatings, minRatings))
 
-        // ── Disputes ──
+        // ── Disputes ─────────────────────────────────────────────────────────
         val q = data.quality
         heading(string(R.string.section_quality))
         line(string(R.string.quality_disputes), "${q.disputesOpened}")
-        line(string(R.string.pdf_dispute_rate), pct(q.disputeRate))
+        line(string(R.string.pdf_dispute_rate), "${percentOf(q.disputeRate)}%")
         q.disputeReasons.forEach { reason ->
             val label = NgoDisputeReason.fromKey(reason.key)?.let { string(it.labelRes) } ?: reason.key
             line("  $label", "${reason.count}")
@@ -267,10 +267,17 @@ class AdminAnalyticsViewModel @Inject constructor(
             line(string(R.string.dispute_status_dismissed), "${outcomes.dismissed}")
         }
         if (q.disputesResolved > 0) {
-            note(string(R.string.quality_resolution_time, formatDuration(q.medianHoursToResolve), q.disputesResolved))
+            note(
+                plural(
+                    R.plurals.quality_resolution_time,
+                    q.disputesResolved,
+                    formatDuration(q.medianHoursToResolve),
+                    q.disputesResolved
+                )
+            )
         }
 
-        // ── Organizations ──
+        // ── Organizations ────────────────────────────────────────────────────
         val o = data.organizations
         heading(string(R.string.section_organizations))
         line(string(R.string.org_type_groceries), "${o.groceries}")

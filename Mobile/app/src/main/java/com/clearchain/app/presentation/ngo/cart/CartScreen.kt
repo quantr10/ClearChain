@@ -87,7 +87,7 @@ fun CartScreen(
                                 onAction = { viewModel.onEvent(CartEvent.LoadCart) }
                             )
                         }
-                        state.isLoading -> LoadingState()
+                        state.isLoading -> LoadingState(Modifier.fillMaxSize())
                         visibleGroups.isEmpty() -> {
                             EmptyState(
                                 icon = Icons.Default.ShoppingCart,

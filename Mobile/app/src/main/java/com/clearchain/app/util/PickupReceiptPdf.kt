@@ -68,7 +68,7 @@ object PickupReceiptPdf {
             fun row(label: String, value: String) {
                 pages.ensureRoom(24f)
                 pages.canvas.drawText(label, MARGIN, pages.y, labelPaint)
-                pages.canvas.drawText(fit(value, valuePaint, RIGHT_EDGE - VALUE_COLUMN), VALUE_COLUMN, pages.y, valuePaint)
+                pages.canvas.drawText(valuePaint.ellipsize(value, RIGHT_EDGE - VALUE_COLUMN), VALUE_COLUMN, pages.y, valuePaint)
                 pages.y += 24f
             }
 
@@ -97,11 +97,11 @@ object PickupReceiptPdf {
 
                 pages.ensureRoom(if (detail.isBlank()) 30f else 48f)
                 val quantityWidth = valuePaint.measureText(quantity)
-                pages.canvas.drawText(fit(title, valuePaint, RIGHT_EDGE - MARGIN - quantityWidth - 16f), MARGIN, pages.y, valuePaint)
+                pages.canvas.drawText(valuePaint.ellipsize(title, RIGHT_EDGE - MARGIN - quantityWidth - 16f), MARGIN, pages.y, valuePaint)
                 pages.canvas.drawText(quantity, RIGHT_EDGE - quantityWidth, pages.y, valuePaint)
                 pages.y += 17f
                 if (detail.isNotBlank()) {
-                    pages.canvas.drawText(fit(detail, smallPaint, RIGHT_EDGE - MARGIN), MARGIN, pages.y, smallPaint)
+                    pages.canvas.drawText(smallPaint.ellipsize(detail, RIGHT_EDGE - MARGIN), MARGIN, pages.y, smallPaint)
                     pages.y += 17f
                 }
                 pages.y += 8f
@@ -145,15 +145,6 @@ object PickupReceiptPdf {
     private fun categoryLabel(context: Context, raw: String): String =
         runCatching { FoodCategory.valueOf(raw.uppercase()) }.getOrNull()
             ?.let { context.getString(it.labelResId) } ?: raw
-
-    /** Cuts [text] with an ellipsis so it fits [maxWidth] instead of running off the page. */
-    private fun fit(text: String, paint: Paint, maxWidth: Float): String {
-        if (paint.measureText(text) <= maxWidth) return text
-        val ellipsis = "…"
-        var end = text.length
-        while (end > 1 && paint.measureText(text, 0, end) + paint.measureText(ellipsis) > maxWidth) end--
-        return text.substring(0, end) + ellipsis
-    }
 
     /** Hands out the current page and moves on to a new one when the next block would not fit. */
     private class PageWriter(private val doc: PdfDocument) {

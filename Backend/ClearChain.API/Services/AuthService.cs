@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Auth;
+using ClearChain.API.Middleware;
 
 namespace ClearChain.API.Services;
 
@@ -39,6 +41,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly IPushNotificationService _pushNotificationService;
     private readonly IPickupRequestService _pickupRequestService;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<AuthService> _logger;
     private readonly int _refreshTokenExpiryDays;
     private readonly int _jwtExpirySeconds;
@@ -49,6 +52,7 @@ public class AuthService : IAuthService
         IEmailService emailService,
         IPushNotificationService pushNotificationService,
         IPickupRequestService pickupRequestService,
+        IMemoryCache cache,
         ILogger<AuthService> logger,
         IConfiguration configuration)
     {
@@ -57,6 +61,7 @@ public class AuthService : IAuthService
         _emailService = emailService;
         _pushNotificationService = pushNotificationService;
         _pickupRequestService = pickupRequestService;
+        _cache = cache;
         _logger = logger;
         _refreshTokenExpiryDays = int.Parse(configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7");
         _jwtExpirySeconds = int.Parse(configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60;
@@ -498,6 +503,7 @@ public class AuthService : IAuthService
             return (false, "Something changed while deleting your account. Please try again.");
         }
 
+        DeletedAccountTokenCheck.MarkDeleted(_cache, userId);
         await _pickupRequestService.NotifyAccountClosedAsync(closure);
 
         return (true, "Account deleted successfully");

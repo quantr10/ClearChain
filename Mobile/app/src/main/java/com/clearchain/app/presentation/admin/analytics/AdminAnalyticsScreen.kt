@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.admin.analytics
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +15,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
@@ -91,7 +94,7 @@ fun AdminAnalyticsScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
-                state.isLoading && state.data == null -> LoadingState()
+                state.isLoading && state.data == null -> LoadingState(Modifier.fillMaxSize())
 
                 state.data == null ->
                     EmptyState(
@@ -184,7 +187,16 @@ private fun RequestStatusCard(data: AdminDetailedStatsData, highlighted: Analyti
 
 // ── Leaderboards ─────────────────────────────────────────────────────────────
 
-private enum class LeaderboardSide { STORES, NGOS }
+/** Which boards are on show, and how that side is labelled and coloured. */
+private enum class LeaderboardSide(
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+    val color: Color,
+    val board: (StatsLeaderboards) -> StatsLeaderboard
+) {
+    STORES(R.string.org_type_groceries, Icons.Default.Store, BrandGreen, { it.groceries }),
+    NGOS(R.string.org_type_ngos, Icons.Default.VolunteerActivism, StatusColors.Approved, { it.ngos })
+}
 
 private enum class LeaderMetric { PICKUPS, RATING }
 
@@ -199,29 +211,27 @@ private fun LeaderboardCard(
     onOpenOrganization: (String) -> Unit
 ) {
     var side by rememberSaveable { mutableStateOf(LeaderboardSide.STORES) }
-    val boards = data.leaderboards
-    val board = if (side == LeaderboardSide.STORES) boards.groceries else boards.ngos
+    val board = side.board(data.leaderboards)
 
     AnalyticsCard(AnalyticsSection.LEADERBOARDS, stringResource(R.string.section_leaderboards), highlighted) {
         // The side on show is the filled button; the other is the outlined one beside it.
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LeaderboardSide.entries.forEach { option ->
-                val label = stringResource(if (option == LeaderboardSide.STORES) R.string.org_type_groceries else R.string.org_type_ngos)
-                val icon = if (option == LeaderboardSide.STORES) Icons.Default.Store else Icons.Default.VolunteerActivism
+                val label = stringResource(option.labelRes)
                 val modifier = Modifier.weight(1f).semantics { selected = side == option }
                 if (side == option) {
-                    ClearChainButton(text = label, onClick = {}, icon = icon, modifier = modifier)
+                    ClearChainButton(text = label, onClick = {}, icon = option.icon, modifier = modifier)
                 } else {
-                    ClearChainOutlinedButton(text = label, onClick = { side = option }, icon = icon, modifier = modifier)
+                    ClearChainOutlinedButton(text = label, onClick = { side = option }, icon = option.icon, modifier = modifier)
                 }
             }
         }
 
         SubHeading(stringResource(R.string.leaderboard_metric_pickups))
-        LeaderList(board.byPickups, LeaderMetric.PICKUPS, side, stringResource(R.string.chart_no_activity), onOpenOrganization)
+        LeaderList(board.byPickups, LeaderMetric.PICKUPS, side.color, stringResource(R.string.chart_no_activity), onOpenOrganization)
 
         SubHeading(stringResource(R.string.leaderboard_metric_rating))
-        LeaderList(board.byRating, LeaderMetric.RATING, side, stringResource(R.string.leaderboard_no_ratings), onOpenOrganization)
+        LeaderList(board.byRating, LeaderMetric.RATING, side.color, stringResource(R.string.leaderboard_no_ratings), onOpenOrganization)
     }
 }
 
@@ -230,7 +240,7 @@ private fun LeaderboardCard(
 private fun LeaderList(
     leaders: List<StatsLeader>,
     metric: LeaderMetric,
-    side: LeaderboardSide,
+    color: Color,
     emptyText: String,
     onOpenOrganization: (String) -> Unit
 ) {
@@ -240,7 +250,6 @@ private fun LeaderList(
     }
     val unknown = stringResource(R.string.label_unknown_item)
     val top = leaders.first()
-    val color = if (side == LeaderboardSide.STORES) BrandGreen else StatusColors.Approved
     Column {
         leaders.forEach { leader ->
             LeaderRow(
@@ -260,7 +269,6 @@ private fun LeaderList(
     }
 }
 
-@Composable
 private fun leaderValue(leader: StatsLeader, metric: LeaderMetric): String = when (metric) {
     LeaderMetric.PICKUPS -> leader.completedPickups.toString()
     LeaderMetric.RATING -> "${formatRating(leader.averageRating ?: 0.0)} ★"
@@ -297,13 +305,12 @@ private fun QualityCard(data: AdminDetailedStatsData, highlighted: AnalyticsSect
             SubHeading(stringResource(R.string.quality_dispute_reasons_title))
             // Against every dispute, not the top reason: three reasons at one each are a
             // third apiece, not three full bars.
-            val total = q.disputeReasons.sumOf { it.count }.coerceAtLeast(1)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 q.disputeReasons.forEach { reason ->
                     ReasonRow(
                         label = NgoDisputeReason.fromKey(reason.key)?.let { stringResource(it.labelRes) } ?: reason.key,
                         count = reason.count,
-                        fraction = reason.count.toFloat() / total
+                        fraction = reason.count.toFloat() / q.disputesOpened
                     )
                 }
             }
@@ -380,22 +387,12 @@ private fun ReasonRow(label: String, count: Int, fraction: Float) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        Box(
-            modifier = Modifier
-                .width(72.dp)
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clearAndSetSemantics {}
-        ) {
-            Box(
-                Modifier
-                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MaterialTheme.colorScheme.error)
-            )
-        }
+        MeterBar(
+            fraction = fraction,
+            color = MaterialTheme.colorScheme.error,
+            height = 6.dp,
+            modifier = Modifier.width(72.dp)
+        )
         Text(
             count.toString(),
             style = MaterialTheme.typography.bodySmall,

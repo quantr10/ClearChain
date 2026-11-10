@@ -420,7 +420,7 @@ Swagger at `/swagger` when running in Development.
 | `/api/reviews` | Post-pickup reviews |
 | `/api/disputes` | NGOs open disputes on completed pickups; admins list and resolve them |
 | `/api/imageanalysis` | Food image analysis and upload |
-| `/api/admin` | Organization verification, statistics and the dates that have data, alerts, all pickup requests |
+| `/api/admin` | Organization verification, statistics, alerts, all pickup requests |
 | `/api/health/*` | SignalR and job status |
 
 SignalR hubs are listed under [Realtime and offline](#realtime-and-offline).

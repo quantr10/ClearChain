@@ -67,7 +67,7 @@ fun CartPickupScreen(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val group = state.groups.firstOrNull { it.groceryId == groceryId }
                 when {
-                    state.isLoading -> LoadingState()
+                    state.isLoading -> LoadingState(Modifier.fillMaxSize())
                     group == null && state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
                         title = stringResource(R.string.error_generic),

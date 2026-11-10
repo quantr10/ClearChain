@@ -148,7 +148,7 @@ fun AnalyticsScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (state.isLoading && state.stats == null) {
-                    LoadingState()
+                    LoadingState(Modifier.fillMaxSize())
                 } else {
                     HapticPullToRefreshBox(
                         isRefreshing = state.isRefreshing,

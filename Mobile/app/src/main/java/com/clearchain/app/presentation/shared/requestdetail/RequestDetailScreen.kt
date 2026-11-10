@@ -712,7 +712,7 @@ fun RequestDetailScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    state.isLoading -> LoadingState()
+                    state.isLoading -> LoadingState(Modifier.fillMaxSize())
                     state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,
                         title = stringResource(R.string.error_generic),

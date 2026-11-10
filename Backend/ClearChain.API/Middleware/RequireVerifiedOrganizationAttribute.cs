@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using ClearChain.API.Common;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -18,18 +18,16 @@ public sealed class RequireVerifiedOrganizationAttribute : Attribute, IAsyncActi
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var userIdValue = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                       ?? context.HttpContext.User.FindFirst("sub")?.Value;
-
-        if (!Guid.TryParse(userIdValue, out var userId))
+        if (!context.HttpContext.User.TryGetUserId(out var userId))
         {
             context.Result = new UnauthorizedObjectResult(new { message = "User not authenticated" });
             return;
         }
 
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
-        // Not left to DeletedAccountTokenCheck, whose answer is cached: another signed-in device
-        // could otherwise post new listings right after the deletion removed them all.
+        // IsDeleted is checked here too, straight from the database: DeletedAccountTokenCheck
+        // answers from a per-instance cache, which another API instance may still hold from
+        // before the deletion. The predicate rides on a query this filter runs anyway.
         var org = await db.Organizations
             .AsNoTracking()
             .Where(o => o.Id == userId && !o.IsDeleted)

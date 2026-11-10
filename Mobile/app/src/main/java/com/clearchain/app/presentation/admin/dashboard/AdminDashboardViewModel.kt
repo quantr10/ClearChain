@@ -39,8 +39,16 @@ class AdminDashboardViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    /** Open disputes: the dashboard card shows the first few, its sheet pages through the rest. */
-    private val alertPager = FeedPager(viewModelScope, pageSize = 20, id = AdminAlertItem::id) { page, pageSize ->
+    /**
+     * Open disputes: the dashboard card shows the first few, its sheet pages through the rest.
+     * The API serves at most 100 a page.
+     */
+    private val alertPager = FeedPager(
+        viewModelScope,
+        pageSize = 20,
+        maxPageSize = 100,
+        id = AdminAlertItem::id
+    ) { page, pageSize ->
         val response = adminApi.getAlertFeed(page, pageSize)
         FeedPage(response.data, response.total, response.totalPages)
     }

@@ -997,14 +997,18 @@
     <string name="leaderboard_metric_pickups">Lượt lấy hàng</string>
     <string name="leaderboard_metric_rating">Đánh giá</string>
     <string name="leaderboard_no_ratings">Chưa có xếp hạng.</string>
-    <string name="leaderboard_rating_note">Chỉ xếp hạng các tổ chức nhận ít nhất %1$d lượt đánh giá.</string>
+    <plurals name="leaderboard_rating_note">
+        <item quantity="other">Chỉ xếp hạng các tổ chức nhận ít nhất %1$d lượt đánh giá.</item>
+    </plurals>
 
     <!-- Thống kê admin: khiếu nại -->
     <string name="quality_dispute_reasons_title">Lý do</string>
     <string name="quality_dispute_status_title">Trạng thái</string>
     <string name="quality_outcome_ngo_short">Có lợi cho NGO</string>
     <string name="quality_outcome_grocery_short">Có lợi cho cửa hàng</string>
-    <string name="quality_resolution_time">Trung vị %1$s để giải quyết · %2$d vụ đã đóng</string>
+    <plurals name="quality_resolution_time">
+        <item quantity="other">Trung vị %1$s để giải quyết · %2$d vụ đã đóng</item>
+    </plurals>
 
     <!-- Thống kê admin: báo cáo PDF -->
     <string name="pdf_leaderboard_heading">%1$s · %2$s</string>

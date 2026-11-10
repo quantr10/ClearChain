@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using ClearChain.API.Common;
 using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -11,24 +11,23 @@ namespace ClearChain.API.Middleware;
 /// expires. The app answers the 401 by refreshing, finds its refresh token revoked too, and goes
 /// back to Login, so a device still signed in leaves on its next request.
 ///
-/// The answer is cached so this doesn't add a database round trip to every request, which leaves
-/// a deleted account reading for up to <see cref="CacheFor"/>. Actions that create platform
-/// activity don't wait for that: <see cref="RequireVerifiedOrganizationAttribute"/> asks the
-/// database directly.
+/// The answer is cached so this doesn't add a database round trip to every request. The deletion
+/// itself writes the cache through <see cref="MarkDeleted"/>, so the instance that served it
+/// refuses the account at once; any other instance catches up within <see cref="CacheFor"/>.
 /// </summary>
 public static class DeletedAccountTokenCheck
 {
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(1);
 
+    private static string CacheKey(Guid userId) => $"account_deleted_{userId}";
+
     public static async Task RejectIfDeletedAsync(TokenValidatedContext context)
     {
-        var userIdValue = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                       ?? context.Principal?.FindFirst("sub")?.Value;
-        if (!Guid.TryParse(userIdValue, out var userId)) return;
+        if (context.Principal is not { } principal || !principal.TryGetUserId(out var userId)) return;
 
         var services = context.HttpContext.RequestServices;
         var isDeleted = await services.GetRequiredService<IMemoryCache>().GetOrCreateAsync(
-            $"account_deleted_{userId}",
+            CacheKey(userId),
             entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = CacheFor;
@@ -39,4 +38,8 @@ public static class DeletedAccountTokenCheck
 
         if (isDeleted) context.Fail("This account has been deleted");
     }
+
+    /// <summary>Records a deletion once it is saved, replacing any cached "not deleted" answer.</summary>
+    public static void MarkDeleted(IMemoryCache cache, Guid userId) =>
+        cache.Set(CacheKey(userId), true, CacheFor);
 }

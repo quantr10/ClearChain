@@ -1061,14 +1061,20 @@
     <string name="leaderboard_metric_pickups">Pickups</string>
     <string name="leaderboard_metric_rating">Rating</string>
     <string name="leaderboard_no_ratings">No rankings yet.</string>
-    <string name="leaderboard_rating_note">Only organizations rated at least %1$d times are ranked.</string>
+    <plurals name="leaderboard_rating_note">
+        <item quantity="one">Only organizations rated at least %1$d time are ranked.</item>
+        <item quantity="other">Only organizations rated at least %1$d times are ranked.</item>
+    </plurals>
 
     <!-- Admin Stats & Analytics: disputes -->
     <string name="quality_dispute_reasons_title">Reasons</string>
     <string name="quality_dispute_status_title">Status</string>
     <string name="quality_outcome_ngo_short">NGO\'s favor</string>
     <string name="quality_outcome_grocery_short">Grocery\'s favor</string>
-    <string name="quality_resolution_time">Median %1$s to resolve · %2$d closed</string>
+    <plurals name="quality_resolution_time">
+        <item quantity="one">Median %1$s to resolve · %2$d closed</item>
+        <item quantity="other">Median %1$s to resolve · %2$d closed</item>
+    </plurals>
 
     <!-- Admin Stats & Analytics: PDF report -->
     <string name="pdf_leaderboard_heading">%1$s · %2$s</string>

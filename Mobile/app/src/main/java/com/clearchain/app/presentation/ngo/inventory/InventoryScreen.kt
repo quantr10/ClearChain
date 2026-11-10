@@ -160,7 +160,7 @@ fun InventoryScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allItems.isEmpty() -> {
-                            LoadingState()
+                            LoadingState(Modifier.fillMaxSize())
                         }
 
                         state.error != null && state.allItems.isEmpty() -> {

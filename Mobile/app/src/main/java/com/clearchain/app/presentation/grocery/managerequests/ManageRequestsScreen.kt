@@ -96,7 +96,7 @@ fun ManageRequestsScreen(
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     when {
                         state.isLoading && state.allRequests.isEmpty() -> {
-                            LoadingState()
+                            LoadingState(Modifier.fillMaxSize())
                         }
 
                         state.error != null && state.allRequests.isEmpty() -> {

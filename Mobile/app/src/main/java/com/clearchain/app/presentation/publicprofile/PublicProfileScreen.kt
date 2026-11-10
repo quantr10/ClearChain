@@ -166,7 +166,7 @@ fun PublicProfileScreen(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     state.isLoading && state.profile == null ->
-                        LoadingState()
+                        LoadingState(Modifier.fillMaxSize())
 
                     state.error != null && state.profile == null ->
                         EmptyState(

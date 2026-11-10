@@ -76,7 +76,7 @@ fun ProfileScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             when {
                 state.isLoading && state.user == null ->
-                    LoadingState()
+                    LoadingState(Modifier.fillMaxSize())
 
                 state.user != null ->
                     ProfileViewContent(

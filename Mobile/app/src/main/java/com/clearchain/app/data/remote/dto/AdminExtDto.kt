@@ -3,8 +3,8 @@ package com.clearchain.app.data.remote.dto
 import kotlinx.serialization.Serializable
 
 // ── Admin statistics ─────────────────────────────────────────────────────────
-// Mirrors AdminStatisticsResponse on the API, always asked for over the platform's whole
-// history. The organization register describes the platform right now.
+// Mirrors AdminStatisticsResponse on the API, which covers the platform's whole history. The
+// organization register describes the platform right now.
 
 @Serializable
 data class AdminDetailedStatsResponse(
@@ -13,18 +13,11 @@ data class AdminDetailedStatsResponse(
 
 @Serializable
 data class AdminDetailedStatsData(
-    val headline: StatsHeadline = StatsHeadline(),
     val funnel: StatsFunnel = StatsFunnel(),
     val timing: StatsTiming = StatsTiming(),
     val quality: StatsQuality = StatsQuality(),
     val leaderboards: StatsLeaderboards = StatsLeaderboards(),
     val organizations: StatsOrganizations = StatsOrganizations()
-)
-
-@Serializable
-data class StatsHeadline(
-    /** Pickups handed over in the period, whenever they were requested. */
-    val completedPickups: Int = 0
 )
 
 @Serializable
@@ -54,10 +47,13 @@ data class StatsQuality(
     val disputesOpened: Int = 0,
     /** Disputes / completed pickups, 0..1. */
     val disputeRate: Double = 0.0,
-    /** Disputes opened in the period by reason key, see NgoDisputeReason; most common first. */
+    /**
+     * Disputes by reason key, see NgoDisputeReason; most common first. The counts add up to
+     * [disputesOpened].
+     */
     val disputeReasons: List<StatsCount> = emptyList(),
     val disputeOutcomes: StatsDisputeOutcomes = StatsDisputeOutcomes(),
-    /** Over the disputes resolved in the period, whenever they were opened. */
+    /** Over the resolved disputes. */
     val medianHoursToResolve: Double? = null,
     val disputesResolved: Int = 0
 )
@@ -80,7 +76,7 @@ data class StatsDisputeOutcomes(
 data class StatsLeaderboards(
     val groceries: StatsLeaderboard = StatsLeaderboard(),
     val ngos: StatsLeaderboard = StatsLeaderboard(),
-    /** Ratings an organization needs in the period before its average is ranked. */
+    /** Ratings an organization needs before its average is ranked. */
     val minRatingsToRank: Int = 3
 )
 

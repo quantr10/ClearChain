@@ -11,6 +11,7 @@ import com.clearchain.app.data.remote.dto.DashboardStatsData
 import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.ngo.activityFeedPager
+import com.clearchain.app.presentation.ngo.toFeedPage
 import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -100,8 +101,7 @@ class GroceryDashboardViewModel @Inject constructor(
             listOf(
                 async { loadStats() },
                 async { loadTodaySummary() },
-                async { loadActivity() },
-                async { activityPager.refresh() }
+                async { loadActivity() }
             ).awaitAll()
         }
         // Sections fail independently and each keeps whatever it showed before;
@@ -157,14 +157,15 @@ class GroceryDashboardViewModel @Inject constructor(
         return true
     }
 
+    /** The sparkline's week, whose page also holds the first pages of the activity list. */
     private suspend fun loadActivity(): Boolean {
         try {
-            val activities = organizationApi.getMyActivity().data
-            _state.update { it.copy(activities = activities) }
+            val week = organizationApi.getMyActivity()
+            _state.update { it.copy(activities = week.data) }
+            return activityPager.refreshFrom(week.toFeedPage())
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load activity", e)
             return false
         }
-        return true
     }
 }

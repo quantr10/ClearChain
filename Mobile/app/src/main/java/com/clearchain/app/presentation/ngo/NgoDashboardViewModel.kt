@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.OrganizationApi
 import com.clearchain.app.data.remote.dto.ActivityItemData
+import com.clearchain.app.data.remote.dto.ActivityResponse
 import com.clearchain.app.data.remote.dto.DashboardStatsData
 import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.model.Listing
@@ -33,13 +34,15 @@ import kotlinx.coroutines.launch
 
 /**
  * The week's activity, newest first, for the list under the sparkline and its history sheet.
- * Shared by the NGO and grocery dashboards, as the list and the sheet are.
+ * Shared by the NGO and grocery dashboards, as the list and the sheet are. The API serves at
+ * most 200 a page, which is also the page the sparkline reads.
  */
 internal fun activityFeedPager(scope: CoroutineScope, organizationApi: OrganizationApi) =
-    FeedPager(scope, pageSize = 20, id = ActivityItemData::id) { page, pageSize ->
-        val response = organizationApi.getMyActivity(page = page, pageSize = pageSize)
-        FeedPage(response.data, response.total, response.totalPages)
+    FeedPager(scope, pageSize = 20, maxPageSize = 200, id = ActivityItemData::id) { page, pageSize ->
+        organizationApi.getMyActivity(page = page, pageSize = pageSize).toFeedPage()
     }
+
+internal fun ActivityResponse.toFeedPage() = FeedPage(data, total, totalPages)
 
 /** Impact metrics derived from the stats. */
 data class ImpactMetrics(
@@ -130,7 +133,6 @@ class NgoDashboardViewModel @Inject constructor(
                 async { loadStats() },
                 async { loadTodaySummary() },
                 async { loadActivity() },
-                async { activityPager.refresh() },
                 async { loadNearbyListings() }
             ).awaitAll()
         }
@@ -190,15 +192,16 @@ class NgoDashboardViewModel @Inject constructor(
         return true
     }
 
+    /** The sparkline's week, whose page also holds the first pages of the activity list. */
     private suspend fun loadActivity(): Boolean {
         try {
-            val activities = organizationApi.getMyActivity().data
-            _state.update { it.copy(activities = activities) }
+            val week = organizationApi.getMyActivity()
+            _state.update { it.copy(activities = week.data) }
+            return activityPager.refreshFrom(week.toFeedPage())
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load activity", e)
             return false
         }
-        return true
     }
 
     private suspend fun loadNearbyListings(): Boolean {

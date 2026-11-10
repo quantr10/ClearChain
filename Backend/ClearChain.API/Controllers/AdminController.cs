@@ -1,5 +1,6 @@
 using ClearChain.Infrastructure.Data;
 using ClearChain.Domain.Enums;
+using ClearChain.API.Common;
 using ClearChain.API.DTOs.Admin;
 using ClearChain.API.DTOs.Disputes;
 using ClearChain.API.DTOs.PickupRequests;
@@ -7,7 +8,6 @@ using ClearChain.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
 
 namespace ClearChain.API.Controllers;
 
@@ -261,60 +261,27 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Operational analytics for the admin Stats &amp; Analytics screen.
-    ///
-    /// Two clocks run here and keeping them apart is what makes the numbers mean
-    /// something:
-    ///   * the funnel is a cohort - requests *created* in the period, and where each
-    ///     one stands today. Only that way do the stages add up to the requests.
-    ///   * timings and the leaderboards are events - pickups *completed* in the
-    ///     period, whenever they happened to be requested.
-    /// The organization register is neither: it is the platform as it stands right now.
-    ///
-    /// <paramref name="compareFrom"/> and <paramref name="compareTo"/> name a period to set
-    /// the trust figures against, usually the one before.
+    /// Operational analytics for the admin Stats &amp; Analytics screen, over the platform's
+    /// whole history. The funnel places every request by where it stands today; the timings
+    /// and the leaderboards count the pickups completed. The organization register is the
+    /// platform as it stands right now.
     /// </summary>
     [HttpGet("statistics")]
-    public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics(
-        [FromQuery] string? from = null,
-        [FromQuery] string? to = null,
-        [FromQuery] string preset = "all",
-        [FromQuery] string? compareFrom = null,
-        [FromQuery] string? compareTo = null)
+    public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics()
     {
-        var now = DateTime.UtcNow;
-        var (start, end) = ResolveRange(from, to, preset);
-
-        bool InPeriod(DateTime at) => (!start.HasValue || at >= start.Value) && (!end.HasValue || at <= end.Value);
-
         // ── Requests ─────────────────────────────────────────────────────────
-        // A request completed inside the range may have been raised long before it, so
-        // the lower bound has to admit either timestamp. The upper bound can stay on
-        // RequestedAt alone: nothing is completed before it was requested.
-        var requestRows = await _context.PickupRequests
-            .Where(pr => !start.HasValue
-                      || pr.RequestedAt >= start.Value
-                      || (pr.ConfirmedReceivedAt.HasValue && pr.ConfirmedReceivedAt.Value >= start.Value)
-                      || (pr.MarkedPickedUpAt.HasValue && pr.MarkedPickedUpAt.Value >= start.Value))
-            .Where(pr => !end.HasValue || pr.RequestedAt <= end.Value)
+        var requests = await _context.PickupRequests
             .Select(pr => new RequestRow(
-                pr.Id, pr.Status, pr.RequestedAt, pr.MarkedReadyAt,
+                pr.Status, pr.RequestedAt, pr.MarkedReadyAt,
                 pr.MarkedPickedUpAt, pr.ConfirmedReceivedAt, pr.GroceryId, pr.NgoId))
             .AsNoTracking()
             .ToListAsync();
 
-        // Cohort: raised in the period. This is what the funnel reports.
-        var raised = requestRows.Where(r => InPeriod(r.RequestedAt)).ToList();
+        var completed = requests.Where(r => r.Status == PickupRequestStatus.Completed).ToList();
 
-        // Events: handed over in the period. This is what the timings and boards report.
-        var completed = requestRows
-            .Where(r => r.Status == PickupRequestStatus.Completed && InPeriod(r.CompletedAt))
-            .ToList();
-        var completedIds = completed.Select(r => r.Id).ToList();
+        int CountRequests(PickupRequestStatus s) => requests.Count(r => r.Status == s);
 
-        int CountRaised(PickupRequestStatus s) => raised.Count(r => r.Status == s);
-
-        // ── Timing, over the pickups completed in the period ─────────────────
+        // ── Timing, over the completed pickups ───────────────────────────────
         List<double> Hours(Func<RequestRow, TimeSpan?> leg) => completed
             .Select(leg)
             .Where(d => d.HasValue && d.Value.TotalHours >= 0)
@@ -338,131 +305,78 @@ public class AdminController : ControllerBase
             SampleSize = toPickup.Count
         };
 
-        // ── Reviews left in the period, for the rating boards ────────────────
-        var reviews = await _context.Reviews
-            .AsNoTracking()
-            .Where(r => (!start.HasValue || r.CreatedAt >= start.Value)
-                     && (!end.HasValue || r.CreatedAt <= end.Value))
-            .Select(r => new ReviewRow(r.ReviewedId, r.Rating))
-            .ToListAsync();
+        // ── Ratings received, for the rating boards ──────────────────────────
+        var ratings = await _context.Reviews
+            .GroupBy(r => r.ReviewedId)
+            .Select(g => new RatingRow(g.Key, g.Count(), g.Average(r => (double)r.Rating)))
+            .ToDictionaryAsync(r => r.OrgId);
 
-        // Everyone ranked or rated, deleted accounts included: their pickups happened, so
-        // they still count, under the name they had.
-        var profileIds = completed.SelectMany(r => new[] { r.GroceryId, r.NgoId })
-            .Concat(reviews.Select(r => r.ReviewedId))
-            .Distinct()
-            .ToList();
-        var profiles = await _context.Organizations
-            .Where(o => profileIds.Contains(o.Id))
-            .Select(o => new OrgProfile(o.Id, o.Name, o.Type, o.ProfilePictureUrl))
+        // ── Organizations ────────────────────────────────────────────────────
+        // Every account, deleted ones included: their pickups happened, so they are still
+        // ranked, under the name they had.
+        var orgs = await _context.Organizations
+            .Select(o => new OrgRow(
+                o.Id, o.Name, o.Type, o.ProfilePictureUrl,
+                o.Verified, o.VerificationStatus, o.CreatedAt, o.IsDeleted))
             .AsNoTracking()
             .ToDictionaryAsync(o => o.Id);
 
-        // ── The organization register ────────────────────────────────────────
-        // Admin accounts sit in the same table but are staff, not participants: leaving
-        // them in would mean groceries + NGOs never add up to the total.
-        var orgs = await _context.Organizations
-            .Where(o => !o.IsDeleted && o.Type.ToLower() != "admin")
-            .Select(o => new { o.Id, o.Type, o.Verified, o.VerificationStatus, o.CreatedAt })
-            .AsNoTracking()
-            .ToListAsync();
+        // The register is the platform as it stands, so it leaves deleted accounts out. Admin
+        // accounts are staff, not participants: leaving them in would mean groceries + NGOs
+        // never add up to the total.
+        var register = orgs.Values
+            .Where(o => !o.IsDeleted && !string.Equals(o.Type, "admin", StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
-        var pendingOrgs = orgs.Where(o => o.VerificationStatus == "pending").ToList();
+        var pendingOrgs = register.Where(o => o.VerificationStatus == "pending").ToList();
         var oldestPendingDays = pendingOrgs.Count == 0
             ? (int?)null
-            : (int)Math.Floor((now - pendingOrgs.Min(o => o.CreatedAt)).TotalDays);
+            : (int)Math.Floor((DateTime.UtcNow - pendingOrgs.Min(o => o.CreatedAt)).TotalDays);
+
+        int CountType(IEnumerable<OrgRow> orgsIn, string type) =>
+            orgsIn.Count(o => string.Equals(o.Type, type, StringComparison.OrdinalIgnoreCase));
 
         var data = new AdminStatisticsData
         {
-            Period = new StatsPeriodDto
-            {
-                From = start?.ToString("o"),
-                To = end?.ToString("o"),
-                Preset = preset,
-                Days = start.HasValue ? Math.Max(1, (int)Math.Ceiling(((end ?? now) - start.Value).TotalDays)) : 0,
-                IsAllTime = !start.HasValue
-            },
-            Headline = new StatsHeadlineDto
-            {
-                CompletedPickups = completed.Count
-            },
             Funnel = new StatsFunnelDto
             {
-                Requests = raised.Count,
-                Pending = CountRaised(PickupRequestStatus.Pending),
-                Approved = CountRaised(PickupRequestStatus.Approved),
-                Ready = CountRaised(PickupRequestStatus.Ready),
-                Completed = CountRaised(PickupRequestStatus.Completed),
-                Cancelled = CountRaised(PickupRequestStatus.Cancelled),
-                Rejected = CountRaised(PickupRequestStatus.Rejected)
+                Requests = requests.Count,
+                Pending = CountRequests(PickupRequestStatus.Pending),
+                Approved = CountRequests(PickupRequestStatus.Approved),
+                Ready = CountRequests(PickupRequestStatus.Ready),
+                Completed = CountRequests(PickupRequestStatus.Completed),
+                Cancelled = CountRequests(PickupRequestStatus.Cancelled),
+                Rejected = CountRequests(PickupRequestStatus.Rejected)
             },
             Timing = timing,
-            Quality = await BuildQuality(completedIds, start, end),
-            Leaderboards = BuildLeaderboards(completed, reviews, profiles),
+            Quality = await BuildQuality(completed.Count),
+            Leaderboards = BuildLeaderboards(completed, ratings, orgs),
             Organizations = new StatsOrganizationsDto
             {
-                Total = orgs.Count,
-                Groceries = orgs.Count(o => o.Type.ToLower() == "grocery"),
-                Ngos = orgs.Count(o => o.Type.ToLower() == "ngo"),
-                Verified = orgs.Count(o => o.Verified),
+                Total = register.Count,
+                Groceries = CountType(register, "grocery"),
+                Ngos = CountType(register, "ngo"),
+                Verified = register.Count(o => o.Verified),
                 PendingVerification = pendingOrgs.Count,
-                PendingGroceries = pendingOrgs.Count(o => o.Type.ToLower() == "grocery"),
-                PendingNgos = pendingOrgs.Count(o => o.Type.ToLower() == "ngo"),
+                PendingGroceries = CountType(pendingOrgs, "grocery"),
+                PendingNgos = CountType(pendingOrgs, "ngo"),
                 OldestPendingDays = oldestPendingDays
-            },
-            Comparison = await BuildComparison(compareFrom, compareTo, start, end, now)
+            }
         };
 
         return Ok(new AdminStatisticsResponse { Data = data });
     }
 
-    /// <summary>
-    /// The UTC days on which something the period-scoped statistics count happened: a
-    /// request raised or handed over, a review written, a dispute opened. The app's
-    /// range picker only offers these days, so a range never starts or ends on a blank.
-    /// </summary>
-    [HttpGet("statistics/active-dates")]
-    public async Task<ActionResult<StatsActiveDatesResponse>> GetStatisticsActiveDates()
-    {
-        var requests = await _context.PickupRequests
-            .AsNoTracking()
-            .Select(pr => new { pr.RequestedAt, CompletedAt = pr.Status == PickupRequestStatus.Completed
-                ? pr.ConfirmedReceivedAt ?? pr.MarkedPickedUpAt
-                : null })
-            .ToListAsync();
-        var reviews = await _context.Reviews.AsNoTracking().Select(r => r.CreatedAt).ToListAsync();
-        var disputes = await _context.Disputes.AsNoTracking().Select(d => d.CreatedAt).ToListAsync();
-
-        var dates = requests.Select(r => r.RequestedAt)
-            .Concat(requests.Where(r => r.CompletedAt.HasValue).Select(r => r.CompletedAt!.Value))
-            .Concat(reviews)
-            .Concat(disputes)
-            .Select(at => at.ToString("yyyy-MM-dd"))
-            .Distinct()
-            .OrderBy(d => d)
-            .ToList();
-
-        return Ok(new StatsActiveDatesResponse { Data = dates });
-    }
-
     // ── Statistics helpers ───────────────────────────────────────────────────
 
     private sealed record RequestRow(
-        Guid Id,
         PickupRequestStatus Status,
         DateTime RequestedAt,
         DateTime? MarkedReadyAt,
         DateTime? MarkedPickedUpAt,
         DateTime? ConfirmedReceivedAt,
         Guid GroceryId,
-        Guid NgoId)
-    {
-        /// <summary>
-        /// When the hand-over actually happened, falling back down the chain of timestamps an
-        /// older record may be missing.
-        /// </summary>
-        public DateTime CompletedAt => ConfirmedReceivedAt ?? MarkedPickedUpAt ?? RequestedAt;
-    }
+        Guid NgoId);
 
     /// <summary>Linear-interpolated percentile over an already sorted list.</summary>
     private static double? Percentile(List<double> sorted, double p)
@@ -478,9 +392,17 @@ public class AdminController : ControllerBase
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
-    private sealed record ReviewRow(Guid ReviewedId, int Rating);
+    private sealed record RatingRow(Guid OrgId, int Count, double Average);
 
-    private sealed record OrgProfile(Guid Id, string Name, string Type, string? ProfilePictureUrl);
+    private sealed record OrgRow(
+        Guid Id,
+        string Name,
+        string Type,
+        string? ProfilePictureUrl,
+        bool Verified,
+        string VerificationStatus,
+        DateTime CreatedAt,
+        bool IsDeleted);
 
     private sealed record LeaderStats(
         Guid Id,
@@ -494,31 +416,29 @@ public class AdminController : ControllerBase
     /// <summary>The top stores and NGOs by pickups completed and by rating received.</summary>
     private static StatsLeaderboardsDto BuildLeaderboards(
         List<RequestRow> completed,
-        List<ReviewRow> reviews,
-        IReadOnlyDictionary<Guid, OrgProfile> profiles)
+        IReadOnlyDictionary<Guid, RatingRow> ratings,
+        IReadOnlyDictionary<Guid, OrgRow> profiles)
     {
-        var ratingsByOrg = reviews.ToLookup(r => r.ReviewedId, r => r.Rating);
-
         StatsLeaderboardDto Board(string type, Func<RequestRow, Guid> party)
         {
             var completedBy = completed.ToLookup(party);
 
             // Everyone with a pickup to their name, and everyone of this type rated often enough to rank.
             var pool = completedBy.Select(g => g.Key)
-                .Concat(ratingsByOrg
-                    .Where(g => g.Count() >= MinRatingsToRank
-                             && profiles.TryGetValue(g.Key, out var p)
+                .Concat(ratings.Values
+                    .Where(r => r.Count >= MinRatingsToRank
+                             && profiles.TryGetValue(r.OrgId, out var p)
                              && string.Equals(p.Type, type, StringComparison.OrdinalIgnoreCase))
-                    .Select(g => g.Key))
+                    .Select(r => r.OrgId))
                 .Distinct()
                 .Select(id =>
                 {
-                    var ratings = ratingsByOrg[id].ToList();
+                    var rating = ratings.GetValueOrDefault(id);
                     return new LeaderStats(
                         Id: id,
                         Pickups: completedBy[id].Count(),
-                        Rating: ratings.Count == 0 ? null : ratings.Average(),
-                        RatingCount: ratings.Count);
+                        Rating: rating?.Average,
+                        RatingCount: rating?.Count ?? 0);
                 })
                 .ToList();
 
@@ -551,7 +471,7 @@ public class AdminController : ControllerBase
         IEnumerable<LeaderStats> pool,
         Func<LeaderStats, double> score,
         Func<LeaderStats, double> tieBreak,
-        IReadOnlyDictionary<Guid, OrgProfile> profiles)
+        IReadOnlyDictionary<Guid, OrgRow> profiles)
     {
         var top = pool
             .Where(s => score(s) > 0)
@@ -580,31 +500,21 @@ public class AdminController : ControllerBase
         return ranked;
     }
 
-    /// <summary>Disputes over the period, split the ways an admin acts on them.</summary>
-    private async Task<StatsQualityDto> BuildQuality(List<Guid> completedIds, DateTime? start, DateTime? end)
+    /// <summary>Disputes, split the ways an admin acts on them.</summary>
+    private async Task<StatsQualityDto> BuildQuality(int completedPickups)
     {
         var disputes = await _context.Disputes
             .AsNoTracking()
-            .Where(d => (!start.HasValue || d.CreatedAt >= start.Value)
-                     && (!end.HasValue || d.CreatedAt <= end.Value))
-            .Select(d => new { d.Reason, d.Status })
+            .Select(d => new { d.Reason, d.Status, d.CreatedAt, d.ResolvedAt })
             .ToListAsync();
 
-        // An event clock, like the timings: disputes closed in the period, whenever opened.
-        var resolved = await _context.Disputes
-            .AsNoTracking()
-            .Where(d => d.ResolvedAt.HasValue
-                     && (!start.HasValue || d.ResolvedAt.Value >= start.Value)
-                     && (!end.HasValue || d.ResolvedAt.Value <= end.Value))
-            .Select(d => new { d.CreatedAt, ResolvedAt = d.ResolvedAt!.Value })
-            .ToListAsync();
-        var hoursToResolve = resolved
-            .Select(d => (d.ResolvedAt - d.CreatedAt).TotalHours)
+        var hoursToResolve = disputes
+            .Where(d => d.ResolvedAt.HasValue)
+            .Select(d => (d.ResolvedAt!.Value - d.CreatedAt).TotalHours)
             .Where(h => h >= 0)
             .OrderBy(h => h)
             .ToList();
 
-        var completedPickups = completedIds.Count;
         return new StatsQualityDto
         {
             DisputesOpened = disputes.Count,
@@ -627,34 +537,6 @@ public class AdminController : ControllerBase
         };
     }
 
-    /// <summary>
-    /// The dispute count over the comparison range, counted the way GetStatistics counts
-    /// its own. A period still running is set against the same stretch of the other one -
-    /// today so far against yesterday up to this hour - or it would always look like a slump.
-    /// </summary>
-    private async Task<StatsComparisonDto?> BuildComparison(
-        string? compareFrom, string? compareTo, DateTime? start, DateTime? end, DateTime now)
-    {
-        if (!start.HasValue) return null;
-        var (compareStart, compareEnd) = ResolveRange(compareFrom, compareTo, preset: "custom");
-        if (!compareStart.HasValue || !compareEnd.HasValue) return null;
-
-        var s = compareStart.Value;
-        var e = compareEnd.Value;
-        if (end.HasValue && end.Value > now)
-        {
-            var sameStretch = s + (now - start.Value);
-            if (sameStretch < e) e = sameStretch;
-        }
-
-        return new StatsComparisonDto
-        {
-            From = s.ToString("o"),
-            To = e.ToString("o"),
-            DisputesOpened = await _context.Disputes.CountAsync(d => d.CreatedAt >= s && d.CreatedAt <= e)
-        };
-    }
-
     // ── Alert feed ───────────────────────────────────────────────────────────
 
     /// <summary>
@@ -666,8 +548,7 @@ public class AdminController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 100);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 100);
 
         var open = _context.Disputes.Where(d => d.Status == "open");
         var total = await open.CountAsync();
@@ -676,8 +557,8 @@ public class AdminController : ControllerBase
         var disputes = await open
             .OrderByDescending(d => d.CreatedAt)
             .ThenBy(d => d.Id)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToListAsync();
 
         // Reason is stored as a key; the label is what an admin should read.
@@ -700,42 +581,12 @@ public class AdminController : ControllerBase
         {
             data = feed,
             total,
-            page = clampedPage,
-            pageSize = clampedSize,
-            totalPages = (int)Math.Ceiling((double)total / clampedSize)
+            page = paging.Page,
+            pageSize = paging.Size,
+            totalPages = paging.TotalPages(total)
         });
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private static (DateTime? start, DateTime? end) ResolveRange(string? from, string? to, string preset)
-    {
-        // A bare "yyyy-MM-dd" is a UTC day, like every preset below; parsing it as the
-        // server's local time would shift the range on any host not running in UTC.
-        const DateTimeStyles utc = DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal;
-        if (!string.IsNullOrEmpty(from) && DateTime.TryParse(from, CultureInfo.InvariantCulture, utc, out var f) &&
-            !string.IsNullOrEmpty(to) && DateTime.TryParse(to, CultureInfo.InvariantCulture, utc, out var t))
-        {
-            return (f, t.AddDays(1).AddSeconds(-1));
-        }
-
-        var now = DateTime.UtcNow;
-        var weekStart = now.Date.AddDays(-(int)now.DayOfWeek);
-        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        return preset switch
-        {
-            "today" => (now.Date, now.Date.AddDays(1).AddSeconds(-1)),
-            "week" => (weekStart, now),
-            "month" => (monthStart, now),
-            "quarter" => (new DateTime(now.Year, (now.Month - 1) / 3 * 3 + 1, 1, 0, 0, 0, DateTimeKind.Utc), now),
-            // The matching previous period, so a comparison compares like with like.
-            "yesterday" => (now.Date.AddDays(-1), now.Date.AddSeconds(-1)),
-            "last_week" => (weekStart.AddDays(-7), weekStart.AddSeconds(-1)),
-            "last_month" => (monthStart.AddMonths(-1), monthStart.AddSeconds(-1)),
-            _ => (null, null)  // "all"
-        };
-    }
 }
 
 public class RejectOrganizationRequest

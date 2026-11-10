@@ -179,7 +179,7 @@ fun ListingDetailScreen(
                     .trackGlobalTouch(touchTracker)
             ) {
                 when {
-                    state.isLoading -> LoadingState()
+                    state.isLoading -> LoadingState(Modifier.fillMaxSize())
 
                     state.error != null -> EmptyState(
                         icon = Icons.Default.ErrorOutline,

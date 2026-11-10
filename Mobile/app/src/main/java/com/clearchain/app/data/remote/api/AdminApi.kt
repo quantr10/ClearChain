@@ -25,7 +25,7 @@ interface AdminApi {
     @GET("admin/statistics/overview")
     suspend fun getStatistics(): AdminStatsResponse
 
-    /** The platform's whole history; the server defaults to it when no range is given. */
+    /** Over the platform's whole history. */
     @GET("admin/statistics")
     suspend fun getDetailedStatistics(): AdminDetailedStatsResponse
 

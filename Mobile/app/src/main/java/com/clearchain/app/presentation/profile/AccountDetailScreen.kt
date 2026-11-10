@@ -73,7 +73,7 @@ fun AccountDetailScreen(
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    state.isLoading && user == null -> LoadingState()
+                    state.isLoading && user == null -> LoadingState(Modifier.fillMaxSize())
 
                     user == null -> {
                         EmptyState(

@@ -243,14 +243,11 @@ public class OrganizationsController : ControllerBase
         // including today — the same window the dashboard sparkline plots.
         var cutoff = DateTime.UtcNow.Date.AddDays(-(Math.Clamp(days, 1, 90) - 1));
 
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 200);
-        // long: a page far past the end has to come back empty, not overflow into an early one.
-        var skip = (long)(clampedPage - 1) * clampedSize;
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 200);
 
         // The feed merges two sources, so neither can be paged on its own. A merged page can
         // only draw on the newest skip + size items of each, so that is as deep as each is read.
-        int Depth(int feedTotal) => skip >= feedTotal ? 0 : (int)(skip + clampedSize);
+        int Depth(int feedTotal) => paging.Skip >= feedTotal ? 0 : (int)(paging.Skip + paging.Size);
 
         var activities = new List<(DateTime At, ActivityDto Item)>();
         var total = 0;
@@ -409,8 +406,8 @@ public class OrganizationsController : ControllerBase
         var data = activities
             .OrderByDescending(a => a.At)
             .ThenBy(a => a.Item.Id, StringComparer.Ordinal)
-            .Skip((int)Math.Min(skip, total))
-            .Take(clampedSize)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .Select(a => a.Item)
             .ToList();
 
@@ -418,9 +415,9 @@ public class OrganizationsController : ControllerBase
         {
             data,
             total,
-            page = clampedPage,
-            pageSize = clampedSize,
-            totalPages = (int)Math.Ceiling((double)total / clampedSize)
+            page = paging.Page,
+            pageSize = paging.Size,
+            totalPages = paging.TotalPages(total)
         });
     }
 

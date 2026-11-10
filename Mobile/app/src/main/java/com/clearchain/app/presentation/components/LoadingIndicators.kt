@@ -60,10 +60,13 @@ fun InlineSpinner(
     )
 }
 
-/** Kind B: an area (screen or section) with nothing to show yet. */
+/**
+ * Kind B: an area (screen or section) with nothing to show yet. The spinner is centred in
+ * whatever [modifier] sizes it to; pass `Modifier.fillMaxSize()` for a whole screen.
+ */
 @Composable
 fun LoadingState(
-    modifier: Modifier = Modifier.fillMaxSize(),
+    modifier: Modifier = Modifier,
     message: String? = null
 ) {
     Box(modifier, contentAlignment = Alignment.Center) {

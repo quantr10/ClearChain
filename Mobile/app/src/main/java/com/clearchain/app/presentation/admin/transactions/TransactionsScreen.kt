@@ -101,7 +101,7 @@ fun TransactionsScreen(
             )
 
             when {
-                state.isLoading && state.allTransactions.isEmpty() -> LoadingState()
+                state.isLoading && state.allTransactions.isEmpty() -> LoadingState(Modifier.fillMaxSize())
                 state.allTransactions.isEmpty() -> {
                     EmptyState(
                         icon = Icons.Default.Receipt,
