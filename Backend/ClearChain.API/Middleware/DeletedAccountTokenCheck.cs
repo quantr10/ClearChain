@@ -14,6 +14,10 @@ namespace ClearChain.API.Middleware;
 /// The answer is cached so this doesn't add a database round trip to every request. The deletion
 /// itself writes the cache through <see cref="MarkDeleted"/>, so the instance that served it
 /// refuses the account at once; any other instance catches up within <see cref="_cacheFor"/>.
+///
+/// A lookup that fails, on a dropped database connection for example, lets the request through
+/// and caches nothing. Refusing the token would sign every user out over an outage, and the
+/// actions that create activity read <c>IsDeleted</c> from the database themselves.
 /// </summary>
 public static class DeletedAccountTokenCheck
 {
@@ -26,15 +30,26 @@ public static class DeletedAccountTokenCheck
         if (context.Principal is not { } principal || !principal.TryGetUserId(out var userId)) return;
 
         var services = context.HttpContext.RequestServices;
-        var isDeleted = await services.GetRequiredService<IMemoryCache>().GetOrCreateAsync(
-            CacheKey(userId),
-            entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = _cacheFor;
-                return services.GetRequiredService<ApplicationDbContext>().Organizations
-                    .AsNoTracking()
-                    .AnyAsync(o => o.Id == userId && o.IsDeleted);
-            });
+        bool isDeleted;
+        try
+        {
+            isDeleted = await services.GetRequiredService<IMemoryCache>().GetOrCreateAsync(
+                CacheKey(userId),
+                entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = _cacheFor;
+                    return services.GetRequiredService<ApplicationDbContext>().Organizations
+                        .AsNoTracking()
+                        .AnyAsync(o => o.Id == userId && o.IsDeleted);
+                });
+        }
+        catch (Exception ex)
+        {
+            services.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(DeletedAccountTokenCheck))
+                .LogWarning(ex, "Could not check whether account {UserId} is deleted; letting the request through", userId);
+            return;
+        }
 
         if (isDeleted) context.Fail("This account has been deleted");
     }

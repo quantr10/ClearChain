@@ -137,7 +137,16 @@ class AuthRepositoryImpl @Inject constructor(
                     // Sending this device's FCM token lets the server unregister it, so the
                     // device stops receiving the departing account's push notifications.
                     val fcmToken = database.fcmTokenDao().getToken()
-                    authApi.logout(LogoutRequest(tokens.refreshToken, fcmToken))
+                    val sent = tokens.refreshToken
+                    val revoked = runCatching { authApi.logout(LogoutRequest(sent, fcmToken)) }.isSuccess
+                    // An expired access token makes TokenAuthenticator refresh and retry, but the
+                    // refresh rotates the refresh token, so that retry still names the old, already
+                    // revoked one and is refused. Ask again with the one now stored, or the new
+                    // token stays live and this device keeps the departing account's push.
+                    val latest = authTokenDao.getTokens()?.refreshToken
+                    if (!revoked && latest != null && latest != sent) {
+                        authApi.logout(LogoutRequest(latest, fcmToken))
+                    }
                 } catch (_: Exception) {
                     // Non-fatal: local state is still cleared even if the server call fails.
                 }

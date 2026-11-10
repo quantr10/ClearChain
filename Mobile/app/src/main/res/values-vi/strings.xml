@@ -997,6 +997,7 @@
     <string name="leaderboard_metric_pickups">Lượt lấy hàng</string>
     <string name="leaderboard_metric_rating">Đánh giá</string>
     <string name="leaderboard_no_ratings">Chưa có xếp hạng.</string>
+    <string name="leaderboard_deleted_account">Tài khoản đã xóa</string>
     <plurals name="leaderboard_rating_note">
         <item quantity="other">Chỉ xếp hạng các tổ chức nhận ít nhất %1$d lượt đánh giá.</item>
     </plurals>

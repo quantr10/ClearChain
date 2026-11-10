@@ -223,7 +223,6 @@ public class PickupRequestService : IPickupRequestService
 
         bool isGroceryRejecting = pr.GroceryId == callerId;
 
-        await using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
             pr.Status = isGroceryRejecting ? PickupRequestStatus.Rejected : PickupRequestStatus.Cancelled;
@@ -232,12 +231,19 @@ public class PickupRequestService : IPickupRequestService
             await ReleaseReservationAsync(pr);
 
             await _context.SaveChangesAsync();
-            await tx.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The stale-request job cancels many requests on one context; unsaved changes left
+            // tracked here would be retried, and fail again, by every later cancel.
+            _context.ChangeTracker.Clear();
+            return Fail(PickupRequestServiceError.Conflict,
+                "This listing changed while cancelling the request. Please try again.");
         }
         catch (Exception ex)
         {
-            await tx.RollbackAsync();
-            _logger.LogError(ex, "Transaction failed during CancelAsync for request {Id}", requestId);
+            _context.ChangeTracker.Clear();
+            _logger.LogError(ex, "Saving failed during CancelAsync for request {Id}", requestId);
             return Fail(PickupRequestServiceError.DatabaseError, "An error occurred. Please try again.");
         }
 
@@ -452,6 +458,10 @@ public class PickupRequestService : IPickupRequestService
 
         var data = MapToData(pickupRequest, proofPhotoUrl: proofPhotoUrl);
 
+        // A cart request has no single listing; its summary title and unit stand in for one.
+        var productName = listing?.ProductName ?? pickupRequest.ListingTitle ?? "";
+        var unit = listing?.Unit ?? pickupRequest.ListingUnit ?? "";
+
         if (inventoryDto != null)
             await _inventoryNotificationService.NotifyInventoryItemAddedAsync(inventoryDto);
 
@@ -466,9 +476,9 @@ public class PickupRequestService : IPickupRequestService
                 NgoName = pickupRequest.Ngo?.Name ?? "",
                 GroceryId = pickupRequest.GroceryId.ToString(),
                 GroceryName = pickupRequest.Grocery?.Name ?? "",
-                ProductName = listing?.ProductName ?? "",
+                ProductName = productName,
                 Quantity = pickupRequest.RequestedQuantity ?? 0,
-                Unit = listing?.Unit ?? "",
+                Unit = unit,
                 CompletedAt = DateTime.UtcNow
             });
 
@@ -493,9 +503,9 @@ public class PickupRequestService : IPickupRequestService
         await _pushNotificationService.SendPickupCompletedNotification(pickupRequest.GroceryId, data);
         await _pushNotificationService.SendInventoryAddedNotification(
             pickupRequest.NgoId,
-            listing?.ProductName ?? "",
+            productName,
             pickupRequest.RequestedQuantity ?? 0,
-            listing?.Unit ?? "");
+            unit);
 
         return new PickupRequestServiceResult(true, Data: data, InventoryData: inventoryDto);
     }
@@ -735,10 +745,11 @@ public class PickupRequestService : IPickupRequestService
                 .Include(l => l.Group)
                 .Where(l => reservedIds.Contains(l.Id))
                 .ToListAsync();
+            await LoadOpenListingsAsync(reservedListings);
             foreach (var reserved in reservedListings)
             {
                 if (reserved.Group != null)
-                    await SmartMergeOnCancel(reserved, reserved.Group);
+                    SmartMergeOnCancel(reserved, reserved.Group);
             }
 
             var deletedReservedIds = reservedListings
@@ -759,21 +770,49 @@ public class PickupRequestService : IPickupRequestService
                 .Include(l => l.Group)
                 .FirstOrDefaultAsync(l => l.Id == legacyListingId.Value);
             if (listing?.Group != null)
-                await SmartMergeOnCancel(listing, listing.Group);
+            {
+                await LoadOpenListingsAsync([listing]);
+                SmartMergeOnCancel(listing, listing.Group);
+            }
         }
     }
 
-    private async Task SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)
+    /// <summary>
+    /// Tracks the Open listings of the released listings' groups, in one query, so
+    /// <see cref="SmartMergeOnCancel"/> can pick its merge target from Local.
+    /// </summary>
+    private Task LoadOpenListingsAsync(IReadOnlyCollection<ClearanceListing> released)
+    {
+        var groupIds = released
+            .Where(l => l.GroupId.HasValue)
+            .Select(l => l.GroupId!.Value)
+            .Distinct()
+            .ToList();
+        return groupIds.Count == 0
+            ? Task.CompletedTask
+            : _context.ClearanceListings
+                .Where(l => l.GroupId.HasValue && groupIds.Contains(l.GroupId.Value) &&
+                    l.Status == ListingStatus.Open)
+                .LoadAsync();
+    }
+
+    /// <summary>
+    /// Puts a released reservation back on offer: merged into an Open listing of the same group
+    /// when there is one, otherwise reopened where it is. Expects the group's Open listings to
+    /// be tracked already (<see cref="LoadOpenListingsAsync"/>).
+    /// </summary>
+    private void SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)
     {
         if (cancelledListing.GroupId == null) return;
 
-        var availableSiblings = await _context.ClearanceListings
-            .Where(l => l.GroupId == group.Id && l.Id != cancelledListing.Id && l.Status == ListingStatus.Open)
-            .ToListAsync();
+        // Picking from Local sees this context's unsaved changes. An account closure releases
+        // several reservations before it saves, so a sibling the previous release reopened is
+        // still Reserved in the database. Local also leaves out a listing an earlier merge removed.
+        var target = _context.ClearanceListings.Local.FirstOrDefault(l =>
+            l.GroupId == group.Id && l.Id != cancelledListing.Id && l.Status == ListingStatus.Open);
 
-        if (availableSiblings.Any())
+        if (target != null)
         {
-            var target = availableSiblings.First();
             target.Quantity += cancelledListing.Quantity;
             target.UpdatedAt = DateTime.UtcNow;
             group.TotalReserved -= cancelledListing.Quantity;

@@ -27,7 +27,8 @@ public sealed class RequireVerifiedOrganizationAttribute : Attribute, IAsyncActi
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
         // IsDeleted is checked here too, straight from the database: DeletedAccountTokenCheck
         // answers from a per-instance cache, which another API instance may still hold from
-        // before the deletion. The predicate rides on a query this filter runs anyway.
+        // before the deletion, and lets a request through when its own lookup fails. The
+        // predicate rides on a query this filter runs anyway.
         var org = await db.Organizations
             .AsNoTracking()
             .Where(o => o.Id == userId && !o.IsDeleted)

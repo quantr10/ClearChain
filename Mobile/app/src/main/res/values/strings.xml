@@ -1061,6 +1061,7 @@
     <string name="leaderboard_metric_pickups">Pickups</string>
     <string name="leaderboard_metric_rating">Rating</string>
     <string name="leaderboard_no_ratings">No rankings yet.</string>
+    <string name="leaderboard_deleted_account">Deleted account</string>
     <plurals name="leaderboard_rating_note">
         <item quantity="one">Only organizations rated at least %1$d time are ranked.</item>
         <item quantity="other">Only organizations rated at least %1$d times are ranked.</item>

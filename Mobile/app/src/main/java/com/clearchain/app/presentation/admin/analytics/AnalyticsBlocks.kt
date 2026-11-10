@@ -73,11 +73,13 @@ internal fun EmptyChartNote(text: String) {
 
 /**
  * A rounded track filled to [fraction] in [color]. Silent to accessibility services: the
- * figure beside it is what they read out.
+ * figure beside it is what they read out. A NaN fraction (0 / 0) draws an empty track.
  */
 @Composable
 internal fun MeterBar(fraction: Float, color: Color, height: Dp, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(height / 2)
+    // coerceIn passes NaN through, and fillMaxWidth(NaN) throws when it rounds the width.
+    val filled = if (fraction.isNaN()) 0f else fraction.coerceIn(0f, 1f)
     Box(
         modifier = modifier
             .height(height)
@@ -87,7 +89,7 @@ internal fun MeterBar(fraction: Float, color: Color, height: Dp, modifier: Modif
     ) {
         Box(
             Modifier
-                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .fillMaxWidth(filled)
                 .fillMaxHeight()
                 .clip(shape)
                 .background(color)
@@ -99,7 +101,8 @@ internal fun MeterBar(fraction: Float, color: Color, height: Dp, modifier: Modif
 
 /**
  * One place on a leaderboard: rank, who, the score, and a bar showing it against
- * [fraction] of the scale. Tapping opens the organization's profile.
+ * [fraction] of the scale. [caption], when there is one, sits under the name. Tapping calls
+ * [onClick]; without one the row isn't clickable.
  */
 @Composable
 internal fun LeaderRow(
@@ -109,13 +112,14 @@ internal fun LeaderRow(
     value: String,
     fraction: Float,
     color: Color,
-    onClick: () -> Unit
+    caption: String?,
+    onClick: (() -> Unit)?
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -125,14 +129,24 @@ internal fun LeaderRow(
         ) {
             RankBadge(rank)
             AvatarImage(imageUrl = pictureUrl, name = name, size = LEADER_AVATAR_SIZE)
-            Text(
-                name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (caption != null) {
+                    Text(
+                        caption,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
             Text(
                 value,
                 style = MaterialTheme.typography.titleSmall,

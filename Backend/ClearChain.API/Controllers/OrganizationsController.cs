@@ -312,6 +312,11 @@ public class OrganizationsController : ControllerBase
                         "pickup_cancelled",
                         "Pickup cancelled",
                         $"{ngoName} · {r.ListingTitle}"),
+                    // The app has no rejected type of its own; it styles this like a cancellation.
+                    PickupRequestStatus.Rejected => (
+                        "pickup_cancelled",
+                        "Request rejected",
+                        $"{ngoName} · {r.ListingTitle}"),
                     _ => ("pickup_request", "Pickup request", r.ListingTitle)
                 };
 
@@ -367,6 +372,10 @@ public class OrganizationsController : ControllerBase
                         "pickup_cancelled",
                         "Pickup cancelled",
                         r.ListingTitle),
+                    PickupRequestStatus.Rejected => (
+                        "pickup_cancelled",
+                        "Request rejected",
+                        $"{groceryName} · {r.ListingTitle}"),
                     _ => ("pickup_request", "Pickup request", r.ListingTitle)
                 };
 

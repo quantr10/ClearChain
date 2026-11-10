@@ -359,7 +359,8 @@ ClearChain/
   minutes and is cancelled after five wrong tries.
 - Resetting a password signs out every device.
 - Deleting an account signs it out everywhere: its refresh tokens are revoked at once and
-  its access tokens are refused within a minute.
+  its access tokens are refused within a minute. If that check can't reach the database, it
+  lets the request through rather than signing every user out.
 - A deleted account's profile and completed pickups are kept for audit. Its open pickups
   end and the other party is notified: a grocery's requests are rejected and its listings
   removed, and an NGO's requests are cancelled, putting the stock back on offer.

@@ -44,8 +44,12 @@ class TokenAuthenticator @Inject constructor(
     override fun authenticate(route: Route?, response: Response): Request? {
         // Never try to "refresh" a failed call to the refresh endpoint itself, and give up
         // after one retry so a token that's still bad after refreshing can't loop forever.
-        if (response.request.url.encodedPath.contains("auth/refresh")) return null
+        val path = response.request.url.encodedPath
+        if (path.contains("auth/refresh")) return null
         if (responseCount(response) >= 2) return null
+        // A sign-out still refreshes, so an idle session's logout can revoke its tokens on the
+        // server. If the session turns out to be dead already, that isn't an expiry to report.
+        val signingOut = path.contains("auth/logout")
 
         // Serialize concurrent 401s (e.g. several requests in flight at once) so only one of
         // them actually calls /auth/refresh; the rest just pick up the token it produced.
@@ -75,7 +79,9 @@ class TokenAuthenticator @Inject constructor(
                     authTokenDao.clearTokens()
                     userDao.clearUsers()
                 }
-                sessionManager.notifySessionExpired()
+                // The logout flow clears the rest and goes to Login itself, so the user who
+                // just signed out isn't told their session expired.
+                if (!signingOut) sessionManager.notifySessionExpired()
                 return null
             }
 

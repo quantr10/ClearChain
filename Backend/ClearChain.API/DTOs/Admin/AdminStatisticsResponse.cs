@@ -108,6 +108,12 @@ public class StatsLeaderDto
     public int CompletedPickups { get; set; }
     public double? AverageRating { get; set; }
     public int RatingCount { get; set; }
+
+    /// <summary>
+    /// The account was deleted. Its pickups still count, under the name it had, but its public
+    /// profile is gone, so the app doesn't link to it.
+    /// </summary>
+    public bool IsDeleted { get; set; }
 }
 
 /// <summary>

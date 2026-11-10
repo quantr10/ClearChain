@@ -222,16 +222,33 @@ private fun LeaderboardCard(
                 if (side == option) {
                     ClearChainButton(text = label, onClick = {}, icon = option.icon, modifier = modifier)
                 } else {
-                    ClearChainOutlinedButton(text = label, onClick = { side = option }, icon = option.icon, modifier = modifier)
+                    ClearChainOutlinedButton(
+                        text = label,
+                        onClick = { side = option },
+                        icon = option.icon,
+                        modifier = modifier
+                    )
                 }
             }
         }
 
         SubHeading(stringResource(R.string.leaderboard_metric_pickups))
-        LeaderList(board.byPickups, LeaderMetric.PICKUPS, side.color, stringResource(R.string.chart_no_activity), onOpenOrganization)
+        LeaderList(
+            board.byPickups,
+            LeaderMetric.PICKUPS,
+            side.color,
+            stringResource(R.string.chart_no_activity),
+            onOpenOrganization
+        )
 
         SubHeading(stringResource(R.string.leaderboard_metric_rating))
-        LeaderList(board.byRating, LeaderMetric.RATING, side.color, stringResource(R.string.leaderboard_no_ratings), onOpenOrganization)
+        LeaderList(
+            board.byRating,
+            LeaderMetric.RATING,
+            side.color,
+            stringResource(R.string.leaderboard_no_ratings),
+            onOpenOrganization
+        )
     }
 }
 
@@ -249,6 +266,7 @@ private fun LeaderList(
         return
     }
     val unknown = stringResource(R.string.label_unknown_item)
+    val deleted = stringResource(R.string.leaderboard_deleted_account)
     val top = leaders.first()
     Column {
         leaders.forEach { leader ->
@@ -263,7 +281,9 @@ private fun LeaderList(
                     LeaderMetric.RATING -> ((leader.averageRating ?: 0.0) / 5).toFloat()
                 },
                 color = color,
-                onClick = { onOpenOrganization(leader.id) }
+                // A deleted account's profile is gone, so its row says so instead of opening it.
+                caption = deleted.takeIf { leader.isDeleted },
+                onClick = { onOpenOrganization(leader.id) }.takeUnless { leader.isDeleted }
             )
         }
     }

@@ -193,14 +193,29 @@ public class DisputesController : ControllerBase
         if (!_closedStatuses.Contains(request.Status))
             return BadRequest(new { message = "Unknown resolution outcome" });
 
+        var groceryStatement = string.IsNullOrWhiteSpace(request.GroceryStatement)
+            ? dispute.GroceryStatement
+            : request.GroceryStatement;
+        var resolvedAt = DateTime.UtcNow;
+
+        // Only an update that still finds the dispute open counts, so when two admins resolve it
+        // at once the second gets a conflict instead of overwriting the first and re-notifying.
+        var updated = await _context.Disputes
+            .Where(d => d.Id == id && d.Status == "open")
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(d => d.Status, request.Status)
+                .SetProperty(d => d.GroceryStatement, groceryStatement)
+                .SetProperty(d => d.AdminResolution, request.AdminResolution)
+                .SetProperty(d => d.ResolvedByAdminId, adminId)
+                .SetProperty(d => d.ResolvedAt, resolvedAt));
+        if (updated == 0)
+            return Conflict(new { message = "This dispute was already resolved by another admin" });
+
         dispute.Status = request.Status;
-        if (!string.IsNullOrWhiteSpace(request.GroceryStatement))
-            dispute.GroceryStatement = request.GroceryStatement;
+        dispute.GroceryStatement = groceryStatement;
         dispute.AdminResolution = request.AdminResolution;
         dispute.ResolvedByAdminId = adminId;
-        dispute.ResolvedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync();
+        dispute.ResolvedAt = resolvedAt;
 
         var reasonLabel = DisputeReasons.Label(dispute.Reason);
         await _pushNotificationService.SendDisputeResolvedNotification(

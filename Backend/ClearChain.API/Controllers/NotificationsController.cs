@@ -27,8 +27,7 @@ public class NotificationsController : ControllerBase
     {
         if (!this.TryGetUserId(out var userId)) return Unauthorized();
 
-        var clampedPage = Math.Max(1, page);
-        var clampedSize = Math.Clamp(pageSize, 1, 50);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 50);
 
         // The nightly sweep is what normally bounds this table, but it can be behind — a
         // missed run, or a restore from backup. Applying the same cutoff here keeps the
@@ -47,8 +46,9 @@ public class NotificationsController : ControllerBase
 
         var items = await query
             .OrderByDescending(n => n.CreatedAt)
-            .Skip((clampedPage - 1) * clampedSize)
-            .Take(clampedSize)
+            .ThenBy(n => n.Id)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToListAsync();
 
         return Ok(new NotificationListResponse
@@ -57,9 +57,9 @@ public class NotificationsController : ControllerBase
             Data = items.Select(NotificationDto.From).ToList(),
             UnreadCount = unreadCount,
             Total = total,
-            Page = clampedPage,
-            PageSize = clampedSize,
-            TotalPages = (int)Math.Ceiling((double)total / clampedSize),
+            Page = paging.Page,
+            PageSize = paging.Size,
+            TotalPages = paging.TotalPages(total),
             RetentionDays = NotificationRetentionPolicy.RetentionDays
         });
     }

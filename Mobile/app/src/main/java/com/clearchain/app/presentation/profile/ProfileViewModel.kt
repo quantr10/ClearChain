@@ -377,13 +377,14 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun deleteAccount(password: String) {
+        if (_state.value.isDeletingAccount) return
+        // Marked before launching, so a second tap can't send the request twice.
+        _state.update { it.copy(isDeletingAccount = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(isDeletingAccount = true, error = null) }
             try {
                 authApi.deleteAccount(DeleteAccountRequest(password))
                 // No reset afterwards: on completion the screen navigates away. The deletion already
-                // ended this session on the server; asking again could come back 401, which would
-                // read as an expired session.
+                // ended this session on the server, so there is nothing left to revoke.
                 logoutUseCase(revokeOnServer = false)
                 // A toast, because this screen's snackbar host leaves with the navigation.
                 Toast.makeText(context, R.string.snack_account_deleted, Toast.LENGTH_LONG).show()

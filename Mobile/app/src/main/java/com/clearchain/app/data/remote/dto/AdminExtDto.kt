@@ -3,9 +3,11 @@ package com.clearchain.app.data.remote.dto
 import kotlinx.serialization.Serializable
 
 // ── Admin statistics ─────────────────────────────────────────────────────────
-// Mirrors AdminStatisticsResponse on the API, which covers the platform's whole history. The
-// organization register describes the platform right now.
 
+/**
+ * Mirrors AdminStatisticsResponse on the API, which covers the platform's whole history. The
+ * organization register describes the platform right now.
+ */
 @Serializable
 data class AdminDetailedStatsResponse(
     val data: AdminDetailedStatsData? = null
@@ -95,7 +97,9 @@ data class StatsLeader(
     val profilePictureUrl: String? = null,
     val completedPickups: Int = 0,
     val averageRating: Double? = null,
-    val ratingCount: Int = 0
+    val ratingCount: Int = 0,
+    /** A deleted account still ranks under the name it had, but has no profile to open. */
+    val isDeleted: Boolean = false
 )
 
 /** Admin accounts are excluded, so groceries + ngos always add up to total. */

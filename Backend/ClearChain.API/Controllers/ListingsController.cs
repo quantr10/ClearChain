@@ -106,6 +106,7 @@ public class ListingsController : ControllerBase
 
         var listings = await query
             .OrderByDescending(l => l.CreatedAt)
+            .ThenBy(l => l.Id)
             .ToListAsync();
 
         var listingDtos = listings.Select(l =>
@@ -138,12 +139,11 @@ public class ListingsController : ControllerBase
             listingDtos = withinRadius.Concat(noCoordinates).ToList();
         }
 
-        var clampedPage = Math.Max(1, page);
-        var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 100);
         var total = listingDtos.Count;
         var paged = listingDtos
-            .Skip((clampedPage - 1) * clampedPageSize)
-            .Take(clampedPageSize)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToList();
 
         return Ok(new ListingsResponse
@@ -151,9 +151,9 @@ public class ListingsController : ControllerBase
             Message = "Listings retrieved successfully",
             Data = paged,
             Total = total,
-            Page = clampedPage,
-            PageSize = clampedPageSize,
-            TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
+            Page = paging.Page,
+            PageSize = paging.Size,
+            TotalPages = paging.TotalPages(total)
         });
     }
 
@@ -185,8 +185,7 @@ public class ListingsController : ControllerBase
             return Unauthorized(new { message = "User not authenticated" });
         }
 
-        var clampedPage = Math.Max(1, page);
-        var clampedPageSize = Math.Clamp(pageSize, 1, 100);
+        var paging = PageRequest.Clamp(page, pageSize, maxSize: 100);
 
         var baseQuery = _context.ClearanceListings
             .Where(l => l.GroceryId == userId);
@@ -196,8 +195,9 @@ public class ListingsController : ControllerBase
         var listings = await baseQuery
             .Include(l => l.Grocery)
             .OrderByDescending(l => l.CreatedAt)
-            .Skip((clampedPage - 1) * clampedPageSize)
-            .Take(clampedPageSize)
+            .ThenBy(l => l.Id)
+            .Skip(paging.SkipWithin(total))
+            .Take(paging.Size)
             .ToListAsync();
 
         var listingIds = listings.Select(l => (Guid?)l.Id).ToList();
@@ -219,9 +219,9 @@ public class ListingsController : ControllerBase
             Message = "Your listings retrieved successfully",
             Data = listingDtos,
             Total = total,
-            Page = clampedPage,
-            PageSize = clampedPageSize,
-            TotalPages = (int)Math.Ceiling((double)total / clampedPageSize)
+            Page = paging.Page,
+            PageSize = paging.Size,
+            TotalPages = paging.TotalPages(total)
         });
     }
 

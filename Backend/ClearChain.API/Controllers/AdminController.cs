@@ -270,16 +270,21 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics()
     {
         // ── Requests ─────────────────────────────────────────────────────────
-        var requests = await _context.PickupRequests
+        // The funnel only needs a count per status; only the completed pickups are read row by row.
+        var requestsByStatus = await _context.PickupRequests
+            .GroupBy(pr => pr.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count);
+
+        var completed = await _context.PickupRequests
+            .Where(pr => pr.Status == PickupRequestStatus.Completed)
             .Select(pr => new RequestRow(
-                pr.Status, pr.RequestedAt, pr.MarkedReadyAt,
+                pr.RequestedAt, pr.MarkedReadyAt,
                 pr.MarkedPickedUpAt, pr.ConfirmedReceivedAt, pr.GroceryId, pr.NgoId))
             .AsNoTracking()
             .ToListAsync();
 
-        var completed = requests.Where(r => r.Status == PickupRequestStatus.Completed).ToList();
-
-        int CountRequests(PickupRequestStatus s) => requests.Count(r => r.Status == s);
+        int CountRequests(PickupRequestStatus s) => requestsByStatus.GetValueOrDefault(s);
 
         // ── Timing, over the completed pickups ───────────────────────────────
         List<double> Hours(Func<RequestRow, TimeSpan?> leg) => completed
@@ -340,7 +345,7 @@ public class AdminController : ControllerBase
         {
             Funnel = new StatsFunnelDto
             {
-                Requests = requests.Count,
+                Requests = requestsByStatus.Values.Sum(),
                 Pending = CountRequests(PickupRequestStatus.Pending),
                 Approved = CountRequests(PickupRequestStatus.Approved),
                 Ready = CountRequests(PickupRequestStatus.Ready),
@@ -370,7 +375,6 @@ public class AdminController : ControllerBase
     // ── Statistics helpers ───────────────────────────────────────────────────
 
     private sealed record RequestRow(
-        PickupRequestStatus Status,
         DateTime RequestedAt,
         DateTime? MarkedReadyAt,
         DateTime? MarkedPickedUpAt,
@@ -391,6 +395,13 @@ public class AdminController : ControllerBase
     }
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
+
+    /// <summary>
+    /// A rating to one decimal the way the app shows it: it receives the average rounded to two
+    /// places and formats that with "%.1f", which rounds halves up, so 4.25 shows as 4.3.
+    /// </summary>
+    private static double ShownRating(double? rating) =>
+        Math.Round(Math.Round(rating ?? 0, 2), 1, MidpointRounding.AwayFromZero);
 
     private sealed record RatingRow(Guid OrgId, int Count, double Average);
 
@@ -448,7 +459,7 @@ public class AdminController : ControllerBase
                 ByPickups = Rank(pool, s => s.Pickups, s => s.Rating ?? 0, profiles),
                 ByRating = Rank(
                     pool.Where(s => s.RatingCount >= _minRatingsToRank),
-                    s => Math.Round(s.Rating ?? 0, 1),
+                    s => ShownRating(s.Rating),
                     s => s.RatingCount,
                     profiles)
             };
@@ -494,7 +505,9 @@ public class AdminController : ControllerBase
                 ProfilePictureUrl = profile?.ProfilePictureUrl,
                 CompletedPickups = s.Pickups,
                 AverageRating = s.Rating.HasValue ? Math.Round(s.Rating.Value, 2) : null,
-                RatingCount = s.RatingCount
+                RatingCount = s.RatingCount,
+                // No record at all leaves no profile to open either.
+                IsDeleted = profile?.IsDeleted ?? true
             });
         }
         return ranked;

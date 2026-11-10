@@ -233,10 +233,15 @@ class AdminAnalyticsViewModel @Inject constructor(
 
         // ── Leaderboards ─────────────────────────────────────────────────────
         val unknown = string(R.string.label_unknown_item)
+        val deleted = string(R.string.leaderboard_deleted_account)
         fun ranking(side: String, metricRes: Int, leaders: List<StatsLeader>, value: (StatsLeader) -> String) {
             if (leaders.isEmpty()) return
             heading(string(R.string.pdf_leaderboard_heading, side, string(metricRes)))
-            leaders.forEach { l -> line("${l.rank}. ${l.name.ifBlank { unknown }}", value(l)) }
+            leaders.forEach { l ->
+                // Marked as on screen, where a deleted account's row carries the same caption.
+                val name = l.name.ifBlank { unknown } + if (l.isDeleted) " · $deleted" else ""
+                line("${l.rank}. $name", value(l))
+            }
         }
         listOf(
             string(R.string.org_type_groceries) to data.leaderboards.groceries,
