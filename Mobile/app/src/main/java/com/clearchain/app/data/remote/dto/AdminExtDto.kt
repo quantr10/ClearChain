@@ -3,9 +3,8 @@ package com.clearchain.app.data.remote.dto
 import kotlinx.serialization.Serializable
 
 // ── Admin statistics ─────────────────────────────────────────────────────────
-// Mirrors AdminStatisticsResponse on the API. Two kinds of number live here:
-// period figures, counted over the selected range, and live figures (backlog,
-// the organization register) that describe the platform right now.
+// Mirrors AdminStatisticsResponse on the API, always asked for over the platform's whole
+// history. The organization register describes the platform right now.
 
 @Serializable
 data class AdminDetailedStatsResponse(
@@ -14,29 +13,12 @@ data class AdminDetailedStatsResponse(
 
 @Serializable
 data class AdminDetailedStatsData(
-    val period: StatsPeriod = StatsPeriod(),
     val headline: StatsHeadline = StatsHeadline(),
     val funnel: StatsFunnel = StatsFunnel(),
-    val backlog: StatsBacklog = StatsBacklog(),
     val timing: StatsTiming = StatsTiming(),
     val quality: StatsQuality = StatsQuality(),
     val leaderboards: StatsLeaderboards = StatsLeaderboards(),
     val organizations: StatsOrganizations = StatsOrganizations()
-)
-
-/** UTC days ("yyyy-MM-dd", ascending) that have any activity the period figures count. */
-@Serializable
-data class StatsActiveDatesResponse(
-    val data: List<String> = emptyList()
-)
-
-@Serializable
-data class StatsPeriod(
-    val from: String? = null,
-    val to: String? = null,
-    val preset: String = "all",
-    val days: Int = 0,
-    val isAllTime: Boolean = true
 )
 
 @Serializable
@@ -56,22 +38,6 @@ data class StatsFunnel(
     val rejected: Int = 0
 )
 
-/** The live queue. Not scoped to the selected period. */
-@Serializable
-data class StatsBacklog(
-    val openListings: Int = 0,
-    val reservedListings: Int = 0,
-    val expiredListings: Int = 0,
-    val expiringWithin24h: Int = 0,
-    val pendingRequests: Int = 0,
-    val approvedRequests: Int = 0,
-    val readyRequests: Int = 0,
-    val oldestPendingRequestHours: Double? = null,
-    val pendingVerifications: Int = 0,
-    val oldestPendingVerificationDays: Int? = null,
-    val openDisputes: Int = 0
-)
-
 @Serializable
 data class StatsTiming(
     val medianHoursToReady: Double? = null,
@@ -85,33 +51,55 @@ data class StatsTiming(
 
 @Serializable
 data class StatsQuality(
-    val averageRating: Double? = null,
-    val reviewCount: Int = 0,
-    /** Reviews / completed pickups, 0..1. */
-    val reviewCoverage: Double = 0.0,
     val disputesOpened: Int = 0,
     /** Disputes / completed pickups, 0..1. */
-    val disputeRate: Double = 0.0
+    val disputeRate: Double = 0.0,
+    /** Disputes opened in the period by reason key, see NgoDisputeReason; most common first. */
+    val disputeReasons: List<StatsCount> = emptyList(),
+    val disputeOutcomes: StatsDisputeOutcomes = StatsDisputeOutcomes(),
+    /** Over the disputes resolved in the period, whenever they were opened. */
+    val medianHoursToResolve: Double? = null,
+    val disputesResolved: Int = 0
+)
+
+@Serializable
+data class StatsCount(
+    val key: String,
+    val count: Int = 0
+)
+
+@Serializable
+data class StatsDisputeOutcomes(
+    val open: Int = 0,
+    val resolvedForNgo: Int = 0,
+    val resolvedForGrocery: Int = 0,
+    val dismissed: Int = 0
 )
 
 @Serializable
 data class StatsLeaderboards(
-    val topGroceries: List<StatsGroceryLeader> = emptyList(),
-    val topNgos: List<StatsNgoLeader> = emptyList()
+    val groceries: StatsLeaderboard = StatsLeaderboard(),
+    val ngos: StatsLeaderboard = StatsLeaderboard(),
+    /** Ratings an organization needs in the period before its average is ranked. */
+    val minRatingsToRank: Int = 3
 )
 
 @Serializable
-data class StatsGroceryLeader(
-    val id: String,
-    val name: String = "",
-    val completedPickups: Int = 0
+data class StatsLeaderboard(
+    val byPickups: List<StatsLeader> = emptyList(),
+    val byRating: List<StatsLeader> = emptyList()
 )
 
 @Serializable
-data class StatsNgoLeader(
+data class StatsLeader(
+    /** Equal scores share a place and the next is skipped (1, 2, 2, 4). */
+    val rank: Int,
     val id: String,
     val name: String = "",
-    val completedPickups: Int = 0
+    val profilePictureUrl: String? = null,
+    val completedPickups: Int = 0,
+    val averageRating: Double? = null,
+    val ratingCount: Int = 0
 )
 
 /** Admin accounts are excluded, so groceries + ngos always add up to total. */
@@ -133,7 +121,9 @@ data class StatsOrganizations(
 @Serializable
 data class AdminAlertFeedResponse(
     val data: List<AdminAlertItem> = emptyList(),
-    val total: Int = 0
+    /** Every open dispute, across all pages. */
+    val total: Int = 0,
+    val totalPages: Int = 1
 )
 
 @Serializable

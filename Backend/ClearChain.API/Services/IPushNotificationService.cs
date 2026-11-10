@@ -19,6 +19,7 @@ public interface IPushNotificationService
     Task SendPickupRequestCreatedNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestCancelledNotification(Guid groceryId, PickupRequestData request);
     Task SendPickupRequestAutoCancelledNotification(Guid ngoId, PickupRequestData request);
+    Task SendPickupRequestGroceryClosedNotification(Guid ngoId, PickupRequestData request);
     Task SendPickupRejectedNotification(Guid userId, PickupRequestData request);
     Task SendPickupApprovedNotification(Guid userId, PickupRequestData request);
     Task SendPickupReadyNotification(Guid userId, PickupRequestData request);

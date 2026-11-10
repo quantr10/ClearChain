@@ -348,7 +348,9 @@ fun NavGraph(
             )
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }
-            AdminAnalyticsScreen()
+            AdminAnalyticsScreen(
+                onOpenOrganization = { orgId -> navController.navigate(Screen.PublicProfile.createRoute(orgId)) }
+            )
         }
 
         // ── Shared ───────────────────────────────────────────────────────────

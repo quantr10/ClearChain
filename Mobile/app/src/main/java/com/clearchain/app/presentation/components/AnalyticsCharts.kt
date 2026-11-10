@@ -35,58 +35,6 @@ import com.clearchain.app.ui.theme.StatusColors
 data class BarData(val label: String, val value: Int, val color: Color)
 
 /**
- * Horizontal bars, one per row, ranked by whatever order the caller passes.
- * Reads by length; the row label carries identity and the value sits at the tip.
- */
-@Composable
-fun BarChartContent(
-    bars: List<BarData>,
-    modifier: Modifier = Modifier,
-    valueSuffix: String = ""
-) {
-    val maxVal = bars.maxOfOrNull { it.value }?.coerceAtLeast(1) ?: 1
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        bars.forEach { bar ->
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        bar.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Text(
-                        "${bar.value}$valueSuffix",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = bar.color
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(bar.value.toFloat() / maxVal)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(bar.color)
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
  * Vertical columns with the value on the cap and the label underneath - the form the
  * admin dashboard uses for a request-status breakdown.
  */

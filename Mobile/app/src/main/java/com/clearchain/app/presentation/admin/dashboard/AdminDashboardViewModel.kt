@@ -5,10 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.api.AdminApi
+import com.clearchain.app.data.remote.dto.AdminAlertItem
 import com.clearchain.app.data.remote.dto.toDomain
 import com.clearchain.app.data.remote.signalr.SignalRService
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
+import com.clearchain.app.util.FeedPage
+import com.clearchain.app.util.FeedPager
+import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +38,13 @@ class AdminDashboardViewModel @Inject constructor(
 
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+
+    /** Open disputes: the dashboard card shows the first few, its sheet pages through the rest. */
+    private val alertPager = FeedPager(viewModelScope, pageSize = 20, id = AdminAlertItem::id) { page, pageSize ->
+        val response = adminApi.getAlertFeed(page, pageSize)
+        FeedPage(response.data, response.total, response.totalPages)
+    }
+    val alertFeed: StateFlow<PagedFeed<AdminAlertItem>> = alertPager.state
 
     init {
         loadStats()
@@ -114,6 +125,7 @@ class AdminDashboardViewModel @Inject constructor(
     fun onEvent(event: AdminDashboardEvent) {
         when (event) {
             AdminDashboardEvent.RefreshStats -> refreshStats()
+            AdminDashboardEvent.LoadMoreAlerts -> alertPager.loadMore()
         }
     }
 
@@ -148,7 +160,7 @@ class AdminDashboardViewModel @Inject constructor(
         val results = coroutineScope {
             listOf(
                 async { loadStatistics() },
-                async { loadAlertFeed() }
+                async { alertPager.refresh() }
             ).awaitAll()
         }
         val allOk = false !in results
@@ -162,15 +174,6 @@ class AdminDashboardViewModel @Inject constructor(
         try {
             val stats = adminApi.getStatistics().data.toDomain()
             _state.update { it.copy(stats = stats) }
-            true
-        } catch (_: Exception) {
-            false
-        }
-
-    private suspend fun loadAlertFeed(): Boolean =
-        try {
-            val alerts = adminApi.getAlertFeed().data
-            _state.update { it.copy(alertFeedItems = alerts) }
             true
         } catch (_: Exception) {
             false

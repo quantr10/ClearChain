@@ -74,6 +74,7 @@ builder.Services.AddScoped<NotificationJobs>();
 // Storage uploads draw pooled handlers from IHttpClientFactory; a new HttpClient per call
 // exhausts sockets and holds on to stale DNS.
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -136,7 +137,8 @@ builder.Services.AddAuthentication(options =>
             }
 
             return Task.CompletedTask;
-        }
+        },
+        OnTokenValidated = DeletedAccountTokenCheck.RejectIfDeletedAsync
     };
 });
 

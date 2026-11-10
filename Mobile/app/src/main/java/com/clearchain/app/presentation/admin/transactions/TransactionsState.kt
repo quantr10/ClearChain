@@ -49,7 +49,8 @@ enum class DisputeFilter(@StringRes val labelRes: Int) {
     fun matches(disputeStatus: String?): Boolean = when (this) {
         UNRESOLVED -> disputeStatus == "open"
         // The admin's outcomes, as DisputesController.ClosedStatuses lists them.
-        RESOLVED -> disputeStatus == "resolved_ngo" || disputeStatus == "resolved_grocery" ||
-            disputeStatus == "dismissed"
+        RESOLVED ->
+            disputeStatus == "resolved_ngo" || disputeStatus == "resolved_grocery" ||
+                disputeStatus == "dismissed"
     }
 }

@@ -128,11 +128,11 @@ class AuthRepositoryImpl @Inject constructor(
         notificationDao.clearAll()
     }
 
-    override suspend fun logout(): Result<Unit> {
+    override suspend fun logout(revokeOnServer: Boolean): Result<Unit> {
         return try {
             // Revoke the refresh token on the server before clearing local state.
             val tokens = authTokenDao.getTokens()
-            if (tokens?.refreshToken != null) {
+            if (revokeOnServer && tokens?.refreshToken != null) {
                 try {
                     // Sending this device's FCM token lets the server unregister it, so the
                     // device stops receiving the departing account's push notifications.

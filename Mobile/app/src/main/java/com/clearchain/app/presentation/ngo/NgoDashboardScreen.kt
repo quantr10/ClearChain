@@ -33,6 +33,7 @@ import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -48,6 +49,7 @@ fun NgoDashboardScreen(
     viewModel: NgoDashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val activityFeed by viewModel.activityFeed.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -158,10 +160,10 @@ fun NgoDashboardScreen(
                                 title = stringResource(R.string.label_actions_this_week),
                                 data = sparklineData
                             )
-                            if (state.activities.isNotEmpty()) {
+                            if (activityFeed.items.isNotEmpty()) {
                                 Spacer(Modifier.height(12.dp))
-                                ActivityFeedList(activities = state.activities.take(5))
-                                if (state.activities.size > 5) {
+                                ActivityFeedList(activities = activityFeed.items.take(5))
+                                if (activityFeed.total > 5) {
                                     Spacer(Modifier.height(8.dp))
                                     ClearChainOutlinedButton(
                                         text = stringResource(R.string.action_view_more),
@@ -204,7 +206,8 @@ fun NgoDashboardScreen(
     // ── Activity bottom sheet ────────────────────────────────────────────────
     if (showActivitySheet) {
         ActivityHistorySheet(
-            activities = state.activities,
+            feed = activityFeed,
+            onLoadMore = viewModel::loadMoreActivity,
             onDismiss = { showActivitySheet = false }
         )
     }
@@ -212,14 +215,15 @@ fun NgoDashboardScreen(
 
 // ── Activity history bottom sheet, shared by NGO and grocery ─────────────────
 
+/** The week's activity a page at a time: what the dashboard list has loaded, and View more for the rest. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ActivityHistorySheet(
-    activities: List<ActivityItemData>,
+    feed: PagedFeed<ActivityItemData>,
+    onLoadMore: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var showAll by remember { mutableStateOf(false) }
-    val displayed = if (showAll) activities else activities.take(20)
+    val activities = feed.items
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -253,21 +257,13 @@ internal fun ActivityHistorySheet(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                itemsIndexed(displayed) { index, item ->
+                itemsIndexed(activities, key = { _, item -> item.id }) { index, item ->
                     ActivityFeedItemWithDivider(
                         item = item,
-                        showDivider = index < displayed.lastIndex
+                        showDivider = index < activities.lastIndex
                     )
                 }
-                if (!showAll && activities.size > 20) {
-                    item {
-                        ClearChainOutlinedButton(
-                            text = stringResource(R.string.action_view_more),
-                            onClick = { showAll = true },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
+                item { PagedFeedFooter(feed, onLoadMore) }
             }
         }
     }

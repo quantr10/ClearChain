@@ -220,13 +220,18 @@ public class OrganizationsController : ControllerBase
 
     /// <summary>
     /// The current user's activity for the last <paramref name="days"/> days (default 7,
-    /// clamped to 1–90). The 7-day default matches the dashboard's "Actions this week" sparkline;
-    /// the analytics screen requests a wider window.
+    /// clamped to 1–90), newest first, a page at a time. The 7-day default matches the
+    /// dashboard's "Actions this week" sparkline; the analytics screen requests a wider window.
+    /// The default page of 200 is what the sparklines plot from; the dashboard's activity list
+    /// walks the same window in smaller pages.
     /// Grocery: listings created + pickup requests received.
     /// NGO: pickup requests made + inventory received.
     /// </summary>
     [HttpGet("my/activity")]
-    public async Task<IActionResult> GetMyActivity([FromQuery] int days = 7)
+    public async Task<IActionResult> GetMyActivity(
+        [FromQuery] int days = 7,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 200)
     {
         if (!this.TryGetUserId(out var userGuid))
             return Unauthorized();
@@ -237,18 +242,37 @@ public class OrganizationsController : ControllerBase
         // Start of the day (UTC) N-1 days ago, so the result spans N calendar days
         // including today — the same window the dashboard sparkline plots.
         var cutoff = DateTime.UtcNow.Date.AddDays(-(Math.Clamp(days, 1, 90) - 1));
-        var activities = new List<ActivityDto>();
+
+        var clampedPage = Math.Max(1, page);
+        var clampedSize = Math.Clamp(pageSize, 1, 200);
+        // long: a page far past the end has to come back empty, not overflow into an early one.
+        var skip = (long)(clampedPage - 1) * clampedSize;
+
+        // The feed merges two sources, so neither can be paged on its own. A merged page can
+        // only draw on the newest skip + size items of each, so that is as deep as each is read.
+        int Depth(int feedTotal) => skip >= feedTotal ? 0 : (int)(skip + clampedSize);
+
+        var activities = new List<(DateTime At, ActivityDto Item)>();
+        var total = 0;
 
         if (org.Type == "grocery")
         {
-            var listings = await _context.ClearanceListings
-                .Where(l => l.GroceryId == userGuid && l.CreatedAt >= cutoff)
+            var listingsQuery = _context.ClearanceListings
+                .Where(l => l.GroceryId == userGuid && l.CreatedAt >= cutoff);
+            var requestsQuery = _context.PickupRequests
+                .Where(pr => pr.GroceryId == userGuid && pr.RequestedAt >= cutoff);
+            total = await listingsQuery.CountAsync() + await requestsQuery.CountAsync();
+            var depth = Depth(total);
+
+            var listings = await listingsQuery
                 .OrderByDescending(l => l.CreatedAt)
+                .ThenBy(l => l.Id)
+                .Take(depth)
                 .ToListAsync();
 
             foreach (var l in listings)
             {
-                activities.Add(new ActivityDto
+                activities.Add((l.CreatedAt, new ActivityDto
                 {
                     Id = l.Id.ToString(),
                     Type = "listing_created",
@@ -256,13 +280,14 @@ public class OrganizationsController : ControllerBase
                     Subtitle = $"{l.Quantity} {l.Unit} listed for pickup",
                     Timestamp = l.CreatedAt.ToString("o"),
                     RelatedId = l.Id.ToString()
-                });
+                }));
             }
 
-            var requests = await _context.PickupRequests
+            var requests = await requestsQuery
                 .Include(pr => pr.Ngo)
-                .Where(pr => pr.GroceryId == userGuid && pr.RequestedAt >= cutoff)
                 .OrderByDescending(pr => pr.RequestedAt)
+                .ThenBy(pr => pr.Id)
+                .Take(depth)
                 .ToListAsync();
 
             foreach (var r in requests)
@@ -293,7 +318,7 @@ public class OrganizationsController : ControllerBase
                     _ => ("pickup_request", "Pickup request", r.ListingTitle)
                 };
 
-                activities.Add(new ActivityDto
+                activities.Add((r.RequestedAt, new ActivityDto
                 {
                     Id = r.Id.ToString(),
                     Type = type,
@@ -301,15 +326,23 @@ public class OrganizationsController : ControllerBase
                     Subtitle = subtitle,
                     Timestamp = r.RequestedAt.ToString("o"),
                     RelatedId = r.Id.ToString()
-                });
+                }));
             }
         }
         else if (org.Type == "ngo")
         {
-            var requests = await _context.PickupRequests
+            var requestsQuery = _context.PickupRequests
+                .Where(pr => pr.NgoId == userGuid && pr.RequestedAt >= cutoff);
+            var inventoryQuery = _context.Inventories
+                .Where(i => i.NgoId == userGuid && i.ReceivedAt >= cutoff);
+            total = await requestsQuery.CountAsync() + await inventoryQuery.CountAsync();
+            var depth = Depth(total);
+
+            var requests = await requestsQuery
                 .Include(pr => pr.Grocery)
-                .Where(pr => pr.NgoId == userGuid && pr.RequestedAt >= cutoff)
                 .OrderByDescending(pr => pr.RequestedAt)
+                .ThenBy(pr => pr.Id)
+                .Take(depth)
                 .ToListAsync();
 
             foreach (var r in requests)
@@ -340,7 +373,7 @@ public class OrganizationsController : ControllerBase
                     _ => ("pickup_request", "Pickup request", r.ListingTitle)
                 };
 
-                activities.Add(new ActivityDto
+                activities.Add((r.RequestedAt, new ActivityDto
                 {
                     Id = r.Id.ToString(),
                     Type = type,
@@ -348,17 +381,18 @@ public class OrganizationsController : ControllerBase
                     Subtitle = subtitle,
                     Timestamp = r.RequestedAt.ToString("o"),
                     RelatedId = r.Id.ToString()
-                });
+                }));
             }
 
-            var inventory = await _context.Inventories
-                .Where(i => i.NgoId == userGuid && i.ReceivedAt >= cutoff)
+            var inventory = await inventoryQuery
                 .OrderByDescending(i => i.ReceivedAt)
+                .ThenBy(i => i.Id)
+                .Take(depth)
                 .ToListAsync();
 
             foreach (var i in inventory)
             {
-                activities.Add(new ActivityDto
+                activities.Add((i.ReceivedAt, new ActivityDto
                 {
                     Id = i.Id.ToString(),
                     Type = "inventory_received",
@@ -366,16 +400,28 @@ public class OrganizationsController : ControllerBase
                     Subtitle = $"{i.Quantity} {i.Unit} added to inventory",
                     Timestamp = i.ReceivedAt.ToString("o"),
                     RelatedId = i.Id.ToString()
-                });
+                }));
             }
         }
 
-        var sorted = activities
-            .OrderByDescending(a => a.Timestamp)
-            .Take(200)
+        // Ties go by id, compared the way Postgres orders a uuid (its text form, ordinally), so
+        // the merge agrees with the order each source was cut in above.
+        var data = activities
+            .OrderByDescending(a => a.At)
+            .ThenBy(a => a.Item.Id, StringComparer.Ordinal)
+            .Skip((int)Math.Min(skip, total))
+            .Take(clampedSize)
+            .Select(a => a.Item)
             .ToList();
 
-        return Ok(new { data = sorted });
+        return Ok(new
+        {
+            data,
+            total,
+            page = clampedPage,
+            pageSize = clampedSize,
+            totalPages = (int)Math.Ceiling((double)total / clampedSize)
+        });
     }
 
     /// <summary>

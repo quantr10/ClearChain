@@ -178,6 +178,18 @@ public class PushNotificationService : IPushNotificationService
                 { "screen", "my_requests" }
             });
 
+    public Task SendPickupRequestGroceryClosedNotification(Guid ngoId, PickupRequestData request) =>
+        SendNotificationAsync(
+            ngoId,
+            "❌ Pickup Request Cancelled",
+            $"Your request for {request.ListingTitle} was cancelled because {request.GroceryName} closed its account",
+            new Dictionary<string, string>
+            {
+                { "type", "pickup_rejected" },
+                { "requestId", request.Id },
+                { "screen", "my_requests" }
+            });
+
     public Task SendInventoryAddedNotification(Guid userId, string productName, int quantity, string unit) =>
         SendNotificationAsync(
             userId,

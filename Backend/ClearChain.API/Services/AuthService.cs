@@ -38,6 +38,7 @@ public class AuthService : IAuthService
     private readonly IJwtService _jwtService;
     private readonly IEmailService _emailService;
     private readonly IPushNotificationService _pushNotificationService;
+    private readonly IPickupRequestService _pickupRequestService;
     private readonly ILogger<AuthService> _logger;
     private readonly int _refreshTokenExpiryDays;
     private readonly int _jwtExpirySeconds;
@@ -47,6 +48,7 @@ public class AuthService : IAuthService
         IJwtService jwtService,
         IEmailService emailService,
         IPushNotificationService pushNotificationService,
+        IPickupRequestService pickupRequestService,
         ILogger<AuthService> logger,
         IConfiguration configuration)
     {
@@ -54,6 +56,7 @@ public class AuthService : IAuthService
         _jwtService = jwtService;
         _emailService = emailService;
         _pushNotificationService = pushNotificationService;
+        _pickupRequestService = pickupRequestService;
         _logger = logger;
         _refreshTokenExpiryDays = int.Parse(configuration["REFRESH_TOKEN_EXPIRY_DAYS"] ?? "7");
         _jwtExpirySeconds = int.Parse(configuration["JWT_EXPIRY_MINUTES"] ?? "60") * 60;
@@ -476,7 +479,27 @@ public class AuthService : IAuthService
             .ToListAsync();
         foreach (var t in tokens) { t.IsRevoked = true; t.RevokedAt = DateTime.UtcNow; }
 
-        await _context.SaveChangesAsync();
+        // The app's logout can't unregister these: the server stops at the token revoked above.
+        var deviceTokens = await _context.FCMTokens
+            .Where(t => t.OrganizationId == userId)
+            .ToListAsync();
+        _context.FCMTokens.RemoveRange(deviceTokens);
+
+        var closure = await _pickupRequestService.CloseAccountAsync(userId);
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Someone changed a listing this touches between our read and this write. Nothing was
+            // saved, so the account is intact and a retry sees the change.
+            return (false, "Something changed while deleting your account. Please try again.");
+        }
+
+        await _pickupRequestService.NotifyAccountClosedAsync(closure);
+
         return (true, "Account deleted successfully");
     }
 

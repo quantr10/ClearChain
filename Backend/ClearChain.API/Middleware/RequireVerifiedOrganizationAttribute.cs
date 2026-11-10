@@ -28,9 +28,11 @@ public sealed class RequireVerifiedOrganizationAttribute : Attribute, IAsyncActi
         }
 
         var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+        // Not left to DeletedAccountTokenCheck, whose answer is cached: another signed-in device
+        // could otherwise post new listings right after the deletion removed them all.
         var org = await db.Organizations
             .AsNoTracking()
-            .Where(o => o.Id == userId)
+            .Where(o => o.Id == userId && !o.IsDeleted)
             .Select(o => new { o.Type, o.VerificationStatus })
             .FirstOrDefaultAsync();
 

@@ -10,6 +10,8 @@ import com.clearchain.app.data.remote.dto.ActivityItemData
 import com.clearchain.app.data.remote.dto.DashboardStatsData
 import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.presentation.ngo.activityFeedPager
+import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,6 +21,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -32,6 +35,7 @@ data class GroceryDashboardState(
     val stats: DashboardStatsData? = null,
     val todaySummary: TodaySummaryData? = null,
     val weeklyGoal: Int = 10,
+    /** The whole week the sparkline plots; the list under it pages through the activity feed. */
     val activities: List<ActivityItemData> = emptyList(),
     val isRefreshing: Boolean = false
 ) {
@@ -60,6 +64,9 @@ class GroceryDashboardViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private val activityPager = activityFeedPager(viewModelScope, organizationApi)
+    val activityFeed: StateFlow<PagedFeed<ActivityItemData>> = activityPager.state
+
     init {
         observeUser()
         viewModelScope.launch {
@@ -77,6 +84,8 @@ class GroceryDashboardViewModel @Inject constructor(
         }
     }
 
+    fun loadMoreActivity() = activityPager.loadMore()
+
     /**
      * Reloads every dashboard section concurrently and suspends until all have settled, so
      * pull-to-refresh keeps its spinner until the stats, activity, and today's summary are
@@ -91,7 +100,8 @@ class GroceryDashboardViewModel @Inject constructor(
             listOf(
                 async { loadStats() },
                 async { loadTodaySummary() },
-                async { loadActivity() }
+                async { loadActivity() },
+                async { activityPager.refresh() }
             ).awaitAll()
         }
         // Sections fail independently and each keeps whatever it showed before;

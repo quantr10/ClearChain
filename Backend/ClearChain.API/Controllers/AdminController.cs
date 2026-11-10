@@ -269,13 +269,18 @@ public class AdminController : ControllerBase
     ///     one stands today. Only that way do the stages add up to the requests.
     ///   * timings and the leaderboards are events - pickups *completed* in the
     ///     period, whenever they happened to be requested.
-    /// Backlog is neither: it is the queue as it stands right now.
+    /// The organization register is neither: it is the platform as it stands right now.
+    ///
+    /// <paramref name="compareFrom"/> and <paramref name="compareTo"/> name a period to set
+    /// the trust figures against, usually the one before.
     /// </summary>
     [HttpGet("statistics")]
     public async Task<ActionResult<AdminStatisticsResponse>> GetStatistics(
         [FromQuery] string? from = null,
         [FromQuery] string? to = null,
-        [FromQuery] string preset = "all")
+        [FromQuery] string preset = "all",
+        [FromQuery] string? compareFrom = null,
+        [FromQuery] string? compareTo = null)
     {
         var now = DateTime.UtcNow;
         var (start, end) = ResolveRange(from, to, preset);
@@ -305,6 +310,7 @@ public class AdminController : ControllerBase
         var completed = requestRows
             .Where(r => r.Status == PickupRequestStatus.Completed && InPeriod(r.CompletedAt))
             .ToList();
+        var completedIds = completed.Select(r => r.Id).ToList();
 
         int CountRaised(PickupRequestStatus s) => raised.Count(r => r.Status == s);
 
@@ -332,26 +338,25 @@ public class AdminController : ControllerBase
             SampleSize = toPickup.Count
         };
 
-        // ── Leaderboards, ranked by the measure the board actually shows ─────
-        var groceryStats = completed
-            .GroupBy(r => r.GroceryId)
-            .Select(g => new { Id = g.Key, Pickups = g.Count() })
-            .OrderByDescending(g => g.Pickups)
-            .Take(5)
-            .ToList();
+        // ── Reviews left in the period, for the rating boards ────────────────
+        var reviews = await _context.Reviews
+            .AsNoTracking()
+            .Where(r => (!start.HasValue || r.CreatedAt >= start.Value)
+                     && (!end.HasValue || r.CreatedAt <= end.Value))
+            .Select(r => new ReviewRow(r.ReviewedId, r.Rating))
+            .ToListAsync();
 
-        var ngoStats = completed
-            .GroupBy(r => r.NgoId)
-            .Select(g => new { Id = g.Key, Pickups = g.Count() })
-            .OrderByDescending(g => g.Pickups)
-            .Take(5)
+        // Everyone ranked or rated, deleted accounts included: their pickups happened, so
+        // they still count, under the name they had.
+        var profileIds = completed.SelectMany(r => new[] { r.GroceryId, r.NgoId })
+            .Concat(reviews.Select(r => r.ReviewedId))
+            .Distinct()
             .ToList();
-
-        var leaderIds = groceryStats.Select(g => g.Id).Concat(ngoStats.Select(n => n.Id)).Distinct().ToList();
-        var leaderNames = await _context.Organizations
-            .Where(o => leaderIds.Contains(o.Id))
-            .Select(o => new { o.Id, o.Name })
-            .ToDictionaryAsync(o => o.Id, o => o.Name);
+        var profiles = await _context.Organizations
+            .Where(o => profileIds.Contains(o.Id))
+            .Select(o => new OrgProfile(o.Id, o.Name, o.Type, o.ProfilePictureUrl))
+            .AsNoTracking()
+            .ToDictionaryAsync(o => o.Id);
 
         // ── The organization register ────────────────────────────────────────
         // Admin accounts sit in the same table but are staff, not participants: leaving
@@ -366,62 +371,6 @@ public class AdminController : ControllerBase
         var oldestPendingDays = pendingOrgs.Count == 0
             ? (int?)null
             : (int)Math.Floor((now - pendingOrgs.Min(o => o.CreatedAt)).TotalDays);
-
-        // ── Quality signals raised in the period ─────────────────────────────
-        var reviews = await _context.Reviews
-            .AsNoTracking()
-            .Where(r => (!start.HasValue || r.CreatedAt >= start.Value)
-                     && (!end.HasValue || r.CreatedAt <= end.Value))
-            .Select(r => r.Rating)
-            .ToListAsync();
-
-        var disputesOpened = await _context.Disputes
-            .CountAsync(d => (!start.HasValue || d.CreatedAt >= start.Value)
-                          && (!end.HasValue || d.CreatedAt <= end.Value));
-
-        var quality = new StatsQualityDto
-        {
-            AverageRating = reviews.Count == 0 ? null : Math.Round(reviews.Average(), 2),
-            ReviewCount = reviews.Count,
-            ReviewCoverage = completed.Count == 0 ? 0 : Math.Round((double)reviews.Count / completed.Count, 3),
-            DisputesOpened = disputesOpened,
-            DisputeRate = completed.Count == 0 ? 0 : Math.Round((double)disputesOpened / completed.Count, 3)
-        };
-
-        // ── Backlog: the live queue, deliberately not scoped to the period ───
-        var soon = now.AddHours(24);
-        var openListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Open);
-        var reservedListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Reserved);
-        var expiredListings = await _context.ClearanceListings.CountAsync(l => l.Status == ListingStatus.Expired);
-        var expiringSoon = await _context.ClearanceListings
-            .CountAsync(l => l.Status == ListingStatus.Open
-                          && l.ClearanceDeadline > now && l.ClearanceDeadline <= soon);
-
-        var liveByStatus = await _context.PickupRequests
-            .Where(pr => pr.Status == PickupRequestStatus.Pending
-                      || pr.Status == PickupRequestStatus.Approved
-                      || pr.Status == PickupRequestStatus.Ready)
-            .GroupBy(pr => pr.Status)
-            .Select(g => new { Status = g.Key, Count = g.Count(), Oldest = g.Min(x => x.RequestedAt) })
-            .ToListAsync();
-
-        var pendingLive = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Pending);
-
-        var backlog = new StatsBacklogDto
-        {
-            OpenListings = openListings,
-            ReservedListings = reservedListings,
-            ExpiredListings = expiredListings,
-            ExpiringWithin24h = expiringSoon,
-            PendingRequests = pendingLive?.Count ?? 0,
-            ApprovedRequests = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Approved)?.Count ?? 0,
-            ReadyRequests = liveByStatus.FirstOrDefault(s => s.Status == PickupRequestStatus.Ready)?.Count ?? 0,
-            OldestPendingRequestHours = pendingLive == null ? null : Math.Round((now - pendingLive.Oldest).TotalHours, 1),
-            PendingVerifications = pendingOrgs.Count,
-            OldestPendingVerificationDays = oldestPendingDays,
-            // Both states still sit on an admin's desk, which is what this queue counts.
-            OpenDisputes = await _context.Disputes.CountAsync(d => d.Status == "open")
-        };
 
         var data = new AdminStatisticsData
         {
@@ -447,24 +396,9 @@ public class AdminController : ControllerBase
                 Cancelled = CountRaised(PickupRequestStatus.Cancelled),
                 Rejected = CountRaised(PickupRequestStatus.Rejected)
             },
-            Backlog = backlog,
             Timing = timing,
-            Quality = quality,
-            Leaderboards = new StatsLeaderboardsDto
-            {
-                TopGroceries = groceryStats.Select(g => new StatsGroceryLeaderDto
-                {
-                    Id = g.Id.ToString(),
-                    Name = leaderNames.GetValueOrDefault(g.Id, ""),
-                    CompletedPickups = g.Pickups
-                }).ToList(),
-                TopNgos = ngoStats.Select(n => new StatsNgoLeaderDto
-                {
-                    Id = n.Id.ToString(),
-                    Name = leaderNames.GetValueOrDefault(n.Id, ""),
-                    CompletedPickups = n.Pickups
-                }).ToList()
-            },
+            Quality = await BuildQuality(completedIds, start, end),
+            Leaderboards = BuildLeaderboards(completed, reviews, profiles),
             Organizations = new StatsOrganizationsDto
             {
                 Total = orgs.Count,
@@ -475,7 +409,8 @@ public class AdminController : ControllerBase
                 PendingGroceries = pendingOrgs.Count(o => o.Type.ToLower() == "grocery"),
                 PendingNgos = pendingOrgs.Count(o => o.Type.ToLower() == "ngo"),
                 OldestPendingDays = oldestPendingDays
-            }
+            },
+            Comparison = await BuildComparison(compareFrom, compareTo, start, end, now)
         };
 
         return Ok(new AdminStatisticsResponse { Data = data });
@@ -543,18 +478,206 @@ public class AdminController : ControllerBase
 
     private static double? Round1(double? value) => value.HasValue ? Math.Round(value.Value, 1) : null;
 
+    private sealed record ReviewRow(Guid ReviewedId, int Rating);
+
+    private sealed record OrgProfile(Guid Id, string Name, string Type, string? ProfilePictureUrl);
+
+    private sealed record LeaderStats(
+        Guid Id,
+        int Pickups,
+        double? Rating,
+        int RatingCount);
+
+    private const int LeaderboardSize = 10;
+    private const int MinRatingsToRank = 3;
+
+    /// <summary>The top stores and NGOs by pickups completed and by rating received.</summary>
+    private static StatsLeaderboardsDto BuildLeaderboards(
+        List<RequestRow> completed,
+        List<ReviewRow> reviews,
+        IReadOnlyDictionary<Guid, OrgProfile> profiles)
+    {
+        var ratingsByOrg = reviews.ToLookup(r => r.ReviewedId, r => r.Rating);
+
+        StatsLeaderboardDto Board(string type, Func<RequestRow, Guid> party)
+        {
+            var completedBy = completed.ToLookup(party);
+
+            // Everyone with a pickup to their name, and everyone of this type rated often enough to rank.
+            var pool = completedBy.Select(g => g.Key)
+                .Concat(ratingsByOrg
+                    .Where(g => g.Count() >= MinRatingsToRank
+                             && profiles.TryGetValue(g.Key, out var p)
+                             && string.Equals(p.Type, type, StringComparison.OrdinalIgnoreCase))
+                    .Select(g => g.Key))
+                .Distinct()
+                .Select(id =>
+                {
+                    var ratings = ratingsByOrg[id].ToList();
+                    return new LeaderStats(
+                        Id: id,
+                        Pickups: completedBy[id].Count(),
+                        Rating: ratings.Count == 0 ? null : ratings.Average(),
+                        RatingCount: ratings.Count);
+                })
+                .ToList();
+
+            // Scores are compared as they are shown, so two stores both showing 4.7 share a place.
+            return new StatsLeaderboardDto
+            {
+                ByPickups = Rank(pool, s => s.Pickups, s => s.Rating ?? 0, profiles),
+                ByRating = Rank(
+                    pool.Where(s => s.RatingCount >= MinRatingsToRank),
+                    s => Math.Round(s.Rating ?? 0, 1),
+                    s => s.RatingCount,
+                    profiles)
+            };
+        }
+
+        return new StatsLeaderboardsDto
+        {
+            Groceries = Board("grocery", r => r.GroceryId),
+            Ngos = Board("ngo", r => r.NgoId),
+            MinRatingsToRank = MinRatingsToRank
+        };
+    }
+
+    /// <summary>
+    /// The top of the pool by score, best first. Equal scores share a place and the places
+    /// they fill are skipped (1, 2, 2, 4); the tie-break and then the name only order them
+    /// within it. Nobody scoring zero is ranked.
+    /// </summary>
+    private static List<StatsLeaderDto> Rank(
+        IEnumerable<LeaderStats> pool,
+        Func<LeaderStats, double> score,
+        Func<LeaderStats, double> tieBreak,
+        IReadOnlyDictionary<Guid, OrgProfile> profiles)
+    {
+        var top = pool
+            .Where(s => score(s) > 0)
+            .OrderByDescending(score)
+            .ThenByDescending(tieBreak)
+            .ThenBy(s => profiles.GetValueOrDefault(s.Id)?.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(LeaderboardSize)
+            .ToList();
+
+        var ranked = new List<StatsLeaderDto>(top.Count);
+        for (var i = 0; i < top.Count; i++)
+        {
+            var s = top[i];
+            var profile = profiles.GetValueOrDefault(s.Id);
+            ranked.Add(new StatsLeaderDto
+            {
+                Rank = i > 0 && score(s) == score(top[i - 1]) ? ranked[i - 1].Rank : i + 1,
+                Id = s.Id.ToString(),
+                Name = profile?.Name ?? "",
+                ProfilePictureUrl = profile?.ProfilePictureUrl,
+                CompletedPickups = s.Pickups,
+                AverageRating = s.Rating.HasValue ? Math.Round(s.Rating.Value, 2) : null,
+                RatingCount = s.RatingCount
+            });
+        }
+        return ranked;
+    }
+
+    /// <summary>Disputes over the period, split the ways an admin acts on them.</summary>
+    private async Task<StatsQualityDto> BuildQuality(List<Guid> completedIds, DateTime? start, DateTime? end)
+    {
+        var disputes = await _context.Disputes
+            .AsNoTracking()
+            .Where(d => (!start.HasValue || d.CreatedAt >= start.Value)
+                     && (!end.HasValue || d.CreatedAt <= end.Value))
+            .Select(d => new { d.Reason, d.Status })
+            .ToListAsync();
+
+        // An event clock, like the timings: disputes closed in the period, whenever opened.
+        var resolved = await _context.Disputes
+            .AsNoTracking()
+            .Where(d => d.ResolvedAt.HasValue
+                     && (!start.HasValue || d.ResolvedAt.Value >= start.Value)
+                     && (!end.HasValue || d.ResolvedAt.Value <= end.Value))
+            .Select(d => new { d.CreatedAt, ResolvedAt = d.ResolvedAt!.Value })
+            .ToListAsync();
+        var hoursToResolve = resolved
+            .Select(d => (d.ResolvedAt - d.CreatedAt).TotalHours)
+            .Where(h => h >= 0)
+            .OrderBy(h => h)
+            .ToList();
+
+        var completedPickups = completedIds.Count;
+        return new StatsQualityDto
+        {
+            DisputesOpened = disputes.Count,
+            DisputeRate = completedPickups == 0 ? 0 : Math.Round((double)disputes.Count / completedPickups, 3),
+            DisputeReasons = disputes
+                .GroupBy(d => d.Reason)
+                .Select(g => new StatsCountDto { Key = g.Key, Count = g.Count() })
+                .OrderByDescending(c => c.Count)
+                .ThenBy(c => c.Key, StringComparer.Ordinal)
+                .ToList(),
+            DisputeOutcomes = new StatsDisputeOutcomesDto
+            {
+                Open = disputes.Count(d => d.Status == "open"),
+                ResolvedForNgo = disputes.Count(d => d.Status == "resolved_ngo"),
+                ResolvedForGrocery = disputes.Count(d => d.Status == "resolved_grocery"),
+                Dismissed = disputes.Count(d => d.Status == "dismissed")
+            },
+            MedianHoursToResolve = Round1(Percentile(hoursToResolve, 0.5)),
+            DisputesResolved = hoursToResolve.Count
+        };
+    }
+
+    /// <summary>
+    /// The dispute count over the comparison range, counted the way GetStatistics counts
+    /// its own. A period still running is set against the same stretch of the other one -
+    /// today so far against yesterday up to this hour - or it would always look like a slump.
+    /// </summary>
+    private async Task<StatsComparisonDto?> BuildComparison(
+        string? compareFrom, string? compareTo, DateTime? start, DateTime? end, DateTime now)
+    {
+        if (!start.HasValue) return null;
+        var (compareStart, compareEnd) = ResolveRange(compareFrom, compareTo, preset: "custom");
+        if (!compareStart.HasValue || !compareEnd.HasValue) return null;
+
+        var s = compareStart.Value;
+        var e = compareEnd.Value;
+        if (end.HasValue && end.Value > now)
+        {
+            var sameStretch = s + (now - start.Value);
+            if (sameStretch < e) e = sameStretch;
+        }
+
+        return new StatsComparisonDto
+        {
+            From = s.ToString("o"),
+            To = e.ToString("o"),
+            DisputesOpened = await _context.Disputes.CountAsync(d => d.CreatedAt >= s && d.CreatedAt <= e)
+        };
+    }
+
     // ── Alert feed ───────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Every dispute still waiting on the admin (status open). Not capped: the dashboard
-    /// shows the first five and its sheet lists them all.
+    /// The disputes still waiting on the admin (status open), newest first, a page at a time.
+    /// Total counts every open dispute, so the dashboard's badge is right whichever page it read.
     /// </summary>
     [HttpGet("alerts")]
-    public async Task<IActionResult> GetAlertFeed()
+    public async Task<IActionResult> GetAlertFeed(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var disputes = await _context.Disputes
-            .Where(d => d.Status == "open")
+        var clampedPage = Math.Max(1, page);
+        var clampedSize = Math.Clamp(pageSize, 1, 100);
+
+        var open = _context.Disputes.Where(d => d.Status == "open");
+        var total = await open.CountAsync();
+
+        // Id breaks ties on CreatedAt, so two pages never share or both skip a dispute.
+        var disputes = await open
             .OrderByDescending(d => d.CreatedAt)
+            .ThenBy(d => d.Id)
+            .Skip((clampedPage - 1) * clampedSize)
+            .Take(clampedSize)
             .ToListAsync();
 
         // Reason is stored as a key; the label is what an admin should read.
@@ -573,7 +696,14 @@ public class AdminController : ControllerBase
             createdAt = d.CreatedAt.ToString("o")
         }).ToList();
 
-        return Ok(new { data = feed, total = feed.Count });
+        return Ok(new
+        {
+            data = feed,
+            total,
+            page = clampedPage,
+            pageSize = clampedSize,
+            totalPages = (int)Math.Ceiling((double)total / clampedSize)
+        });
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

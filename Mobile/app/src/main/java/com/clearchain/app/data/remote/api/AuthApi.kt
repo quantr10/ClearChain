@@ -54,6 +54,7 @@ interface AuthApi {
     @GET("auth/check-email")
     suspend fun checkEmail(@Query("email") email: String): EmailAvailabilityResponse
 
-    @DELETE("auth/account")
+    // Not @DELETE: Retrofit refuses a body on it and throws before any request is sent.
+    @HTTP(method = "DELETE", path = "auth/account", hasBody = true)
     suspend fun deleteAccount(@Body request: DeleteAccountRequest): MessageResponse
 }

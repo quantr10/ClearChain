@@ -105,10 +105,8 @@ fun ProfileScreen(
 
     if (showLogoutDialog) {
         LogoutDialog(
-            onConfirm = {
-                showLogoutDialog = false
-                onLogout()
-            },
+            isLoading = state.isLoggingOut,
+            onConfirm = { viewModel.onEvent(ProfileEvent.Logout) },
             onDismiss = { showLogoutDialog = false }
         )
     }
@@ -471,6 +469,7 @@ private fun ChangePasswordDialog(
 
 @Composable
 private fun LogoutDialog(
+    isLoading: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -482,7 +481,11 @@ private fun LogoutDialog(
         confirmLabel = stringResource(R.string.logout),
         dismissLabel = stringResource(R.string.cancel),
         isDestructive = true,
-        icon = Icons.AutoMirrored.Filled.Logout
+        icon = Icons.AutoMirrored.Filled.Logout,
+        confirmEnabled = !isLoading,
+        confirmLoading = isLoading,
+        dismissEnabled = !isLoading,
+        dismissible = !isLoading
     )
 }
 

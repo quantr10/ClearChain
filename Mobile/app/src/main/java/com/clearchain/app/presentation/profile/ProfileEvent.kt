@@ -6,6 +6,7 @@ sealed class ProfileEvent {
     object Refresh : ProfileEvent()
     data class ChangePassword(val currentPassword: String, val newPassword: String) : ProfileEvent()
     data class DeleteAccount(val password: String) : ProfileEvent()
+    object Logout : ProfileEvent()
 
     // Edit mode
     object StartEdit : ProfileEvent()

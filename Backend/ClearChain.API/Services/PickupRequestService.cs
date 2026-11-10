@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ClearChain.API.Common;
 using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
@@ -28,9 +29,17 @@ public record PickupRequestServiceResult(
     InventoryItemData? InventoryData = null
 );
 
+/// <summary>What <see cref="IPickupRequestService.CloseAccountAsync"/> ended, for the notifications.</summary>
+public record AccountClosure(
+    List<PickupRequest> RejectedRequests,
+    List<PickupRequest> CancelledRequests,
+    List<Guid> RemovedListingIds);
+
 public interface IPickupRequestService
 {
     Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false);
+    Task<AccountClosure> CloseAccountAsync(Guid organizationId);
+    Task NotifyAccountClosedAsync(AccountClosure closure);
     Task<PickupRequestServiceResult> MarkPickedUpAsync(Guid requestId, Guid callerId, Stream photoStream, string fileName, string contentType);
     Task<PickupRequestServiceResult> GetByIdAsync(Guid requestId, Guid callerId, bool isAdmin, bool includeContacts = false);
     Task<PickupRequestServiceResult> GetNgoRequestsAsync(Guid ngoId, int page, int pageSize);
@@ -45,6 +54,7 @@ public class PickupRequestService : IPickupRequestService
     private readonly ILogger<PickupRequestService> _logger;
     private readonly IStorageService _storageService;
     private readonly IPickupNotificationService _notificationService;
+    private readonly IListingNotificationService _listingNotificationService;
     private readonly IInventoryNotificationService _inventoryNotificationService;
     private readonly IAdminNotificationService _adminNotificationService;
     private readonly IPushNotificationService _pushNotificationService;
@@ -54,6 +64,7 @@ public class PickupRequestService : IPickupRequestService
         ILogger<PickupRequestService> logger,
         IStorageService storageService,
         IPickupNotificationService notificationService,
+        IListingNotificationService listingNotificationService,
         IInventoryNotificationService inventoryNotificationService,
         IAdminNotificationService adminNotificationService,
         IPushNotificationService pushNotificationService)
@@ -62,9 +73,144 @@ public class PickupRequestService : IPickupRequestService
         _logger = logger;
         _storageService = storageService;
         _notificationService = notificationService;
+        _listingNotificationService = listingNotificationService;
         _inventoryNotificationService = inventoryNotificationService;
         _adminNotificationService = adminNotificationService;
         _pushNotificationService = pushNotificationService;
+    }
+
+    /// <summary>
+    /// Ends what an organization leaves open when its account is deleted, on whichever side of a
+    /// pickup it stands.
+    ///
+    /// Only stages the changes: the caller saves them along with the account deletion so the two
+    /// can't come apart, then passes the result to <see cref="NotifyAccountClosedAsync"/>.
+    /// </summary>
+    public async Task<AccountClosure> CloseAccountAsync(Guid organizationId)
+    {
+        var (rejected, removedListingIds) = await CloseGroceryAsync(organizationId);
+        var cancelled = await WithdrawNgoRequestsAsync(organizationId);
+        return new AccountClosure(rejected, cancelled, removedListingIds);
+    }
+
+    private Task<List<PickupRequest>> LoadOpenRequestsAsync(Expression<Func<PickupRequest, bool>> party) =>
+        _context.PickupRequests
+            .Include(p => p.Ngo)
+            .Include(p => p.Grocery)
+            .Include(p => p.Items)
+            .Where(party)
+            .Where(p => p.Status == PickupRequestStatus.Pending ||
+                p.Status == PickupRequestStatus.Approved ||
+                p.Status == PickupRequestStatus.Ready)
+            .ToListAsync();
+
+    /// <summary>
+    /// A closing grocery's requests are rejected whatever stage they reached, since nobody is left
+    /// to hand the food over, and all its listings go, which also takes them out of NGOs' carts
+    /// and saved lists.
+    /// </summary>
+    private async Task<(List<PickupRequest> Rejected, List<Guid> RemovedListingIds)> CloseGroceryAsync(Guid groceryId)
+    {
+        var openRequests = await LoadOpenRequestsAsync(p => p.GroceryId == groceryId);
+
+        foreach (var request in openRequests)
+        {
+            // Rejected, not Cancelled: the grocery ended it, and Cancelled counts against the NGO
+            // on the admin leaderboard.
+            request.Status = PickupRequestStatus.Rejected;
+            request.CancellationReason = "The grocery closed its account";
+            request.ListingId = null;
+        }
+
+        // Finished requests can still point at a listing they came from, so this covers them too.
+        var listingReferences = await _context.PickupRequestItems
+            .Where(i => i.PickupRequest!.GroceryId == groceryId &&
+                (i.OriginalListingId != null || i.ReservedListingId != null))
+            .ToListAsync();
+        foreach (var item in listingReferences)
+        {
+            item.OriginalListingId = null;
+            item.ReservedListingId = null;
+        }
+
+        var listings = await _context.ClearanceListings
+            .Where(l => l.GroceryId == groceryId)
+            .ToListAsync();
+        var groups = await _context.ListingGroups
+            .Where(g => g.GroceryId == groceryId)
+            .ToListAsync();
+        var groupsWithHistory = await _context.PickupRequestItems
+            .Where(i => i.PickupRequest!.GroceryId == groceryId && i.ListingGroupId != null)
+            .Select(i => i.ListingGroupId!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var group in groups)
+        {
+            if (!groupsWithHistory.Contains(group.Id))
+            {
+                _context.ListingGroups.Remove(group);
+                continue;
+            }
+
+            group.TotalRemoved += listings.Where(l => l.GroupId == group.Id).Sum(l => l.Quantity);
+            group.TotalAvailable = 0;
+            group.TotalReserved = 0;
+            group.OriginalListingId = null;
+            group.IsFullyConsumed = group.TotalCompleted + group.TotalRemoved >= group.OriginalQuantity;
+            group.UpdatedAt = DateTime.UtcNow;
+        }
+
+        _context.ClearanceListings.RemoveRange(listings);
+
+        return (openRequests, listings.Select(l => l.Id).ToList());
+    }
+
+    /// <summary>
+    /// A closing NGO's requests are withdrawn whatever stage they reached, and what they reserved
+    /// goes back on offer the same way it does when an NGO cancels.
+    /// </summary>
+    private async Task<List<PickupRequest>> WithdrawNgoRequestsAsync(Guid ngoId)
+    {
+        var openRequests = await LoadOpenRequestsAsync(p => p.NgoId == ngoId);
+
+        foreach (var request in openRequests)
+        {
+            var listing = request.ListingId.HasValue
+                ? await _context.ClearanceListings
+                    .Include(l => l.Group)
+                    .FirstOrDefaultAsync(l => l.Id == request.ListingId.Value)
+                : null;
+
+            request.Status = PickupRequestStatus.Cancelled;
+            request.CancellationReason = "The NGO closed its account";
+            request.ListingId = null;
+            await ReleaseReservationAsync(request, listing);
+        }
+
+        return openRequests;
+    }
+
+    public async Task NotifyAccountClosedAsync(AccountClosure closure)
+    {
+        foreach (var request in closure.RejectedRequests)
+        {
+            var data = MapToData(request);
+            await _notificationService.NotifyPickupRequestCancelledAsync(data);
+            await _pushNotificationService.SendPickupRequestGroceryClosedNotification(request.NgoId, data);
+        }
+
+        foreach (var request in closure.CancelledRequests)
+        {
+            var data = MapToData(request);
+            await _notificationService.NotifyPickupRequestCancelledAsync(data);
+            await _pushNotificationService.SendPickupRequestCancelledNotification(request.GroceryId, data);
+        }
+
+        foreach (var listingId in closure.RemovedListingIds)
+        {
+            await _listingNotificationService.NotifyListingDeletedAsync(listingId.ToString());
+        }
     }
 
     public async Task<PickupRequestServiceResult> CancelAsync(Guid requestId, Guid callerId, string? reason = null, bool isSystemCancelled = false)
@@ -97,38 +243,7 @@ public class PickupRequestService : IPickupRequestService
             pr.CancellationReason = reason;
             pr.ListingId = null;
 
-            if (pr.Items.Any())
-            {
-                var reservedIds = pr.Items
-                    .Where(i => i.ReservedListingId.HasValue)
-                    .Select(i => i.ReservedListingId!.Value)
-                    .ToList();
-                var reservedListings = await _context.ClearanceListings
-                    .Include(l => l.Group)
-                    .Where(l => reservedIds.Contains(l.Id))
-                    .ToListAsync();
-                foreach (var reserved in reservedListings)
-                {
-                    if (reserved.Group != null)
-                        await SmartMergeOnCancel(reserved, reserved.Group);
-                }
-
-                var deletedReservedIds = reservedListings
-                    .Where(l => _context.Entry(l).State == EntityState.Deleted)
-                    .Select(l => l.Id)
-                    .ToHashSet();
-
-                foreach (var item in pr.Items)
-                {
-                    if (item.OriginalListingId.HasValue && deletedReservedIds.Contains(item.OriginalListingId.Value))
-                        item.OriginalListingId = null;
-                    item.ReservedListingId = null;
-                }
-            }
-            else if (listing?.Group != null)
-            {
-                await SmartMergeOnCancel(listing, listing.Group);
-            }
+            await ReleaseReservationAsync(pr, listing);
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
@@ -616,6 +731,46 @@ public class PickupRequestService : IPickupRequestService
             PageSize = pageSize,
             TotalPages = (int)Math.Ceiling((double)total / pageSize)
         };
+    }
+
+    /// <summary>
+    /// Puts what a request reserved back on offer and clears its references to the reservation.
+    /// <paramref name="listing"/> is the reservation of a request that predates cart items.
+    /// </summary>
+    private async Task ReleaseReservationAsync(PickupRequest pr, ClearanceListing? listing)
+    {
+        if (pr.Items.Any())
+        {
+            var reservedIds = pr.Items
+                .Where(i => i.ReservedListingId.HasValue)
+                .Select(i => i.ReservedListingId!.Value)
+                .ToList();
+            var reservedListings = await _context.ClearanceListings
+                .Include(l => l.Group)
+                .Where(l => reservedIds.Contains(l.Id))
+                .ToListAsync();
+            foreach (var reserved in reservedListings)
+            {
+                if (reserved.Group != null)
+                    await SmartMergeOnCancel(reserved, reserved.Group);
+            }
+
+            var deletedReservedIds = reservedListings
+                .Where(l => _context.Entry(l).State == EntityState.Deleted)
+                .Select(l => l.Id)
+                .ToHashSet();
+
+            foreach (var item in pr.Items)
+            {
+                if (item.OriginalListingId.HasValue && deletedReservedIds.Contains(item.OriginalListingId.Value))
+                    item.OriginalListingId = null;
+                item.ReservedListingId = null;
+            }
+        }
+        else if (listing?.Group != null)
+        {
+            await SmartMergeOnCancel(listing, listing.Group);
+        }
     }
 
     private async Task SmartMergeOnCancel(ClearanceListing cancelledListing, ListingGroup group)

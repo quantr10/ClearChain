@@ -11,10 +11,10 @@ class LogoutUseCase @Inject constructor(
     private val signalRService: SignalRService,
     private val database: ClearChainDatabase
 ) {
-    suspend operator fun invoke(): Result<Unit> {
+    suspend operator fun invoke(revokeOnServer: Boolean = true): Result<Unit> {
         // The logout call sends this device's FCM token too, and the server drops it along with
         // the session, so the next account signed in here doesn't inherit our push.
-        val result = authRepository.logout()
+        val result = authRepository.logout(revokeOnServer)
 
         runCatching { signalRService.disconnect() }
             .onFailure { Log.w(TAG, "Failed to close real-time connection: ${it.message}") }

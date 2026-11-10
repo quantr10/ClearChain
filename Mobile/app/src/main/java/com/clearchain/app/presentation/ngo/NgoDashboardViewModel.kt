@@ -12,19 +12,34 @@ import com.clearchain.app.data.remote.dto.TodaySummaryData
 import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.domain.repository.ListingRepository
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.util.FeedPage
+import com.clearchain.app.util.FeedPager
+import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * The week's activity, newest first, for the list under the sparkline and its history sheet.
+ * Shared by the NGO and grocery dashboards, as the list and the sheet are.
+ */
+internal fun activityFeedPager(scope: CoroutineScope, organizationApi: OrganizationApi) =
+    FeedPager(scope, pageSize = 20, id = ActivityItemData::id) { page, pageSize ->
+        val response = organizationApi.getMyActivity(page = page, pageSize = pageSize)
+        FeedPage(response.data, response.total, response.totalPages)
+    }
 
 /** Impact metrics derived from the stats. */
 data class ImpactMetrics(
@@ -40,6 +55,7 @@ data class NgoDashboardState(
     val profilePictureUrl: String? = null,
     val stats: DashboardStatsData? = null,
     val todaySummary: TodaySummaryData? = null,
+    /** The whole week the sparkline plots; the list under it pages through the activity feed. */
     val activities: List<ActivityItemData> = emptyList(),
     val isRefreshing: Boolean = false,
     val weeklyGoal: Int = 10,
@@ -77,6 +93,9 @@ class NgoDashboardViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private val activityPager = activityFeedPager(viewModelScope, organizationApi)
+    val activityFeed: StateFlow<PagedFeed<ActivityItemData>> = activityPager.state
+
     init {
         observeUser()
         viewModelScope.launch {
@@ -94,6 +113,8 @@ class NgoDashboardViewModel @Inject constructor(
         }
     }
 
+    fun loadMoreActivity() = activityPager.loadMore()
+
     /**
      * Reloads every dashboard section concurrently and suspends until all have settled, so
      * pull-to-refresh keeps its spinner until the impact tracker, weekly goal, stats, activity,
@@ -109,6 +130,7 @@ class NgoDashboardViewModel @Inject constructor(
                 async { loadStats() },
                 async { loadTodaySummary() },
                 async { loadActivity() },
+                async { activityPager.refresh() },
                 async { loadNearbyListings() }
             ).awaitAll()
         }

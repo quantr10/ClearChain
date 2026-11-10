@@ -33,6 +33,7 @@ import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
+import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.launch
 
@@ -42,6 +43,7 @@ fun AdminDashboardScreen(
     viewModel: AdminDashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val alertFeed by viewModel.alertFeed.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val adminDefault = stringResource(R.string.label_admin)
@@ -115,12 +117,9 @@ fun AdminDashboardScreen(
                         state.stats?.let { stats ->
                             // Listing supply only. Request counts live in the status breakdown
                             // and the completion meter below, so they are not repeated here.
-                            // These are live counts, so the tile opens the analytics backlog card.
-                            DrillDownSection(
-                                title = stringResource(R.string.section_listings),
-                                section = AnalyticsSection.BACKLOG,
-                                navController = navController
-                            ) {
+                            // Live counts with no card of their own in the statistics, so the
+                            // tile doesn't drill down anywhere.
+                            DashboardSection(title = stringResource(R.string.section_listings)) {
                                 StatOverview(
                                     hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), stats.activeListings),
                                     secondary = listOf(
@@ -240,15 +239,15 @@ fun AdminDashboardScreen(
                     // ── Alert feed ───────────────────────────────────────────
                     // Above the quick actions: open disputes are the one thing here that
                     // waits on the admin.
-                    if (state.alertFeedItems.isNotEmpty()) {
+                    if (alertFeed.items.isNotEmpty()) {
                         DashboardSection(
                             title = stringResource(R.string.section_alert_feed),
-                            action = { AlertCountPill(state.alertFeedItems.size) }
+                            action = { AlertCountPill(alertFeed.total) }
                         ) {
                             // Same pattern as the NGO and grocery activity feeds: five here, the
                             // rest in a sheet.
-                            AlertList(alerts = state.alertFeedItems.take(5), onOpenRequest = openRequest)
-                            if (state.alertFeedItems.size > 5) {
+                            AlertList(alerts = alertFeed.items.take(5), onOpenRequest = openRequest)
+                            if (alertFeed.total > 5) {
                                 Spacer(Modifier.height(8.dp))
                                 ClearChainOutlinedButton(
                                     text = stringResource(R.string.action_view_more),
@@ -289,7 +288,8 @@ fun AdminDashboardScreen(
 
     if (showAlertSheet) {
         AlertFeedSheet(
-            alerts = state.alertFeedItems,
+            feed = alertFeed,
+            onLoadMore = { viewModel.onEvent(AdminDashboardEvent.LoadMoreAlerts) },
             onOpenRequest = openRequest,
             onDismiss = { showAlertSheet = false }
         )
@@ -332,14 +332,19 @@ private fun AlertList(alerts: List<AdminAlertItem>, onOpenRequest: (String) -> U
     }
 }
 
-/** Every open or under-review dispute, laid out like the NGO and grocery activity history sheet. */
+/**
+ * Every open dispute, a page at a time, laid out like the NGO and grocery activity history
+ * sheet.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlertFeedSheet(
-    alerts: List<AdminAlertItem>,
+    feed: PagedFeed<AdminAlertItem>,
+    onLoadMore: () -> Unit,
     onOpenRequest: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val alerts = feed.items
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -361,7 +366,7 @@ private fun AlertFeedSheet(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    AlertCountPill(alerts.size)
+                    AlertCountPill(feed.total)
                 }
                 IconButton(
                     onClick = onDismiss,
@@ -379,6 +384,7 @@ private fun AlertFeedSheet(
                 itemsIndexed(alerts, key = { _, alert -> alert.id }) { index, alert ->
                     AlertRowWithDivider(alert, onOpenRequest, showDivider = index < alerts.lastIndex)
                 }
+                item { PagedFeedFooter(feed, onLoadMore) }
             }
         }
     }

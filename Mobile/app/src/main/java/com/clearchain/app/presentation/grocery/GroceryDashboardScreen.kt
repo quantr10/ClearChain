@@ -38,6 +38,7 @@ fun GroceryDashboardScreen(
     viewModel: GroceryDashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val activityFeed by viewModel.activityFeed.collectAsState()
     var showActivitySheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -134,10 +135,10 @@ fun GroceryDashboardScreen(
                                 title = stringResource(R.string.label_actions_this_week),
                                 data = sparklineData
                             )
-                            if (state.activities.isNotEmpty()) {
+                            if (activityFeed.items.isNotEmpty()) {
                                 Spacer(Modifier.height(12.dp))
-                                ActivityFeedList(activities = state.activities.take(5))
-                                if (state.activities.size > 5) {
+                                ActivityFeedList(activities = activityFeed.items.take(5))
+                                if (activityFeed.total > 5) {
                                     Spacer(Modifier.height(8.dp))
                                     ClearChainOutlinedButton(
                                         text = stringResource(R.string.action_view_more),
@@ -180,7 +181,8 @@ fun GroceryDashboardScreen(
     // ── Activity bottom sheet ────────────────────────────────────────────────
     if (showActivitySheet) {
         ActivityHistorySheet(
-            activities = state.activities,
+            feed = activityFeed,
+            onLoadMore = viewModel::loadMoreActivity,
             onDismiss = { showActivitySheet = false }
         )
     }

@@ -5,9 +5,9 @@ namespace ClearChain.API.DTOs.Admin;
 ///
 /// Two kinds of number live here and they must not be mixed up:
 ///   * period figures - counted over the requested date range (Headline, Funnel,
-///                      Leaderboards, Timing, Quality).
-///   * live figures   - the state of the platform right now, independent of the
-///                      range (Backlog, and the Organizations register totals).
+///                      Timing, Leaderboards, Quality).
+///   * live figures   - the organization register as it stands right now, independent of
+///                      the range.
 /// Everything here is measured from the database; nothing is modelled or estimated.
 /// </summary>
 public class AdminStatisticsResponse
@@ -26,11 +26,12 @@ public class AdminStatisticsData
     public StatsPeriodDto Period { get; set; } = new();
     public StatsHeadlineDto Headline { get; set; } = new();
     public StatsFunnelDto Funnel { get; set; } = new();
-    public StatsBacklogDto Backlog { get; set; } = new();
     public StatsTimingDto Timing { get; set; } = new();
     public StatsQualityDto Quality { get; set; } = new();
     public StatsLeaderboardsDto Leaderboards { get; set; } = new();
     public StatsOrganizationsDto Organizations { get; set; } = new();
+    /// <summary>The dispute figures for the period compared against; null when none was asked for.</summary>
+    public StatsComparisonDto? Comparison { get; set; }
 }
 
 public class StatsPeriodDto
@@ -60,27 +61,6 @@ public class StatsFunnelDto
     public int Rejected { get; set; }
 }
 
-/// <summary>What is waiting for someone right now. Not scoped to the period.</summary>
-public class StatsBacklogDto
-{
-    public int OpenListings { get; set; }
-    public int ReservedListings { get; set; }
-    public int ExpiredListings { get; set; }
-    /// <summary>Open listings whose collection deadline falls inside the next 24 hours.</summary>
-    public int ExpiringWithin24h { get; set; }
-
-    public int PendingRequests { get; set; }
-    public int ApprovedRequests { get; set; }
-    public int ReadyRequests { get; set; }
-    /// <summary>Age of the longest-waiting request a grocery has not answered, in hours.</summary>
-    public double? OldestPendingRequestHours { get; set; }
-
-    public int PendingVerifications { get; set; }
-    public int? OldestPendingVerificationDays { get; set; }
-
-    public int OpenDisputes { get; set; }
-}
-
 /// <summary>
 /// How long each hand-over leg took, over the pickups completed in the period. Medians
 /// rather than means: one request forgotten for a week would drag a mean away from what
@@ -102,36 +82,69 @@ public class StatsTimingDto
     public int SampleSize { get; set; }
 }
 
+/// <summary>Disputes opened in the period, why, and how they were settled.</summary>
 public class StatsQualityDto
 {
-    /// <summary>Mean of the 1-5 ratings NGOs left in the period; null when nobody rated.</summary>
-    public double? AverageRating { get; set; }
-    public int ReviewCount { get; set; }
-    /// <summary>Reviews / completed pickups, 0..1. How much of the record is rated at all.</summary>
-    public double ReviewCoverage { get; set; }
     public int DisputesOpened { get; set; }
     /// <summary>Disputes / completed pickups, 0..1.</summary>
     public double DisputeRate { get; set; }
+    /// <summary>Disputes opened in the period by reason key (see DisputeReasons), most common first.</summary>
+    public List<StatsCountDto> DisputeReasons { get; set; } = new();
+    /// <summary>Where the disputes opened in the period stand now.</summary>
+    public StatsDisputeOutcomesDto DisputeOutcomes { get; set; } = new();
+    /// <summary>
+    /// Opened until resolved, over the disputes resolved in the period - an event clock,
+    /// like the timings.
+    /// </summary>
+    public double? MedianHoursToResolve { get; set; }
+    public int DisputesResolved { get; set; }
 }
 
+public class StatsCountDto
+{
+    public string Key { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+public class StatsDisputeOutcomesDto
+{
+    public int Open { get; set; }
+    public int ResolvedForNgo { get; set; }
+    public int ResolvedForGrocery { get; set; }
+    public int Dismissed { get; set; }
+}
+
+/// <summary>
+/// Top organizations of each type, ranked two ways. Pickups count the ones completed in
+/// the period; ratings count the ones received in it.
+/// </summary>
 public class StatsLeaderboardsDto
 {
-    public List<StatsGroceryLeaderDto> TopGroceries { get; set; } = new();
-    public List<StatsNgoLeaderDto> TopNgos { get; set; } = new();
+    public StatsLeaderboardDto Groceries { get; set; } = new();
+    public StatsLeaderboardDto Ngos { get; set; } = new();
+    /// <summary>
+    /// Ratings an organization needs in the period before its average is ranked: one 5-star
+    /// review would otherwise outrank a store rated 4.8 forty times.
+    /// </summary>
+    public int MinRatingsToRank { get; set; }
 }
 
-public class StatsGroceryLeaderDto
+public class StatsLeaderboardDto
 {
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public int CompletedPickups { get; set; }
+    public List<StatsLeaderDto> ByPickups { get; set; } = new();
+    public List<StatsLeaderDto> ByRating { get; set; } = new();
 }
 
-public class StatsNgoLeaderDto
+public class StatsLeaderDto
 {
+    /// <summary>Competition ranking: equal scores share a place and the next is skipped (1, 2, 2, 4).</summary>
+    public int Rank { get; set; }
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ProfilePictureUrl { get; set; }
     public int CompletedPickups { get; set; }
+    public double? AverageRating { get; set; }
+    public int RatingCount { get; set; }
 }
 
 /// <summary>
@@ -153,4 +166,16 @@ public class StatsOrganizationsDto
     public int PendingNgos { get; set; }
     /// <summary>Age of the longest-waiting unverified application, in days.</summary>
     public int? OldestPendingDays { get; set; }
+}
+
+/// <summary>
+/// The dispute figures over the comparison period, counted the same way as the current
+/// ones. When the current period is still running, the comparison is cut to the same
+/// length, so this week so far is set against last week up to the same point.
+/// </summary>
+public class StatsComparisonDto
+{
+    public string From { get; set; } = string.Empty;
+    public string To { get; set; } = string.Empty;
+    public int DisputesOpened { get; set; }
 }

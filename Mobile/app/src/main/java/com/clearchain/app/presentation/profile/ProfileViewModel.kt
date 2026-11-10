@@ -2,6 +2,7 @@ package com.clearchain.app.presentation.profile
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clearchain.app.R
@@ -13,6 +14,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.repository.OrganizationRepository
 import com.clearchain.app.domain.usecase.auth.ChangePasswordUseCase
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
+import com.clearchain.app.domain.usecase.auth.LogoutUseCase
 import com.clearchain.app.domain.usecase.auth.RefreshCurrentUserUseCase
 import com.clearchain.app.domain.usecase.profile.UpdateProfileUseCase
 import com.clearchain.app.util.ApiErrorUtils
@@ -33,6 +35,7 @@ class ProfileViewModel @Inject constructor(
     val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val refreshCurrentUserUseCase: RefreshCurrentUserUseCase,
     private val changePasswordUseCase: ChangePasswordUseCase,
+    private val logoutUseCase: LogoutUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
     private val organizationApi: OrganizationApi,
     private val organizationRepository: OrganizationRepository,
@@ -58,6 +61,8 @@ class ProfileViewModel @Inject constructor(
 
             is ProfileEvent.DeleteAccount ->
                 deleteAccount(event.password)
+
+            ProfileEvent.Logout -> logout()
 
             ProfileEvent.StartEdit -> startEdit()
             ProfileEvent.CancelEdit -> cancelEdit()
@@ -361,13 +366,27 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private fun logout() {
+        if (_state.value.isLoggingOut) return
+        viewModelScope.launch {
+            // No reset afterwards: on completion the screen navigates away.
+            _state.update { it.copy(isLoggingOut = true) }
+            logoutUseCase()
+            _uiEvent.send(UiEvent.Navigate("logout"))
+        }
+    }
+
     private fun deleteAccount(password: String) {
         viewModelScope.launch {
             _state.update { it.copy(isDeletingAccount = true, error = null) }
             try {
                 authApi.deleteAccount(DeleteAccountRequest(password))
-                _state.update { it.copy(isDeletingAccount = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_account_deleted)))
+                // No reset afterwards: on completion the screen navigates away. The deletion already
+                // ended this session on the server; asking again could come back 401, which would
+                // read as an expired session.
+                logoutUseCase(revokeOnServer = false)
+                // A toast, because this screen's snackbar host leaves with the navigation.
+                Toast.makeText(context, R.string.snack_account_deleted, Toast.LENGTH_LONG).show()
                 _uiEvent.send(UiEvent.Navigate("logout"))
             } catch (e: Exception) {
                 _state.update { it.copy(isDeletingAccount = false) }

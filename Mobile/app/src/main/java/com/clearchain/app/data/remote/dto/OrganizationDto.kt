@@ -89,7 +89,10 @@ data class ActivityItemData(
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class ActivityResponse(
-    val data: List<ActivityItemData>
+    val data: List<ActivityItemData>,
+    /** Every item in the window, across all pages. */
+    val total: Int = 0,
+    val totalPages: Int = 1
 )
 
 @SuppressLint("UnsafeOptInUsageError")

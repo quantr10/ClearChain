@@ -46,6 +46,7 @@ data class ProfileState(
     val isSavingProfile: Boolean = false,
 
     val isDeletingAccount: Boolean = false,
+    val isLoggingOut: Boolean = false,
 
     val isUploadingAvatar: Boolean = false
 )

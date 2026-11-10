@@ -25,18 +25,15 @@ interface AdminApi {
     @GET("admin/statistics/overview")
     suspend fun getStatistics(): AdminStatsResponse
 
+    /** The platform's whole history; the server defaults to it when no range is given. */
     @GET("admin/statistics")
-    suspend fun getDetailedStatistics(
-        @Query("from") from: String? = null,
-        @Query("to") to: String? = null,
-        @Query("preset") preset: String = "all"
-    ): AdminDetailedStatsResponse
-
-    @GET("admin/statistics/active-dates")
-    suspend fun getStatisticsActiveDates(): StatsActiveDatesResponse
+    suspend fun getDetailedStatistics(): AdminDetailedStatsResponse
 
     @GET("admin/alerts")
-    suspend fun getAlertFeed(): AdminAlertFeedResponse
+    suspend fun getAlertFeed(
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20
+    ): AdminAlertFeedResponse
 
     @GET("admin/pickuprequests")
     suspend fun getAllPickupRequests(): PickupRequestsResponse

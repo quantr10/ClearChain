@@ -64,7 +64,7 @@ private val FAQS = listOf(
     ),
     FaqItem(
         "How do I delete my account?",
-        "Go to Profile → tap the menu (⋮) → Delete Account. You will be asked to confirm with your password. This action soft-deletes your account — data is retained for audit purposes."
+        "Go to Profile → Delete Account. You will be asked to confirm with your password. Your listings and open pickup requests are cancelled, and you can no longer sign in. Your profile and completed pickups are kept for audit purposes."
     )
 )
 

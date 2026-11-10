@@ -114,7 +114,6 @@
     <string name="transactions">Transactions</string>
     <string name="statistics">Statistics</string>
     <string name="system_health">System health</string>
-    <string name="preset_today">Today</string>
 
     <!-- ── Help ── -->
     <string name="help">Help &amp; support</string>
@@ -447,7 +446,6 @@
 
     <!-- Date range presets -->
     <string name="preset_all_time">All time</string>
-    <string name="preset_this_week">This week</string>
 
     <!-- Inventory / distribution -->
     <string name="action_mark_distributed">Mark as Distributed</string>
@@ -506,7 +504,7 @@
 
     <!-- Profile -->
     <string name="action_change">Change</string>
-    <string name="msg_delete_account_warning">This action is permanent and cannot be undone. All your data will be deleted.</string>
+    <string name="msg_delete_account_warning">This can\'t be undone, and you won\'t be able to sign in again. Your listings and open pickup requests will be cancelled. Your profile and completed pickups are kept for audit purposes.</string>
     <string name="msg_logout_confirm">Are you sure you want to log out?</string>
 
     <!-- Request Detail -->
@@ -925,6 +923,7 @@
     <string name="error_mark_all_read_failed">Couldn\'t mark notifications as read. Please try again.</string>
     <string name="error_clear_notifications_failed">Couldn\'t clear notifications. Please try again.</string>
     <string name="error_details_partial">Some details couldn\'t be loaded.</string>
+    <string name="error_load_more">Couldn\'t load more. Please try again.</string>
     <string name="error_location_autodetect_failed">Couldn\'t detect your location. Search or pick a spot on the map.</string>
     <string name="error_location_gps_unavailable">Couldn\'t get your location. Make sure GPS is on.</string>
     <string name="error_mark_ready_failed">Failed to mark as ready</string>
@@ -1043,54 +1042,37 @@
     <string name="stats_unavailable">No statistics yet</string>
     <string name="stats_unavailable_subtitle">Numbers appear once organizations start listing and collecting food.</string>
 
-    <string name="chart_no_activity">No completed pickups in this period.</string>
-
-    <string name="chart_top_groceries">Stores by pickups completed</string>
-    <string name="chart_top_ngos">NGOs by pickups completed</string>
+    <string name="chart_no_activity">No pickups yet.</string>
 
     <string name="stat_awaiting_verification">Awaiting verification</string>
-    <string name="chart_no_requests">No pickup requests in this period.</string>
+    <string name="chart_no_requests">No pickup requests yet.</string>
 
     <!-- ── Admin stats & analytics screen ── -->
     <string name="stats_analytics_title">Stats &amp; Analytics</string>
-    <string name="stats_all_time_subtitle">Everything since the platform opened</string>
-    <string name="stats_period_range">%1$s – %2$s</string>
-    <string name="filter_time_period">Time period</string>
-    <string name="period_day">Day</string>
-    <string name="period_week">Week</string>
-    <string name="period_month">Month</string>
-    <string name="period_yesterday">Yesterday</string>
-    <string name="period_last_week">Last week</string>
-    <string name="period_week_of">Week of %1$s</string>
-    <string name="cd_previous_period">Previous period</string>
-    <string name="cd_next_period">Next period</string>
     <string name="action_retry">Try again</string>
 
-
-    <string name="section_live_backlog">Waiting right now</string>
-    <string name="backlog_note">Live figures. Not affected by the period above.</string>
-    <string name="backlog_open_listings">Open listings</string>
-    <string name="backlog_expiring_24h">Expiring in 24h</string>
-    <string name="backlog_pending_requests">Awaiting reply</string>
-    <string name="backlog_ready_requests">Ready for pickup</string>
-    <string name="backlog_pending_verifications">Verifications</string>
-    <string name="backlog_open_disputes">Open disputes</string>
-    <string name="backlog_open_cases">Open cases</string>
-    <string name="backlog_oldest">oldest %1$s</string>
-    <string name="backlog_oldest_days">oldest %1$d d</string>
-
-    <string name="leaderboard_grocery_note">Ranked by pickups completed in this period</string>
-    <string name="leaderboard_ngo_note">Ranked by pickups completed in this period</string>
-
-    <string name="section_quality">Trust &amp; quality</string>
-    <string name="quality_avg_rating">Average rating</string>
-    <string name="quality_reviews">Reviews left</string>
-    <string name="quality_review_coverage_label">Pickups rated</string>
+    <string name="section_quality">Disputes</string>
     <string name="quality_disputes">Disputes opened</string>
-    <string name="quality_dispute_rate">%1$d%% of completed pickups ended in a dispute</string>
-    <string name="quality_no_data">No reviews or disputes in this period.</string>
+    <string name="quality_no_data">No disputes yet.</string>
 
     <string name="chart_no_organizations">No organizations registered yet.</string>
+
+    <!-- Admin Stats & Analytics: leaderboards -->
+    <string name="leaderboard_metric_pickups">Pickups</string>
+    <string name="leaderboard_metric_rating">Rating</string>
+    <string name="leaderboard_no_ratings">No rankings yet.</string>
+    <string name="leaderboard_rating_note">Only organizations rated at least %1$d times are ranked.</string>
+
+    <!-- Admin Stats & Analytics: disputes -->
+    <string name="quality_dispute_reasons_title">Reasons</string>
+    <string name="quality_dispute_status_title">Status</string>
+    <string name="quality_outcome_ngo_short">NGO\'s favor</string>
+    <string name="quality_outcome_grocery_short">Grocery\'s favor</string>
+    <string name="quality_resolution_time">Median %1$s to resolve · %2$d closed</string>
+
+    <!-- Admin Stats & Analytics: PDF report -->
+    <string name="pdf_leaderboard_heading">%1$s · %2$s</string>
+    <string name="pdf_dispute_rate">Dispute rate</string>
 
     <!-- Relative time — shared by chat timestamps (verbose) and the notification inbox (compact) -->
     <string name="time_just_now">Just now</string>
