@@ -160,14 +160,15 @@ provides, and the Organizations card below it uses a donut.
 
 ## Format and lint
 
-### `dotnet format` fails on drift older than this work
+### `dotnet format` still reports 22 naming findings
 
-`dotnet format Backend/ClearChain.sln --verify-no-changes` reports 49 findings in 32 files. A
-clean copy of `HEAD` reports more, so none of them came from the cleanup.
+`dotnet format Backend/ClearChain.sln --verify-no-changes` fails only on `IDE1006`. The naming
+code fix doesn't support Fix All in Solution, so `dotnet format` can't apply it.
 
-- **`IMPORTS` (26 files):** `using` directives out of order.
-- **`IDE1006` (22):** naming. Mostly `private static readonly` fields without the `_camelCase`
-  prefix that `.editorconfig` asks for. In these files:
+- **What they are:** 14 `private const` and 8 `private static readonly` fields. All but two are
+  PascalCase, the usual .NET convention for these. The `.editorconfig` rule
+  `private_fields_underscored` covers every private field, so it wants `_camelCase` for them too.
+- **Where:**
   - `Services/AuthService.cs` (5)
   - `Services/AzureOpenAIFoodAnalysisService.cs` (3)
   - 2 each in `Controllers/AdminController.cs`, `Controllers/ImageAnalysisController.cs`,
@@ -175,11 +176,10 @@ clean copy of `HEAD` reports more, so none of them came from the cleanup.
     `Services/SupabaseStorageService.cs`
   - 1 each in `Common/StorageBucketPolicy.cs`, `Controllers/DisputesController.cs`,
     `DTOs/Disputes/DisputeReasons.cs` and `Middleware/DeletedAccountTokenCheck.cs`
-- **`IDE0065` (1):** a `using` inside the namespace in `DTOs/Listings/UpdateListingQuantityRequest.cs`.
-
-To fix, run `dotnet format Backend/ClearChain.sln` with the API stopped and the affected files
-closed in the editor. Re-run with `--verify-no-changes` and rename whatever naming findings it
-leaves by hand.
+- **Decision:** either narrow the rule to instance and non-readonly fields and add a PascalCase
+  rule for `const` and `static readonly` fields (then only `PICKUP_PROOFS_BUCKET` and
+  `FOOD_IMAGES_BUCKET` in `SupabaseStorageService.cs` need renaming), or rename all 22 to
+  `_camelCase`.
 
 ### Dependency and SDK version warnings
 
