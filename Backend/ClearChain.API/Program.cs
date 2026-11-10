@@ -1,19 +1,19 @@
-using DotNetEnv;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
-using System.Security.Claims;
-using ClearChain.Infrastructure.Data;
-using ClearChain.API.Services;
-using ClearChain.API.Middleware;
 using ClearChain.API.Hubs;
 using ClearChain.API.Jobs;
-using Microsoft.AspNetCore.SignalR;
+using ClearChain.API.Middleware;
+using ClearChain.API.Services;
+using ClearChain.Infrastructure.Data;
+using DotNetEnv;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Security.Claims;
+using System.Text;
 
 Env.Load();
 

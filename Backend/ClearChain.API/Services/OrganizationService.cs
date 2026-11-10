@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using ClearChain.Infrastructure.Data;
-using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Organizations;
+using ClearChain.Domain.Entities;
+using ClearChain.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Services;
 

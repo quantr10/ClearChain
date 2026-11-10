@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.SignalR;
 using ClearChain.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ClearChain.API.Services;
 

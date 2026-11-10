@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using ClearChain.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Hubs;
 

@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.SignalR;
-using ClearChain.API.Hubs;
 using ClearChain.API.DTOs.PickupRequests;
+using ClearChain.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ClearChain.API.Services;
 

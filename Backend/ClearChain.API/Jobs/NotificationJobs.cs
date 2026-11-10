@@ -1,12 +1,12 @@
-using Hangfire;
-using Microsoft.EntityFrameworkCore;
 using ClearChain.API.Common;
-using ClearChain.Infrastructure.Data;
-using ClearChain.API.DTOs.Listings;
 using ClearChain.API.DTOs.Inventory;
+using ClearChain.API.DTOs.Listings;
 using ClearChain.API.Services;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
+using ClearChain.Infrastructure.Data;
+using Hangfire;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClearChain.API.Jobs;
 

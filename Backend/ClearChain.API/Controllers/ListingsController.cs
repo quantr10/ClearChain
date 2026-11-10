@@ -1,10 +1,10 @@
-using ClearChain.Infrastructure.Data;
-using ClearChain.Domain.Entities;
-using ClearChain.Domain.Enums;
 using ClearChain.API.Common;
 using ClearChain.API.DTOs.Listings;
 using ClearChain.API.Middleware;
 using ClearChain.API.Services;
+using ClearChain.Domain.Entities;
+using ClearChain.Domain.Enums;
+using ClearChain.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

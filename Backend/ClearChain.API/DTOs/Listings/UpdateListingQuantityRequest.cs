@@ -1,5 +1,6 @@
-namespace ClearChain.API.DTOs.Listings;
 using System.ComponentModel.DataAnnotations;
+
+namespace ClearChain.API.DTOs.Listings;
 
 public class UpdateListingQuantityRequest
 {

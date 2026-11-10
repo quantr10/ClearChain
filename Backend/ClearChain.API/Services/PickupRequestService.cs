@@ -1,11 +1,11 @@
-using System.Linq.Expressions;
 using ClearChain.API.Common;
-using Microsoft.EntityFrameworkCore;
-using ClearChain.Infrastructure.Data;
+using ClearChain.API.DTOs.Inventory;
+using ClearChain.API.DTOs.PickupRequests;
 using ClearChain.Domain.Entities;
 using ClearChain.Domain.Enums;
-using ClearChain.API.DTOs.PickupRequests;
-using ClearChain.API.DTOs.Inventory;
+using ClearChain.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace ClearChain.API.Services;
 

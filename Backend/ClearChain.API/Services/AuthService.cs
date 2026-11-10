@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using ClearChain.Infrastructure.Data;
-using ClearChain.Domain.Entities;
 using ClearChain.API.DTOs.Auth;
 using ClearChain.API.Middleware;
+using ClearChain.Domain.Entities;
+using ClearChain.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ClearChain.API.Services;
 
