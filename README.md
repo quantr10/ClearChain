@@ -31,8 +31,6 @@ The repository holds two applications:
 - [Configuration](#configuration)
 - [Architecture](#architecture)
 - [API](#api)
-- [Maintainers](#maintainers)
-- [Contributing](#contributing)
 - [License](#license)
 
 ## Background
@@ -47,29 +45,39 @@ with.
 ### Features
 
 **Grocery stores**
-- Create listings from a photo; a vision model on Azure OpenAI suggests the title, category,
-  expiry date (read from the label when one is printed) and a quality grade, in English or
-  Vietnamese
+- Create listings from a photo; a vision model on Azure OpenAI suggests the title,
+  description, category, expiry date (read from the label when one is printed) and a quality
+  grade, in English or Vietnamese
 - Edit, archive, restore and adjust the quantity of listings
 - Approve, reject and mark pickup requests ready
 - Export listings and requests as CSV
-- Dashboard with today's summary, activity and analytics
+- Dashboard with today's summary and recent activity
 
 **NGOs**
-- Browse listings with filters and a distance radius around a chosen location
+- Browse listings by category, expiry date and a distance radius around a chosen location,
+  as a list or on a map
 - Save listings, build a cart and check out several items as grouped pickup requests
 - Confirm a pickup with a proof photo, which moves the items into inventory
 - Track inventory, mark items distributed, and see what is expiring
+- Open a dispute on a completed pickup, with a statement and an optional photo
+- Export requests and inventory as CSV
+
+**Grocery stores and NGOs**
+- Per-pickup messaging, and a review of the other party once a pickup is complete
+- A PDF receipt for each completed pickup
+- Analytics on their own activity
+- Public organization profiles with ratings
 
 **Admins**
-- Verification queue for new organizations, with approve/reject and a reason
-- Platform statistics, alerts and the full list of transactions (exportable as CSV)
-- Dispute review and resolution, with both parties notified
+- Verification queue for new organizations, with approve/reject and a reason, exportable
+  as CSV
+- Platform statistics by day, week or month, and system alerts
+- Every transaction on the platform, with filters and CSV export
+- Dispute resolution, with a live alert when one is filed and both parties notified of the
+  outcome
 
 **All roles**
-- Per-pickup messaging, post-pickup reviews and disputes on completed pickups
 - Realtime updates over SignalR, push notifications over Firebase, and a notification inbox
-- Public organization profiles with ratings
 - Light/dark theme and English/Vietnamese, switchable in Settings
 
 ### Built with
@@ -83,7 +91,7 @@ with.
 | Auth | JWT access tokens, rotating refresh tokens, BCrypt |
 | Realtime | SignalR |
 | Background jobs | Hangfire with PostgreSQL storage |
-| Integrations | Azure OpenAI (food photo analysis), FirebaseAdmin (push), MailKit (email) |
+| Integrations | Azure OpenAI via the OpenAI .NET SDK (food photo analysis), FirebaseAdmin (push), MailKit (email) |
 | Logging and config | Serilog (console and rolling file), DotNetEnv |
 
 **Mobile**
@@ -200,6 +208,10 @@ cd Mobile
 ./gradlew installDebug
 ```
 
+Run the API from `Backend/ClearChain.API`, because it reads `.env` and
+`firebase-adminsdk.json` from the current folder. The `http` launch profile that
+`dotnet run` uses serves port 5000 and sets `ASPNETCORE_ENVIRONMENT=Development`.
+
 The API checks its required variables at startup and stops with a message listing any that
 are missing. To confirm it is up:
 
@@ -216,7 +228,8 @@ curl http://localhost:5000/api/health/jobs
 3. **Grocery** approves the request, then marks it ready.
 4. **NGO** collects the goods and confirms the pickup with a proof photo. The items move
    into the NGO's inventory.
-5. Either side can leave a review, or open a dispute that an admin reviews and resolves.
+5. Each side can review the other. If something was wrong with the pickup, the NGO can open
+   a dispute, which an admin resolves.
 
 New organizations first confirm their email with a 6-digit code, complete the onboarding
 profile and upload a verification document. Until an admin approves them they can browse,
@@ -243,8 +256,10 @@ example `bin/Debug/net8.0/logs/`), keeping 30 days.
 ### Backend
 
 The file is `Backend/ClearChain.API/.env`, and
-[`.env.example`](Backend/ClearChain.API/.env.example) lists every variable. Environment
-variables set in the shell or by a host work too and take precedence.
+[`.env.example`](Backend/ClearChain.API/.env.example) lists every variable. The API also
+reads variables from the environment, so a host can supply them without a `.env` file. When
+both are present, the value in `.env` wins: it overwrites a variable already set in the
+shell.
 
 | Variables | Used for | If missing |
 | --- | --- | --- |
@@ -256,7 +271,7 @@ variables set in the shell or by a host work too and take precedence.
 | `AZURE_OPENAI_REASONING_EFFORT` | Reasoning effort (`none`, `low`, ...) when the deployment is a reasoning model | Not sent; leave unset for other models |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Verification and password-reset emails | Emails are skipped and a warning is logged |
 | `ALLOWED_ORIGINS` | CORS for browser clients, comma-separated | Only `http://localhost:3000` is allowed |
-| `ASPNETCORE_ENVIRONMENT` | `Development` enables Swagger | Production behavior, no Swagger |
+| `ASPNETCORE_ENVIRONMENT` | `Development` enables Swagger | Production behavior, no Swagger (`dotnet run` sets `Development` through its launch profile) |
 
 Notes:
 - `JWT_SECRET_KEY` must be at least 32 characters.
@@ -286,8 +301,9 @@ root from it by dropping the `/api` path, and adds a missing trailing slash.
 
 ### Physical devices
 
-The network security config allows plain HTTP only to `10.0.2.2` and `localhost`. The
-simplest setup is to forward the port over USB and point the app at `localhost`:
+The network security config allows plain HTTP only to `10.0.2.2`, `localhost` and
+`*.supabase.co`, so a device can't reach the API by your computer's LAN address over HTTP.
+The simplest setup is to forward the port over USB and point the app at `localhost`:
 
 ```bash
 adb reverse tcp:5000 tcp:5000
@@ -323,6 +339,7 @@ ClearChain/
 └── Mobile/
     ├── app/src/main/java/com/clearchain/app/
     │   ├── data/                    Room, Retrofit APIs and DTOs, SignalR client, repositories
+    │   ├── di/                      Hilt modules
     │   ├── domain/                  Models, repository interfaces, use cases
     │   ├── presentation/            Compose screens and ViewModels per feature, navigation
     │   ├── ui/theme/                Colors, typography, spacing tokens
@@ -356,7 +373,7 @@ Room, so its screens still show it when the network is unavailable.
 | `/hubs/listings` | Any signed-in user | `ListingCreated`, `ListingUpdated`, `ListingDeleted`, `ListingQuantityChanged` | Yes |
 | `/hubs/inventory` | Any signed-in user | `InventoryItemAdded`, `InventoryItemDistributed`, `InventoryItemExpired` | Yes |
 | `/hubs/notifications` | Any signed-in user | `NotificationReceived` | Yes |
-| `/hubs/admin` | Admins only | `NewOrganizationRegistered`, `TransactionCompleted`, `StatsUpdated`, `SystemAlert` | No |
+| `/hubs/admin` | Admins only | `NewOrganizationRegistered`, `TransactionCompleted`, `NewDisputeCreated`, `StatsUpdated`, `SystemAlert` | No |
 
 Clients pass the access token as an `access_token` query parameter.
 
@@ -383,7 +400,7 @@ Swagger at `/swagger` when running in Development.
 
 | Route | Purpose |
 | --- | --- |
-| `/api/auth` | Register, email verification, login, refresh, logout, password change and reset, account deletion, device token |
+| `/api/auth` | Register, email verification, login, refresh, logout, current user, password change and reset, account deletion, device token |
 | `/api/organizations` | Own profile, avatar and verification document, stats and activity, public profiles and reputation |
 | `/api/listings` | Listing CRUD, quantity, archive/restore, search by category and distance |
 | `/api/cart` | NGO cart and checkout, which creates the pickup requests |
@@ -393,27 +410,13 @@ Swagger at `/swagger` when running in Development.
 | `/api/messages` | Per-pickup conversations |
 | `/api/notifications` | Notification inbox |
 | `/api/reviews` | Post-pickup reviews |
-| `/api/disputes` | Open disputes on completed pickups; admin review and resolution |
+| `/api/disputes` | NGOs open disputes on completed pickups; admins list and resolve them |
 | `/api/imageanalysis` | Food image analysis and upload |
-| `/api/admin` | Organization verification, statistics, alerts, all pickup requests |
+| `/api/admin` | Organization verification, statistics and the dates that have data, alerts, all pickup requests |
 | `/api/health/*` | SignalR and job status |
 
 SignalR hubs are listed under [Realtime and offline](#realtime-and-offline).
 
-## Maintainers
-
-[@quantr10](https://github.com/quantr10)
-
-## Contributing
-
-Questions and bug reports go in [GitHub Issues](https://github.com/quantr10/ClearChain/issues).
-
-Pull requests are welcome. Before opening one:
-
-1. Branch from `main`.
-2. Describe what changed and why. If the change touches the database schema, include the
-   migration or the SQL to apply.
-
 ## License
 
-[MIT](https://opensource.org/licenses/MIT) © 2026 Quan Tran
+[MIT](LICENSE) © 2026 Quan Tran
