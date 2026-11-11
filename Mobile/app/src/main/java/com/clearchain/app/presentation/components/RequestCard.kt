@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +18,10 @@ import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.PickupRequest
 import com.clearchain.app.domain.model.PickupRequestStatus
+import com.clearchain.app.ui.theme.ButtonShape
+import com.clearchain.app.ui.theme.CardPadding
+import com.clearchain.app.ui.theme.ExpiryColors
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.util.DateTimeUtils
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -59,7 +62,7 @@ fun RequestCard(
 
     ClearChainCard(modifier = modifier, onClick = onClick) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(CardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Header: title + status badge
@@ -241,7 +244,7 @@ fun ExpiryDetailRow(expiryDate: String?) {
         text = stringResource(R.string.listing_expires_on, DateTimeUtils.formatDate(expiry)),
         textColor = when {
             daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
-            daysUntilExpiry <= 3L -> Color(0xFFE65100)
+            daysUntilExpiry <= 3L -> ExpiryColors.Soon
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
     )
@@ -254,7 +257,7 @@ private fun GroceryLocationRow(location: String?, distanceKm: Double?) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(IconGap)
     ) {
         if (place != null) {
             Icon(
@@ -376,7 +379,7 @@ private fun GroceryRequestActions(
         PickupRequestStatus.READY -> {
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(10.dp),
+                shape = ButtonShape,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ClearChainButtonDefaults.Height)
@@ -429,7 +432,7 @@ private fun NgoRequestActions(
         PickupRequestStatus.APPROVED -> {
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(10.dp),
+                shape = ButtonShape,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ClearChainButtonDefaults.Height)

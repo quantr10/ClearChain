@@ -99,3 +99,24 @@ val Typography = Typography(
         lineHeight = 16.sp
     )
 )
+
+// ── Brand styles ─────────────────────────────────────────────────────────────
+
+/**
+ * Design system `wordmark`: the name on the splash screen, white on the brand gradient. Built on
+ * `bodyLarge`, the default text style it was drawn with, so it keeps that style's 24sp line height.
+ */
+val WordmarkStyle = Typography.bodyLarge.copy(
+    fontWeight = FontWeight.ExtraBold,
+    fontSize = 38.sp,
+    letterSpacing = (-0.5).sp
+)
+
+/** Design system `wordmark-header`: the name in the sign-in and register header, on `bodyLarge` too. */
+val WordmarkHeaderStyle = Typography.bodyLarge.copy(
+    fontWeight = FontWeight.ExtraBold,
+    fontSize = 26.sp
+)
+
+/** Design system `eyebrow`: the uppercase role label above the dashboard greeting. */
+val EyebrowStyle = Typography.labelSmall.copy(letterSpacing = 1.5.sp)

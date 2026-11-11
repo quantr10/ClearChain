@@ -13,12 +13,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.OnBrandGradient
+import com.clearchain.app.ui.theme.WordmarkHeaderStyle
 
 /**
  * Shared gradient header used by both LoginScreen and RegisterScreen.
@@ -52,21 +53,20 @@ fun AuthHeader(
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.2f)),
+                    .background(OnBrandGradient.copy(alpha = Alpha.LogoDisc)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Eco,
                     contentDescription = null,
                     modifier = Modifier.size(38.dp),
-                    tint = Color.White
+                    tint = OnBrandGradient
                 )
             }
             Text(
                 text = "ClearChain",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
+                style = WordmarkHeaderStyle,
+                color = OnBrandGradient
             )
             Text(
                 text = subtitle,

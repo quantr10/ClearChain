@@ -2,7 +2,6 @@ package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,6 +13,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ActionCardShape
+import com.clearchain.app.ui.theme.CardPadding
+import com.clearchain.app.ui.theme.IconGap
 
 @Composable
 fun DashboardSection(
@@ -28,11 +30,11 @@ fun DashboardSection(
         modifier = modifier.fillMaxWidth(),
         color = containerColor,
         contentColor = resolvedContentColor,
-        shape = RoundedCornerShape(16.dp),
+        shape = ActionCardShape,
         shadowElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(CardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (title.isNotBlank() || action != null) {
@@ -74,7 +76,7 @@ fun SectionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(CardPadding),
             verticalArrangement = Arrangement.spacedBy(contentSpacing)
         ) {
             if (title.isNotBlank() || action != null) {
@@ -112,7 +114,7 @@ fun CompactDetailRow(
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(IconGap)
     ) {
         Icon(icon, null, Modifier.size(14.dp), tint = iconTint)
         Text(

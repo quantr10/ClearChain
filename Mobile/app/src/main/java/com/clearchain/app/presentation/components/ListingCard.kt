@@ -21,6 +21,9 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.*
+import com.clearchain.app.ui.theme.CardPadding
+import com.clearchain.app.ui.theme.ExpiryColors
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.util.DateTimeUtils
 import java.text.SimpleDateFormat
 import java.util.*
@@ -99,7 +102,7 @@ fun ListingCard(
 
             // ── Content ──────────────────────────────────────────────────────
             Column(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(CardPadding),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Name + category inline, topRightAction on the right
@@ -142,7 +145,7 @@ fun ListingCard(
                 // Quantity
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(IconGap)
                 ) {
                     Icon(
                         Icons.Default.ShoppingCart,
@@ -161,7 +164,7 @@ fun ListingCard(
                 // Expiry date
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(IconGap)
                 ) {
                     Icon(Icons.Default.CalendarToday, null, Modifier.size(14.dp), tint = expiryColor)
                     Text(
@@ -175,7 +178,7 @@ fun ListingCard(
                 if (showPickupTime) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(IconGap)
                     ) {
                         Icon(
                             Icons.Default.Schedule,
@@ -201,7 +204,7 @@ fun ListingCard(
                 if (showGroceryInfo && listing.location.isNotBlank()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(IconGap)
                     ) {
                         Icon(
                             Icons.Default.Place,
@@ -276,7 +279,7 @@ internal fun daysUntil(date: String): Long =
 @Composable
 internal fun expiryTextColor(daysUntilExpiry: Long): Color = when {
     daysUntilExpiry <= 0L -> MaterialTheme.colorScheme.error
-    daysUntilExpiry <= 3L -> Color(0xFFE65100)
+    daysUntilExpiry <= 3L -> ExpiryColors.Soon
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
@@ -303,9 +306,9 @@ internal fun ExpiryUrgencyBanner(daysUntilExpiry: Long, modifier: Modifier = Mod
         else -> return
     }
     val color = when {
-        daysUntilExpiry <= 0L -> Color(0xCCB71C1C)
-        daysUntilExpiry == 1L -> Color(0xCCE65100)
-        else -> Color(0xCCF57F17)
+        daysUntilExpiry <= 0L -> ExpiryColors.BannerExpired
+        daysUntilExpiry == 1L -> ExpiryColors.BannerTomorrow
+        else -> ExpiryColors.BannerSoon
     }
     Box(
         modifier = modifier

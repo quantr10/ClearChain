@@ -12,6 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ActionCardShape
+import com.clearchain.app.ui.theme.CardPadding
+import com.clearchain.app.ui.theme.CardShape
+import com.clearchain.app.ui.theme.IconTileSize
 
 @Composable
 fun DashboardActionCard(
@@ -32,14 +36,14 @@ fun DashboardActionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(CardPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 color = iconContainerColor,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(48.dp)
+                shape = CardShape,
+                modifier = Modifier.size(IconTileSize)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -100,7 +104,7 @@ fun DashboardActionCard(
         Card(
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = ActionCardShape,
             colors = cardColors,
             elevation = cardElevation,
             content = content
@@ -108,7 +112,7 @@ fun DashboardActionCard(
     } else {
         Card(
             modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = ActionCardShape,
             colors = cardColors,
             elevation = cardElevation,
             content = content

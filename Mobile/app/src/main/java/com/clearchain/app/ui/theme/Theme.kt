@@ -31,6 +31,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightOnSurfaceVariant,
     error = LightError,
+    onError = Color.White,
     errorContainer = LightErrorContainer,
     onErrorContainer = LightOnErrorContainer,
     outline = Gray300,
@@ -70,6 +71,8 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = DarkOnSurfaceVariant,
     error = DarkError,
+    // Material's own default, made explicit so the scheme lists every role the design system does.
+    onError = Color(0xFF601410),
     errorContainer = DarkErrorContainer,
     onErrorContainer = DarkOnErrorContainer,
     outline = Color(0xFF475569),

@@ -24,8 +24,13 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.clearchain.app.R
 import com.clearchain.app.presentation.notifications.NotificationBell
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.EyebrowStyle
+import com.clearchain.app.ui.theme.HeaderPadding
+import com.clearchain.app.ui.theme.OnBrandGradient
+import com.clearchain.app.ui.theme.ScreenHPadding
 
 /** Gradient welcome header used at the top of dashboards. */
 @Composable
@@ -46,7 +51,7 @@ fun DashboardWelcomeHeader(
             .background(
                 brush = Brush.linearGradient(colors = gradientColors)
             )
-            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .padding(horizontal = ScreenHPadding, vertical = HeaderPadding)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -57,25 +62,21 @@ fun DashboardWelcomeHeader(
                 if (roleLabel.isNotBlank()) {
                     Text(
                         text = roleLabel.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.75f),
-                        letterSpacing = androidx.compose.ui.unit.TextUnit(
-                            1.5f,
-                            androidx.compose.ui.unit.TextUnitType.Sp
-                        )
+                        style = EyebrowStyle,
+                        color = OnBrandGradient.copy(alpha = Alpha.Eyebrow)
                     )
                 }
                 Text(
                     text = stringResource(R.string.greeting_hi, userName),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = OnBrandGradient
                 )
                 if (subtitle.isNotBlank()) {
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = OnBrandGradient.copy(alpha = Alpha.Subtitle)
                     )
                 }
             }
@@ -91,7 +92,7 @@ fun DashboardWelcomeHeader(
                     imageUrl = profilePictureUrl,
                     name = userName,
                     size = 48,
-                    borderColor = Color.White,
+                    borderColor = OnBrandGradient,
                     onClick = onProfileClick
                 )
                 trailingContent?.invoke()

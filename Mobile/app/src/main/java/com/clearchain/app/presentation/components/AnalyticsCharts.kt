@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.ButtonShape
 import com.clearchain.app.ui.theme.StatusColors
 
 // Chart vocabulary shared by the admin dashboard, the admin statistics screen and
@@ -261,7 +262,7 @@ fun ImpactStatCell(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        Surface(shape = RoundedCornerShape(10.dp), color = color.copy(alpha = 0.12f)) {
+        Surface(shape = ButtonShape, color = color.copy(alpha = 0.12f)) {
             Text(
                 value,
                 style = MaterialTheme.typography.labelSmall,

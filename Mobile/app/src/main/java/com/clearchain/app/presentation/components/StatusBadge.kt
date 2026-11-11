@@ -1,7 +1,6 @@
 package com.clearchain.app.presentation.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.*
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.CategoryColors
 import com.clearchain.app.ui.theme.StatusColors
 
@@ -35,7 +35,7 @@ fun StatusBadge(
 ) {
     Surface(
         color = backgroundColor,
-        shape = RoundedCornerShape(6.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         modifier = modifier
     ) {
         Row(
@@ -117,7 +117,7 @@ fun CategoryBadge(category: FoodCategory) {
     val color = category.chartColor()
     StatusBadge(
         label = stringResource(category.labelResId),
-        backgroundColor = color.copy(alpha = 0.12f),
+        backgroundColor = color.copy(alpha = Alpha.CategoryTint),
         contentColor = color
     )
 }
@@ -140,7 +140,7 @@ fun InventoryCategoryBadge(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(6.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         modifier = modifier
     ) {
         Text(

@@ -24,7 +24,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.ButtonShape
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.ControlIconSize
+import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.IconGap
+import com.clearchain.app.ui.theme.ListGap
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.HapticUtils
 
@@ -52,10 +59,10 @@ fun SearchBar(
         onValueChange = onQueryChange,
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
+            .height(ControlHeight)
             .disabledIf(!enabled)
             .border(1.dp, borderColor, ShapeMedium)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = ControlPadding),
         enabled = enabled,
         textStyle = MaterialTheme.typography.labelSmall.copy(
             color = MaterialTheme.colorScheme.onSurface
@@ -66,12 +73,12 @@ fun SearchBar(
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(IconGap)
             ) {
                 Icon(
                     Icons.Default.Search,
                     null,
-                    Modifier.size(18.dp),
+                    Modifier.size(ControlIconSize),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(Modifier.weight(1f)) {
@@ -79,7 +86,7 @@ fun SearchBar(
                         Text(
                             placeholder,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Placeholder)
                         )
                     }
                     innerTextField()
@@ -95,7 +102,7 @@ fun SearchBar(
                         Icon(
                             Icons.Default.Clear,
                             stringResource(R.string.cd_clear_search),
-                            Modifier.size(18.dp),
+                            Modifier.size(ControlIconSize),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -125,9 +132,9 @@ fun ListHeaderSearchRow(
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = ScreenHPadding),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(ListGap)
         ) {
             SearchBar(
                 query = query,
@@ -155,8 +162,8 @@ fun ListScreenHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(top = ListGap),
+        verticalArrangement = Arrangement.spacedBy(ListGap),
         content = content
     )
 }
@@ -267,8 +274,8 @@ fun FilterChipsRow(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        horizontalArrangement = Arrangement.spacedBy(ListGap),
+        contentPadding = PaddingValues(horizontal = ScreenHPadding)
     ) {
         items(filters) { filter ->
             val context = LocalContext.current
@@ -299,8 +306,8 @@ fun <T> FilterChipsRow(
     val context = LocalContext.current
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        horizontalArrangement = Arrangement.spacedBy(ListGap),
+        contentPadding = PaddingValues(horizontal = ScreenHPadding)
     ) {
         items(tabs) { (tab, label) ->
             HeaderChip(
@@ -350,9 +357,9 @@ fun FilterSheetContent(content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = ScreenHPadding)
                 .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(ListGap),
             content = content
         )
     }
@@ -434,7 +441,7 @@ fun ResultsCountAndSort(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = ScreenHPadding),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

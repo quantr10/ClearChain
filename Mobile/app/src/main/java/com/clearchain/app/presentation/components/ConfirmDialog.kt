@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Image
@@ -26,6 +25,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.CardShape
 import com.clearchain.app.util.HapticUtils
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -259,7 +259,7 @@ fun PhotoPickerDialog(
             confirmLoading = confirmLoading
         ) {
             Card(
-                shape = RoundedCornerShape(12.dp),
+                shape = CardShape,
                 modifier = Modifier.fillMaxWidth().height(240.dp)
             ) {
                 AsyncImage(

@@ -20,6 +20,8 @@ import coil.request.ImageRequest
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.InventoryItem
 import com.clearchain.app.domain.model.InventoryStatus
+import com.clearchain.app.ui.theme.CardPadding
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.util.DateTimeUtils
 
 @Composable
@@ -72,7 +74,7 @@ fun InventoryItemCard(
             }
 
             Column(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(CardPadding),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // ── Name + category ──────────────────────────────────────────
@@ -160,7 +162,7 @@ private fun CompactInventoryRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(IconGap)
     ) {
         Icon(icon, null, Modifier.size(14.dp), tint = textColor)
         Text(

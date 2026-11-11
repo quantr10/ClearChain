@@ -110,6 +110,11 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
 - **Strings.** Every user-visible string must exist in both `res/values/strings.xml` (en) and
   `res/values-vi/strings.xml` (vi). Counts use `<plurals>`. The language switches at runtime from
   Settings, which is why the bundle's language split is disabled.
+- **Theme tokens.** `ui/theme` mirrors the ClearChain design system: `Color.kt` (with `ExpiryColors`
+  and `OnBrandGradient`), `Type.kt` (plus the wordmark and eyebrow styles), `Shape.kt`, `Spacing.kt`,
+  `Dimens.kt` (component sizes) and `Alpha.kt` (opacities). Each declaration's KDoc names its design
+  system token. Shared components use these names rather than repeating dp, alpha or colour literals,
+  so a change to a token is one edit.
 
 ## Contracts that span both apps
 

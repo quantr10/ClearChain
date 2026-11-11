@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.BackButtonSize
 import com.clearchain.app.util.HapticUtils
 
 /**
@@ -56,7 +58,7 @@ fun ScreenTitleRow(
                 enabled = backEnabled,
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(BackButtonSize)
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Icon(
@@ -64,7 +66,7 @@ fun ScreenTitleRow(
                         contentDescription = stringResource(R.string.back),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = if (backEnabled) 1f else ClearChainButtonDefaults.DisabledAlpha
+                            alpha = if (backEnabled) 1f else Alpha.Disabled
                         )
                     )
                 }

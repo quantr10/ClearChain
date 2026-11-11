@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.TileGap
 
 /** One figure on a [StatOverview]. */
 data class StatTile(
@@ -33,10 +35,10 @@ fun StatOverview(
     Row(
         // Intrinsic height ties the hero tile to the ones stacked beside it.
         modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(TileGap)
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = Alpha.TileTint),
             shape = MaterialTheme.shapes.small,
             modifier = Modifier.weight(1f).fillMaxHeight()
         ) {
@@ -69,7 +71,7 @@ fun StatOverview(
 
         Column(
             modifier = Modifier.weight(1f).fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(TileGap)
         ) {
             secondary.forEach { tile ->
                 SecondaryStatTile(tile, Modifier.weight(1f))
@@ -81,7 +83,7 @@ fun StatOverview(
 @Composable
 private fun SecondaryStatTile(tile: StatTile, modifier: Modifier = Modifier) {
     Surface(
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = Alpha.TileTint),
         shape = MaterialTheme.shapes.small,
         modifier = modifier.fillMaxWidth()
     ) {

@@ -28,6 +28,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.ControlIconSize
+import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 
 @Composable
@@ -51,7 +56,7 @@ fun ClearChainTextField(
     minLines: Int = 1,
     maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     readOnly: Boolean = false,
-    fieldHeight: Dp = 32.dp,
+    fieldHeight: Dp = ControlHeight,
     fieldShape: Shape = ShapeMedium,
     focusedBorderColor: Color = MaterialTheme.colorScheme.primary,
     unfocusedBorderColor: Color = MaterialTheme.colorScheme.outlineVariant
@@ -63,19 +68,19 @@ fun ClearChainTextField(
     val borderColor = when {
         isError -> MaterialTheme.colorScheme.error
         isFocused -> focusedBorderColor
-        !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)
+        !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = Alpha.Disabled)
         else -> unfocusedBorderColor
     }
     val borderWidth = 1.dp
     val contentColor = if (enabled) {
         MaterialTheme.colorScheme.onSurface
     } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        MaterialTheme.colorScheme.onSurface.copy(alpha = Alpha.Disabled)
     }
     val iconTint = if (enabled) {
         MaterialTheme.colorScheme.onSurfaceVariant
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Disabled)
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -95,7 +100,7 @@ fun ClearChainTextField(
                 .fillMaxWidth()
                 .then(if (singleLine) Modifier.height(fieldHeight) else Modifier)
                 .border(borderWidth, borderColor, fieldShape)
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = ControlPadding)
                 .then(if (!singleLine) Modifier.padding(vertical = 8.dp) else Modifier),
             textStyle = MaterialTheme.typography.labelSmall.copy(color = contentColor),
             singleLine = singleLine,
@@ -115,10 +120,10 @@ fun ClearChainTextField(
                 Row(
                     modifier = if (singleLine) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
                     verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(IconGap)
                 ) {
                     if (leadingIcon != null) {
-                        Icon(leadingIcon, null, Modifier.size(18.dp), tint = iconTint)
+                        Icon(leadingIcon, null, Modifier.size(ControlIconSize), tint = iconTint)
                     }
                     Box(
                         modifier = Modifier.weight(1f),
@@ -128,7 +133,7 @@ fun ClearChainTextField(
                             Text(
                                 text = placeholder,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Placeholder)
                             )
                         }
                         innerTextField()
@@ -147,7 +152,7 @@ fun ClearChainTextField(
                                 } else {
                                     stringResource(R.string.cd_show_password)
                                 },
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(ControlIconSize),
                                 tint = iconTint
                             )
                         }
@@ -156,7 +161,7 @@ fun ClearChainTextField(
                             onClick = { onValueChange("") },
                             modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), Modifier.size(18.dp), tint = iconTint)
+                            Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), Modifier.size(ControlIconSize), tint = iconTint)
                         }
                     }
                 }

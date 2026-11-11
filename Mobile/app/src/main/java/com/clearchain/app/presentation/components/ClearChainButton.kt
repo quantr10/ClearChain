@@ -14,17 +14,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.ActionIconButtonSize
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.ButtonShape
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.ControlIconSize
+import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.util.HapticUtils
 
 object ClearChainButtonDefaults {
-    val Height = 32.dp
-    val IconSize = 18.dp
-    val Spacing = 6.dp
-    val HorizontalPadding = 8.dp
+    val Height = ControlHeight
+    val IconSize = ControlIconSize
+    val Spacing = IconGap
+    val HorizontalPadding = ControlPadding
 
     /** Disabled buttons keep their own hue at this opacity so a red action still reads as red. */
-    val DisabledAlpha = 0.38f
+    val DisabledAlpha = Alpha.Disabled
 }
 
 /**
@@ -171,7 +177,7 @@ fun ClearChainActionIconButton(
                 onClick()
             }
         },
-        modifier = modifier.size(24.dp),
+        modifier = modifier.size(ActionIconButtonSize),
         shape = CircleShape,
         color = if (enabled) containerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
@@ -182,7 +188,7 @@ fun ClearChainActionIconButton(
                 Icon(
                     icon,
                     contentDescription,
-                    Modifier.size(18.dp),
+                    Modifier.size(ControlIconSize),
                     tint = if (enabled) tint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }

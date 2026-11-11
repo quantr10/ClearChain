@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clearchain.app.ui.theme.CardPadding
 
 /**
  * One form field in its own card, with a small label above the input. A "*" in [label] is
@@ -30,7 +31,7 @@ fun FieldCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(CardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             OptionalFieldLabel(

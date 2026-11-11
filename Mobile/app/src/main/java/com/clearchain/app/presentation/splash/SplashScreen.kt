@@ -18,9 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -29,7 +27,9 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.OnBrandGradient
 import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.WordmarkStyle
 import kotlinx.coroutines.delay
 
 @Composable
@@ -162,10 +162,8 @@ fun SplashScreen(
             ) {
                 Text(
                     text = stringResource(R.string.app_name),
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    letterSpacing = (-0.5).sp
+                    style = WordmarkStyle,
+                    color = OnBrandGradient
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(

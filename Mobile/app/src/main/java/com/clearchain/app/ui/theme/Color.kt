@@ -9,6 +9,12 @@ val BrandTeal = Color(0xFF0D9488)
 val BrandTealLight = Color(0xFFF0FDFA)
 val BrandTealDark = Color(0xFF0F766E)
 
+/**
+ * Design system `white`: text, icons and rings on the brand gradient. Fixed in both themes,
+ * because the gradient is.
+ */
+val OnBrandGradient = Color.White
+
 // ── Status colors ────────────────────────────────────────────────────────────
 
 object StatusColors {
@@ -49,6 +55,26 @@ object StatusColors {
     val Distributed = Color(0xFF06B6D4)
     val DistributedBg = Color(0xFFCFFAFE)
     val DistributedOnBg = Color(0xFF155E75)
+}
+
+// ── Expiry colors ────────────────────────────────────────────────────────────
+
+/**
+ * Listing and request cards escalate an expiry date through these as it nears. The same in
+ * both themes, like the status colours.
+ */
+object ExpiryColors {
+    /** `expiry-soon`: expiry text and icon one to three days before expiry. */
+    val Soon = Color(0xFFE65100)
+
+    /** `expiry-banner-expired`: the photo strip once expired, or on the last day (80% opaque). */
+    val BannerExpired = Color(0xCCB71C1C)
+
+    /** `expiry-banner-tomorrow`: the photo strip the day before expiry. */
+    val BannerTomorrow = Color(0xCCE65100)
+
+    /** `expiry-banner-soon`: the photo strip two or three days before expiry. */
+    val BannerSoon = Color(0xCCF57F17)
 }
 
 // ── Category colors ──────────────────────────────────────────────────────────

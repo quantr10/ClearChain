@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.IconGap
 
 /**
  * Pickups completed in the last seven days, against the weekly target. Both sides of a
@@ -39,7 +40,7 @@ fun WeeklyGoalCard(completed: Int, goal: Int, progress: Float) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(IconGap)
             ) {
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,

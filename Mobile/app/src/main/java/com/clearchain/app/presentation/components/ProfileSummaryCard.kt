@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.CardPadding
 
 /**
  * Profile summary card shown as the first section of both the account detail
@@ -60,7 +61,7 @@ fun ProfileSummaryCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(CardPadding),
             contentAlignment = Alignment.BottomStart
         ) {
             Row(

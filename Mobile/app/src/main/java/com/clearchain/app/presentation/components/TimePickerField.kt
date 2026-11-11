@@ -16,6 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.ControlIconSize
+import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 
 @Composable
@@ -28,7 +33,7 @@ fun TimePickerField(
     isError: Boolean = false,
     errorMessage: String? = null,
     enabled: Boolean = true,
-    fieldHeight: Dp = 32.dp,
+    fieldHeight: Dp = ControlHeight,
     fieldShape: Shape = ShapeMedium
 ) {
     var showPicker by remember { mutableStateOf(false) }
@@ -37,12 +42,12 @@ fun TimePickerField(
     val contentColor = if (enabled) {
         MaterialTheme.colorScheme.onSurface
     } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        MaterialTheme.colorScheme.onSurface.copy(alpha = Alpha.Disabled)
     }
     val iconTint = if (enabled) {
         MaterialTheme.colorScheme.onSurfaceVariant
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Disabled)
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -61,12 +66,12 @@ fun TimePickerField(
                 .height(fieldHeight)
                 .border(1.dp, borderColor, fieldShape)
                 .clickable(enabled = enabled) { showPicker = true }
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = ControlPadding)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(IconGap)
             ) {
                 Icon(Icons.Default.AccessTime, null, Modifier.size(14.dp), tint = iconTint)
                 Text(
@@ -76,13 +81,13 @@ fun TimePickerField(
                     color = if (value.isNotBlank()) {
                         contentColor
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = Alpha.Placeholder)
                     }
                 )
                 if (value.isNotBlank()) {
                     IconButton(
                         onClick = { onTimeSelected("") },
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(ControlIconSize)
                     ) {
                         Icon(
                             Icons.Default.Clear,

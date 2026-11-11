@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.zIndex
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 import java.util.Locale
 import kotlinx.coroutines.*
@@ -57,7 +59,7 @@ fun AddressSuggestionField(
     enabled: Boolean = true,
     isError: Boolean = false,
     errorMessage: String? = null,
-    fieldHeight: Dp = 32.dp,
+    fieldHeight: Dp = ControlHeight,
     fieldShape: Shape = ShapeMedium
 ) {
     val context = LocalContext.current
@@ -158,7 +160,7 @@ fun AddressSuggestionField(
                                         suggestions = emptyList()
                                     }
                                     .padding(horizontal = 8.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(IconGap)
                             ) {
                                 Icon(
                                     Icons.Default.Place,

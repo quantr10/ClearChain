@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
+import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.util.dialPhone
 import com.clearchain.app.util.sendEmail
 
@@ -82,7 +83,7 @@ private fun ContactActionButton(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
             contentColor = MaterialTheme.colorScheme.primary,
             disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = Alpha.Disabled)
         )
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(16.dp))
