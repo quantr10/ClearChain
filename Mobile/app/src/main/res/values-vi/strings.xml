@@ -979,10 +979,7 @@
     <string name="onboarding_doc_uploaded">Đã tải tài liệu lên</string>
     <string name="onboarding_view_status">Xem trạng thái</string>
     <string name="onboarding_submitted_title">Đã gửi để xét duyệt</string>
-    <string name="onboarding_submitted_subtitle">Hồ sơ và tài liệu của bạn đã được gửi đến đội ngũ ClearChain để xác minh.</string>
-    <string name="onboarding_submitted_step_profile">Đã gửi hồ sơ &amp; tài liệu</string>
-    <string name="onboarding_submitted_step_review">Admin xét duyệt — thường 1–3 ngày làm việc</string>
-    <string name="onboarding_submitted_step_notify">Bạn sẽ được thông báo khi tài khoản được duyệt</string>
+    <string name="onboarding_submitted_subtitle">Chúng tôi sẽ xem xét thông tin của bạn trong 1–3 ngày làm việc và thông báo khi bạn được duyệt.</string>
     <string name="error_document_required">Vui lòng tải lên tài liệu xác minh để tiếp tục</string>
     <string name="error_document_read_failed">Không đọc được tệp đã chọn</string>
     <string name="error_document_upload_failed">Tải tài liệu lên thất bại. Vui lòng thử lại.</string>

@@ -6,12 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -20,10 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,14 +22,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BorderWidth
-import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.ControlHeight
 import com.clearchain.app.ui.theme.ControlIconSize
 import com.clearchain.app.ui.theme.ControlPadding
@@ -46,7 +34,6 @@ import com.clearchain.app.ui.theme.EyebrowStyle
 import com.clearchain.app.ui.theme.FieldEndButtonSize
 import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ListGap
-import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
 import java.util.Locale
@@ -157,7 +144,7 @@ fun OnboardingScreen(
             when (step) {
                 1 -> Step1Content(state, viewModel)
                 2 -> Step2Content(state, viewModel)
-                else -> Step3Content()
+                else -> Step3Content(state.totalSteps)
             }
         }
     }
@@ -466,95 +453,50 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 }
 
-// ── Step 3: celebration ──────────────────────────────────────────────────────
+// ── Step 3: confirmation ─────────────────────────────────────────────────────
 
+/** A short confirmation that the profile is on its way to review. */
 @Composable
-private fun Step3Content() {
+private fun Step3Content(totalSteps: Int) {
     var revealed by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(100)
         revealed = true
     }
 
-    val scale by animateFloatAsState(
-        targetValue = if (revealed) 1f else 0.6f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "celebrate_scale"
-    )
     val alpha by animateFloatAsState(
         targetValue = if (revealed) 1f else 0f,
         animationSpec = tween(600, easing = FastOutSlowInEasing),
-        label = "celebrate_alpha"
+        label = "confirmation_alpha"
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(ScreenPadding),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(ListGap)
     ) {
-        Box(
-            modifier = Modifier
-                .scale(scale)
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(Brush.radialGradient(listOf(BrandTeal.copy(alpha = 0.15f), BrandGreen.copy(alpha = 0.05f)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Brush.verticalGradient(listOf(BrandTeal, BrandGreen))),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = Color.White
-                )
-            }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            StepIntro(3, totalSteps)
         }
+
+        StatusDisc(
+            icon = Icons.Default.TaskAlt,
+            modifier = Modifier.graphicsLayer(alpha = alpha)
+        )
 
         Text(
             text = stringResource(R.string.onboarding_submitted_title),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.graphicsLayer(alpha = alpha)
         )
 
         Text(
             text = stringResource(R.string.onboarding_submitted_subtitle),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.graphicsLayer(alpha = alpha)
         )
-
-        val steps = listOf(
-            Icons.Default.CheckCircle to stringResource(R.string.onboarding_submitted_step_profile),
-            Icons.Default.Schedule to stringResource(R.string.onboarding_submitted_step_review),
-            Icons.Default.Notifications to stringResource(R.string.onboarding_submitted_step_notify)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer(alpha = alpha),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            steps.forEach { (icon, label) ->
-                DashboardActionCard(
-                    icon = icon,
-                    title = label,
-                    onClick = null,
-                    iconContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
     }
 }
