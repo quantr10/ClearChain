@@ -1,5 +1,6 @@
 package com.clearchain.app.presentation.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,9 +30,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.BorderWidth
 import com.clearchain.app.ui.theme.ControlHeight
 import com.clearchain.app.ui.theme.ControlIconSize
 import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.FieldEndButtonSize
 import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 
@@ -59,7 +62,8 @@ fun ClearChainTextField(
     fieldHeight: Dp = ControlHeight,
     fieldShape: Shape = ShapeMedium,
     focusedBorderColor: Color = MaterialTheme.colorScheme.primary,
-    unfocusedBorderColor: Color = MaterialTheme.colorScheme.outlineVariant
+    unfocusedBorderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    clearLabel: String? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -71,7 +75,7 @@ fun ClearChainTextField(
         !enabled -> MaterialTheme.colorScheme.outline.copy(alpha = Alpha.Disabled)
         else -> unfocusedBorderColor
     }
-    val borderWidth = 1.dp
+    val borderWidth = BorderWidth
     val contentColor = if (enabled) {
         MaterialTheme.colorScheme.onSurface
     } else {
@@ -98,7 +102,7 @@ fun ClearChainTextField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (singleLine) Modifier.height(fieldHeight) else Modifier)
+                .then(if (singleLine) Modifier.heightIn(min = fieldHeight) else Modifier)
                 .border(borderWidth, borderColor, fieldShape)
                 .padding(horizontal = ControlPadding)
                 .then(if (!singleLine) Modifier.padding(vertical = 8.dp) else Modifier),
@@ -118,7 +122,11 @@ fun ClearChainTextField(
             keyboardActions = KeyboardActions(onAny = { onImeAction() }),
             decorationBox = { innerTextField ->
                 Row(
-                    modifier = if (singleLine) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                    modifier = if (singleLine) {
+                        Modifier.fillMaxWidth().heightIn(min = fieldHeight)
+                    } else {
+                        Modifier.fillMaxWidth()
+                    },
                     verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(IconGap)
                 ) {
@@ -141,7 +149,7 @@ fun ClearChainTextField(
                     when {
                         isPassword -> Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(FieldEndButtonSize)
                                 .clickable(enabled = enabled) { passwordVisible = !passwordVisible },
                             contentAlignment = Alignment.Center
                         ) {
@@ -159,9 +167,14 @@ fun ClearChainTextField(
                         trailingIcon != null -> trailingIcon()
                         value.isNotEmpty() -> IconButton(
                             onClick = { onValueChange("") },
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(FieldEndButtonSize)
                         ) {
-                            Icon(Icons.Default.Clear, stringResource(R.string.cd_clear_search), Modifier.size(ControlIconSize), tint = iconTint)
+                            Icon(
+                                Icons.Default.Clear,
+                                clearButtonLabel(clearLabel, label, R.string.cd_clear_text),
+                                Modifier.size(ControlIconSize),
+                                tint = iconTint
+                            )
                         }
                     }
                 }
@@ -175,5 +188,21 @@ fun ClearChainTextField(
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
+    }
+}
+
+/**
+ * The spoken label of a field's clear button: [clearLabel] when given, otherwise "Clear" with the
+ * field's own [label], otherwise "Clear" with the label of the [FieldCard] around it, otherwise
+ * the [fallback] string.
+ */
+@Composable
+internal fun clearButtonLabel(clearLabel: String?, label: String, @StringRes fallback: Int): String {
+    val cardLabel = LocalFieldLabel.current
+    return when {
+        clearLabel != null -> clearLabel
+        label.isNotBlank() -> stringResource(R.string.cd_clear_field, label)
+        !cardLabel.isNullOrBlank() -> stringResource(R.string.cd_clear_field, cardLabel)
+        else -> stringResource(fallback)
     }
 }

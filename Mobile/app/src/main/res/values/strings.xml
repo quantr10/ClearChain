@@ -900,6 +900,8 @@
     <string name="btn_confirm">Confirm</string>
     <string name="btn_cancel">Cancel</string>
     <string name="cd_clear_search">Clear search</string>
+    <string name="cd_clear_field">Clear %1$s</string>
+    <string name="cd_clear_text">Clear text</string>
     <string name="label_address">Address</string>
     <string name="placeholder_start_typing_address">Start typing an address…</string>
 

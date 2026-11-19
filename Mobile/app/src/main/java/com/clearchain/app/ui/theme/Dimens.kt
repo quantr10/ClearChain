@@ -21,3 +21,9 @@ val BackButtonSize = 36.dp
 
 /** Design system `icon-tile`: the rounded icon tile on dashboard action cards and Profile rows. */
 val IconTileSize = 48.dp
+
+/** Design system `field-end-button`: the clear and visibility buttons at the end of a field. */
+val FieldEndButtonSize = 24.dp
+
+/** Design system `border-width`: the outline of fields, code cells, role cards and document rows. */
+val BorderWidth = 1.dp
