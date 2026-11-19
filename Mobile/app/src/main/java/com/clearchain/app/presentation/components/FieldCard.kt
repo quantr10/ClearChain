@@ -9,10 +9,19 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.ui.theme.CardPadding
+
+/**
+ * The label of the [FieldCard] around a field, or null outside one. Fields with no label of their
+ * own use it to name their clear button.
+ */
+val LocalFieldLabel: ProvidableCompositionLocal<String?> = staticCompositionLocalOf { null }
 
 /**
  * One form field in its own card, with a small label above the input. A "*" in [label] is
@@ -34,14 +43,17 @@ fun FieldCard(
             modifier = Modifier.padding(CardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            val shownLabel = label.replace("*", "").trim()
             OptionalFieldLabel(
-                text = label.replace("*", "").trim(),
+                text = shownLabel,
                 isOptional = isOptional,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            content()
+            CompositionLocalProvider(LocalFieldLabel provides shownLabel) {
+                content()
+            }
         }
     }
 }
