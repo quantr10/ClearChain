@@ -37,9 +37,12 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.EyebrowStyle
+import com.clearchain.app.ui.theme.ListGap
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
+import java.util.Locale
 import kotlinx.coroutines.delay
 
 /**
@@ -78,166 +81,113 @@ fun OnboardingScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            OnboardingHeader(
-                currentStep = state.currentStep,
-                totalSteps = state.totalSteps
-            )
-
-            AnimatedContent(
-                targetState = state.currentStep,
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                transitionSpec = {
-                    if (targetState > initialState) {
-                        slideInHorizontally { it / 2 } + fadeIn(tween(280)) togetherWith
-                            slideOutHorizontally { -it / 2 } + fadeOut(tween(200))
-                    } else {
-                        slideInHorizontally { -it / 2 } + fadeIn(tween(280)) togetherWith
-                            slideOutHorizontally { it / 2 } + fadeOut(tween(200))
-                    }
-                },
-                label = "step_transition"
-            ) { step ->
-                when (step) {
-                    1 -> Step1Content(state, viewModel)
-                    2 -> Step2Content(state, viewModel)
-                    else -> Step3Content()
-                }
-            }
-
-            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-                when (state.currentStep) {
-                    1 -> ClearChainButton(
-                        text = stringResource(R.string.onboarding_continue),
+    BrandScaffold(
+        header = BrandHeader.Compact(
+            title = stringResource(R.string.onboarding_setup_profile),
+            step = state.currentStep,
+            totalSteps = state.totalSteps
+        ),
+        snackbarHostState = snackbarHostState,
+        bottomBar = {
+            when (state.currentStep) {
+                1 -> ClearChainButton(
+                    text = stringResource(R.string.onboarding_continue),
+                    onClick = { viewModel.onEvent(OnboardingEvent.NextStep) },
+                    loading = state.isSaving,
+                    enabled = !state.isSaving && state.canContinueStep1,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                2 -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(ListGap)
+                ) {
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.onboarding_back),
+                        onClick = { viewModel.onEvent(OnboardingEvent.PreviousStep) },
+                        enabled = !state.isSaving,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.onboarding_complete),
                         onClick = { viewModel.onEvent(OnboardingEvent.NextStep) },
                         loading = state.isSaving,
-                        enabled = !state.isSaving && state.canContinueStep1,
-                        modifier = Modifier.fillMaxWidth()
+                        enabled = !state.isSaving && state.canContinueStep2,
+                        modifier = Modifier.weight(1f)
                     )
-                    2 -> Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        ClearChainOutlinedButton(
-                            text = stringResource(R.string.onboarding_back),
-                            onClick = { viewModel.onEvent(OnboardingEvent.PreviousStep) },
-                            enabled = !state.isSaving,
-                            modifier = Modifier.weight(1f)
-                        )
-                        ClearChainButton(
-                            text = stringResource(R.string.onboarding_complete),
-                            onClick = { viewModel.onEvent(OnboardingEvent.NextStep) },
-                            loading = state.isSaving,
-                            enabled = !state.isSaving && state.canContinueStep2,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    3 -> Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        ClearChainOutlinedButton(
-                            text = stringResource(R.string.onboarding_back),
-                            onClick = { viewModel.onEvent(OnboardingEvent.PreviousStep) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        ClearChainButton(
-                            text = stringResource(R.string.onboarding_view_status),
-                            onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
-                            icon = Icons.AutoMirrored.Filled.ArrowForward,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                 }
+                3 -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(ListGap)
+                ) {
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.onboarding_back),
+                        onClick = { viewModel.onEvent(OnboardingEvent.PreviousStep) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ClearChainButton(
+                        text = stringResource(R.string.onboarding_view_status),
+                        onClick = { viewModel.onEvent(OnboardingEvent.FinishOnboarding) },
+                        icon = Icons.AutoMirrored.Filled.ArrowForward,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    ) {
+        AnimatedContent(
+            targetState = state.currentStep,
+            transitionSpec = {
+                if (targetState > initialState) {
+                    slideInHorizontally { it / 2 } + fadeIn(tween(280)) togetherWith
+                        slideOutHorizontally { -it / 2 } + fadeOut(tween(200))
+                } else {
+                    slideInHorizontally { -it / 2 } + fadeIn(tween(280)) togetherWith
+                        slideOutHorizontally { it / 2 } + fadeOut(tween(200))
+                }
+            },
+            label = "step_transition"
+        ) { step ->
+            when (step) {
+                1 -> Step1Content(state, viewModel)
+                2 -> Step2Content(state, viewModel)
+                else -> Step3Content()
             }
         }
     }
 }
 
-// ── Gradient header with segment progress ────────────────────────────────────
+// ── Step intro ───────────────────────────────────────────────────────────────
 
+/**
+ * The step's eyebrow, such as "STEP 1 OF 3 · CONTACT DETAILS", and for steps 1 and 2 a subtitle
+ * saying what the step asks for.
+ */
 @Composable
-private fun OnboardingHeader(
-    currentStep: Int,
-    totalSteps: Int
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(BrandTeal, BrandGreen)))
-            .padding(horizontal = 24.dp, vertical = 20.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = stringResource(R.string.onboarding_welcome),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
-                color = Color.White.copy(alpha = 0.9f)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.onboarding_setup_profile),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                repeat(totalSteps) { index ->
-                    val stepNum = index + 1
-                    val isDone = stepNum < currentStep
-                    val isActive = stepNum == currentStep
-                    val fraction by animateFloatAsState(
-                        targetValue = when {
-                            isDone -> 1f
-                            isActive -> 1f
-                            else -> 0f
-                        },
-                        animationSpec = tween(500, easing = FastOutSlowInEasing),
-                        label = "seg_$index"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.3f))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(fraction)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White)
-                        )
-                    }
-                }
-            }
-
-            Text(
-                text = stringResource(R.string.onboarding_step_label, currentStep, totalSteps),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.75f)
-            )
+private fun StepIntro(step: Int, totalSteps: Int) {
+    val name = stringResource(
+        when (step) {
+            1 -> R.string.onboarding_step_contact
+            2 -> R.string.onboarding_step_location
+            else -> R.string.onboarding_step_submitted
         }
+    )
+    Text(
+        text = stringResource(R.string.onboarding_step_label_named, step, totalSteps, name)
+            .uppercase(Locale.getDefault()),
+        style = EyebrowStyle,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    val subtitle = when (step) {
+        1 -> R.string.onboarding_step1_subtitle
+        2 -> R.string.onboarding_step2_subtitle
+        else -> null
+    }
+    subtitle?.let {
+        Text(
+            text = stringResource(it),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -246,11 +196,11 @@ private fun OnboardingHeader(
 @Composable
 private fun Step1Content(state: OnboardingState, viewModel: OnboardingViewModel) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(ScreenPadding),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(ListGap)
     ) {
+        StepIntro(1, state.totalSteps)
+
         ClearChainTextField(
             value = state.phone,
             onValueChange = { viewModel.onEvent(OnboardingEvent.PhoneChanged(it)) },

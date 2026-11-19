@@ -284,9 +284,13 @@
     <string name="onboarding_continue">Continue</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_complete">Complete</string>
-    <string name="onboarding_step_label">Step %1$d of %2$d</string>
-    <string name="onboarding_setup_profile">Set Up Profile</string>
-    <string name="onboarding_welcome">Welcome to ClearChain</string>
+    <string name="onboarding_setup_profile">Set up your profile</string>
+    <string name="onboarding_step_label_named">Step %1$d of %2$d · %3$s</string>
+    <string name="onboarding_step_contact">Contact details</string>
+    <string name="onboarding_step_location">Location and hours</string>
+    <string name="onboarding_step_submitted">Submitted</string>
+    <string name="onboarding_step1_subtitle">How other organizations and our team can reach you</string>
+    <string name="onboarding_step2_subtitle">Where you\'re based, and when you\'re open</string>
     <string name="onboarding_phone_label">Phone Number</string>
     <string name="onboarding_about_label">About your organization</string>
     <string name="onboarding_about_placeholder">Tell others about your organization…</string>
@@ -640,7 +644,7 @@
     <string name="hint_org_description">Briefly describe your organization…</string>
     <string name="hint_contact_person">Primary contact name</string>
     <string name="hint_pickup_instructions_long">Back door, ask at service counter…</string>
-    <string name="hint_phone_profile">+84 123 456 789</string>
+    <string name="hint_phone_profile">(206) 555-0100</string>
 
     <!-- Password dialog errors -->
     <string name="error_current_password_required">Current password required</string>

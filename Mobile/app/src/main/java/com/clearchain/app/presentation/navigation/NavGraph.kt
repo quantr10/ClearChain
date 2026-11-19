@@ -142,7 +142,7 @@ fun NavGraph(
             ForgotPasswordScreen(navController = navController)
         }
 
-        insetComposable(Screen.Onboarding.route) {
+        composable(Screen.Onboarding.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             OnboardingScreen(
                 onFinished = {

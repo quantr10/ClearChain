@@ -265,9 +265,13 @@
     <string name="onboarding_continue">Tiếp tục</string>
     <string name="onboarding_back">Quay lại</string>
     <string name="onboarding_complete">Hoàn tất</string>
-    <string name="onboarding_step_label">Bước %1$d / %2$d</string>
-    <string name="onboarding_setup_profile">Thiết lập hồ sơ</string>
-    <string name="onboarding_welcome">Chào mừng đến ClearChain!</string>
+    <string name="onboarding_setup_profile">Thiết lập hồ sơ của bạn</string>
+    <string name="onboarding_step_label_named">Bước %1$d/%2$d · %3$s</string>
+    <string name="onboarding_step_contact">Thông tin liên hệ</string>
+    <string name="onboarding_step_location">Địa điểm và giờ mở cửa</string>
+    <string name="onboarding_step_submitted">Đã gửi</string>
+    <string name="onboarding_step1_subtitle">Cách các tổ chức khác và đội ngũ của chúng tôi liên hệ với bạn</string>
+    <string name="onboarding_step2_subtitle">Bạn ở đâu và mở cửa lúc nào</string>
     <string name="onboarding_phone_label">Số điện thoại</string>
     <string name="onboarding_about_label">Giới thiệu tổ chức</string>
     <string name="onboarding_about_placeholder">Chia sẻ về tổ chức của bạn…</string>
@@ -603,7 +607,7 @@
     <string name="hint_org_description">Mô tả ngắn về tổ chức của bạn…</string>
     <string name="hint_contact_person">Tên người liên hệ chính</string>
     <string name="hint_pickup_instructions_long">Cửa sau, hỏi tại quầy dịch vụ…</string>
-    <string name="hint_phone_profile">+84 123 456 789</string>
+    <string name="hint_phone_profile">(206) 555-0100</string>
 
     <!-- Password dialog errors -->
     <string name="error_current_password_required">Cần nhập mật khẩu hiện tại</string>
