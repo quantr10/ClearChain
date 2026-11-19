@@ -1,16 +1,13 @@
 package com.clearchain.app.presentation.components
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,37 +31,7 @@ fun EmptyState(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(40.dp)
         ) {
-            // Illustrative icon with decorative rings
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(100.dp)
-            ) {
-                val primaryColor = MaterialTheme.colorScheme.primary
-                val ringColor = primaryColor.copy(alpha = 0.08f)
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val center = Offset(size.width / 2, size.height / 2)
-                    drawCircle(color = ringColor, radius = size.width / 2, center = center)
-                    drawCircle(
-                        color = primaryColor.copy(alpha = 0.12f),
-                        radius = size.width / 2.8f,
-                        center = center
-                    )
-                }
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = CircleShape,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
+            StatusDisc(icon)
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

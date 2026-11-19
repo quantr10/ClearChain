@@ -22,4 +22,10 @@ object Alpha {
 
     /** `subtitle-alpha`: header subtitles, white at this alpha on the brand gradient. */
     val Subtitle = 0.8f
+
+    /** `ring-outer`: the status picture's outer ring, as primary at this alpha. */
+    val RingOuter = 0.08f
+
+    /** `ring-inner`: the status picture's inner ring, as primary at this alpha. */
+    val RingInner = 0.12f
 }

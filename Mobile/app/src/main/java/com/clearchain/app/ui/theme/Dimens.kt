@@ -27,3 +27,12 @@ val FieldEndButtonSize = 24.dp
 
 /** Design system `border-width`: the outline of fields, code cells, role cards and document rows. */
 val BorderWidth = 1.dp
+
+/** Design system `status-disc`: the primary-container disc of the status picture. */
+val StatusDiscSize = 56.dp
+
+/** Design system `status-disc-icon`: the icon inside the status picture's disc. */
+val StatusDiscIconSize = 28.dp
+
+/** Design system `status-rings`: the two rings around the status picture's disc. */
+val StatusRingsSize = 100.dp
