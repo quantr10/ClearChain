@@ -845,8 +845,8 @@
     <string name="btn_confirm">Xác nhận</string>
     <string name="btn_cancel">Hủy</string>
     <string name="cd_clear_search">Xóa tìm kiếm</string>
-    <string name="cd_clear_field">XÃ³a %1$s</string>
-    <string name="cd_clear_text">XÃ³a ná»™i dung</string>
+    <string name="cd_clear_field">Xóa %1$s</string>
+    <string name="cd_clear_text">Xóa nội dung</string>
     <string name="label_address">Địa chỉ</string>
     <string name="placeholder_start_typing_address">Bắt đầu nhập địa chỉ…</string>
 
