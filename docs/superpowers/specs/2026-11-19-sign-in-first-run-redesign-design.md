@@ -124,14 +124,16 @@ The work fails, even if it looks right, if any of these happen:
 #### `BrandScaffold` (new, `presentation/components/BrandScaffold.kt`)
 
 It replaces `AuthHeader` in `auth/AuthComponents.kt` (`AuthDivider` stays), `OnboardingHeader`, the
-plain `Scaffold`s of Verify email and Pending review, and the splash's own gradient box. It has two
-header modes:
+plain `Scaffold`s of Verify email and Pending review. The same file exports `BrandGradient` (the
+brush) and `LightStatusBarIcons()` (the status-bar effect below), which Splash uses for its own
+full-screen layout. It has two header modes:
 
 - **Hero, Login only.**
   - Content: the logo disc (64dp, `OnBrandGradient` at `Alpha.LogoDisc`) with the 38dp `eco` leaf,
     and the `WordmarkHeaderStyle` "ClearChain" below it, centred. There's no subtitle on the
     gradient.
-  - The hero scrolls away with the content.
+  - The hero scrolls away with the content. A strip of `BrandTeal`, the height of the status bar,
+    stays pinned behind it, so the light status-bar icons stay readable over scrolled content.
   - Height: the status bar, then the disc and wordmark with token spacing, then the sheet overlap.
     That's about 60dp shorter than today's 200dp header.
 - **Compact, every other screen.**
@@ -206,8 +208,9 @@ too. It's decorative, so it has no content description.
 - **Field.** One `BasicTextField`, drawn as `length` cells (default 6).
   - It accepts digits only, up to `length`. A paste keeps the first `length` digits and drops spaces
     and other characters.
-  - Keyboard: `KeyboardType.Number`. The IME action is the caller's: Done submits on both screens,
-    through the existing Verify or Reset event.
+  - Keyboard: `KeyboardType.Number`. The IME action is the caller's. On Verify email it's Done,
+    which sends the existing Verify event. On Forgot password it's Next, which moves focus to New
+    password. Submitting from the code field there would flag the two empty password fields.
   - It doesn't submit on its own when full, so behaviour stays as it is today.
 - **Cells.**
   - Cells share the row width equally (`weight(1f)`), with `ListGap` between them. Six cells fit in
@@ -217,29 +220,48 @@ too. It's decorative, so it has no content description.
   - Borders: 1dp `outlineVariant` at rest, `primary` on the cell that takes the next digit (with a
     caret), and `error` on all cells when `isError` is set. Disabled cells use `Alpha.Disabled`.
   - Digits are `headlineSmall` Bold in `onSurface`, centred.
-- **Label and error.** An optional visible label above uses `ClearChainTextField`'s label style.
-  - Verify email hides it.
-  - Forgot password shows "Reset code".
+- **Label and error.** The field always takes a `label`. A visible copy above the cells, in
+  `ClearChainTextField`'s label style, is optional.
+  - Verify email passes "Verification code" (new `verify_code_label`) and hides it.
+  - Forgot password passes "Reset code" (`reset_password_code_label`) and shows it.
   - An error line sits below, styled like `ClearChainTextField`'s.
 - **Semantics.** The whole row is one text field, never six.
-  - Content description: plurals `cd_code_field` ("Verification code, %d digits").
+  - Content description: plurals `cd_code_field` ("%1$s, %2$d digits"), built from the label, so
+    the spoken name contains the visible one ("Reset code, 6 digits").
   - State description: plurals `cd_code_digits_entered` ("%d digits entered").
   - Errors are announced with `error()`.
   - The builder adds one-time-code autofill if the Compose version supports it.
 
 #### Clear-button labels (finding 12)
 
-- **`ClearChainTextField`** gains `clearLabel: String? = null`. The clear button's description is:
-  1. `clearLabel`, if given
-  2. otherwise `"Clear %1$s"` with the field's label (`cd_clear_field`)
-  3. otherwise "Clear text" (`cd_clear_text`)
-- **`TimePickerField` and `DatePickerField`** gain the same parameter and fallback.
+- **`ClearChainTextField`** gains `clearLabel: String? = null`. The clear button's description is
+  the first of these that exists:
+  1. `clearLabel`
+  2. `"Clear %1$s"` (`cd_clear_field`) with the field's own `label`
+  3. `"Clear %1$s"` with the label of the `FieldCard` around it (see below)
+  4. "Clear text" (`cd_clear_text`)
+- **`TimePickerField` and `DatePickerField`** gain the same parameter and chain. Their last
+  fallbacks are "Clear time" (`cd_clear_time`) and "Clear date" (`cd_clear_date`).
+- **`FieldCard`** provides its label to the fields inside it through a new `LocalFieldLabel`
+  composition local. About 20 unlabelled fields in Account details, Create listing, Edit listing
+  and Cart pickup sit in a `FieldCard`, so they name their field with no change to those screens.
+- **Paired time fields** share one card label, so their callers pass `clearLabel`: "Clear opening
+  time" and "Clear closing time". That covers Onboarding and the two hours fields in
+  `AccountDetailScreen`.
 - **`SearchBar`** keeps "Clear search", because there it's correct.
 - **Register's custom email clear button** (`RegisterEvent.ClearEmail`) uses `cd_clear_field` with
   the email label.
-- **Fields with an empty `label`** need a `clearLabel` from the caller. That includes the
-  `AccountDetailScreen` hours fields and any date field without a label. Those screens otherwise
-  look the same.
+
+#### Controls that grow with the text
+
+At 200% font scale, Android's non-linear scaling turns 12sp into about 24sp, and the line height
+reaches 32dp. Today the controls have a fixed 32dp height, so any wrapped label is cut off.
+
+- `ClearChainButton` and `ClearChainOutlinedButton` change `requiredHeight(ControlHeight)` to
+  `heightIn(min = ControlHeight)`, and their labels may wrap.
+- `ClearChainTextField`, `TimePickerField` and `DatePickerField` change their single-line
+  `height(...)` to `heightIn(min = ...)`.
+- Nothing changes at normal text size. The design system's `control-height` becomes a minimum.
 
 #### `AddressSuggestionField` (finding 14)
 
@@ -251,8 +273,10 @@ too. It's decorative, so it has no content description.
     as soon as the debounced lookup starts. Debounce stays at 300ms and the minimum stays at three
     characters.
   - **Results:** up to five rows. The first line is `streetAddress`. The second line is
-    "City, ST ZIP", built from the structured fields, so it never shows a country name in either
-    language.
+    "City, State ZIP", built from the structured fields, so it never shows a country name in either
+    language. The state is shown as the geocoder returns it ("Seattle, Washington 98109").
+    Picking a row fills State with that same value, as it does today. Mapping it to a two-letter
+    code would change what gets stored.
   - **No results:** "No matching addresses. Fill in the fields below." (`address_no_matches`).
   - **Lookup error:** the list hides, as it does today.
 - **Focus.** The list shows only while the field has focus. Losing focus cancels the lookup and
@@ -274,6 +298,11 @@ too. It's decorative, so it has no content description.
 | `StatusDiscSize`, `StatusDiscIconSize`, `StatusRingsSize` | 56, 28, 100dp | `status-disc`, `status-disc-icon`, `status-rings` | `StatusDisc`, `EmptyState` |
 | `CodeCellMinHeight` | 52dp | `code-cell` | `CodeInputField` |
 | `Alpha.RingOuter`, `Alpha.RingInner` | 0.08, 0.12 | `ring-outer`, `ring-inner` | `StatusDisc` |
+| `FieldEndButtonSize` | 24dp | `field-end-button` | Clear and visibility buttons at a field's end |
+| `BorderWidth` | 1dp | `border-width` | Field, cell, role-card and document-row borders |
+| `MinTouchTarget` | 48dp | `touch-target` | Address suggestion rows, the Login link |
+| `TileIconSize` | 24dp | `tile-icon` | Register role cards (the size the design system gives action-card tiles) |
+| `DetailIconSize` | 14dp | `detail-icon` | Pending review detail rows (the design system's card detail rows) |
 
 `Alpha.LogoDisc`'s KDoc widens to "white at this alpha on the brand gradient: the logo disc, the
 header back circle and the step-bar track". The builder may add a token for a gap that none of the
@@ -307,7 +336,7 @@ Each screen keeps its ViewModel, state, events and navigation exactly. Only the 
 semantics change.
 
 **Splash**
-- Gradient full screen, behind the status bar.
+- `BrandGradient` full screen, behind the status bar, with `LightStatusBarIcons()`.
 - The 96dp disc with the 56dp leaf sits at the **centre of the screen**, where the system splash
   drew it. It stays still: the scale-in goes.
 - The wordmark (`WordmarkStyle`) and the tagline (`OnBrandGradient` at `Alpha.Subtitle`) sit below
@@ -336,7 +365,7 @@ semantics change.
   and Send code.
 - **Reset step:**
   - the intro (`reset_password_code_intro`)
-  - `CodeInputField` with the visible label "Reset code"
+  - `CodeInputField` with the visible label "Reset code", IME action Next moving to New password
   - new password and confirm
   - Reset, then Resend (outlined, with the cooldown), then the existing text button, all as today
 
@@ -350,7 +379,9 @@ semantics change.
   - Each card is a `Role.RadioButton` with `selected` state, inside a `selectableGroup`.
   - In Vietnamese the text wraps to as many lines as it needs, and both cards stay the same height.
 - The fields, strength meter and email-availability indicator stay as today.
-- The terms checkbox becomes one toggleable row, but its two links stay separately tappable.
+- The terms row becomes one toggleable row with `Role.Checkbox`. "Terms of Service" and "Privacy
+  Policy" stay styled text, as today, and tapping anywhere in the row toggles the checkbox. Making
+  them real links would be new behaviour, so it's a follow-up.
 - Create Account, the "or" divider and Sign In stay as today.
 
 **Verify email**
@@ -358,7 +389,8 @@ semantics change.
 - The sheet holds:
   - `StatusDisc(MarkEmailUnread)`
   - `email_verify_sent` with the address, centred
-  - `CodeInputField` with no visible label
+  - `CodeInputField` labelled "Verification code" (`verify_code_label`), label hidden, IME action
+    Done sending Verify
   - **Verify** (new `action_verify`, replacing "Submit"), filled
   - "Didn't get it? Check your spam folder." (`verify_code_hint`, `bodySmall`, `onSurfaceVariant`)
   - Resend code, outlined with the cooldown, as today
@@ -378,7 +410,7 @@ semantics change.
   - **Address:** the reworked `AddressSuggestionField`.
   - **City:** the `LocationCity` icon, placeholder "Seattle".
   - **State and ZIP code:** half width, **no leading icons** (this removes the envelope), with
-    placeholders "WA" and "98109".
+    placeholders "Washington" and "98109". "Washington" matches what a picked suggestion fills in.
   - **Hours:** two `TimePickerField`s labelled **Opens** and **Closes**, with `clearLabel` "Clear
     opening time" and "Clear closing time". The "Operating Hours" group label goes.
   - **Pickup instructions:** groceries only, as today.
@@ -427,11 +459,14 @@ New keys. All of them go in both files.
 | `cd_back_to_sign_in` | Back to sign in | Quay lại đăng nhập |
 | `cd_clear_field` | Clear %1$s | Xóa %1$s |
 | `cd_clear_text` | Clear text | Xóa nội dung |
+| `cd_clear_time` | Clear time | Xóa giờ |
+| `cd_clear_date` | Clear date | Xóa ngày |
 | `cd_clear_opening_time` | Clear opening time | Xóa giờ mở cửa |
 | `cd_clear_closing_time` | Clear closing time | Xóa giờ đóng cửa |
 | `cd_remove_document` | Remove document | Xóa tài liệu |
 | `cd_use_address` | Use this address | Dùng địa chỉ này |
-| `cd_code_field` (plurals) | Verification code, %d digits | Mã xác minh, %d chữ số |
+| `cd_code_field` (plurals) | %1$s, %2$d digits | %1$s, %2$d chữ số |
+| `verify_code_label` | Verification code | Mã xác minh |
 | `cd_code_digits_entered` (plurals) | one: %d digit entered · other: %d digits entered | other: Đã nhập %d chữ số |
 | `address_searching` | Searching addresses… | Đang tìm địa chỉ… |
 | `address_no_matches` | No matching addresses. Fill in the fields below. | Không tìm thấy địa chỉ phù hợp. Hãy điền các ô bên dưới. |
@@ -457,7 +492,7 @@ Changed values, in both files:
 |---|---|---|
 | `hint_phone_profile` | (206) 555-0100 | (206) 555-0100 |
 | `onboarding_city_placeholder` | Seattle | Seattle |
-| `onboarding_state_placeholder` | WA | WA |
+| `onboarding_state_placeholder` | Washington | Washington |
 | `onboarding_zip_placeholder` | 98109 | 98109 |
 | `onboarding_state_label` | State (unchanged) | Tiểu bang |
 | `onboarding_zip_label` | ZIP Code (unchanged) | Mã ZIP |
@@ -473,21 +508,28 @@ subtitles gain a `%1$s`, so update every call site.
 
 Remove the keys that become unused. Check each with a search first, because some may be shared:
 
-- `onboarding_welcome`, `join_clearchain`, `onboarding_hours_label`
+- `onboarding_welcome`, `join_clearchain`
 - `onboarding_submitted_step_*`, `onboarding_remove_icon`
 - `submit`, `onboarding_step_label`
+
+`onboarding_hours_label` stays, because `AccountDetailScreen` still uses it.
 
 ### Findings map
 
 | Finding | Fixed by |
 |---|---|
 | 1 Placeholder launcher icon | Adaptive leaf icon, monochrome layer, Android 12+ splash attributes, the teal window on Android 8–11, robot webps deleted |
-| 12 Every clear button says "Clear search" | `clearLabel` and the label fallback in three components, the Register email clear, labelled time fields |
+| 12 Every clear button says "Clear search" | `clearLabel` and the label chain in three components, `FieldCard`'s `LocalFieldLabel`, the Register email clear, `clearLabel` on paired time fields |
 | 13 Mixed-country examples | Seattle examples in both languages, Vietnamese state and ZIP labels in US terms |
 | 14 Late suggestions over City, ZIP envelope | Inline list, searching and no-match states, focus-bound lookup, US-only results, no ZIP icon |
 | 15 Untranslated type on Pending review | Type row uses `role_*_title` and the Register icons |
 
 ## Verification
+
+The implementation plan leaves verification out, at the user's request. These are the checks for
+whoever verifies afterwards. One question is still open for the user: whether account-bound
+screens (Verify email, Onboarding, Pending review pending and rejected) are checked with test
+credentials, by the user signing in on the emulator, or by code review only.
 
 - **Build and lint:**
   - `./gradlew assembleDebug spotlessCheck lint` from `Mobile/`, with no new lint warnings.
@@ -532,7 +574,8 @@ once the user OKs it.
 - **New component pages:** `BrandScaffold` (replacing the "sign-in header" description),
   `CodeInputField` and `StatusDisc`, in the same format as the existing pages.
 - **`TextField` README:** the "Clear search" line under *Watch for* is replaced by the
-  `clearLabel` rule.
+  `clearLabel` rule and `FieldCard`'s label.
+- **`control-height`:** now a minimum. Buttons and fields grow when large text needs room.
 - **`README.md`:**
   - Iconography: the launcher icon is now the leaf on the gradient.
   - Colour: the gradient runs behind the status bar on brand screens.
@@ -567,8 +610,22 @@ These weren't discussed with the user. Check them while reading.
 6. **The button on Verify email changes from "Submit" to "Verify".**
 7. **The back circle is labelled "Back to sign in"** rather than "Back".
 8. **The splash disc stops scaling in**, so it doesn't jump from where the system splash left it.
-9. **The address list is US-only**, by country code, and shows "City, ST ZIP" with no country.
+9. **The address list is US-only**, by country code, and shows "City, State ZIP" with no country.
 10. **State and ZIP lose their icons.** City's icon becomes `LocationCity`.
 11. **Vietnamese labels for State and ZIP become "Tiểu bang" and "Mã ZIP"**, the US terms.
 12. **No auto-submit when the sixth digit is typed.** Behaviour stays as it is today.
 13. **Field-label casing stays as it is.** The mockups' sentence case was incidental.
+
+These came from the reviewer's read of the design:
+
+14. **Buttons and fields grow with large text.** They have a 32dp minimum height instead of a fixed
+    one, which is the only way to meet the 200% requirement. Nothing changes at normal text size.
+15. **State keeps the geocoder's full name ("Washington")**, and the placeholder matches it. The
+    mockups showed "WA". A two-letter mapping would change what gets stored.
+16. **Unlabelled fields take their `FieldCard`'s label for the clear button.** That finishes finding
+    12 across the app without editing the screens outside this section.
+17. **Login pins a teal strip behind the status bar** once the hero scrolls away.
+18. **The Forgot password code field's keyboard action is Next**, and the spoken name of the code
+    field is built from its label.
+19. **The Register terms text stays non-link text.** The earlier draft wrongly said the links were
+    separately tappable.
