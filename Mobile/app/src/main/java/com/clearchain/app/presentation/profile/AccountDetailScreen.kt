@@ -340,7 +340,8 @@ private fun AccountDetailEditContent(
                         label = "",
                         isError = state.editOpenTimeError != null,
                         errorMessage = state.editOpenTimeError,
-                        enabled = !busy
+                        enabled = !busy,
+                        clearLabel = stringResource(R.string.cd_clear_opening_time)
                     )
                 }
                 Box(Modifier.weight(1f)) {
@@ -350,7 +351,8 @@ private fun AccountDetailEditContent(
                         label = "",
                         isError = state.editCloseTimeError != null,
                         errorMessage = state.editCloseTimeError,
-                        enabled = !busy
+                        enabled = !busy,
+                        clearLabel = stringResource(R.string.cd_clear_closing_time)
                     )
                 }
             }
