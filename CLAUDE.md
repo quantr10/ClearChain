@@ -115,6 +115,35 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
   `Dimens.kt` (component sizes) and `Alpha.kt` (opacities). Each declaration's KDoc names its design
   system token. Shared components use these names rather than repeating dp, alpha or colour literals,
   so a change to a token is one edit.
+- **System bars.** `MainActivity`'s outer `Scaffold` applies no system-bar insets. In `NavGraph`, ordinary
+  routes use `insetComposable`, which pads for the status and navigation bars. The seven sign-in and
+  first-run routes (Splash, Login, Register, ForgotPassword, EmailVerification, Onboarding,
+  PendingReview) use plain `composable` and draw behind both bars.
+- **Sign-in and first-run screens** are built on `BrandScaffold` (`presentation/components`). It takes
+  either `BrandHeader.Hero`, the logo hero (Login only), or `BrandHeader.Compact`: a title, an optional
+  back circle and onboarding's step bars. Content sits on a sheet with rounded top corners, and there's
+  an optional fixed `bottomBar`. While a brand screen is shown, `LightStatusBarIcons` keeps the
+  status-bar icons light. It counts its callers, so two brand screens overlapping in a crossfade don't
+  fight over the icons. Splash uses `BrandGradient` and `LightStatusBarIcons` directly.
+- **Form pieces.**
+  - **Clear buttons.** `ClearChainTextField`, `TimePickerField` and `DatePickerField` name their clear
+    button "Clear <label>". The label comes from `clearLabel`, then the field's own `label`, then the
+    enclosing `FieldCard` (through `LocalFieldLabel`). When none of those exists, the button says
+    "Clear text", "Clear time" or "Clear date". Pass `clearLabel` when two fields share one card, as the
+    opening and closing hours do.
+  - **Heights.** Buttons and fields have a 32dp minimum height (`heightIn(min = …)`), so they grow
+    with large text. Don't put a fixed height back on them.
+  - **One-time codes** use `CodeInputField`. It's a single text field drawn as cells, so screen
+    readers hear one field.
+  - **The status picture** (the icon in a disc inside two rings) is `StatusDisc`. `EmptyState` uses it.
+  - **Address entry.** `AddressSuggestionField` shows its suggestions in the layout under the field,
+    only while the field has focus, and only US addresses.
+- **Launcher icon and splash.** The adaptive icon (`res/drawable/ic_launcher_*`) and the Android 12+
+  system splash (`res/values-v31/themes.xml`, `res/drawable/splash_mark.xml`) use colours from
+  `res/values/colors.xml`. Those colours copy `BrandTeal`, `BrandGreen`, and `OnBrandGradient` at
+  `Alpha.LogoDisc`, so change them together with `Color.kt`. `splash_mark` draws the app splash's
+  96dp disc with its 56dp leaf (`LogoDiscSplashSize`, `LogoMarkSplashSize`) at the screen's centre,
+  so the system splash hands over to the app splash without a jump. Change the two together.
 
 ## Contracts that span both apps
 
