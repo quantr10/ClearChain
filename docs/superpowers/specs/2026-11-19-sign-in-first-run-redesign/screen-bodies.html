@@ -1,0 +1,189 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .row4 { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 4px; align-items: flex-start; }
+  .cap { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0 4px; max-width: 270px; }
+  .ph {
+    --bg: #fafafa; --on: #111827; --var: #6b7280; --ov: #e5e7eb; --pri: #0d9488; --surf: #fff; --pc: #f0fdfa; --opc: #0f766e; --err: #dc2626; --errc: #fee2e2; --onerrc: #991b1b;
+    width: 360px; height: 640px; zoom: .75; position: relative; overflow: hidden; display: flex; flex-direction: column;
+    background: linear-gradient(#0d9488, #16a34a); color: var(--on); border-radius: 22px; border: 1px solid #d1d5db;
+    font-family: Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px;
+  }
+  .ph .material-icons { font-size: 18px; line-height: 1; }
+  .sb { height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 14px; font-size: 12px; color: #fff; flex: none; }
+  .sb .material-icons { font-size: 13px !important; }
+  .hd { padding: 8px 16px 0; color: #fff; display: flex; align-items: center; gap: 12px; min-height: 36px; flex: none; }
+  .hd .t { font-size: 24px; line-height: 32px; font-weight: 700; }
+  .bars { display: flex; gap: 6px; padding: 12px 16px 0; flex: none; }
+  .bars i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .bars i.on { background: #fff; }
+  .sheet { background: var(--bg); border-radius: 28px 28px 0 0; margin-top: 16px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .body { padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow: hidden; }
+  .bottom { padding: 8px 16px 22px; display: flex; gap: 12px; background: var(--bg); }
+  .bm { font-size: 14px; line-height: 20px; color: var(--var); }
+  .tm { font-size: 16px; line-height: 24px; font-weight: 600; }
+  .eyebrow { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--pri); letter-spacing: .4px; }
+  .lbl { font-size: 12px; line-height: 16px; font-weight: 500; margin-bottom: 4px; }
+  .lbl i { font-weight: 400; color: var(--var); }
+  .fld { height: 32px; box-sizing: border-box; border: 1px solid var(--ov); border-radius: 14px; display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 12px; color: color-mix(in srgb, var(--var) 50%, transparent); }
+  .fld.v { color: var(--on); }
+  .fld.focus { border-color: var(--pri); color: var(--on); }
+  .fld .material-icons { color: var(--var); }
+  .fld .end { margin-left: auto; }
+  .two { display: flex; gap: 8px; } .two > * { flex: 1; min-width: 0; }
+  .sugg { background: var(--surf); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.1); margin-top: 4px; }
+  .sugg div.it { display: flex; gap: 6px; padding: 8px; font-size: 12px; line-height: 16px; border-bottom: 1px solid var(--ov); }
+  .sugg div.it:last-child { border-bottom: none; }
+  .sugg .material-icons { color: var(--pri); }
+  .sugg small { display: block; color: var(--var); }
+  .btn { height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 500; background: var(--pri); color: #fff; flex: 1; }
+  .btn.dis { opacity: .38; }
+  .obtn { height: 32px; box-sizing: border-box; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 500; border: 1px solid var(--ov); background: var(--surf); color: var(--pri); flex: 1; }
+  .obtn.err { color: var(--err); }
+  .mcard { background: var(--surf); border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.1); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .r { display: flex; gap: 10px; font-size: 12px; line-height: 16px; }
+  .r small { display: block; color: var(--var); font-size: 12px; }
+  .det { display: flex; gap: 10px; align-items: center; font-size: 12px; line-height: 16px; }
+  .det .material-icons { font-size: 14px; color: var(--var); }
+  .hero { width: 100px; height: 100px; border-radius: 50%; background: color-mix(in srgb, var(--pri) 8%, transparent); display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+  .hero > div { width: 78px; height: 78px; border-radius: 50%; background: color-mix(in srgb, var(--pri) 12%, transparent); display: flex; align-items: center; justify-content: center; }
+  .hero > div > div { width: 56px; height: 56px; border-radius: 50%; background: var(--pc); color: var(--opc); display: flex; align-items: center; justify-content: center; }
+  .hero .material-icons { font-size: 28px; }
+  .center { text-align: center; }
+  .spin { width: 14px; height: 14px; border: 2px solid var(--pri); border-right-color: transparent; border-radius: 50%; display: inline-block; }
+  ul.notes { font-size: 13px; line-height: 19px; color: var(--text-secondary); margin: 8px 0 0 18px; padding: 0; max-width: 270px; }
+  ul.notes li { margin-bottom: 4px; }
+</style>
+
+<h2>Part 4: screen bodies for the findings (playback)</h2>
+<p class="subtitle">Onboarding steps 2 and 3, and Pending review in Vietnamese and in its rejected state. Light theme, 720×1280 at 75%. Tell me in the terminal what's wrong or missing.</p>
+
+<div class="row4">
+  <!-- ── Onboarding 2 ───────────────────────────────────────────── -->
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Set up your profile</div></div>
+      <div class="bars"><i class="on"></i><i class="on"></i><i></i></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="eyebrow">STEP 2 OF 3 · LOCATION AND HOURS</div>
+          <div class="bm" style="margin-top:-4px">Where NGOs pick up, and when you're open</div>
+          <div>
+            <div class="lbl">Address</div>
+            <div class="fld focus"><span class="material-icons">home</span>400 Broad St<span class="material-icons end">clear</span></div>
+            <div class="sugg">
+              <div class="it"><span class="material-icons">place</span><div>400 Broad St<small>Seattle, WA 98109</small></div></div>
+              <div class="it"><span class="material-icons">place</span><div>400 Broad St<small>Tacoma, WA 98402</small></div></div>
+            </div>
+          </div>
+          <div><div class="lbl">City</div><div class="fld"><span class="material-icons">location_city</span>Seattle</div></div>
+          <div class="two">
+            <div><div class="lbl">State</div><div class="fld">WA</div></div>
+            <div><div class="lbl">ZIP code</div><div class="fld">98109</div></div>
+          </div>
+          <div class="two">
+            <div><div class="lbl">Opens</div><div class="fld"><span class="material-icons">schedule</span>08:00</div></div>
+            <div><div class="lbl">Closes</div><div class="fld"><span class="material-icons">schedule</span>17:00</div></div>
+          </div>
+          <div><div class="lbl">Pickup instructions <i>(optional)</i></div><div class="fld" style="height:48px; align-items:flex-start; padding-top:8px;"><span class="material-icons">directions_walk</span>e.g. Back door, ask at the service counter</div></div>
+        </div>
+        <div class="bottom"><div class="obtn">Back</div><div class="btn dis">Complete</div></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Finding 13:</b> every example is in Seattle: (206) 555-0100, Seattle, WA, 98109. Phone numbers use the 555 test range in both languages.</li>
+      <li><b>Finding 14:</b> the suggestions sit in the page, under Address, and push City down instead of covering it. "Searching addresses…" with a small spinner shows from the moment a lookup starts, so a late list doesn't take anyone by surprise. The list shows only while Address has focus, and moving to another field cancels the lookup. Results are US addresses only.</li>
+      <li>The ZIP envelope is gone. State and ZIP have no icons, which leaves the half-width pair room for Vietnamese labels and large text.</li>
+      <li><b>Finding 12:</b> the time fields get their own labels, so each clear button can say what it clears: "Clear opening time", "Clear address", and so on.</li>
+    </ul>
+  </div>
+
+  <!-- ── Onboarding 3 ───────────────────────────────────────────── -->
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Set up your profile</div></div>
+      <div class="bars"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <div class="sheet">
+        <div class="body" style="justify-content:center; gap:12px;">
+          <div class="hero"><div><div><span class="material-icons">task_alt</span></div></div></div>
+          <div class="tm center">Submitted for review</div>
+          <div class="bm center" style="margin-top:-6px">We'll review Kroger's details within 1–3 business days and notify you when you're approved.</div>
+        </div>
+        <div class="bottom"><div class="obtn">Back</div><div class="btn"><span class="material-icons">arrow_forward</span>View status</div></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>Step 3 is now a short confirmation. The three-step "what happens next" list moves to Pending review only, so it no longer appears on two screens in a row.</li>
+      <li>The hero uses the design system's empty-state disc, the same one on Verify email, so the flow has a single "status" picture.</li>
+      <li>No logic changes: the step count, Back and View status work as they do today.</li>
+    </ul>
+  </div>
+
+  <!-- ── Pending review, vi ─────────────────────────────────────── -->
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Đang xét duyệt</div></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="bm">Chúng tôi đang kiểm tra thông tin của Kroger. Việc này thường mất 1–3 ngày làm việc.</div>
+          <div class="mcard">
+            <div class="r"><span class="material-icons" style="color:#16a34a">check_circle</span><div>Đã gửi hồ sơ và tài liệu</div></div>
+            <div class="r"><span class="material-icons" style="color:var(--pri)">schedule</span><div>Quản trị viên xét duyệt<small>Đang tiến hành</small></div></div>
+            <div class="r"><span class="material-icons" style="color:#9ca3af">notifications</span><div style="color:var(--var)">Bạn sẽ nhận thông báo khi được duyệt</div></div>
+          </div>
+          <div class="mcard">
+            <div style="font-size:12px; font-weight:600;">Thông tin bạn đã gửi</div>
+            <div class="det"><span class="material-icons">business</span>Kroger</div>
+            <div class="det"><span class="material-icons">storefront</span>Siêu thị / Trung tâm</div>
+            <div class="det"><span class="material-icons">email</span>kroger@example.com</div>
+            <div class="det"><span class="material-icons">phone</span>(206) 555-0199</div>
+            <div class="det"><span class="material-icons">place</span>Seattle, WA</div>
+            <div class="det"><span class="material-icons">description</span>Đã đính kèm tài liệu xác minh</div>
+          </div>
+          <div class="btn" style="flex:none"><span class="material-icons">refresh</span>Kiểm tra trạng thái</div>
+          <div class="obtn" style="flex:none"><span class="material-icons">edit</span>Sửa hồ sơ và tài liệu</div>
+          <div class="two"><div class="obtn"><span class="material-icons">help_outline</span>Trợ giúp</div><div class="obtn err"><span class="material-icons">logout</span>Đăng xuất</div></div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Finding 15:</b> the type reads "Siêu thị / Trung tâm", the same words the person picked on Register, with the same storefront icon, or the hand-heart icon for NGOs. It's no longer the raw "Grocery".</li>
+      <li>The in-progress step is teal (<code>primary</code>), not the blue <code>secondary</code>, which the design system keeps for selection.</li>
+      <li>Help and Log out share a row and stack when the text doesn't fit, as with large text. Log out keeps today's behaviour.</li>
+    </ul>
+  </div>
+
+  <!-- ── Pending review, rejected ───────────────────────────────── -->
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Changes needed</div></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="bm">Our team couldn't verify Kroger yet. Fix the details below and send them again.</div>
+          <div class="mcard" style="background:var(--errc); box-shadow:none;">
+            <div style="font-size:12px; font-weight:600; color:var(--onerrc);">Reason from the reviewer</div>
+            <div style="font-size:12px; line-height:16px; color:var(--onerrc);">The document is blank. Upload your business registration.</div>
+          </div>
+          <div class="mcard">
+            <div style="font-size:12px; font-weight:600;">What you sent</div>
+            <div class="det"><span class="material-icons">business</span>Kroger</div>
+            <div class="det"><span class="material-icons">storefront</span>Grocery / Mall</div>
+            <div class="det"><span class="material-icons">email</span>kroger@example.com</div>
+            <div class="det"><span class="material-icons">description</span>Verification document attached</div>
+          </div>
+          <div class="btn" style="flex:none"><span class="material-icons">edit</span>Fix and resubmit</div>
+          <div class="obtn" style="flex:none"><span class="material-icons">refresh</span>Check status</div>
+          <div class="two"><div class="obtn"><span class="material-icons">help_outline</span>Help</div><div class="obtn err"><span class="material-icons">logout</span>Log out</div></div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>When a reviewer rejects the organization, "Fix and resubmit" becomes the filled button and Check status drops to outlined. Both buttons send the same events as today.</li>
+      <li>The reason sits on <code>error-container</code> with <code>on-error-container</code> text (6.8:1), replacing today's 40% tint with red text.</li>
+    </ul>
+  </div>
+</div>

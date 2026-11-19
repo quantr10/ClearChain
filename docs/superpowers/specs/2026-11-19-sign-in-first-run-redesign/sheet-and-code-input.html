@@ -1,0 +1,208 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .row4 { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .cap { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0 4px; max-width: 216px; }
+  .ph {
+    --bg: #fafafa; --on: #111827; --var: #6b7280; --ov: #e5e7eb; --pri: #0d9488; --surf: #fff; --pc: #f0fdfa; --opc: #0f766e;
+    width: 360px; height: 400px; zoom: .6; position: relative; overflow: hidden;
+    background: linear-gradient(#0d9488, #16a34a); color: var(--on); border-radius: 22px 22px 0 0; border: 1px solid #d1d5db; border-bottom: none;
+    font-family: Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px;
+    -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent);
+  }
+  .ph.tall { height: 640px; -webkit-mask-image: none; mask-image: none; border-radius: 22px; border-bottom: 1px solid #d1d5db; zoom: .75; }
+  .ph.dark { --bg: #0f172a; --on: #f1f5f9; --var: #94a3b8; --ov: #334155; --pri: #2dd4bf; --surf: #1e293b; --pc: #0f766e; --opc: #a7f3d0; }
+  .ph .material-icons { font-size: 18px; line-height: 1; }
+  .sb { height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 14px; font-size: 12px; color: #fff; }
+  .sb .material-icons { font-size: 13px !important; }
+  .hd { padding: 8px 16px 0; color: #fff; display: flex; align-items: center; gap: 12px; min-height: 36px; }
+  .hd .t { font-size: 24px; line-height: 32px; font-weight: 700; }
+  .back { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; flex: none; }
+  .bars { display: flex; gap: 6px; padding: 12px 16px 0; }
+  .bars i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .bars i.on { background: #fff; }
+  .sheet { background: var(--bg); border-radius: 28px 28px 0 0; margin-top: 16px; min-height: 100%; }
+  .body { padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; }
+  .bm { font-size: 14px; line-height: 20px; color: var(--var); }
+  .tm { font-size: 16px; line-height: 24px; font-weight: 600; }
+  .eyebrow { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--pri); letter-spacing: .4px; }
+  .lbl { font-size: 12px; line-height: 16px; font-weight: 500; margin-bottom: 4px; }
+  .fld { height: 32px; box-sizing: border-box; border: 1px solid var(--ov); border-radius: 14px; display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 12px; color: color-mix(in srgb, var(--var) 50%, transparent); }
+  .fld.focus { border-color: var(--pri); color: var(--on); }
+  .fld .material-icons { color: var(--var); }
+  .disc { border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; }
+  .wm { font-weight: 800; letter-spacing: -.5px; color: #fff; font-size: 26px; line-height: 32px; }
+  .mcard { background: var(--surf); border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.1); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .r { display: flex; gap: 10px; font-size: 12px; line-height: 16px; }
+  .r small { display: block; color: var(--var); font-size: 12px; }
+  .link { color: var(--pri); font-size: 12px; font-weight: 500; }
+  .btn { height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 500; background: var(--pri); color: #fff; }
+  .ph.dark .btn { color: #003733; }
+  .btn.dis { opacity: .38; }
+  .roles { display: flex; gap: 8px; }
+  .role { flex: 1; border: 1px solid var(--ov); border-radius: 12px; background: var(--surf); padding: 10px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 12px; line-height: 16px; }
+  .role.sel { border: 2px solid var(--pri); background: var(--pc); padding: 9px 7px; }
+  .role .material-icons { font-size: 22px; color: var(--var); }
+  .role.sel .material-icons, .role.sel b { color: var(--pri); }
+  .role span.s { color: var(--var); }
+  .hero { width: 100px; height: 100px; border-radius: 50%; background: color-mix(in srgb, var(--pri) 8%, transparent); display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+  .hero > div { width: 78px; height: 78px; border-radius: 50%; background: color-mix(in srgb, var(--pri) 12%, transparent); display: flex; align-items: center; justify-content: center; }
+  .hero > div > div { width: 56px; height: 56px; border-radius: 50%; background: var(--pc); color: var(--opc); display: flex; align-items: center; justify-content: center; }
+  .hero .material-icons { font-size: 28px; }
+  .cells { display: flex; gap: 8px; justify-content: center; margin: 4px 0; }
+  .cell { width: 44px; height: 52px; box-sizing: border-box; border: 1px solid var(--ov); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; background: var(--surf); }
+  .cell.f { border: 2px solid var(--pri); }
+  .cell .caret { width: 2px; height: 24px; background: var(--pri); }
+  .center { text-align: center; }
+  hr.sep { border: none; border-top: 1px solid var(--bg-tertiary); margin: 28px 0 20px; }
+  .pair { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .done { padding: 10px 14px; border-radius: 10px; background: var(--bg-secondary); font-size: 14px; }
+</style>
+
+<h2>Part 1: header A with a curved sheet (playback)</h2>
+<p class="subtitle">The content sits on a sheet with 28dp rounded top corners (<code>shape-extra-large</code>, the same corners as the app's bottom sheets) that rises over the gradient. The sheet uses the screen's <code>background</code> colour: near-white in light, slate in dark. On compact screens the header stays put and the content scrolls inside the sheet, under the curve. On Login the taller hero scrolls away with the content.</p>
+
+<div class="row4">
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding: 12px 16px 0;">
+        <div class="disc" style="width:64px;height:64px;"><span class="material-icons" style="font-size:38px;color:#fff">eco</span></div>
+        <div class="wm">ClearChain</div>
+      </div>
+      <div class="sheet">
+        <div class="body">
+          <div class="tm">Welcome back</div>
+          <div class="bm" style="margin-top:-6px">Sign in to manage your food rescue</div>
+          <div><div class="lbl">Email</div><div class="fld"><span class="material-icons">email</span>org@example.com</div></div>
+          <div><div class="lbl">Password</div><div class="fld"><span class="material-icons">lock</span>Enter your password</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Login</b>, with the hero</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="back"><span class="material-icons">arrow_back</span></div><div class="t">Create your account</div></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="bm">Help reduce food waste in your community</div>
+          <div class="roles">
+            <div class="role sel"><span class="material-icons">storefront</span><b>Grocery / Mall</b><span class="s">List surplus food</span></div>
+            <div class="role"><span class="material-icons">volunteer_activism</span><b>NGO / Food Bank</b><span class="s">Receive donations</span></div>
+          </div>
+          <div><div class="lbl">Organization name</div><div class="fld"><span class="material-icons">business</span>e.g. Green Valley Market</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Register</b>, compact with back</div>
+  </div>
+
+  <div>
+    <div class="ph dark">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="back"><span class="material-icons">arrow_back</span></div><div class="t">Create your account</div></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="bm">Help reduce food waste in your community</div>
+          <div class="roles">
+            <div class="role sel"><span class="material-icons">storefront</span><b>Grocery / Mall</b><span class="s">List surplus food</span></div>
+            <div class="role"><span class="material-icons">volunteer_activism</span><b>NGO / Food Bank</b><span class="s">Receive donations</span></div>
+          </div>
+          <div><div class="lbl">Organization name</div><div class="fld"><span class="material-icons">business</span>e.g. Green Valley Market</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Register, dark</b>: the gradient is the same in both themes, as the design system specifies</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Set up your profile</div></div>
+      <div class="bars"><i class="on"></i><i></i><i></i></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="eyebrow">STEP 1 OF 3 · CONTACT DETAILS</div>
+          <div class="bm" style="margin-top:-4px">How NGOs and our team can reach you</div>
+          <div><div class="lbl">Phone number</div><div class="fld"><span class="material-icons">phone</span>(206) 555-0100</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Onboarding</b>, compact with steps</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd"><div class="t">Under review</div></div>
+      <div class="sheet">
+        <div class="body">
+          <div class="bm">We're checking Kroger's details. This usually takes 1–3 business days.</div>
+          <div class="mcard">
+            <div class="r"><span class="material-icons" style="color:#16a34a">check_circle</span><div>Profile and documents sent</div></div>
+            <div class="r"><span class="material-icons" style="color:var(--pri)">schedule</span><div>Admin review<small>In progress</small></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Pending review</b>, compact with title only</div>
+  </div>
+</div>
+
+<p class="done"><b>Launcher icon:</b> option 1, the white leaf on the brand gradient. The system splash is flat brand teal with the leaf in its disc.</p>
+
+<hr class="sep">
+
+<h2>Part 3: how should people enter the 6-digit code?</h2>
+<p class="subtitle">Two screens ask for the same code, and today they do it differently. Verify email uses a bare Material field with no label, so a screen reader announces only "edit box", and its text sizes are hard-coded. Forgot password uses a labelled ClearChain field. Whichever you pick, both screens will use it. Shown on Verify email with the code half typed.</p>
+
+<div class="options">
+  <div class="option" data-choice="code-cells" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Six boxes (my pick)</h3>
+      <p>The code is the only thing on this screen, so it gets the space. The boxes show how many digits are left, and pasting a copied code fills all six at once. Under the boxes it's still a single text field, so a screen reader announces "Verification code, 6 digits, 3 entered" rather than six separate fields. The boxes grow with the font size. This is a new shared component, <code>CodeInputField</code>, which I'd also add to the design system.</p>
+      <div class="pair">
+        <div class="ph tall">
+          <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+          <div class="hd"><div class="t">Verify your email</div></div>
+          <div class="sheet">
+            <div class="body" style="gap:12px; padding-top:20px;">
+              <div class="hero"><div><div><span class="material-icons">mark_email_unread</span></div></div></div>
+              <div class="bm center">Enter the 6-digit code we sent to<br><b style="color:var(--on); font-weight:500">kroger@example.com</b></div>
+              <div class="cells"><div class="cell">4</div><div class="cell">8</div><div class="cell">2</div><div class="cell f"><div class="caret"></div></div><div class="cell"></div><div class="cell"></div></div>
+              <div class="btn dis">Verify</div>
+              <div class="center" style="font-size:12px; color:var(--var)">Didn't get it? Check your spam folder, or <span class="link" style="opacity:.38">resend in 42s</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="code-field" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>One labelled ClearChain field</h3>
+      <p>The same field Forgot password already uses, so there's nothing new to build or add to the design system. The trade-off is a small 32dp field with 12sp text for the screen's one job. The digit count appears only in the placeholder.</p>
+      <div class="pair">
+        <div class="ph tall">
+          <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+          <div class="hd"><div class="t">Verify your email</div></div>
+          <div class="sheet">
+            <div class="body" style="gap:12px; padding-top:20px;">
+              <div class="hero"><div><div><span class="material-icons">mark_email_unread</span></div></div></div>
+              <div class="bm center">Enter the 6-digit code we sent to<br><b style="color:var(--on); font-weight:500">kroger@example.com</b></div>
+              <div><div class="lbl">Verification code</div><div class="fld focus"><span class="material-icons">pin</span>482<span class="material-icons" style="margin-left:auto">clear</span></div></div>
+              <div class="btn dis">Verify</div>
+              <div class="center" style="font-size:12px; color:var(--var)">Didn't get it? Check your spam folder, or <span class="link" style="opacity:.38">resend in 42s</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

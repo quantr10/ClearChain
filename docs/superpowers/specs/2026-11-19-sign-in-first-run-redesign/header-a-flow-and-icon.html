@@ -1,0 +1,175 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+  .row4 { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .cap { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0 4px; max-width: 216px; }
+  .ph {
+    width: 360px; height: 400px; zoom: .6; position: relative; overflow: hidden;
+    background: #fafafa; color: #111827; border-radius: 22px 22px 0 0; border: 1px solid #d1d5db; border-bottom: none;
+    font-family: Roboto, system-ui, sans-serif; font-size: 14px; line-height: 20px;
+    -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent);
+  }
+  .ph .material-icons { font-size: 18px; line-height: 1; }
+  .sb { height: 24px; display: flex; justify-content: space-between; align-items: center; padding: 0 14px; font-size: 12px; color: #fff; }
+  .sb .material-icons { font-size: 13px !important; }
+  .grad { background: linear-gradient(#0d9488, #16a34a); }
+  .hd { padding: 8px 16px 16px; color: #fff; display: flex; align-items: center; gap: 12px; min-height: 36px; }
+  .hd .t { font-size: 24px; line-height: 32px; font-weight: 700; }
+  .back { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; flex: none; }
+  .bars { display: flex; gap: 6px; padding: 0 16px 16px; }
+  .bars i { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.3); }
+  .bars i.on { background: #fff; }
+  .body { padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .bm { font-size: 14px; line-height: 20px; color: #6b7280; }
+  .tm { font-size: 16px; line-height: 24px; font-weight: 600; }
+  .eyebrow { font-size: 12px; line-height: 16px; font-weight: 500; color: #0d9488; letter-spacing: .4px; }
+  .lbl { font-size: 12px; line-height: 16px; font-weight: 500; margin-bottom: 4px; }
+  .fld { height: 32px; box-sizing: border-box; border: 1px solid #e5e7eb; border-radius: 14px; display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 12px; color: rgba(107,114,128,.5); }
+  .fld .material-icons { color: #6b7280; }
+  .disc { border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; }
+  .wm { font-weight: 800; letter-spacing: -.5px; color: #fff; font-size: 26px; line-height: 32px; }
+  .mcard { background: #fff; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.1); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .r { display: flex; gap: 10px; font-size: 12px; line-height: 16px; }
+  .r small { display: block; color: #6b7280; font-size: 12px; }
+  .link { color: #0d9488; font-size: 12px; font-weight: 500; }
+  hr.sep { border: none; border-top: 1px solid var(--bg-tertiary); margin: 28px 0 20px; }
+
+  /* launcher icon */
+  .home { display: flex; gap: 18px; padding: 16px 18px; border-radius: 14px; align-items: flex-start; }
+  .home.light { background: linear-gradient(135deg, #dbeafe, #fde68a); }
+  .home.dark { background: linear-gradient(135deg, #1e293b, #312e81); }
+  .app { width: 64px; text-align: center; font: 11px/14px Roboto, sans-serif; }
+  .home.light .app { color: #111827; } .home.dark .app { color: #f1f5f9; }
+  .ico { width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .ico .material-icons { font-size: 30px; }
+  .ico.other { background: #9ca3af; } .ico.other2 { background: #64748b; } .ico.other3 { background: #f59e0b; }
+  .ico.g { background: linear-gradient(#0d9488, #16a34a); color: #fff; }
+  .ico.w { background: #fff; color: #0d9488; }
+  .ico.mono-l { background: #d1e7e4; color: #134e4a; }
+  .ico.mono-d { background: #134e4a; color: #ccfbf1; }
+  .ico .ring { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; }
+  .ico .ring .material-icons { font-size: 22px; }
+  .splash { width: 360px; height: 640px; zoom: .32; border-radius: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid #d1d5db; }
+  .splash .material-icons { font-size: 96px; }
+  .iconrow { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .mini { font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 4px; }
+</style>
+
+<h2>Part 1: header A across the flow (playback, nothing to pick)</h2>
+<p class="subtitle">The top of each screen type, with one change from the version you picked: <b>subtitles move just below the header</b>. In 80% white on the gradient they measure 2.6–3.0:1, below the 4.5:1 that 14sp text needs. Below the header they're 4.6:1 in light and 7:1 in dark. The title becomes 24sp Bold, which counts as large text and passes at 3.3:1 or better, the same as the dashboard greeting.</p>
+
+<div class="row4">
+  <div>
+    <div class="ph">
+      <div class="grad">
+        <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding: 12px 16px 20px;">
+          <div class="disc" style="width:64px;height:64px;"><span class="material-icons" style="font-size:38px;color:#fff">eco</span></div>
+          <div class="wm">ClearChain</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="tm">Welcome back</div>
+        <div class="bm" style="margin-top:-6px">Sign in to manage your food rescue</div>
+        <div><div class="lbl">Email</div><div class="fld"><span class="material-icons">email</span>org@example.com</div></div>
+        <div><div class="lbl">Password</div><div class="fld"><span class="material-icons">lock</span>Enter your password</div></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px;"><span><span class="material-icons" style="color:#0d9488;vertical-align:middle">check_box</span> Remember me</span><span class="link">Forgot password?</span></div>
+      </div>
+    </div>
+    <div class="cap"><b>Login</b>: the logo hero, about 60dp shorter, with only the disc and wordmark on the gradient. "Forgot password?" becomes a text link, as the design system's casing note asks.</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="grad">
+        <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hd"><div class="back"><span class="material-icons">arrow_back</span></div><div class="t">Create your account</div></div>
+      </div>
+      <div class="body">
+        <div class="bm">Help reduce food waste in your community</div>
+        <div><div class="lbl">Organization name</div><div class="fld"><span class="material-icons">business</span>e.g. Green Valley Market</div></div>
+        <div><div class="lbl">Email</div><div class="fld"><span class="material-icons">email</span>org@example.com</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Forgot password, Register</b>: a back circle and the title. The subtitle sits underneath.</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="grad">
+        <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hd"><div class="t">Set up your profile</div></div>
+        <div class="bars"><i class="on"></i><i></i><i></i></div>
+      </div>
+      <div class="body">
+        <div class="eyebrow">STEP 1 OF 3 · CONTACT DETAILS</div>
+        <div class="bm" style="margin-top:-4px">How NGOs and our team can reach you</div>
+        <div><div class="lbl">Phone number</div><div class="fld"><span class="material-icons">phone</span>(206) 555-0100</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Onboarding 1–3</b>: no back circle, as today. Back stays in the bottom bar. The step line now names each step: Contact details, then Location and hours, then Submitted.</div>
+  </div>
+
+  <div>
+    <div class="ph">
+      <div class="grad">
+        <div class="sb"><span>10:18</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hd"><div class="t">Under review</div></div>
+      </div>
+      <div class="body">
+        <div class="bm">We're checking Kroger's details. This usually takes 1–3 business days.</div>
+        <div class="mcard">
+          <div class="r"><span class="material-icons" style="color:#16a34a">check_circle</span><div>Profile and documents sent</div></div>
+          <div class="r"><span class="material-icons" style="color:#0d9488">schedule</span><div>Admin review<small>In progress</small></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Verify email, Pending review</b>: the title only. Neither screen has a back step today, and the design keeps it that way.</div>
+  </div>
+</div>
+
+<hr class="sep">
+
+<h2>Part 2: which launcher icon?</h2>
+<p class="subtitle">The design system says to use Material's <code>eco</code> leaf and not redraw it. Each option shows the icon on a light and a dark wallpaper, Android 13's themed (monochrome) version, and the Android 12+ system splash it produces. That splash comes before the app's own gradient splash. It's a flat colour, because the system can't draw a gradient there. Today it's light grey with the robot, even in dark mode.</p>
+
+<div class="options">
+  <div class="option" data-choice="icon-gradient" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>White leaf on the brand gradient (my pick)</h3>
+      <p>It matches the splash and the sign-in header, so the icon you tap, the splash and Login read as one thing. It stays legible at small sizes and stands out among the mostly white and blue icons on a typical home screen. The system splash is flat brand teal with the leaf in its disc, the same picture the app splash opens with, so the hand-off barely shows.</p>
+      <div class="iconrow">
+        <div class="home light"><div class="app"><div class="ico other"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico g"><span class="material-icons">eco</span></div>ClearChain</div><div class="app"><div class="ico other3"><span class="material-icons" style="color:#fff">photo</span></div>Photos</div></div>
+        <div class="home dark"><div class="app"><div class="ico other2"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico g"><span class="material-icons">eco</span></div>ClearChain</div><div class="app"><div class="ico mono-d"><span class="material-icons">eco</span></div>Themed</div></div>
+        <div><div class="splash" style="background:#0d9488;"><div class="disc" style="width:200px;height:200px;"><span class="material-icons" style="color:#fff">eco</span></div></div><div class="mini">System splash</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="icon-disc" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Leaf in its disc, on the gradient</h3>
+      <p>This copies the in-app logo exactly: the leaf on a 20% white disc. It's the most literal match, but at launcher size the faint disc reads as a smudge and the leaf has to shrink to fit inside it.</p>
+      <div class="iconrow">
+        <div class="home light"><div class="app"><div class="ico other"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico g"><div class="ring"><span class="material-icons">eco</span></div></div>ClearChain</div><div class="app"><div class="ico other3"><span class="material-icons" style="color:#fff">photo</span></div>Photos</div></div>
+        <div class="home dark"><div class="app"><div class="ico other2"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico g"><div class="ring"><span class="material-icons">eco</span></div></div>ClearChain</div><div class="app"><div class="ico mono-d"><span class="material-icons" style="font-size:22px">eco</span></div>Themed</div></div>
+        <div><div class="splash" style="background:#0d9488;"><div class="disc" style="width:200px;height:200px;"><span class="material-icons" style="color:#fff">eco</span></div></div><div class="mini">System splash</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="icon-white" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Teal leaf on white</h3>
+      <p>Lighter and quieter, closer to the app's white surfaces. It loses the gradient that ties the icon to the splash, it fades into light wallpapers, and the system splash has to be white or teal. If it's white, it flashes bright before the teal splash in dark mode.</p>
+      <div class="iconrow">
+        <div class="home light"><div class="app"><div class="ico other"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico w"><span class="material-icons">eco</span></div>ClearChain</div><div class="app"><div class="ico other3"><span class="material-icons" style="color:#fff">photo</span></div>Photos</div></div>
+        <div class="home dark"><div class="app"><div class="ico other2"><span class="material-icons" style="color:#fff">mail</span></div>Mail</div><div class="app"><div class="ico w"><span class="material-icons">eco</span></div>ClearChain</div><div class="app"><div class="ico mono-d"><span class="material-icons">eco</span></div>Themed</div></div>
+        <div><div class="splash" style="background:#ffffff;"><span class="material-icons" style="color:#0d9488; font-size:120px">eco</span></div><div class="mini">System splash</div></div>
+      </div>
+    </div>
+  </div>
+</div>
