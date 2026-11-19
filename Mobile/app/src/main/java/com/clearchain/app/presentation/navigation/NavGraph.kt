@@ -121,7 +121,7 @@ fun NavGraph(
             RegisterScreen(navController = navController)
         }
 
-        insetComposable(
+        composable(
             route = Screen.EmailVerification.route,
             arguments = listOf(navArgument("email") { type = NavType.StringType })
         ) {

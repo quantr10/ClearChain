@@ -7,7 +7,6 @@
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>
     <string name="delete">Delete</string>
-    <string name="submit">Submit</string>
     <string name="retry">Retry</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="no_data">Nothing here yet.</string>
@@ -338,6 +337,9 @@
     <string name="email_verify_sent">A 6-digit code was sent to %1$s</string>
     <string name="email_resend_cooldown">Resend in %1$ds</string>
     <string name="email_resend_label">Resend code</string>
+    <string name="verify_code_label">Verification code</string>
+    <string name="action_verify">Verify</string>
+    <string name="verify_code_hint">Didn\'t get it? Check your spam folder.</string>
 
     <!-- Dispute -->
     <string name="dispute_reason_poor_condition">Poor food condition</string>

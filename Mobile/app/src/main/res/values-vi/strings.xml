@@ -8,7 +8,6 @@
     <string name="cancel">Hủy</string>
     <string name="save">Lưu</string>
     <string name="delete">Xóa</string>
-    <string name="submit">Gửi</string>
     <string name="retry">Thử lại</string>
     <string name="error_generic">Có lỗi xảy ra. Vui lòng thử lại.</string>
     <string name="no_data">Chưa có gì ở đây.</string>
@@ -318,6 +317,9 @@
     <string name="email_verify_sent">Mã 6 chữ số đã được gửi đến %1$s</string>
     <string name="email_resend_cooldown">Gửi lại sau %1$d giây</string>
     <string name="email_resend_label">Gửi lại mã</string>
+    <string name="verify_code_label">Mã xác minh</string>
+    <string name="action_verify">Xác minh</string>
+    <string name="verify_code_hint">Chưa nhận được? Hãy kiểm tra thư mục thư rác.</string>
 
     <!-- Dispute -->
     <string name="dispute_reason_poor_condition">Tình trạng thực phẩm kém</string>

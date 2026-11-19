@@ -1,29 +1,26 @@
 package com.clearchain.app.presentation.auth.verify
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.presentation.components.BlockBackWhile
+import com.clearchain.app.presentation.components.BrandHeader
+import com.clearchain.app.presentation.components.BrandScaffold
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
-import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.presentation.components.CodeInputField
+import com.clearchain.app.presentation.components.StatusDisc
+import com.clearchain.app.ui.theme.ListGap
 import com.clearchain.app.util.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
@@ -51,28 +48,16 @@ fun EmailVerificationScreen(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    BrandScaffold(
+        header = BrandHeader.Compact(title = stringResource(R.string.email_verify_title)),
+        snackbarHostState = snackbarHostState
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(ScreenPadding),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(ListGap)
         ) {
-            Icon(
-                imageVector = Icons.Default.Email,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Text(
-                text = stringResource(R.string.email_verify_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+            StatusDisc(Icons.Default.MarkEmailUnread)
 
             Text(
                 text = stringResource(R.string.email_verify_sent, state.email),
@@ -81,31 +66,34 @@ fun EmailVerificationScreen(
                 textAlign = TextAlign.Center
             )
 
-            OutlinedTextField(
+            CodeInputField(
                 value = state.code,
                 onValueChange = { viewModel.onEvent(EmailVerificationEvent.CodeChanged(it)) },
-                enabled = !state.isLoading,
-                singleLine = true,
+                label = stringResource(R.string.verify_code_label),
+                showLabel = false,
                 isError = state.codeError != null,
-                supportingText = state.codeError?.let { { Text(it) } },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                modifier = Modifier.width(240.dp),
-                textStyle = LocalTextStyle.current.copy(
-                    textAlign = TextAlign.Center,
-                    fontSize = 24.sp,
-                    letterSpacing = 8.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                errorMessage = state.codeError,
+                enabled = !state.isLoading,
+                imeAction = ImeAction.Done,
+                onImeAction = {
+                    if (state.code.length == 6 && !state.isResending) {
+                        viewModel.onEvent(EmailVerificationEvent.Verify)
+                    }
+                }
             )
 
             ClearChainButton(
-                text = stringResource(R.string.submit),
+                text = stringResource(R.string.action_verify),
                 onClick = { viewModel.onEvent(EmailVerificationEvent.Verify) },
                 enabled = state.code.length == 6 && !state.isResending,
                 loading = state.isLoading
+            )
+
+            Text(
+                text = stringResource(R.string.verify_code_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
 
             ClearChainOutlinedButton(
