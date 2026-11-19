@@ -2,4 +2,11 @@
 <resources>
     <!-- FCM notification icon tint (AndroidManifest.xml) -->
     <color name="purple_500">#FF6200EE</color>
+
+    <!-- Brand colours for the launcher icon and the window and system splash. They mirror
+         BrandTeal and BrandGreen in ui/theme/Color.kt. -->
+    <color name="brand_teal">#FF0D9488</color>
+    <color name="brand_green">#FF16A34A</color>
+    <!-- OnBrandGradient (white) at Alpha.LogoDisc (20%): the disc behind the leaf. -->
+    <color name="on_brand_disc">#33FFFFFF</color>
 </resources>

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.ClearChain" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- The window shows brand teal until the first frame, so a cold start on Android 8–11 matches
+         the teal splash. Compose draws over the whole window after that. -->
+    <style name="Theme.ClearChain" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/brand_teal</item>
+    </style>
 </resources>

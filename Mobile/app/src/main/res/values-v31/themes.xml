@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Android 12+ draws a system splash before the app's own: flat brand teal with the leaf in
+         its disc, the picture the app splash opens with. -->
+    <style name="Theme.ClearChain" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/brand_teal</item>
+        <item name="android:windowSplashScreenBackground">@color/brand_teal</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
+    </style>
+</resources>
