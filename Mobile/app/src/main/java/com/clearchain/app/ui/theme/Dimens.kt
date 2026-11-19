@@ -60,3 +60,6 @@ val LogoMarkSplashSize = 56.dp
 
 /** Design system `tile-icon`: icons on action-card tiles and the Register role cards. */
 val TileIconSize = 24.dp
+
+/** Design system `detail-icon`: the icon in a card detail row. */
+val DetailIconSize = 14.dp

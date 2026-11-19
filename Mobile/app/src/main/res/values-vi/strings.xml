@@ -985,10 +985,10 @@
     <string name="error_document_upload_failed">Tải tài liệu lên thất bại. Vui lòng thử lại.</string>
 
     <!-- ── Màn hình chờ duyệt ── -->
-    <string name="pending_review_pending_title">Tổ chức của bạn đang được xét duyệt</string>
-    <string name="pending_review_pending_subtitle">Admin ClearChain đang xác minh thông tin của bạn. Việc này thường mất 1–3 ngày làm việc.</string>
-    <string name="pending_review_rejected_title">Xác minh không được chấp thuận</string>
-    <string name="pending_review_rejected_subtitle">Xem lý do bên dưới, cập nhật hồ sơ hoặc tài liệu, rồi gửi lại.</string>
+    <string name="pending_review_pending_title">Đang xét duyệt</string>
+    <string name="pending_review_pending_subtitle">Chúng tôi đang kiểm tra thông tin của %1$s. Việc này thường mất 1–3 ngày làm việc.</string>
+    <string name="pending_review_rejected_title">Cần chỉnh sửa</string>
+    <string name="pending_review_rejected_subtitle">Đội ngũ của chúng tôi chưa thể xác minh %1$s. Hãy sửa thông tin bên dưới và gửi lại.</string>
     <string name="pending_review_reason_label">Lý do</string>
     <string name="pending_review_step_submitted">Đã gửi hồ sơ &amp; tài liệu</string>
     <string name="pending_review_step_reviewing">Đang trong quá trình xét duyệt</string>

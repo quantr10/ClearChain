@@ -153,7 +153,7 @@ fun NavGraph(
             )
         }
 
-        insetComposable(Screen.PendingReview.route) {
+        composable(Screen.PendingReview.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             PendingReviewScreen(
                 onNavigateRoute = { route ->
