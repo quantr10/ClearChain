@@ -30,14 +30,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.BorderWidth
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ControlHeight
+import com.clearchain.app.ui.theme.ControlIconSize
+import com.clearchain.app.ui.theme.ControlPadding
 import com.clearchain.app.ui.theme.EyebrowStyle
+import com.clearchain.app.ui.theme.FieldEndButtonSize
+import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ListGap
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
@@ -259,11 +266,11 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(ScreenPadding),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(ListGap)
     ) {
+        StepIntro(2, state.totalSteps)
+
         AddressSuggestionField(
             value = state.address,
             onValueChange = { viewModel.onEvent(OnboardingEvent.AddressChanged(it)) },
@@ -291,7 +298,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             onValueChange = { viewModel.onEvent(OnboardingEvent.CityChanged(it)) },
             label = stringResource(R.string.onboarding_city_label),
             placeholder = stringResource(R.string.onboarding_city_placeholder),
-            leadingIcon = Icons.Default.Place,
+            leadingIcon = Icons.Default.LocationCity,
             imeAction = ImeAction.Next,
             isError = state.cityError != null,
             errorMessage = state.cityError,
@@ -300,14 +307,13 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(ListGap)
         ) {
             ClearChainTextField(
                 value = state.state,
                 onValueChange = { viewModel.onEvent(OnboardingEvent.StateChanged(it)) },
                 label = stringResource(R.string.onboarding_state_label),
                 placeholder = stringResource(R.string.onboarding_state_placeholder),
-                leadingIcon = Icons.Default.Map,
                 imeAction = ImeAction.Next,
                 isError = state.stateError != null,
                 errorMessage = state.stateError,
@@ -319,7 +325,6 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
                 onValueChange = { viewModel.onEvent(OnboardingEvent.ZipCodeChanged(it)) },
                 label = stringResource(R.string.onboarding_zip_label),
                 placeholder = stringResource(R.string.onboarding_zip_placeholder),
-                leadingIcon = Icons.Default.LocalPostOffice,
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next,
                 isError = state.zipCodeError != null,
@@ -329,38 +334,30 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             )
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            OptionalFieldLabel(
-                text = stringResource(R.string.onboarding_hours_label),
-                isOptional = false,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(ListGap)
+        ) {
+            TimePickerField(
+                value = state.openTime,
+                onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
+                label = stringResource(R.string.onboarding_opens_label),
+                isError = state.openTimeError != null,
+                errorMessage = state.openTimeError,
+                enabled = !state.isSaving,
+                clearLabel = stringResource(R.string.cd_clear_opening_time),
+                modifier = Modifier.weight(1f)
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(Modifier.weight(1f)) {
-                    TimePickerField(
-                        value = state.openTime,
-                        onTimeSelected = { viewModel.onEvent(OnboardingEvent.OpenTimeChanged(it)) },
-                        label = "",
-                        isError = state.openTimeError != null,
-                        errorMessage = state.openTimeError,
-                        enabled = !state.isSaving
-                    )
-                }
-                Box(Modifier.weight(1f)) {
-                    TimePickerField(
-                        value = state.closeTime,
-                        onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
-                        label = "",
-                        isError = state.closeTimeError != null,
-                        errorMessage = state.closeTimeError,
-                        enabled = !state.isSaving
-                    )
-                }
-            }
+            TimePickerField(
+                value = state.closeTime,
+                onTimeSelected = { viewModel.onEvent(OnboardingEvent.CloseTimeChanged(it)) },
+                label = stringResource(R.string.onboarding_closes_label),
+                isError = state.closeTimeError != null,
+                errorMessage = state.closeTimeError,
+                enabled = !state.isSaving,
+                clearLabel = stringResource(R.string.cd_clear_closing_time),
+                modifier = Modifier.weight(1f)
+            )
         }
 
         if (state.userType == OrganizationType.GROCERY) {
@@ -380,7 +377,7 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
         }
 
         // ── Verification document upload (required) ──────────────────────────
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ListGap)) {
             OptionalFieldLabel(
                 text = stringResource(R.string.onboarding_doc_label),
                 isOptional = false,
@@ -396,53 +393,54 @@ private fun Step2Content(state: OnboardingState, viewModel: OnboardingViewModel)
             val hasDoc = state.verificationDocumentUri != null || state.uploadedDocumentUrl != null
             if (hasDoc) {
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     shape = ShapeMedium,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.outlineVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
-                            .height(32.dp)
-                            .padding(horizontal = 12.dp),
+                            .heightIn(min = ControlHeight)
+                            .padding(horizontal = ControlPadding),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(IconGap)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            when {
-                                state.isUploadingDocument -> InlineSpinner()
-                                state.uploadedDocumentUrl != null -> Icon(
-                                    Icons.Default.CheckCircle,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                else -> Icon(
-                                    Icons.Default.AttachFile,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Text(
-                                text = when {
-                                    state.isUploadingDocument -> stringResource(R.string.onboarding_doc_uploading)
-                                    else -> state.verificationDocumentName ?: stringResource(R.string.onboarding_doc_selected)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1
+                        when {
+                            state.isUploadingDocument -> InlineSpinner(
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            state.uploadedDocumentUrl != null -> Icon(
+                                Icons.Default.CheckCircle,
+                                null,
+                                modifier = Modifier.size(ControlIconSize)
+                            )
+                            else -> Icon(
+                                Icons.Default.AttachFile,
+                                null,
+                                modifier = Modifier.size(ControlIconSize)
                             )
                         }
+                        Text(
+                            text = when {
+                                state.isUploadingDocument -> stringResource(R.string.onboarding_doc_uploading)
+                                else -> state.verificationDocumentName ?: stringResource(R.string.onboarding_doc_selected)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
                         if (!state.isUploadingDocument) {
                             IconButton(
                                 onClick = { viewModel.onEvent(OnboardingEvent.RemoveDocument) },
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(FieldEndButtonSize)
                             ) {
-                                Icon(Icons.Default.Close, stringResource(R.string.onboarding_remove_icon), modifier = Modifier.size(16.dp))
+                                Icon(
+                                    Icons.Default.Close,
+                                    stringResource(R.string.cd_remove_document),
+                                    modifier = Modifier.size(ControlIconSize)
+                                )
                             }
                         }
                     }

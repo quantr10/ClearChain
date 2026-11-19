@@ -280,19 +280,21 @@
     <string name="onboarding_address_label">Địa chỉ</string>
     <string name="onboarding_address_placeholder">Bắt đầu nhập địa chỉ…</string>
     <string name="onboarding_city_label">Thành phố</string>
-    <string name="onboarding_city_placeholder">TP. Hồ Chí Minh</string>
-    <string name="onboarding_state_label">Tỉnh/Bang</string>
-    <string name="onboarding_state_placeholder">IL</string>
-    <string name="onboarding_zip_label">Mã bưu chính</string>
-    <string name="onboarding_zip_placeholder">61053</string>
+    <string name="onboarding_city_placeholder">Seattle</string>
+    <string name="onboarding_state_label">Tiểu bang</string>
+    <string name="onboarding_state_placeholder">Washington</string>
+    <string name="onboarding_zip_label">Mã ZIP</string>
+    <string name="onboarding_zip_placeholder">98109</string>
     <string name="onboarding_hours_label">Giờ hoạt động</string>
+    <string name="onboarding_opens_label">Mở cửa</string>
+    <string name="onboarding_closes_label">Đóng cửa</string>
+    <string name="cd_remove_document">Xóa tài liệu</string>
     <string name="onboarding_pickup_instructions_label">Hướng dẫn lấy hàng</string>
     <string name="onboarding_pickup_instructions_placeholder">Ví dụ: Cửa sau, hỏi tại quầy dịch vụ</string>
     <string name="onboarding_doc_label">Tài liệu xác minh</string>
     <string name="onboarding_doc_subtitle">Tải lên giấy phép kinh doanh hoặc chứng nhận NGO (tùy chọn, giúp xác minh nhanh hơn)</string>
     <string name="onboarding_doc_selected">Tài liệu đã chọn</string>
     <string name="onboarding_upload_document">Tải lên tài liệu</string>
-    <string name="onboarding_remove_icon">Xóa</string>
 
     <!-- Dashboard shared -->
     <string name="section_activity_trend">Xu hướng hoạt động</string>

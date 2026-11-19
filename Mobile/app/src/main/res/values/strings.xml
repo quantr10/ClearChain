@@ -299,19 +299,21 @@
     <string name="onboarding_address_label">Address</string>
     <string name="onboarding_address_placeholder">Start typing an address…</string>
     <string name="onboarding_city_label">City</string>
-    <string name="onboarding_city_placeholder">Ho Chi Minh City</string>
+    <string name="onboarding_city_placeholder">Seattle</string>
     <string name="onboarding_state_label">State</string>
-    <string name="onboarding_state_placeholder">IL</string>
+    <string name="onboarding_state_placeholder">Washington</string>
     <string name="onboarding_zip_label">ZIP Code</string>
-    <string name="onboarding_zip_placeholder">61053</string>
+    <string name="onboarding_zip_placeholder">98109</string>
     <string name="onboarding_hours_label">Operating Hours</string>
+    <string name="onboarding_opens_label">Opens</string>
+    <string name="onboarding_closes_label">Closes</string>
+    <string name="cd_remove_document">Remove document</string>
     <string name="onboarding_pickup_instructions_label">Pickup Instructions</string>
     <string name="onboarding_pickup_instructions_placeholder">e.g. Back door, ask at service counter</string>
     <string name="onboarding_doc_label">Verification Document</string>
     <string name="onboarding_doc_subtitle">Upload business registration or NGO certificate to speed up verification</string>
     <string name="onboarding_doc_selected">Document selected</string>
     <string name="onboarding_upload_document">Upload Document</string>
-    <string name="onboarding_remove_icon">Remove</string>
 
     <!-- Dashboard shared -->
     <string name="section_activity_trend">Activity Trend</string>
