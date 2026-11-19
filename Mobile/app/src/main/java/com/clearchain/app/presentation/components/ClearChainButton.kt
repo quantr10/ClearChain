@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.ui.theme.ActionIconButtonSize
@@ -74,7 +75,7 @@ fun ClearChainButton(
             }
         },
         modifier = (if (fillMaxWidth) modifier.fillMaxWidth() else modifier)
-            .requiredHeight(ClearChainButtonDefaults.Height),
+            .heightIn(min = ClearChainButtonDefaults.Height),
         enabled = enabled || loading,
         shape = ButtonShape,
         contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
@@ -99,7 +100,8 @@ fun ClearChainButton(
             }
             Text(
                 text = text,
-                style = clearChainButtonTextStyle()
+                style = clearChainButtonTextStyle(),
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -133,7 +135,7 @@ fun ClearChainOutlinedButton(
             }
         },
         modifier = (if (fillMaxWidth) modifier.fillMaxWidth() else modifier)
-            .requiredHeight(ClearChainButtonDefaults.Height),
+            .heightIn(min = ClearChainButtonDefaults.Height),
         enabled = enabled || loading,
         shape = ButtonShape,
         contentPadding = PaddingValues(horizontal = ClearChainButtonDefaults.HorizontalPadding, vertical = 0.dp),
@@ -152,7 +154,7 @@ fun ClearChainOutlinedButton(
                 Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(iconSize))
                 Spacer(Modifier.width(ClearChainButtonDefaults.Spacing))
             }
-            Text(text = text, style = clearChainButtonTextStyle())
+            Text(text = text, style = clearChainButtonTextStyle(), textAlign = TextAlign.Center)
         }
     }
 }
