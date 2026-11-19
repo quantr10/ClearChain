@@ -199,7 +199,9 @@
     <string name="sign_in">Sign In</string>
     <string name="create_new_account">Create New Account</string>
     <string name="create_your_account">Create your account</string>
-    <string name="join_clearchain">Join ClearChain</string>
+    <string name="cd_back_to_sign_in">Back to sign in</string>
+    <string name="register_subtitle">Help reduce food waste in your community</string>
+    <string name="register_role_label">I\'m signing up as</string>
     <string name="role_grocery_title">Grocery / Mall</string>
     <string name="role_grocery_subtitle">List surplus food</string>
     <string name="role_ngo_title">NGO / Food Bank</string>

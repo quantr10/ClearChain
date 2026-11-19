@@ -193,7 +193,9 @@
     <string name="sign_in">Đăng nhập</string>
     <string name="create_new_account">Tạo tài khoản mới</string>
     <string name="create_your_account">Tạo tài khoản của bạn</string>
-    <string name="join_clearchain">Tham gia ClearChain</string>
+    <string name="cd_back_to_sign_in">Quay lại đăng nhập</string>
+    <string name="register_subtitle">Giúp giảm lãng phí thực phẩm trong cộng đồng của bạn</string>
+    <string name="register_role_label">Tôi đăng ký với tư cách</string>
     <string name="role_grocery_title">Siêu thị / Trung tâm</string>
     <string name="role_grocery_subtitle">Đăng thực phẩm dư thừa</string>
     <string name="role_ngo_title">Tổ chức / Ngân hàng thực phẩm</string>

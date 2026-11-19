@@ -57,3 +57,6 @@ val LogoDiscSplashSize = 96.dp
 
 /** Design system `logo-mark-splash`: the leaf inside the splash's disc. */
 val LogoMarkSplashSize = 56.dp
+
+/** Design system `tile-icon`: icons on action-card tiles and the Register role cards. */
+val TileIconSize = 24.dp

@@ -1,11 +1,12 @@
 package com.clearchain.app.presentation.auth.register
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -23,12 +25,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.presentation.auth.AuthDivider
-import com.clearchain.app.presentation.auth.AuthHeader
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.*
@@ -57,212 +57,215 @@ fun RegisterScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
+    BrandScaffold(
+        header = BrandHeader.Compact(
+            title = stringResource(R.string.create_your_account),
+            onBack = { navController.navigateUp() },
+            backLabel = stringResource(R.string.cd_back_to_sign_in),
+            backEnabled = !state.isLoading
+        ),
+        snackbarHostState = snackbarHostState
+    ) {
+        Text(
+            text = stringResource(R.string.register_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // ── Role picker ──────────────────────────────────────────────────────
+        OptionalFieldLabel(
+            text = stringResource(R.string.register_role_label),
+            isOptional = false,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium
+        )
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max)
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(ListGap)
         ) {
-            AuthHeader(subtitle = stringResource(R.string.create_your_account))
+            RoleCard(
+                icon = Icons.Default.Store,
+                title = stringResource(R.string.role_grocery_title),
+                subtitle = stringResource(R.string.role_grocery_subtitle),
+                selected = state.type == "grocery",
+                onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("grocery")) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                enabled = !state.isLoading
+            )
+            RoleCard(
+                icon = Icons.Default.VolunteerActivism,
+                title = stringResource(R.string.role_ngo_title),
+                subtitle = stringResource(R.string.role_ngo_subtitle),
+                selected = state.type == "ngo",
+                onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("ngo")) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                enabled = !state.isLoading
+            )
+        }
 
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + slideInVertically { it / 4 }
-            ) {
-                Column(
-                    modifier = Modifier.padding(ScreenPadding),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.join_clearchain),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+        // ── Account fields ───────────────────────────────────────────────────
+        ClearChainTextField(
+            value = state.name,
+            onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
+            label = stringResource(R.string.org_name_label),
+            placeholder = stringResource(R.string.org_name_placeholder),
+            leadingIcon = Icons.Default.Business,
+            imeAction = ImeAction.Next,
+            isError = state.nameError != null,
+            errorMessage = state.nameError,
+            enabled = !state.isLoading
+        )
 
-                    // ── Role picker ──────────────────────────────────────────
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        RoleCard(
-                            icon = Icons.Default.Store,
-                            title = stringResource(R.string.role_grocery_title),
-                            subtitle = stringResource(R.string.role_grocery_subtitle),
-                            selected = state.type == "grocery",
-                            onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("grocery")) },
-                            modifier = Modifier.weight(1f),
-                            enabled = !state.isLoading
-                        )
-                        RoleCard(
-                            icon = Icons.Default.VolunteerActivism,
-                            title = stringResource(R.string.role_ngo_title),
-                            subtitle = stringResource(R.string.role_ngo_subtitle),
-                            selected = state.type == "ngo",
-                            onClick = { viewModel.onEvent(RegisterEvent.TypeChanged("ngo")) },
-                            modifier = Modifier.weight(1f),
-                            enabled = !state.isLoading
-                        )
-                    }
-
-                    HorizontalDivider()
-
-                    // ── Account fields ───────────────────────────────────────
-                    ClearChainTextField(
-                        value = state.name,
-                        onValueChange = { viewModel.onEvent(RegisterEvent.NameChanged(it)) },
-                        label = stringResource(R.string.org_name_label),
-                        placeholder = stringResource(R.string.org_name_placeholder),
-                        leadingIcon = Icons.Default.Business,
-                        imeAction = ImeAction.Next,
-                        isError = state.nameError != null,
-                        errorMessage = state.nameError,
-                        enabled = !state.isLoading
-                    )
-
-                    // ── Email field with availability indicator ──────────────
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ClearChainTextField(
-                            value = state.email,
-                            onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
-                            label = stringResource(R.string.email_address),
-                            placeholder = stringResource(R.string.hint_email_org),
-                            leadingIcon = Icons.Default.Email,
-                            trailingIcon = {
-                                if (state.email.isNotEmpty()) {
-                                    IconButton(
-                                        onClick = { viewModel.onEvent(RegisterEvent.ClearEmail) },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Clear,
-                                            contentDescription = stringResource(R.string.cd_clear_search),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                            isError = state.emailError != null || state.emailAlreadyExists,
-                            errorMessage = state.emailError,
-                            enabled = !state.isLoading
+        val emailLabel = stringResource(R.string.email_address)
+        ClearChainTextField(
+            value = state.email,
+            onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
+            label = emailLabel,
+            placeholder = stringResource(R.string.hint_email_org),
+            leadingIcon = Icons.Default.Email,
+            trailingIcon = {
+                if (state.email.isNotEmpty()) {
+                    IconButton(
+                        onClick = { viewModel.onEvent(RegisterEvent.ClearEmail) },
+                        modifier = Modifier.size(FieldEndButtonSize)
+                    ) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = stringResource(R.string.cd_clear_field, emailLabel),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(ControlIconSize)
                         )
                     }
-
-                    // ── Password with strength meter ─────────────────────────
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        ClearChainTextField(
-                            value = state.password,
-                            onValueChange = { viewModel.onEvent(RegisterEvent.PasswordChanged(it)) },
-                            label = stringResource(R.string.password),
-                            placeholder = stringResource(R.string.password_placeholder),
-                            leadingIcon = Icons.Default.Lock,
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Next,
-                            isPassword = true,
-                            isError = state.passwordError != null,
-                            errorMessage = state.passwordError,
-                            enabled = !state.isLoading
-                        )
-                        AnimatedVisibility(visible = state.passwordStrength != PasswordStrength.NONE) {
-                            PasswordStrengthMeter(strength = state.passwordStrength)
-                        }
-                    }
-
-                    ClearChainTextField(
-                        value = state.confirmPassword,
-                        onValueChange = { viewModel.onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
-                        label = stringResource(R.string.confirm_password),
-                        placeholder = stringResource(R.string.confirm_password_placeholder),
-                        leadingIcon = Icons.Default.LockOpen,
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done,
-                        isPassword = true,
-                        isError = state.confirmPasswordError != null,
-                        errorMessage = state.confirmPasswordError,
-                        onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
-                        enabled = !state.isLoading
-                    )
-
-                    // ── Terms of service checkbox ────────────────────────────
-                    val tosAgreePrefix = stringResource(R.string.tos_agree_prefix)
-                    val tosTerms = stringResource(R.string.terms_of_service)
-                    val tosAnd = stringResource(R.string.tos_agree_and)
-                    val tosPrivacy = stringResource(R.string.privacy_policy)
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.clickable(enabled = !state.isLoading) {
-                                viewModel.onEvent(RegisterEvent.ToggleTos)
-                            }
-                        ) {
-                            Checkbox(
-                                checked = state.tosAccepted,
-                                onCheckedChange = { viewModel.onEvent(RegisterEvent.ToggleTos) },
-                                enabled = !state.isLoading,
-                                modifier = Modifier.size(24.dp),
-                                colors = CheckboxDefaults.colors(
-                                    uncheckedColor = if (state.tosError) {
-                                        MaterialTheme.colorScheme.error
-                                    } else {
-                                        MaterialTheme.colorScheme.outline
-                                    }
-                                )
-                            )
-                            Text(
-                                text = buildAnnotatedString {
-                                    append(tosAgreePrefix.trimEnd())
-                                    append(" ")
-                                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
-                                        append(tosTerms)
-                                    }
-                                    append(" ")
-                                    append(tosAnd.trim())
-                                    append(" ")
-                                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
-                                        append(tosPrivacy)
-                                    }
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.disabledIf(state.isLoading)
-                            )
-                        }
-                        if (state.tosError) {
-                            Text(
-                                text = stringResource(R.string.must_accept_tos),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(start = 32.dp)
-                            )
-                        }
-                    }
-
-                    ClearChainButton(
-                        text = stringResource(R.string.create_account),
-                        onClick = { viewModel.onEvent(RegisterEvent.Register) },
-                        loading = state.isLoading,
-                        enabled = !state.isLoading &&
-                            state.name.isNotBlank() &&
-                            state.email.isNotBlank() &&
-                            state.password.isNotBlank() &&
-                            state.confirmPassword.isNotBlank() &&
-                            state.tosAccepted
-                    )
-
-                    AuthDivider()
-
-                    ClearChainOutlinedButton(
-                        text = stringResource(R.string.sign_in),
-                        onClick = { navController.navigateUp() },
-                        enabled = !state.isLoading,
-                        fillMaxWidth = true
-                    )
                 }
+            },
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Next,
+            isError = state.emailError != null || state.emailAlreadyExists,
+            errorMessage = state.emailError,
+            enabled = !state.isLoading
+        )
+
+        // ── Password with strength meter ─────────────────────────────────────
+        Column(verticalArrangement = Arrangement.spacedBy(IconGap)) {
+            ClearChainTextField(
+                value = state.password,
+                onValueChange = { viewModel.onEvent(RegisterEvent.PasswordChanged(it)) },
+                label = stringResource(R.string.password),
+                placeholder = stringResource(R.string.password_placeholder),
+                leadingIcon = Icons.Default.Lock,
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Next,
+                isPassword = true,
+                isError = state.passwordError != null,
+                errorMessage = state.passwordError,
+                enabled = !state.isLoading
+            )
+            AnimatedVisibility(visible = state.passwordStrength != PasswordStrength.NONE) {
+                PasswordStrengthMeter(strength = state.passwordStrength)
             }
         }
+
+        ClearChainTextField(
+            value = state.confirmPassword,
+            onValueChange = { viewModel.onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
+            label = stringResource(R.string.confirm_password),
+            placeholder = stringResource(R.string.confirm_password_placeholder),
+            leadingIcon = Icons.Default.LockOpen,
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+            isPassword = true,
+            isError = state.confirmPasswordError != null,
+            errorMessage = state.confirmPasswordError,
+            onImeAction = { viewModel.onEvent(RegisterEvent.Register) },
+            enabled = !state.isLoading
+        )
+
+        // ── Terms of service checkbox ────────────────────────────────────────
+        val tosAgreePrefix = stringResource(R.string.tos_agree_prefix)
+        val tosTerms = stringResource(R.string.terms_of_service)
+        val tosAnd = stringResource(R.string.tos_agree_and)
+        val tosPrivacy = stringResource(R.string.privacy_policy)
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ListGap),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = MinTouchTarget)
+                    .toggleable(
+                        value = state.tosAccepted,
+                        enabled = !state.isLoading,
+                        role = Role.Checkbox,
+                        onValueChange = { viewModel.onEvent(RegisterEvent.ToggleTos) }
+                    )
+            ) {
+                Checkbox(
+                    checked = state.tosAccepted,
+                    onCheckedChange = null,
+                    enabled = !state.isLoading,
+                    colors = CheckboxDefaults.colors(
+                        uncheckedColor = if (state.tosError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        }
+                    )
+                )
+                Text(
+                    text = buildAnnotatedString {
+                        append(tosAgreePrefix.trimEnd())
+                        append(" ")
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
+                            append(tosTerms)
+                        }
+                        append(" ")
+                        append(tosAnd.trim())
+                        append(" ")
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
+                            append(tosPrivacy)
+                        }
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.disabledIf(state.isLoading)
+                )
+            }
+            if (state.tosError) {
+                Text(
+                    text = stringResource(R.string.must_accept_tos),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = FieldEndButtonSize + ListGap)
+                )
+            }
+        }
+
+        ClearChainButton(
+            text = stringResource(R.string.create_account),
+            onClick = { viewModel.onEvent(RegisterEvent.Register) },
+            loading = state.isLoading,
+            enabled = !state.isLoading &&
+                state.name.isNotBlank() &&
+                state.email.isNotBlank() &&
+                state.password.isNotBlank() &&
+                state.confirmPassword.isNotBlank() &&
+                state.tosAccepted
+        )
+
+        AuthDivider()
+
+        ClearChainOutlinedButton(
+            text = stringResource(R.string.sign_in),
+            onClick = { navController.navigateUp() },
+            enabled = !state.isLoading,
+            fillMaxWidth = true
+        )
     }
 }
 
@@ -282,29 +285,31 @@ private fun PasswordStrengthMeter(strength: PasswordStrength) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.padding(horizontal = 4.dp)
+        horizontalArrangement = Arrangement.spacedBy(IconGap)
     ) {
         repeat(3) { index ->
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .height(StepBarHeight)
+                    .clip(CircleShape)
                     .background(if (index < filledSegments) color else MaterialTheme.colorScheme.surfaceVariant)
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = color,
-            modifier = Modifier.width(40.dp)
+            color = color
         )
     }
 }
 
 // ── Role selection card ──────────────────────────────────────────────────────
 
+/**
+ * One of the two account types. It is a radio button to accessibility services, so a screen
+ * reader announces the title, the subtitle and whether it is selected.
+ */
 @Composable
 private fun RoleCard(
     icon: ImageVector,
@@ -315,29 +320,44 @@ private fun RoleCard(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }
-    val bgColor = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+    val iconColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        MaterialTheme.colorScheme.surface
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val titleColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val subtitleColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Box(
         modifier = modifier
-            .heightIn(min = 118.dp)
             .clip(CardShape)
-            .background(bgColor)
-            .border(
-                width = if (selected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = CardShape
+            .background(containerColor)
+            .border(width = BorderWidth, color = borderColor, shape = CardShape)
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                role = Role.RadioButton,
+                onClick = onClick
             )
-            .clickable(enabled = enabled) { onClick() }
-            .padding(16.dp),
+            .padding(CardPadding),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -348,12 +368,8 @@ private fun RoleCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(28.dp),
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                modifier = Modifier.size(TileIconSize),
+                tint = iconColor
             )
             Text(
                 text = title,
@@ -361,18 +377,14 @@ private fun RoleCard(
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                color = titleColor
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = subtitleColor
             )
         }
     }

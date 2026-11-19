@@ -116,7 +116,7 @@ fun NavGraph(
             LoginScreen(navController = navController, resultHandle = entry.savedStateHandle)
         }
 
-        insetComposable(Screen.Register.route) {
+        composable(Screen.Register.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             RegisterScreen(navController = navController)
         }
