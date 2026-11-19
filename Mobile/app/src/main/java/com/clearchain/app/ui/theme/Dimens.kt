@@ -42,3 +42,12 @@ val MinTouchTarget = 48.dp
 
 /** Design system `code-cell`: the smallest height of a one-time-code cell; it grows with the text. */
 val CodeCellMinHeight = 52.dp
+
+/** Design system `logo-disc-hero`: the logo disc in the Login hero. */
+val LogoDiscHeroSize = 64.dp
+
+/** Design system `logo-mark-hero`: the leaf inside the Login hero's disc. */
+val LogoMarkHeroSize = 38.dp
+
+/** Design system `step-bar`: the height of the onboarding step bars and the password meter. */
+val StepBarHeight = 4.dp

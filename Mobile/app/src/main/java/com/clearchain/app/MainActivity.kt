@@ -13,11 +13,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -122,7 +125,12 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    // The status-bar inset is left to each destination: NavGraph pads the
+                    // ordinary screens, and the sign-in screens draw their gradient behind it.
                     Scaffold(
+                        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                        ),
                         bottomBar = {
                             if (showBottomBar && userType != null) {
                                 BottomNavBar(

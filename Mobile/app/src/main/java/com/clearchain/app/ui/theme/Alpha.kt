@@ -14,7 +14,10 @@ object Alpha {
     /** `category-tint`: a category badge's fill, as the category colour at this alpha. */
     val CategoryTint = 0.12f
 
-    /** `logo-disc`: the white disc behind the leaf in the sign-in header. */
+    /**
+     * `logo-disc`: white at this alpha on the brand gradient: the logo disc, the header back
+     * circle and the step-bar track.
+     */
     val LogoDisc = 0.2f
 
     /** `eyebrow-alpha`: the role eyebrow, white at this alpha on the brand gradient. */

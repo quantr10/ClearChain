@@ -1,9 +1,17 @@
 package com.clearchain.app.presentation.navigation
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDeepLink
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -65,6 +73,25 @@ private fun VerificationGate(navController: NavHostController) {
     }
 }
 
+/**
+ * A destination drawn below the status bar, as every screen outside the sign-in flow is. The
+ * outer scaffold leaves the status-bar inset to each destination, so the sign-in screens can use
+ * plain [composable] and draw their gradient behind it.
+ */
+private fun NavGraphBuilder.insetComposable(
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    deepLinks: List<NavDeepLink> = emptyList(),
+    content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
+) {
+    composable(route = route, arguments = arguments, deepLinks = deepLinks) { entry ->
+        val scope = this
+        Box(Modifier.fillMaxSize().statusBarsPadding()) {
+            scope.content(entry)
+        }
+    }
+}
+
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -78,22 +105,22 @@ fun NavGraph(
         modifier = modifier
     ) {
         // ── Auth ─────────────────────────────────────────────────────────────
-        composable(Screen.Splash.route) {
+        insetComposable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             SplashScreen(navController = navController)
         }
 
-        composable(Screen.Login.route) { entry ->
+        insetComposable(Screen.Login.route) { entry ->
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             LoginScreen(navController = navController, resultHandle = entry.savedStateHandle)
         }
 
-        composable(Screen.Register.route) {
+        insetComposable(Screen.Register.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             RegisterScreen(navController = navController)
         }
 
-        composable(
+        insetComposable(
             route = Screen.EmailVerification.route,
             arguments = listOf(navArgument("email") { type = NavType.StringType })
         ) {
@@ -101,7 +128,7 @@ fun NavGraph(
             EmailVerificationScreen(navController = navController)
         }
 
-        composable(
+        insetComposable(
             route = Screen.ForgotPassword.route,
             arguments = listOf(
                 navArgument("email") {
@@ -114,7 +141,7 @@ fun NavGraph(
             ForgotPasswordScreen(navController = navController)
         }
 
-        composable(Screen.Onboarding.route) {
+        insetComposable(Screen.Onboarding.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             OnboardingScreen(
                 onFinished = {
@@ -125,7 +152,7 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.PendingReview.route) {
+        insetComposable(Screen.PendingReview.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             PendingReviewScreen(
                 onNavigateRoute = { route ->
@@ -140,18 +167,18 @@ fun NavGraph(
         }
 
         // ── Grocery ──────────────────────────────────────────────────────────
-        composable(Screen.GroceryDashboard.route) {
+        insetComposable(Screen.GroceryDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             VerificationGate(navController)
             GroceryDashboardScreen(navController = navController)
         }
 
-        composable(Screen.CreateListing.route) {
+        insetComposable(Screen.CreateListing.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             CreateListingScreen(navController = navController)
         }
 
-        composable(
+        insetComposable(
             route = Screen.EditListing.route,
             arguments = listOf(navArgument("listingId") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -160,12 +187,12 @@ fun NavGraph(
             EditListingScreen(listingId = listingId, navController = navController)
         }
 
-        composable(Screen.MyListings.route) {
+        insetComposable(Screen.MyListings.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             MyListingsScreen(navController = navController)
         }
 
-        composable(Screen.PickupRequests.route) {
+        insetComposable(Screen.PickupRequests.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             ManageRequestsScreen(
                 onNavigateToRequestDetail = { requestId ->
@@ -175,13 +202,13 @@ fun NavGraph(
         }
 
         // ── NGO ──────────────────────────────────────────────────────────────
-        composable(Screen.NgoDashboard.route) {
+        insetComposable(Screen.NgoDashboard.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             VerificationGate(navController)
             NgoDashboardScreen(navController = navController)
         }
 
-        composable(
+        insetComposable(
             route = Screen.BrowseListings.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://browse" })
         ) {
@@ -189,14 +216,14 @@ fun NavGraph(
             BrowseListingsScreen(navController = navController)
         }
 
-        composable(Screen.Cart.route) {
+        insetComposable(Screen.Cart.route) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             CartScreen(
                 onNavigate = { route -> navController.navigate(route) }
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.CartPickup.route,
             arguments = listOf(navArgument("groceryId") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -209,7 +236,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.MyRequests.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://ngo/requests" })
         ) {
@@ -222,7 +249,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.Inventory.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://ngo/inventory" })
         ) {
@@ -234,7 +261,7 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.LocationPicker.route) {
+        insetComposable(Screen.LocationPicker.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.NGO) }
             LocationPickerScreen(
                 onLocationSelected = {
@@ -247,7 +274,7 @@ fun NavGraph(
         }
 
         // ── Detail screens ───────────────────────────────────────────────────
-        composable(
+        insetComposable(
             route = Screen.ListingDetail.route,
             arguments = listOf(navArgument("listingId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://listing/{listingId}" })
@@ -269,7 +296,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.RequestDetail.route,
             arguments = listOf(navArgument("requestId") { type = NavType.StringType }),
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://request/{requestId}" })
@@ -283,7 +310,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.InventoryDetail.route,
             arguments = listOf(navArgument("itemId") { type = NavType.StringType })
         ) { backStackEntry ->
@@ -305,7 +332,7 @@ fun NavGraph(
         }
 
         // ── Admin ────────────────────────────────────────────────────────────
-        composable(
+        insetComposable(
             route = Screen.AdminDashboard.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin" })
         ) {
@@ -313,7 +340,7 @@ fun NavGraph(
             AdminDashboardScreen(navController = navController)
         }
 
-        composable(
+        insetComposable(
             route = Screen.Verification.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin/verification" })
         ) {
@@ -325,7 +352,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.Transactions.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin/transactions" })
         ) {
@@ -337,7 +364,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.AdminStatistics.route,
             arguments = listOf(
                 navArgument("section") {
@@ -354,22 +381,22 @@ fun NavGraph(
         }
 
         // ── Shared ───────────────────────────────────────────────────────────
-        composable(Screen.Analytics.route) {
+        insetComposable(Screen.Analytics.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             AnalyticsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(Screen.AccountDetail.route) {
+        insetComposable(Screen.AccountDetail.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             AccountDetailScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(Screen.Help.route) {
+        insetComposable(Screen.Help.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             HelpScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(
+        insetComposable(
             route = Screen.PublicProfile.route,
             arguments = listOf(navArgument("orgId") { type = NavType.StringType })
         ) {
@@ -382,12 +409,12 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Settings.route) {
+        insetComposable(Screen.Settings.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             SettingsScreen(onNavigateBack = { navController.navigateUp() })
         }
 
-        composable(
+        insetComposable(
             route = Screen.NotificationInbox.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://notifications" })
         ) {
@@ -406,7 +433,7 @@ fun NavGraph(
             )
         }
 
-        composable(
+        insetComposable(
             route = Screen.Profile.route,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://profile" })
         ) {
