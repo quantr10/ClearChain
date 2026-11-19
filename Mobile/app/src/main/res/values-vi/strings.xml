@@ -853,6 +853,9 @@
     <string name="cd_clear_closing_time">Xóa giờ đóng cửa</string>
     <string name="label_address">Địa chỉ</string>
     <string name="placeholder_start_typing_address">Bắt đầu nhập địa chỉ…</string>
+    <string name="address_searching">Đang tìm địa chỉ…</string>
+    <string name="address_no_matches">Không tìm thấy địa chỉ phù hợp. Hãy điền các ô bên dưới.</string>
+    <string name="cd_use_address">Dùng địa chỉ này</string>
 
     <!-- Sort option labels -->
     <string name="sort_newest">Mới nhất</string>

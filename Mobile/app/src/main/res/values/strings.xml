@@ -908,6 +908,9 @@
     <string name="cd_clear_closing_time">Clear closing time</string>
     <string name="label_address">Address</string>
     <string name="placeholder_start_typing_address">Start typing an address…</string>
+    <string name="address_searching">Searching addresses…</string>
+    <string name="address_no_matches">No matching addresses. Fill in the fields below.</string>
+    <string name="cd_use_address">Use this address</string>
 
     <!-- Sort option labels -->
     <string name="sort_newest">Newest</string>

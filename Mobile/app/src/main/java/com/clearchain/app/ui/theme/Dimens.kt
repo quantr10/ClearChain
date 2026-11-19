@@ -36,3 +36,6 @@ val StatusDiscIconSize = 28.dp
 
 /** Design system `status-rings`: the two rings around the status picture's disc. */
 val StatusRingsSize = 100.dp
+
+/** Design system `touch-target`: the smallest height of a tappable row or link. */
+val MinTouchTarget = 48.dp
