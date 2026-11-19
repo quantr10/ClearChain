@@ -15,9 +15,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.BorderWidth
 import com.clearchain.app.ui.theme.ControlHeight
-import com.clearchain.app.ui.theme.ControlIconSize
 import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.FieldEndButtonSize
 import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 import java.time.Instant
@@ -43,12 +44,13 @@ fun DatePickerField(
     errorMessage: String? = null,
     enabled: Boolean = true,
     selectableDates: SelectableDates = DatePickerDefaults.AllDates,
-    onClearDate: (() -> Unit)? = null
+    onClearDate: (() -> Unit)? = null,
+    clearLabel: String? = null
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
     val borderColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
-    val borderWidth = 1.dp
+    val borderWidth = BorderWidth
     val contentColor = if (enabled) {
         MaterialTheme.colorScheme.onSurface
     } else {
@@ -72,13 +74,13 @@ fun DatePickerField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(ControlHeight)
+                .heightIn(min = ControlHeight)
                 .border(borderWidth, borderColor, ShapeMedium)
                 .clickable(enabled = enabled) { showPicker = true }
                 .padding(horizontal = ControlPadding)
         ) {
             Row(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = ControlHeight),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(IconGap)
             ) {
@@ -96,11 +98,11 @@ fun DatePickerField(
                 if (value.isNotBlank() && onClearDate != null) {
                     IconButton(
                         onClick = { onClearDate() },
-                        modifier = Modifier.size(ControlIconSize)
+                        modifier = Modifier.size(FieldEndButtonSize)
                     ) {
                         Icon(
                             Icons.Default.Clear,
-                            stringResource(R.string.cd_clear_search),
+                            clearButtonLabel(clearLabel, label, R.string.cd_clear_date),
                             Modifier.size(14.dp),
                             tint = iconTint
                         )

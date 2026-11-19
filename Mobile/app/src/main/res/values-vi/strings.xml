@@ -848,6 +848,7 @@
     <string name="cd_clear_field">Xóa %1$s</string>
     <string name="cd_clear_text">Xóa nội dung</string>
     <string name="cd_clear_time">Xóa giờ</string>
+    <string name="cd_clear_date">Xóa ngày</string>
     <string name="cd_clear_opening_time">Xóa giờ mở cửa</string>
     <string name="cd_clear_closing_time">Xóa giờ đóng cửa</string>
     <string name="label_address">Địa chỉ</string>
