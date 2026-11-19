@@ -856,6 +856,12 @@
     <string name="address_searching">Đang tìm địa chỉ…</string>
     <string name="address_no_matches">Không tìm thấy địa chỉ phù hợp. Hãy điền các ô bên dưới.</string>
     <string name="cd_use_address">Dùng địa chỉ này</string>
+    <plurals name="cd_code_field">
+        <item quantity="other">%1$s, %2$d chữ số</item>
+    </plurals>
+    <plurals name="cd_code_digits_entered">
+        <item quantity="other">Đã nhập %d chữ số</item>
+    </plurals>
 
     <!-- Sort option labels -->
     <string name="sort_newest">Mới nhất</string>

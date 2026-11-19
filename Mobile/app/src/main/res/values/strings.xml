@@ -911,6 +911,14 @@
     <string name="address_searching">Searching addresses…</string>
     <string name="address_no_matches">No matching addresses. Fill in the fields below.</string>
     <string name="cd_use_address">Use this address</string>
+    <plurals name="cd_code_field">
+        <item quantity="one">%1$s, %2$d digit</item>
+        <item quantity="other">%1$s, %2$d digits</item>
+    </plurals>
+    <plurals name="cd_code_digits_entered">
+        <item quantity="one">%d digit entered</item>
+        <item quantity="other">%d digits entered</item>
+    </plurals>
 
     <!-- Sort option labels -->
     <string name="sort_newest">Newest</string>

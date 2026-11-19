@@ -39,3 +39,6 @@ val StatusRingsSize = 100.dp
 
 /** Design system `touch-target`: the smallest height of a tappable row or link. */
 val MinTouchTarget = 48.dp
+
+/** Design system `code-cell`: the smallest height of a one-time-code cell; it grows with the text. */
+val CodeCellMinHeight = 52.dp
