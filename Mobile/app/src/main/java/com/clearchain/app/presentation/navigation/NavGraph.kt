@@ -3,6 +3,7 @@ package com.clearchain.app.presentation.navigation
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,9 +75,9 @@ private fun VerificationGate(navController: NavHostController) {
 }
 
 /**
- * A destination drawn below the status bar, as every screen outside the sign-in flow is. The
- * outer scaffold leaves the status-bar inset to each destination, so the sign-in screens can use
- * plain [composable] and draw their gradient behind it.
+ * A destination drawn between the status bar and the navigation bar, as every screen outside the
+ * sign-in flow is. The outer scaffold leaves those insets to each destination, so the sign-in
+ * screens can use plain [composable] and draw their gradient behind them.
  */
 private fun NavGraphBuilder.insetComposable(
     route: String,
@@ -86,7 +87,7 @@ private fun NavGraphBuilder.insetComposable(
 ) {
     composable(route = route, arguments = arguments, deepLinks = deepLinks) { entry ->
         val scope = this
-        Box(Modifier.fillMaxSize().statusBarsPadding()) {
+        Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             scope.content(entry)
         }
     }
@@ -105,7 +106,7 @@ fun NavGraph(
         modifier = modifier
     ) {
         // ── Auth ─────────────────────────────────────────────────────────────
-        insetComposable(Screen.Splash.route) {
+        composable(Screen.Splash.route) {
             LaunchedEffect(Unit) { onShowBottomBar(false, null) }
             SplashScreen(navController = navController)
         }

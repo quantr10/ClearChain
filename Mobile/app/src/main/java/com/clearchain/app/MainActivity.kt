@@ -125,11 +125,12 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // The status-bar inset is left to each destination: NavGraph pads the
-                    // ordinary screens, and the sign-in screens draw their gradient behind it.
+                    // The system-bar insets are left to each destination: NavGraph pads the
+                    // ordinary screens, and the sign-in screens draw their gradient behind them.
+                    // With the bottom bar showing, its height is the content's bottom padding.
                     Scaffold(
                         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(
-                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                            WindowInsetsSides.Horizontal
                         ),
                         bottomBar = {
                             if (showBottomBar && userType != null) {

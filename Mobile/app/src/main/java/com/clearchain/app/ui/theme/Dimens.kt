@@ -51,3 +51,9 @@ val LogoMarkHeroSize = 38.dp
 
 /** Design system `step-bar`: the height of the onboarding step bars and the password meter. */
 val StepBarHeight = 4.dp
+
+/** Design system `logo-disc-splash`: the logo disc on the splash, app and system alike. */
+val LogoDiscSplashSize = 96.dp
+
+/** Design system `logo-mark-splash`: the leaf inside the splash's disc. */
+val LogoMarkSplashSize = 56.dp

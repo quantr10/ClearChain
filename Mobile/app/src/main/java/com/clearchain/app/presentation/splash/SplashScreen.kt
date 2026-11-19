@@ -12,23 +12,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.edit
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.presentation.components.BrandGradient
+import com.clearchain.app.presentation.components.LightStatusBarIcons
+import com.clearchain.app.presentation.components.LoadingDefaults
 import com.clearchain.app.presentation.navigation.Screen
-import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.HeaderPadding
+import com.clearchain.app.ui.theme.ListGap
+import com.clearchain.app.ui.theme.LogoDiscSplashSize
+import com.clearchain.app.ui.theme.LogoMarkSplashSize
 import com.clearchain.app.ui.theme.OnBrandGradient
-import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.WordmarkStyle
 import kotlinx.coroutines.delay
 
@@ -40,13 +43,8 @@ fun SplashScreen(
     val context = LocalContext.current
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
-    // Entrance animations
+    // The disc stays where the system splash drew it; the name and tagline fade in under it.
     var visible by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.55f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "logo_scale"
-    )
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(700, easing = FastOutSlowInEasing),
@@ -127,49 +125,52 @@ fun SplashScreen(
         }
     }
 
+    LightStatusBarIcons()
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(colors = listOf(BrandTeal, BrandGreen))
-            ),
-        contentAlignment = Alignment.Center
+            .background(BrandGradient)
     ) {
+        // Equal space above and below the disc keeps its centre on the screen's centre, where
+        // the system splash's splash_mark drew it.
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.scale(scale).padding(ScreenPadding)
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo container
+            Spacer(Modifier.weight(1f))
             Box(
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(LogoDiscSplashSize)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.18f)),
+                    .background(OnBrandGradient.copy(alpha = Alpha.LogoDisc)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Eco,
                     contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = Color.White
+                    modifier = Modifier.size(LogoMarkSplashSize),
+                    tint = OnBrandGradient
                 )
             }
-
             Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = ScreenHPadding)
+                    .padding(top = ListGap)
+                    .graphicsLayer(alpha = alpha),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.graphicsLayer(alpha = alpha)
+                verticalArrangement = Arrangement.spacedBy(ListGap)
             ) {
                 Text(
                     text = stringResource(R.string.app_name),
                     style = WordmarkStyle,
                     color = OnBrandGradient
                 )
-                Spacer(Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.splash_tagline),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.82f)
+                    color = OnBrandGradient.copy(alpha = Alpha.Subtitle),
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -177,10 +178,10 @@ fun SplashScreen(
         CircularProgressIndicator(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 60.dp)
-                .size(28.dp),
-            color = Color.White.copy(alpha = 0.55f),
-            strokeWidth = 2.5.dp
+                .navigationBarsPadding()
+                .padding(bottom = HeaderPadding)
+                .size(LoadingDefaults.AreaSize),
+            color = OnBrandGradient
         )
     }
 }

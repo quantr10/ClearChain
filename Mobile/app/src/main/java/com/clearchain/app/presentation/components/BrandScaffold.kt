@@ -178,7 +178,7 @@ private fun CompactLayout(
                 .overlapAbove(SheetOverlap)
                 .clip(sheetShape())
                 .background(MaterialTheme.colorScheme.background)
-                .imePadding()
+                .windowInsetsPadding(KeyboardOrNavigationBar)
         ) {
             Box(Modifier.weight(1f)) {
                 Column(
@@ -250,7 +250,7 @@ private fun HeroLayout(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
+                .windowInsetsPadding(KeyboardOrNavigationBar)
                 .verticalScroll(rememberScrollState())
         ) {
             Column(
@@ -311,13 +311,17 @@ private fun HeroLayout(
                 hostState = it,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .imePadding()
+                    .windowInsetsPadding(KeyboardOrNavigationBar)
             )
         }
     }
 }
 
 // ── Sheet ────────────────────────────────────────────────────────────────────
+
+/** The sheet's bottom inset: the keyboard when it's open, otherwise the navigation bar. */
+private val KeyboardOrNavigationBar: WindowInsets
+    @Composable get() = WindowInsets.ime.union(WindowInsets.navigationBars)
 
 /** How far the sheet rises over the gradient, so the gradient shows in its rounded corners. */
 private val SheetOverlap = ScreenHPadding
