@@ -129,7 +129,7 @@ fun NavGraph(
             EmailVerificationScreen(navController = navController)
         }
 
-        insetComposable(
+        composable(
             route = Screen.ForgotPassword.route,
             arguments = listOf(
                 navArgument("email") {

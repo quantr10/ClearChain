@@ -1,32 +1,28 @@
 package com.clearchain.app.presentation.auth.forgot
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.clearchain.app.R
-import com.clearchain.app.presentation.auth.AuthHeader
 import com.clearchain.app.presentation.components.BlockBackWhile
+import com.clearchain.app.presentation.components.BrandHeader
+import com.clearchain.app.presentation.components.BrandScaffold
 import com.clearchain.app.presentation.components.ClearChainButton
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.presentation.components.ClearChainTextField
-import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.presentation.components.CodeInputField
 import com.clearchain.app.util.UiEvent
 
 /** Back-stack result key: the email whose password was just reset, read by LoginScreen. */
@@ -55,48 +51,19 @@ fun ForgotPasswordScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            AuthHeader(
-                subtitle = stringResource(R.string.forgot_password),
-                navigationIcon = {
-                    IconButton(
-                        onClick = { navController.navigateUp() },
-                        enabled = !state.isBusy
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                            tint = Color.White
-                        )
-                    }
-                }
-            )
-
-            Column(
-                modifier = Modifier.padding(ScreenPadding),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.reset_password_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                if (!state.codeSent) {
-                    EmailStep(state = state, onEvent = viewModel::onEvent)
-                } else {
-                    ResetStep(state = state, onEvent = viewModel::onEvent)
-                }
-            }
+    BrandScaffold(
+        header = BrandHeader.Compact(
+            title = stringResource(R.string.reset_password_title),
+            onBack = { navController.navigateUp() },
+            backLabel = stringResource(R.string.cd_back_to_sign_in),
+            backEnabled = !state.isBusy
+        ),
+        snackbarHostState = snackbarHostState
+    ) {
+        if (!state.codeSent) {
+            EmailStep(state = state, onEvent = viewModel::onEvent)
+        } else {
+            ResetStep(state = state, onEvent = viewModel::onEvent)
         }
     }
 }
@@ -145,15 +112,17 @@ private fun ColumnScope.ResetStep(
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    ClearChainTextField(
+    val focusManager = LocalFocusManager.current
+    CodeInputField(
         value = state.code,
         onValueChange = { onEvent(ForgotPasswordEvent.CodeChanged(it)) },
         label = stringResource(R.string.reset_password_code_label),
-        leadingIcon = Icons.Default.Pin,
-        keyboardType = KeyboardType.NumberPassword,
+        showLabel = true,
         isError = state.codeError != null,
         errorMessage = state.codeError,
-        enabled = !state.isBusy
+        enabled = !state.isBusy,
+        imeAction = ImeAction.Next,
+        onImeAction = { focusManager.moveFocus(FocusDirection.Next) }
     )
 
     ClearChainTextField(
