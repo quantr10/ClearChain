@@ -17,9 +17,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clearchain.app.R
 import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.BorderWidth
 import com.clearchain.app.ui.theme.ControlHeight
-import com.clearchain.app.ui.theme.ControlIconSize
 import com.clearchain.app.ui.theme.ControlPadding
+import com.clearchain.app.ui.theme.FieldEndButtonSize
 import com.clearchain.app.ui.theme.IconGap
 import com.clearchain.app.ui.theme.ShapeMedium
 
@@ -34,7 +35,8 @@ fun TimePickerField(
     errorMessage: String? = null,
     enabled: Boolean = true,
     fieldHeight: Dp = ControlHeight,
-    fieldShape: Shape = ShapeMedium
+    fieldShape: Shape = ShapeMedium,
+    clearLabel: String? = null
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
@@ -63,13 +65,13 @@ fun TimePickerField(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(fieldHeight)
-                .border(1.dp, borderColor, fieldShape)
+                .heightIn(min = fieldHeight)
+                .border(BorderWidth, borderColor, fieldShape)
                 .clickable(enabled = enabled) { showPicker = true }
                 .padding(horizontal = ControlPadding)
         ) {
             Row(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = fieldHeight),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(IconGap)
             ) {
@@ -87,11 +89,11 @@ fun TimePickerField(
                 if (value.isNotBlank()) {
                     IconButton(
                         onClick = { onTimeSelected("") },
-                        modifier = Modifier.size(ControlIconSize)
+                        modifier = Modifier.size(FieldEndButtonSize)
                     ) {
                         Icon(
                             Icons.Default.Clear,
-                            stringResource(R.string.cd_clear_search),
+                            clearButtonLabel(clearLabel, label, R.string.cd_clear_time),
                             Modifier.size(14.dp),
                             tint = iconTint
                         )
