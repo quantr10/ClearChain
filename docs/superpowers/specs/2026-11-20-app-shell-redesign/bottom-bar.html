@@ -1,0 +1,189 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+<style>
+  .light { --bg:#fafafa; --surf:#fff; --on:#111827; --var:#6b7280; --ov:#e5e7eb; --pri:#0d9488; --onpri:#fff; }
+  .dark  { --bg:#0f172a; --surf:#1e293b; --on:#f1f5f9; --var:#94a3b8; --ov:#334155; --pri:#2dd4bf; --onpri:#003733; }
+  .stack { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .cap { font-size:12px; color:var(--text-secondary); margin:4px 0 0 2px; }
+  .dev { width:360px; zoom:.75; border:1px solid #d1d5db; border-top:none; border-radius:0 0 22px 22px; overflow:hidden;
+         font-family:Roboto, system-ui, sans-serif; background:var(--bg); }
+  .peek { height:36px; padding:0 16px; display:flex; align-items:flex-end; }
+  .peek div { height:22px; width:100%; background:var(--surf); border-radius:12px 12px 0 0; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .bar { display:flex; background:var(--surf); border-top:1px solid var(--ov); min-height:64px; }
+  .tab { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px 8px; }
+  .ind { width:48px; height:26px; border-radius:13px; display:flex; align-items:center; justify-content:center; color:var(--var); flex:none; }
+  .ind span { font-size:18px; }
+  .lb { font-size:12px; line-height:16px; font-weight:500; color:var(--var); text-align:center; }
+  .sel .lb { color:var(--on); font-weight:600; }
+  .A .sel .ind { background:color-mix(in srgb, var(--pri) 12%, var(--surf)); color:var(--pri); }
+  .B .sel .ind { background:var(--pri); color:var(--onpri); }
+  .gest { height:24px; background:var(--surf); display:flex; align-items:center; justify-content:center; }
+  .gest i { width:108px; height:4px; border-radius:2px; background:var(--on); opacity:.5; }
+  .xl .lb { font-size:24px; line-height:30px; }
+  .xl-en .lb { font-size:15px; line-height:20px; }
+  .option .content { min-width:0; }
+  ul.notes { font-size:13px; line-height:19px; color:var(--text-secondary); margin:6px 0 0 18px; }
+  ul.notes li { margin-bottom:3px; }
+</style>
+
+<h2>Bottom bar: how should the selected tab look?</h2>
+<p class="subtitle">Five tabs for every role. Each option shows the NGO bar in light English, light Vietnamese and dark English, at 75%. Click the one you prefer, then tell me in the terminal what's wrong or missing.</p>
+
+<div class="options">
+  <!-- ── Option A ───────────────────────────────────────────────── -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Teal tint (my pick)</h3>
+      <p>The pill is <code>primary</code> at 12% with a <code>primary</code> icon, the same treatment as the stat tiles. It's calm, and it reads as the same teal in both themes.</p>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <div class="dev light A"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Home</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Inventory</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Browse</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">light · en</div>
+        </div>
+        <div>
+          <div class="dev light A"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Trang chủ</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Kho hàng</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Duyệt</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Yêu cầu</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">light · vi</div>
+        </div>
+        <div>
+          <div class="dev dark A"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Home</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Inventory</div></div>
+              <div class="tab sel"><div class="ind"><span class="material-icons">restaurant_menu</span></div><div class="lb">Browse</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">dark · en</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Option B ───────────────────────────────────────────────── -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Solid teal</h3>
+      <p>The pill is solid <code>primary</code> with an <code>on-primary</code> icon. It's easier to spot at a glance, but louder, and it competes with the teal create button on Listings.</p>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <div class="dev light B"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Home</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Inventory</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Browse</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">light · en</div>
+        </div>
+        <div>
+          <div class="dev light B"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Trang chủ</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Kho hàng</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Duyệt</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Yêu cầu</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">light · vi</div>
+        </div>
+        <div>
+          <div class="dev dark B"><div class="peek"><div></div></div>
+            <div class="bar">
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Home</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Inventory</div></div>
+              <div class="tab sel"><div class="ind"><span class="material-icons">restaurant_menu</span></div><div class="lb">Browse</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+              <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+            </div><div class="gest"><i></i></div></div>
+          <div class="cap">dark · en</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Shared by both ───────────────────────────────────────────── -->
+<div class="section" style="margin-top:2rem">
+  <h3>The same in both options</h3>
+  <ul class="notes" style="max-width:820px">
+    <li><b>The bar.</b> It's <code>surface</code> with a hairline <code>outline-variant</code> top edge. The pale teal wash from tonal elevation goes, which lifts the unselected labels from 4.4:1 to 4.8:1. It's 64dp tall instead of 80, and it grows when the labels need room.</li>
+    <li><b>Labels.</b> The selected label is <code>on-surface</code> SemiBold, not teal, because 12sp teal is 3.7:1. That also ends the "blue and teal at once" look. Unselected tabs are <code>on-surface-variant</code>.</li>
+    <li><b>Screen readers.</b> Today the icon and the label both say "Home", so each tab is read twice. The icon goes silent, and the tab reads "Home, tab, 1 of 5, selected".</li>
+    <li><b>Cart.</b> It's reached from the cart button on Browse. That button's spoken name changes from the hard-coded English "Cart" to "Open cart, 3 items", and its badge counts items rather than adding up quantities.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h3>Large text (200%)</h3>
+  <p class="subtitle" style="margin-bottom:.5rem">All the labels in a bar share one size. That's your text size if every label fits in two lines. Otherwise it's the largest size where they all fit, and never smaller than the normal 12sp. Nothing is cut off or ends in "…".</p>
+  <div class="row">
+    <div>
+      <div class="dev light A xl"><div class="peek"><div></div></div>
+        <div class="bar">
+          <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Trang chủ</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">list</span></div><div class="lb">Danh mục</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">add_circle</span></div><div class="lb">Thêm</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Yêu cầu</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+        </div><div class="gest"><i></i></div></div>
+      <div class="cap">grocery · vi · 200%: two lines at full size</div>
+    </div>
+    <div>
+      <div class="dev light A xl-en"><div class="peek"><div></div></div>
+        <div class="bar">
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Home</div></div>
+          <div class="tab sel"><div class="ind"><span class="material-icons">inventory_2</span></div><div class="lb">Inventory</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Browse</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+        </div><div class="gest"><i></i></div></div>
+      <div class="cap">ngo · en · 200%: "Inventory" is one word, so the bar settles at about 15sp</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Grocery and admin, light Vietnamese (option A)</h3>
+  <div class="row">
+    <div>
+      <div class="dev light A"><div class="peek"><div></div></div>
+        <div class="bar">
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Trang chủ</div></div>
+          <div class="tab sel"><div class="ind"><span class="material-icons">list</span></div><div class="lb">Danh mục</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">add_circle</span></div><div class="lb">Thêm</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Yêu cầu</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+        </div><div class="gest"><i></i></div></div>
+      <div class="cap">grocery</div>
+    </div>
+    <div>
+      <div class="dev light A"><div class="peek"><div></div></div>
+        <div class="bar">
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Trang chủ</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">verified_user</span></div><div class="lb">Xác minh</div></div>
+          <div class="tab sel"><div class="ind"><span class="material-icons">bar_chart</span></div><div class="lb">Thống kê</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">history</span></div><div class="lb">Lịch sử</div></div>
+          <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+        </div><div class="gest"><i></i></div></div>
+      <div class="cap">admin</div>
+    </div>
+  </div>
+</div>

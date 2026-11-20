@@ -1,0 +1,190 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+<style>
+  .light { --bg:#fafafa; --surf:#fff; --on:#111827; --var:#6b7280; --ov:#e5e7eb; --pri:#0d9488; --pc:#f0fdfa; --opc:#0f766e; --err:#dc2626; }
+  .dark  { --bg:#0f172a; --surf:#1e293b; --on:#f1f5f9; --var:#94a3b8; --ov:#334155; --pri:#2dd4bf; --pc:#0f766e; --opc:#a7f3d0; --err:#fca5a5; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; margin-top:10px; }
+  .cap { font-size:12px; color:var(--text-secondary); margin:4px 0 0 2px; max-width:230px; }
+  .ph { width:360px; height:470px; zoom:.62; overflow:hidden; border:1px solid #d1d5db; border-bottom:none; border-radius:22px 22px 0 0;
+        font-family:Roboto, system-ui, sans-serif; background:var(--bg); color:var(--on); display:flex; flex-direction:column;
+        -webkit-mask-image:linear-gradient(#000 85%, transparent); mask-image:linear-gradient(#000 85%, transparent); }
+  .ph .material-icons, .ph .material-icons-outlined { font-size:18px; line-height:1; }
+  .grad { background:linear-gradient(#0d9488, #16a34a); color:#fff; flex:none; }
+  .sb { height:24px; display:flex; justify-content:space-between; align-items:center; padding:0 14px; font-size:12px; color:#fff; }
+  .sb .material-icons { font-size:13px !important; }
+  .sb.plain { color:var(--on); background:var(--bg); }
+  /* header contents */
+  .hdr { display:flex; align-items:center; gap:12px; padding:16px 16px 0; }
+  .greet { flex:1; min-width:0; font-size:24px; line-height:32px; font-weight:700; overflow-wrap:anywhere; }
+  .bell { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; position:relative; flex:none; }
+  .bell .material-icons { font-size:20px; }
+  .badge { position:absolute; top:-2px; right:-4px; min-width:16px; height:16px; border-radius:8px; background:#dc2626; color:#fff; font-size:11px; line-height:16px; text-align:center; font-weight:500; padding:0 4px; box-sizing:border-box; }
+  .av { width:40px; height:40px; border-radius:50%; border:2px solid #fff; background:var(--pc); color:var(--opc); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex:none; box-sizing:border-box; }
+  .eb { font-size:12px; line-height:16px; font-weight:500; letter-spacing:.8px; }
+  .sub { font-size:14px; line-height:20px; }
+  /* option A: sheet */
+  .A .grad { padding-bottom:16px; }
+  .A .grad .pad { height:16px; }
+  .sheet { background:var(--bg); border-radius:28px 28px 0 0; margin-top:-16px; flex:1; padding:16px 16px 0; display:flex; flex-direction:column; gap:8px; position:relative; }
+  .sheet .eb { color:var(--var); }
+  .sheet .sub { color:var(--var); margin-top:-4px; }
+  /* option B: banner */
+  .B .grad { padding:24px 16px; }
+  .B .hdr { padding:0; align-items:flex-start; }
+  .B .hdr .col { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+  .B .eb { color:rgba(255,255,255,.75); }
+  .B .sub { color:rgba(255,255,255,.8); }
+  .B .greet { flex:none; }
+  .B .body { padding:8px 16px 0; display:flex; flex-direction:column; gap:8px; }
+  /* cards */
+  .card { background:var(--surf); border-radius:16px; box-shadow:0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.08); padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .dark .card { box-shadow:none; }
+  .ct { font-size:14px; line-height:20px; font-weight:600; }
+  .imp { display:flex; justify-content:space-around; text-align:center; font-size:12px; color:var(--var); }
+  .imp .c { width:40px; height:40px; border-radius:50%; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; }
+  .tiles { display:flex; gap:10px; }
+  .tile { flex:1; border-radius:10px; background:color-mix(in srgb, var(--pri) 10%, var(--surf)); padding:10px; color:var(--var); font-size:12px; }
+  .tile b { display:block; color:var(--pri); font-size:28px; line-height:34px; }
+  /* profile */
+  .prof { display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px 16px 0; text-align:center; }
+  .A .prof { padding-bottom:16px; }
+  .ptile { width:64px; height:64px; border-radius:18px; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; position:relative; }
+  .ptile .material-icons { font-size:32px; }
+  .cam { position:absolute; right:-6px; bottom:-6px; width:24px; height:24px; border-radius:50%; background:#fff; color:#0d9488; display:flex; align-items:center; justify-content:center; }
+  .cam .material-icons { font-size:14px; }
+  .pname { font-size:24px; line-height:32px; font-weight:700; }
+  .chips { display:flex; gap:6px; }
+  .chip { font-size:12px; line-height:16px; font-weight:600; padding:4px 10px; border-radius:6px; background:rgba(255,255,255,.2); display:flex; align-items:center; gap:4px; }
+  .chip .material-icons { font-size:12px; }
+  .prow { background:var(--surf); border-radius:16px; box-shadow:0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.08); padding:12px; display:flex; align-items:center; gap:12px; font-size:14px; font-weight:600; }
+  .prow .it { width:40px; height:40px; border-radius:12px; background:color-mix(in srgb, var(--pri) 10%, var(--surf)); color:var(--pri); display:flex; align-items:center; justify-content:center; }
+  .prow .chev { margin-left:auto; color:var(--var); }
+  ul.notes { font-size:13px; line-height:19px; color:var(--text-secondary); margin:6px 0 0 18px; }
+  ul.notes li { margin-bottom:3px; }
+</style>
+
+<h2>Dashboard and Profile headers: which shape?</h2>
+<p class="subtitle">Every role now uses the same gradient as the sign-in screens: teal at the top into green, running behind the status bar with light icons. The greeting takes the width it needs, so the bell and avatar never get pushed off. Below: the NGO dashboard in Vietnamese (the case that breaks today), the admin dashboard in dark, and the grocery Profile. Cropped, at 62%.</p>
+
+<div class="options">
+  <!-- ── A: sheet ──────────────────────────────────────────────────── -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Sheet, like the sign-in screens (my pick)</h3>
+      <p>The gradient holds only what passes contrast on it: the greeting, the bell and the avatar. The content sits on a sheet with rounded top corners. The role eyebrow and subtitle sit at the top of the sheet, as onboarding's do. Signing in looks continuous: the last sign-in screen and the first dashboard share one frame.</p>
+      <div class="row">
+        <div>
+          <div class="ph light A">
+            <div class="grad">
+              <div class="sb"><span>11:14</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="hdr"><div class="greet">Xin chào, AmericanRedCross</div><div class="bell"><span class="material-icons">notifications</span><b class="badge">5</b></div><div class="av">A</div></div>
+              <div class="pad"></div>
+            </div>
+            <div class="sheet">
+              <div class="eb">TỔ CHỨC</div>
+              <div class="sub">Giúp giảm lãng phí thực phẩm trong cộng đồng của bạn</div>
+              <div class="card"><div class="ct">Tác động</div>
+                <div class="imp"><div><div class="c" style="background:#dcfce7;color:#16a34a"><span class="material-icons">scale</span></div>0kg</div><div><div class="c" style="background:#ede9fe;color:#8b5cf6"><span class="material-icons">restaurant</span></div>0</div><div><div class="c" style="background:#ccfbf1;color:#0d9488"><span class="material-icons">eco</span></div>0kg</div></div></div>
+              <div class="card"><div class="ct">Kho hàng</div><div class="tiles"><div class="tile"><b>0</b>Đang hoạt động</div><div class="tile"><b>5</b>Đã hết hạn</div></div></div>
+            </div>
+          </div>
+          <div class="cap">NGO · light · vi. The name wraps under "Xin chào".</div>
+        </div>
+        <div>
+          <div class="ph dark A">
+            <div class="grad">
+              <div class="sb"><span>10:02</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="hdr"><div class="greet">Hi, ClearChain Admin</div><div class="bell"><span class="material-icons">notifications</span></div><div class="av">C</div></div>
+              <div class="pad"></div>
+            </div>
+            <div class="sheet">
+              <div class="eb">ADMIN</div>
+              <div class="sub">System health</div>
+              <div class="card"><div class="ct">Listings</div><div class="tiles"><div class="tile"><b>0</b>Active</div><div class="tile"><b>10</b>Expired</div></div></div>
+              <div class="card"><div class="ct">Completion rate</div><div style="height:8px;border-radius:4px;background:var(--ov)"><div style="width:60%;height:8px;border-radius:4px;background:var(--pri)"></div></div></div>
+            </div>
+          </div>
+          <div class="cap">Admin · dark. The flat teal is gone. The gradient is the same in both themes.</div>
+        </div>
+        <div>
+          <div class="ph light A">
+            <div class="grad">
+              <div class="sb"><span>10:43</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="prof"><div class="ptile"><span class="material-icons">storefront</span><div class="cam"><span class="material-icons">photo_camera</span></div></div><div class="pname">Walmart</div><div class="chips"><span class="chip">Grocery</span><span class="chip"><span class="material-icons">check_circle</span>Verified</span></div></div>
+            </div>
+            <div class="sheet">
+              <div class="prow"><div class="it"><span class="material-icons">info</span></div>Account details<span class="material-icons chev">chevron_right</span></div>
+              <div class="prow"><div class="it"><span class="material-icons">bar_chart</span></div>Analytics<span class="material-icons chev">chevron_right</span></div>
+              <div class="prow"><div class="it"><span class="material-icons">help_outline</span></div>Help &amp; FAQ<span class="material-icons chev">chevron_right</span></div>
+              <div class="prow"><div class="it"><span class="material-icons">settings</span></div>Settings<span class="material-icons chev">chevron_right</span></div>
+            </div>
+          </div>
+          <div class="cap">Profile · light. About 90dp shorter than today's 248dp hero.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── B: banner ─────────────────────────────────────────────────── -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Banner, today's layout made consistent</h3>
+      <p>The layout stays as it is today, with the eyebrow, greeting and subtitle on the gradient and a square bottom edge. It's the smaller change. The 12sp eyebrow and 14sp subtitle stay below contrast on the gradient (2.5–3.0:1), as the design system already notes.</p>
+      <div class="row">
+        <div>
+          <div class="ph light B">
+            <div class="grad">
+              <div class="sb" style="margin:-24px -16px 0"><span>11:14</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="hdr" style="margin-top:20px"><div class="col"><div class="eb">TỔ CHỨC</div><div class="greet">Xin chào, AmericanRedCross</div><div class="sub">Giúp giảm lãng phí thực phẩm trong cộng đồng của bạn</div></div><div class="bell"><span class="material-icons">notifications</span><b class="badge">5</b></div><div class="av">A</div></div>
+            </div>
+            <div class="body">
+              <div class="card"><div class="ct">Tác động</div>
+                <div class="imp"><div><div class="c" style="background:#dcfce7;color:#16a34a"><span class="material-icons">scale</span></div>0kg</div><div><div class="c" style="background:#ede9fe;color:#8b5cf6"><span class="material-icons">restaurant</span></div>0</div><div><div class="c" style="background:#ccfbf1;color:#0d9488"><span class="material-icons">eco</span></div>0kg</div></div></div>
+            </div>
+          </div>
+          <div class="cap">NGO · light · vi</div>
+        </div>
+        <div>
+          <div class="ph dark B">
+            <div class="grad">
+              <div class="sb" style="margin:-24px -16px 0"><span>10:02</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="hdr" style="margin-top:20px"><div class="col"><div class="eb">ADMIN</div><div class="greet">Hi, ClearChain Admin</div><div class="sub">System health</div></div><div class="bell"><span class="material-icons">notifications</span></div><div class="av">C</div></div>
+            </div>
+            <div class="body">
+              <div class="card"><div class="ct">Listings</div><div class="tiles"><div class="tile"><b>0</b>Active</div><div class="tile"><b>10</b>Expired</div></div></div>
+              <div class="card"><div class="ct">Completion rate</div><div style="height:8px;border-radius:4px;background:var(--ov)"><div style="width:60%;height:8px;border-radius:4px;background:var(--pri)"></div></div></div>
+            </div>
+          </div>
+          <div class="cap">Admin · dark</div>
+        </div>
+        <div>
+          <div class="ph light B">
+            <div class="grad">
+              <div class="sb"><span>10:43</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+              <div class="prof" style="padding-bottom:24px"><div class="ptile"><span class="material-icons">storefront</span><div class="cam"><span class="material-icons">photo_camera</span></div></div><div class="pname">Walmart</div><div class="chips"><span class="chip">Grocery</span><span class="chip"><span class="material-icons">check_circle</span>Verified</span></div></div>
+            </div>
+            <div class="body">
+              <div class="prow"><div class="it"><span class="material-icons">info</span></div>Account details<span class="material-icons chev">chevron_right</span></div>
+              <div class="prow"><div class="it"><span class="material-icons">bar_chart</span></div>Analytics<span class="material-icons chev">chevron_right</span></div>
+              <div class="prow"><div class="it"><span class="material-icons">help_outline</span></div>Help &amp; FAQ<span class="material-icons chev">chevron_right</span></div>
+            </div>
+          </div>
+          <div class="cap">Profile · light</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:2rem">
+  <h3>The same in both options</h3>
+  <ul class="notes" style="max-width:820px">
+    <li><b>Scrolling.</b> The header scrolls away with the content. A teal strip stays pinned behind the status bar, as on Login, so the light status-bar icons stay readable over the cards.</li>
+    <li><b>Bell and avatar.</b> They sit side by side at the end of the greeting row. The bell is a 36dp disc and keeps its unread badge. The avatar is 40dp with a white ring.</li>
+    <li><b>Screen readers.</b> The greeting is a heading. The bell says "Open notifications, 5 unread" as one phrase; today the badge is read separately. The avatar opens Account details, so it says "Open account details" instead of "Profile picture of …" (or just the initial).</li>
+    <li><b>Profile.</b> Same gradient, same status-bar treatment. The 84dp avatar tile becomes 64dp, and the hero loses its fixed 248dp height, so it grows with large text instead of clipping.</li>
+    <li><b>Every other screen</b> (lists, details, settings) keeps a plain background and status bar. That's the next question.</li>
+  </ul>
+</div>

@@ -1,0 +1,173 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+<style>
+  .light { --bg:#fafafa; --surf:#fff; --on:#111827; --var:#6b7280; --ov:#e5e7eb; --sv:#f3f4f6; --pri:#0d9488; --onpri:#fff; --pc:#f0fdfa; --opc:#0f766e; --sc:#dbeafe; --osc:#1e40af; --inv:#111827; --oninv:#f9fafb; }
+  .dark  { --bg:#0f172a; --surf:#1e293b; --on:#f1f5f9; --var:#94a3b8; --ov:#334155; --sv:#334155; --pri:#2dd4bf; --onpri:#003733; --pc:#0f766e; --opc:#a7f3d0; --sc:#1e3a5f; --osc:#bfdbfe; --inv:#f1f5f9; --oninv:#1e293b; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; margin-top:10px; }
+  .cap { font-size:12px; color:var(--text-secondary); margin:4px 0 0 2px; max-width:210px; }
+  .ph { width:360px; height:640px; zoom:.55; overflow:hidden; border:1px solid #d1d5db; border-radius:22px;
+        font-family:Roboto, system-ui, sans-serif; background:var(--bg); color:var(--on); display:flex; flex-direction:column; position:relative; }
+  .ph .material-icons, .ph .material-icons-outlined { font-size:18px; line-height:1; }
+  .sb { height:24px; display:flex; justify-content:space-between; align-items:center; padding:0 14px; font-size:12px; flex:none; }
+  .sb .material-icons { font-size:13px !important; }
+  .grad { background:linear-gradient(#0d9488, #16a34a); color:#fff; flex:none; padding-bottom:16px; }
+  .grad .sb { color:#fff; }
+  .hdr { display:flex; align-items:center; gap:12px; padding:16px 16px 16px; }
+  .greet { flex:1; min-width:0; font-size:24px; line-height:32px; font-weight:700; }
+  .bell { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; flex:none; }
+  .av { width:40px; height:40px; border-radius:50%; border:2px solid #fff; background:var(--pc); color:var(--opc); display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; box-sizing:border-box; }
+  .sheet { background:var(--bg); border-radius:28px 28px 0 0; margin-top:-16px; flex:1; padding:16px 16px 0; display:flex; flex-direction:column; gap:8px; position:relative; }
+  .eb { font-size:12px; line-height:16px; font-weight:500; letter-spacing:.8px; color:var(--var); }
+  .sub { font-size:14px; line-height:20px; color:var(--var); margin-top:-4px; }
+  .hd { padding:8px 16px 0; display:flex; flex-direction:column; gap:8px; flex:none; }
+  .sr { display:flex; align-items:center; gap:8px; }
+  .search { flex:1; min-width:0; height:32px; box-sizing:border-box; border:1px solid var(--ov); border-radius:14px; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:12px; color:color-mix(in srgb, var(--var) 60%, transparent); white-space:nowrap; overflow:hidden; }
+  .search .material-icons { color:var(--var); }
+  .aib { width:24px; height:24px; border-radius:50%; background:var(--sv); color:var(--var); display:flex; align-items:center; justify-content:center; flex:none; position:relative; }
+  .aib .material-icons { font-size:14px; }
+  .aib.p { color:var(--pri); }
+  .chips { display:flex; gap:8px; }
+  .chip { height:32px; box-sizing:border-box; border:1px solid var(--ov); border-radius:16px; padding:0 14px; display:flex; align-items:center; font-size:12px; font-weight:500; color:var(--var); }
+  .chip.on { background:var(--sc); color:var(--osc); border-color:transparent; }
+  .cs { display:flex; align-items:center; font-size:12px; color:var(--var); gap:8px; }
+  .cs .sp { flex:1; }
+  .sort { height:32px; border-radius:10px; background:var(--sv); color:var(--on); display:flex; align-items:center; gap:4px; padding:0 10px; font-size:12px; font-weight:600; }
+  .area { flex:1; display:flex; align-items:center; justify-content:center; position:relative; }
+  .empty { display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px; text-align:center; }
+  .hero { width:100px; height:100px; border-radius:50%; background:color-mix(in srgb, var(--pri) 8%, transparent); display:flex; align-items:center; justify-content:center; }
+  .hero > div { width:78px; height:78px; border-radius:50%; background:color-mix(in srgb, var(--pri) 12%, transparent); display:flex; align-items:center; justify-content:center; }
+  .hero > div > div { width:56px; height:56px; border-radius:50%; background:var(--pc); color:var(--opc); display:flex; align-items:center; justify-content:center; }
+  .hero .material-icons { font-size:28px; }
+  .et { font-size:16px; line-height:24px; font-weight:600; }
+  .es { font-size:14px; line-height:20px; color:var(--var); margin-top:-8px; }
+  .btn { height:32px; border-radius:10px; background:var(--pri); color:var(--onpri); display:flex; align-items:center; justify-content:center; padding:0 16px; min-width:160px; font-size:12px; font-weight:500; box-sizing:border-box; }
+  .pull { position:absolute; top:6px; left:50%; transform:translateX(-50%); width:36px; height:36px; border-radius:50%; background:var(--surf); box-shadow:0 1px 3px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; }
+  .ring { width:18px; height:18px; border:2.5px solid var(--pri); border-right-color:transparent; border-radius:50%; box-sizing:border-box; }
+  .spin40 { width:40px; height:40px; border:4px solid var(--pri); border-right-color:transparent; border-radius:50%; box-sizing:border-box; }
+  .card { background:var(--surf); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.08); padding:12px; font-size:14px; font-weight:600; display:flex; flex-direction:column; gap:4px; }
+  .dark .card { box-shadow:none; }
+  .card small { font-size:12px; font-weight:400; color:var(--var); }
+  .snack { position:absolute; left:8px; right:8px; bottom:96px; background:var(--inv); color:var(--oninv); border-radius:6px; padding:14px 16px; font-size:14px; line-height:20px; box-shadow:0 3px 6px rgba(0,0,0,.25); }
+  .bar { display:flex; background:var(--surf); border-top:1px solid var(--ov); min-height:64px; flex:none; }
+  .tab { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px 8px; }
+  .ind { width:48px; height:26px; border-radius:13px; display:flex; align-items:center; justify-content:center; color:var(--var); }
+  .lb { font-size:12px; line-height:16px; font-weight:500; color:var(--var); text-align:center; }
+  .sel .ind { background:color-mix(in srgb, var(--pri) 12%, var(--surf)); color:var(--pri); }
+  .sel .lb { color:var(--on); font-weight:600; }
+  .gest { height:24px; background:var(--surf); display:flex; align-items:center; justify-content:center; flex:none; }
+  .gest i { width:108px; height:4px; border-radius:2px; background:var(--on); opacity:.5; }
+  ul.notes { font-size:13px; line-height:19px; color:var(--text-secondary); margin:6px 0 0 18px; }
+  ul.notes li { margin-bottom:4px; }
+  .cols { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px 28px; margin-top:1.25rem; max-width:980px; }
+</style>
+
+<h2>Snackbars, empty and loading states (playback)</h2>
+<p class="subtitle">No choice to make here, just a check. These are the rules I'd write into the design, shown on three screens at 55%, with the new bar and headers in place. Tell me in the terminal what's wrong or missing.</p>
+
+<div class="row">
+  <!-- ── Empty: Browse, vi ───────────────────────────────────────── -->
+  <div>
+    <div class="ph light">
+      <div class="sb"><span>11:16</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd">
+        <div class="sr"><div class="search"><span class="material-icons">search</span>Tìm theo tên, cửa hàng…</div><div class="aib p"><span class="material-icons">place</span></div><div class="aib p"><span class="material-icons">shopping_cart</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+        <div class="chips"><div class="chip on">Danh sách</div><div class="chip">Bản đồ</div></div>
+      </div>
+      <div class="area">
+        <div class="pull"><div class="ring"></div></div>
+        <div class="empty">
+          <div class="hero"><div><div><span class="material-icons">search_off</span></div></div></div>
+          <div class="et">Không có niêm yết gần đây</div>
+          <div class="es">Thử tăng khoảng cách hoặc kiểm tra lại sau</div>
+          <div class="btn">Đổi vị trí</div>
+        </div>
+      </div>
+      <div class="bar">
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Trang chủ</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">inventory_2</span></div><div class="lb">Kho hàng</div></div>
+        <div class="tab sel"><div class="ind"><span class="material-icons">restaurant_menu</span></div><div class="lb">Duyệt</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Yêu cầu</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Hồ sơ</div></div>
+      </div><div class="gest"><i></i></div>
+    </div>
+    <div class="cap">Empty · Browse · light · vi. Pull to refresh now works on an empty list. The count and sort row hides while there's nothing to count or sort.</div>
+  </div>
+
+  <!-- ── Loading: grocery dashboard, dark ────────────────────────── -->
+  <div>
+    <div class="ph dark">
+      <div class="grad">
+        <div class="sb"><span>10:34</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hdr"><div class="greet">Hi, Walmart</div><div class="bell"><span class="material-icons">notifications</span></div><div class="av">W</div></div>
+      </div>
+      <div class="sheet">
+        <div class="eb">GROCERY</div>
+        <div class="sub">Manage your surplus food listings</div>
+        <div class="area"><div class="spin40"></div></div>
+      </div>
+      <div class="bar">
+        <div class="tab sel"><div class="ind"><span class="material-icons">home</span></div><div class="lb">Home</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">list</span></div><div class="lb">Listings</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">add_circle</span></div><div class="lb">Add</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+      </div><div class="gest"><i></i></div>
+    </div>
+    <div class="cap">Loading · grocery dashboard · dark. The header shows at once. The 40dp spinner fills the space the cards will take, and a screen reader hears "Loading".</div>
+  </div>
+
+  <!-- ── Snackbar: NGO inventory, en ─────────────────────────────── -->
+  <div>
+    <div class="ph light">
+      <div class="sb"><span>11:08</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+      <div class="hd">
+        <div class="sr"><div class="search"><span class="material-icons">search</span>Search inventory…</div><div class="aib"><span class="material-icons">download</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+        <div class="chips"><div class="chip on">Active</div><div class="chip">All</div><div class="chip">Distributed</div></div>
+        <div class="cs"><span>3 items</span><span class="sp"></span>Sort by:<div class="sort">Expiring soon<span class="material-icons">expand_more</span></div></div>
+      </div>
+      <div style="padding:8px 16px 0;display:flex;flex-direction:column;gap:8px;flex:1">
+        <div class="card">Chicken sausages<small>12 kg · Expires Nov 21, 2026</small></div>
+        <div class="card">Very ripe bananas<small>5 kg · Expires Nov 22, 2026</small></div>
+        <div class="card">Sliced bread<small>8 loaves · Expires Nov 23, 2026</small></div>
+      </div>
+      <div class="snack">Item marked as distributed</div>
+      <div class="bar">
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">home</span></div><div class="lb">Home</div></div>
+        <div class="tab sel"><div class="ind"><span class="material-icons">inventory_2</span></div><div class="lb">Inventory</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">restaurant_menu</span></div><div class="lb">Browse</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">local_shipping</span></div><div class="lb">Requests</div></div>
+        <div class="tab"><div class="ind"><span class="material-icons-outlined">person</span></div><div class="lb">Profile</div></div>
+      </div><div class="gest"><i></i></div>
+    </div>
+    <div class="cap">Snackbar · Inventory · light. It confirms something you did. A refresh you started yourself no longer gets one.</div>
+  </div>
+</div>
+
+<div class="cols">
+  <div>
+    <h3>Snackbars</h3>
+    <ul class="notes">
+      <li><b>Finding 4.</b> The "… refreshed" snackbars go from all 13 places that send them. The pull spinner already shows when a refresh is done. This deletes one line in each of those ViewModels, plus the eight unused strings. Snackbars for failed refreshes stay.</li>
+      <li><b>One host.</b> A shared <code>ClearChainSnackbarHost</code> replaces the 25 places that build their own <code>SnackbarHost(…)</code>, including <code>BrandScaffold</code> and <code>FabScaffold</code>. It uses <code>inverse-surface</code> and <code>inverse-on-surface</code> on <code>shape-extra-small</code>, and its text wraps instead of being cut off. It sits above the bottom bar and over a FAB, as today.</li>
+      <li><b>Live-update snackbars</b>, such as the admin's "new organization registered", stay as they are.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Empty states</h3>
+    <ul class="notes">
+      <li><b>Pull to refresh.</b> Today the empty and error states on list screens sit outside the pull area, so you can't pull an empty list. They move inside it.</li>
+      <li><b>The count and sort row</b> hides while the list is empty. Search and filter chips stay, so you can still change what you're looking at.</li>
+      <li><b>A next step, only where one is obvious.</b> Nothing nearby on Browse gets "Change location", which opens the existing sheet. An empty Inventory or NGO Requests gets "Browse food". Filter-empty states get no button, because the chips are right above.</li>
+      <li><b>Large text.</b> The empty state scrolls instead of clipping. Its spacing moves to tokens.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Loading</h3>
+    <ul class="notes">
+      <li><b>No change to the three kinds</b> in <code>LoadingIndicators.kt</code>: spinner in the control, 40dp spinner in an empty area, 2dp bar on content being updated.</li>
+      <li><b>The area spinner</b> appears after a short delay, so a fast load from the cache doesn't flash it. A screen reader hears "Loading".</li>
+      <li><b>On dashboards</b>, the gradient header and greeting draw immediately, and the spinner sits in the sheet below.</li>
+      <li><b>Error states</b> keep the warning icon with a retry button. Today it's labelled "Retry" on 13 screens and "Try again" on the two analytics screens. All of them say "Retry".</li>
+    </ul>
+  </div>
+</div>

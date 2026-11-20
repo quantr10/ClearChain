@@ -1,0 +1,175 @@
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="stylesheet">
+<style>
+  .light { --bg:#fafafa; --surf:#fff; --on:#111827; --var:#6b7280; --ov:#e5e7eb; --sv:#f3f4f6; --pri:#0d9488; --sc:#dbeafe; --osc:#1e40af; }
+  .dark  { --bg:#0f172a; --surf:#1e293b; --on:#f1f5f9; --var:#94a3b8; --ov:#334155; --sv:#334155; --pri:#2dd4bf; --sc:#1e3a5f; --osc:#bfdbfe; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; margin-top:10px; }
+  .cap { font-size:12px; color:var(--text-secondary); margin:4px 0 0 2px; max-width:230px; }
+  .ph { width:360px; height:420px; zoom:.62; overflow:hidden; border:1px solid #d1d5db; border-bottom:none; border-radius:22px 22px 0 0;
+        font-family:Roboto, system-ui, sans-serif; background:var(--bg); color:var(--on); display:flex; flex-direction:column;
+        -webkit-mask-image:linear-gradient(#000 82%, transparent); mask-image:linear-gradient(#000 82%, transparent); }
+  .ph .material-icons, .ph .material-icons-outlined { font-size:18px; line-height:1; }
+  .sb { height:24px; display:flex; justify-content:space-between; align-items:center; padding:0 14px; font-size:12px; flex:none; }
+  .sb .material-icons { font-size:13px !important; }
+  .hd { padding:8px 16px 0; display:flex; flex-direction:column; gap:8px; flex:none; }
+  .tr { display:flex; align-items:center; gap:12px; min-height:36px; }
+  .tr .t { flex:1; min-width:0; font-size:16px; line-height:24px; font-weight:600; }
+  .back { width:36px; height:36px; border-radius:50%; background:var(--sv); color:var(--var); display:flex; align-items:center; justify-content:center; flex:none; }
+  .back .material-icons { font-size:20px; }
+  .sr { display:flex; align-items:center; gap:8px; }
+  .search { flex:1; min-width:0; height:32px; box-sizing:border-box; border:1px solid var(--ov); border-radius:14px; display:flex; align-items:center; gap:6px; padding:0 8px; font-size:12px; color:color-mix(in srgb, var(--var) 60%, transparent); white-space:nowrap; overflow:hidden; }
+  .search .material-icons { color:var(--var); }
+  .aib { width:24px; height:24px; border-radius:50%; background:var(--sv); color:var(--var); display:flex; align-items:center; justify-content:center; flex:none; }
+  .aib .material-icons { font-size:14px; }
+  .chips { display:flex; gap:8px; overflow:hidden; white-space:nowrap; }
+  .chip { height:32px; box-sizing:border-box; border:1px solid var(--ov); border-radius:16px; padding:0 14px; display:flex; align-items:center; font-size:12px; font-weight:500; color:var(--var); flex:none; }
+  .chip.on { background:var(--sc); color:var(--osc); border-color:transparent; }
+  .cs { display:flex; align-items:center; font-size:12px; color:var(--var); gap:8px; }
+  .cs .sp { flex:1; }
+  .sort { height:32px; border-radius:10px; background:var(--sv); color:var(--on); display:flex; align-items:center; gap:4px; padding:0 10px; font-size:12px; font-weight:600; }
+  .body { padding:8px 16px 0; display:flex; flex-direction:column; gap:8px; }
+  .card { background:var(--surf); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.25), 0 1px 3px 1px rgba(0,0,0,.08); overflow:hidden; }
+  .dark .card { box-shadow:none; }
+  .photo { height:110px; background:var(--sv); display:flex; align-items:center; justify-content:center; color:color-mix(in srgb, var(--var) 30%, transparent); }
+  .photo .material-icons { font-size:40px; }
+  .ci { padding:12px; font-size:14px; font-weight:600; display:flex; flex-direction:column; gap:4px; }
+  .ci small { font-size:12px; font-weight:400; color:var(--var); }
+  .bars { display:flex; align-items:flex-end; gap:12px; height:110px; padding:12px; }
+  .bars i { flex:1; border-radius:4px 4px 0 0; background:var(--pri); }
+  .heading-tag { display:inline-block; font-size:10px; line-height:14px; padding:0 4px; border-radius:4px; background:#fde68a; color:#78350f; margin-left:6px; vertical-align:middle; font-weight:500; }
+  ul.notes { font-size:13px; line-height:19px; color:var(--text-secondary); margin:6px 0 0 18px; }
+  ul.notes li { margin-bottom:3px; }
+</style>
+
+<h2>Tab screens: show a title or not?</h2>
+<p class="subtitle">Today Listings, Requests, Browse, Inventory, Verify and History open straight onto a search row with no title, while Stats has a large one. Each option shows grocery Listings (light, en), admin History (dark, en) and admin Stats (light, vi). Cropped, at 62%.</p>
+
+<div class="options">
+  <!-- ── A: no visible title ─────────────────────────────────────── -->
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>The search row is the header (my pick)</h3>
+      <p>List tabs keep today's layout. The selected tab already says where you are, and the search hint names the list. A screen reader announces the screen's name when the tab opens, through a pane title nobody sees. Stats has no search row, so it gets the standard title row in place of its oversized title. This keeps the most room for cards on a 640dp-tall screen.</p>
+      <div class="row">
+        <div>
+          <div class="ph light">
+            <div class="sb"><span>10:35</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="sr"><div class="search"><span class="material-icons">search</span>Search listings…</div><div class="aib"><span class="material-icons">download</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+              <div class="chips"><div class="chip on">All</div><div class="chip">Available</div><div class="chip">Archived</div><div class="chip">Reserved</div></div>
+              <div class="cs"><span>12 listings</span><span class="sp"></span>Sort by:<div class="sort">Newest<span class="material-icons">expand_more</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="photo"><span class="material-icons">photo_camera</span></div><div class="ci">Very ripe bananas<small>500 kg · Expires Nov 17, 2026</small></div></div></div>
+          </div>
+          <div class="cap">Listings · light · en. Spoken when the tab opens: "Listings".</div>
+        </div>
+        <div>
+          <div class="ph dark">
+            <div class="sb"><span>10:04</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="sr"><div class="search"><span class="material-icons">search</span>Search transactions…</div><div class="aib"><span class="material-icons">download</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+              <div class="chips"><div class="chip on">All</div><div class="chip">Pending</div><div class="chip">Approved</div><div class="chip">Ready</div></div>
+              <div class="cs"><span>5 transactions</span><span class="sp"></span>Sort by:<div class="sort">Newest<span class="material-icons">expand_more</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="ci">Walmart → AmericanRedCross<small>Submitted on Oct 7, 2026 at 20:34</small><small>Pickup on Oct 7, 2026 at 19:00</small></div></div><div class="card"><div class="ci">Walmart → AmericanRedCross<small>Submitted on Oct 6, 2026 at 04:45</small></div></div></div>
+          </div>
+          <div class="cap">History · dark · en</div>
+        </div>
+        <div>
+          <div class="ph light">
+            <div class="sb"><span>10:10</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="tr"><div class="t">Thống kê &amp; Phân tích<span class="heading-tag">heading</span></div><div class="aib"><span class="material-icons">download</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="ci">Phân tích trạng thái yêu cầu</div><div class="bars"><i style="height:6%"></i><i style="height:6%"></i><i style="height:6%"></i><i style="height:100%"></i><i style="height:66%;background:#6b7280"></i><i style="height:6%;background:#ef4444"></i></div></div></div>
+          </div>
+          <div class="cap">Stats · light · vi. The same title row as detail screens, without a back button.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── B: title row everywhere ─────────────────────────────────── -->
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>A title row on every tab</h3>
+      <p>Every tab opens with the same title row as the detail screens, minus the back button. The export and filter buttons move up into it, so the search field gets the full width. It's the most uniform choice, but it costs about 48dp. On a 720×1280 phone that's roughly a sixth of the visible list, and more at large text.</p>
+      <div class="row">
+        <div>
+          <div class="ph light">
+            <div class="sb"><span>10:35</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="tr"><div class="t">My listings</div><div class="aib"><span class="material-icons">download</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+              <div class="sr"><div class="search"><span class="material-icons">search</span>Search listings…</div></div>
+              <div class="chips"><div class="chip on">All</div><div class="chip">Available</div><div class="chip">Archived</div><div class="chip">Reserved</div></div>
+              <div class="cs"><span>12 listings</span><span class="sp"></span>Sort by:<div class="sort">Newest<span class="material-icons">expand_more</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="photo"><span class="material-icons">photo_camera</span></div><div class="ci">Very ripe bananas<small>500 kg · Expires Nov 17, 2026</small></div></div></div>
+          </div>
+          <div class="cap">Listings · light · en</div>
+        </div>
+        <div>
+          <div class="ph dark">
+            <div class="sb"><span>10:04</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="tr"><div class="t">History</div><div class="aib"><span class="material-icons">download</span></div><div class="aib"><span class="material-icons">tune</span></div></div>
+              <div class="sr"><div class="search"><span class="material-icons">search</span>Search transactions…</div></div>
+              <div class="chips"><div class="chip on">All</div><div class="chip">Pending</div><div class="chip">Approved</div><div class="chip">Ready</div></div>
+              <div class="cs"><span>5 transactions</span><span class="sp"></span>Sort by:<div class="sort">Newest<span class="material-icons">expand_more</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="ci">Walmart → AmericanRedCross<small>Submitted on Oct 7, 2026 at 20:34</small><small>Pickup on Oct 7, 2026 at 19:00</small></div></div></div>
+          </div>
+          <div class="cap">History · dark · en</div>
+        </div>
+        <div>
+          <div class="ph light">
+            <div class="sb"><span>10:10</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+            <div class="hd">
+              <div class="tr"><div class="t">Thống kê &amp; Phân tích</div><div class="aib"><span class="material-icons">download</span></div></div>
+            </div>
+            <div class="body"><div class="card"><div class="ci">Phân tích trạng thái yêu cầu</div><div class="bars"><i style="height:6%"></i><i style="height:6%"></i><i style="height:6%"></i><i style="height:100%"></i><i style="height:66%;background:#6b7280"></i><i style="height:6%;background:#ef4444"></i></div></div></div>
+          </div>
+          <div class="cap">Stats · light · vi</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:2rem">
+  <h3>The same in both options</h3>
+  <div class="row">
+    <div>
+      <div class="ph light" style="height:300px">
+        <div class="sb"><span>11:17</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hd">
+          <div class="tr"><div class="back"><span class="material-icons">arrow_back</span></div><div class="t">Giỏ hàng</div></div>
+          <div class="sr"><div class="search"><span class="material-icons">search</span>Tìm trong giỏ hàng…</div></div>
+          <div class="cs"><span>2 mặt hàng</span><span class="sp"></span>Sắp xếp theo:<div class="sort">A–Z<span class="material-icons">expand_more</span></div></div>
+        </div>
+        <div class="body"><div class="card"><div class="ci">Walmart<small>2 mặt hàng</small></div></div></div>
+      </div>
+      <div class="cap">Cart, now opened from Browse: a title row with a back button, and no bottom bar, like other screens you open from a tab.</div>
+    </div>
+    <div>
+      <div class="ph light" style="height:300px">
+        <div class="sb"><span>11:20</span><span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span></div>
+        <div class="hd">
+          <div class="tr" style="align-items:flex-start"><div class="back"><span class="material-icons">arrow_back</span></div><div class="t" style="padding-top:6px">Xúc xích gà hun khói Hillshire Farm loại lớn</div></div>
+        </div>
+        <div class="body"><div class="card"><div class="photo"><span class="material-icons">photo_camera</span></div></div></div>
+      </div>
+      <div class="cap">A long detail title wraps instead of ending in "…", and the back button stays at the top.</div>
+    </div>
+    <div style="max-width:380px">
+      <ul class="notes">
+        <li><b>Title row</b> (<code>ScreenTitleRow</code>): the title is a heading for screen readers and wraps to as many lines as it needs. Its spacing moves to tokens.</li>
+        <li><b>Back button</b> keeps the label "Back". It stays a 36dp circle, with a 48dp touch area.</li>
+        <li><b>Status bar</b> on these screens stays plain, with dark icons in light theme. Only the dashboards and Profile run the gradient behind it.</li>
+        <li>The count line ("2 mặt hàng") is shown translated, but today it stays in English ("0 listings"). That's finding 2, which belongs to another section, so this one doesn't fix it.</li>
+      </ul>
+    </div>
+  </div>
+</div>
