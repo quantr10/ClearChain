@@ -87,6 +87,7 @@
         <item quantity="other">Mở giỏ hàng, %d mặt hàng</item>
     </plurals>
     <string name="empty_action_change_location">Thay đổi vị trí</string>
+    <string name="empty_action_browse_food">Duyệt thực phẩm</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="other">Mở thông báo, %d chưa đọc</item>
     </plurals>
@@ -734,7 +735,6 @@
     <string name="snack_csv_saved">CSV đã lưu vào Tải xuống</string>
     <string name="snack_csv_failed">Lưu CSV thất bại</string>
     <string name="snack_export_failed">Xuất thất bại: %1$s</string>
-    <string name="snack_inventory_refreshed">Đã làm mới tồn kho</string>
     <plurals name="snack_n_items_distributed">
         <item quantity="other">Đã phân phối %1$d mặt hàng</item>
     </plurals>

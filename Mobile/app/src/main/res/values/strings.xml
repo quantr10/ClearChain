@@ -88,6 +88,7 @@
         <item quantity="other">Open cart, %d items</item>
     </plurals>
     <string name="empty_action_change_location">Change location</string>
+    <string name="empty_action_browse_food">Browse food</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="one">Open notifications, %d unread</item>
         <item quantity="other">Open notifications, %d unread</item>
@@ -779,7 +780,6 @@
     <string name="snack_csv_saved">CSV saved to Downloads</string>
     <string name="snack_csv_failed">Failed to save CSV</string>
     <string name="snack_export_failed">Export failed: %1$s</string>
-    <string name="snack_inventory_refreshed">Inventory refreshed</string>
     <plurals name="snack_n_items_distributed">
         <item quantity="one">%1$d item distributed</item>
         <item quantity="other">%1$d items distributed</item>

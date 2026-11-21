@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -29,6 +31,7 @@ import com.clearchain.app.util.UiEvent
 @Composable
 fun InventoryScreen(
     onNavigateToItemDetail: (String) -> Unit = {},
+    onBrowseFood: () -> Unit = {},
     viewModel: InventoryViewModel = hiltViewModel()
 ) {
     val statusFilters = listOf(
@@ -89,10 +92,36 @@ fun InventoryScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val paneName = stringResource(R.string.nav_inventory)
         Box(
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val listAreaState = when {
+                    state.isLoading && state.allItems.isEmpty() -> ListAreaState.Loading
+                    state.error != null && state.allItems.isEmpty() -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(InventoryEvent.LoadInventory) }
+                    )
+                    state.filteredItems.isEmpty() -> if (state.allItems.isEmpty()) {
+                        ListAreaState.Empty(
+                            icon = Icons.Default.Inventory2,
+                            title = stringResource(R.string.empty_no_inventory),
+                            subtitle = stringResource(R.string.empty_no_inventory_subtitle),
+                            actionLabel = stringResource(R.string.empty_action_browse_food),
+                            onAction = onBrowseFood
+                        )
+                    } else {
+                        ListAreaState.Empty(
+                            icon = Icons.Default.FilterAlt,
+                            title = stringResource(R.string.empty_no_inventory_filter),
+                            subtitle = stringResource(R.string.empty_try_filters)
+                        )
+                    }
+                    else -> ListAreaState.Content
+                }
+
                 ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
@@ -126,125 +155,93 @@ fun InventoryScreen(
                         }
                     )
 
-                    ResultsCountAndSort(
-                        count = state.filteredItems.size,
-                        itemName = "item",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions,
-                        countText = if (state.isSelectionMode) {
-                            "${state.selectedCount} ${if (state.selectedCount == 1) "item" else "items"} selected"
-                        } else {
-                            null
-                        },
-                        leadingContent = if (state.isSelectionMode) {
-                            {
-                                SelectionCircleButton(
-                                    checked = state.allSelected,
-                                    onCheckedChange = {
-                                        if (state.allSelected) {
-                                            viewModel.onEvent(InventoryEvent.DeselectAll)
-                                        } else {
-                                            viewModel.onEvent(InventoryEvent.SelectAll)
-                                        }
-                                    },
-                                    enabled = !state.isBulkOperating
-                                )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = state.filteredItems.size,
+                            itemName = "item",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(InventoryEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions,
+                            countText = if (state.isSelectionMode) {
+                                "${state.selectedCount} ${if (state.selectedCount == 1) "item" else "items"} selected"
+                            } else {
+                                null
+                            },
+                            leadingContent = if (state.isSelectionMode) {
+                                {
+                                    SelectionCircleButton(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) {
+                                                viewModel.onEvent(InventoryEvent.DeselectAll)
+                                            } else {
+                                                viewModel.onEvent(InventoryEvent.SelectAll)
+                                            }
+                                        },
+                                        enabled = !state.isBulkOperating
+                                    )
+                                }
+                            } else {
+                                null
                             }
-                        } else {
-                            null
-                        }
-                    )
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.isLoading && state.allItems.isEmpty() -> {
-                            LoadingState(Modifier.fillMaxSize())
-                        }
-
-                        state.error != null && state.allItems.isEmpty() -> {
-                            EmptyState(
-                                icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
-                                actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(InventoryEvent.LoadInventory) }
-                            )
-                        }
-
-                        state.filteredItems.isEmpty() -> {
-                            EmptyState(
-                                icon = if (state.allItems.isEmpty()) Icons.Default.Inventory2 else Icons.Default.FilterAlt,
-                                title = if (state.allItems.isEmpty()) {
-                                    stringResource(R.string.empty_no_inventory)
-                                } else {
-                                    stringResource(R.string.empty_no_inventory_filter)
-                                },
-                                subtitle = if (state.allItems.isEmpty()) {
-                                    stringResource(R.string.empty_no_inventory_subtitle)
-                                } else {
-                                    stringResource(R.string.empty_try_filters)
-                                }
-                            )
-                        }
-
-                        else -> {
-                            HapticPullToRefreshBox(
-                                isRefreshing = state.isRefreshing,
-                                onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) }
-                            ) {
-                                LazyColumn(
-                                    contentPadding = ScreenPadding,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(state.filteredItems, key = { it.id }) { item ->
-                                        val isSelected = item.id in state.selectedIds
-                                        Box {
-                                            InventoryItemCard(
-                                                item = item,
-                                                onClick = {
-                                                    if (state.isSelectionMode) {
-                                                        viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
-                                                    } else {
-                                                        onNavigateToItemDetail(item.id)
-                                                    }
-                                                },
-                                                modifier = Modifier.combinedClickable(
-                                                    onClick = {
-                                                        if (state.isSelectionMode) {
-                                                            viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
-                                                        } else {
-                                                            onNavigateToItemDetail(item.id)
-                                                        }
-                                                    },
-                                                    onLongClick = {
-                                                        viewModel.onEvent(InventoryEvent.ToggleSelectionMode)
-                                                        viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
-                                                    }
-                                                ),
-                                                onDistribute = if (!state.isSelectionMode && item.status == InventoryStatus.ACTIVE) {
-                                                    { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
-                                                } else {
-                                                    null
-                                                },
-                                                isDistributing = state.distributingItemId == item.id
-                                            )
-                                            if (state.isSelectionMode) {
-                                                SelectionCircleButton(
-                                                    checked = isSelected,
-                                                    onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
-                                                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                                    enabled = !state.isBulkOperating
-                                                )
-                                            }
+                ListArea(
+                    state = listAreaState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { viewModel.onEvent(InventoryEvent.RefreshInventory) },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    LazyColumn(
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.filteredItems, key = { it.id }) { item ->
+                            val isSelected = item.id in state.selectedIds
+                            Box {
+                                InventoryItemCard(
+                                    item = item,
+                                    onClick = {
+                                        if (state.isSelectionMode) {
+                                            viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
+                                        } else {
+                                            onNavigateToItemDetail(item.id)
                                         }
-                                    }
-
-                                    item { Spacer(Modifier.height(80.dp)) }
+                                    },
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {
+                                            if (state.isSelectionMode) {
+                                                viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
+                                            } else {
+                                                onNavigateToItemDetail(item.id)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            viewModel.onEvent(InventoryEvent.ToggleSelectionMode)
+                                            viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id))
+                                        }
+                                    ),
+                                    onDistribute = if (!state.isSelectionMode && item.status == InventoryStatus.ACTIVE) {
+                                        { viewModel.onEvent(InventoryEvent.DistributeItem(it)) }
+                                    } else {
+                                        null
+                                    },
+                                    isDistributing = state.distributingItemId == item.id
+                                )
+                                if (state.isSelectionMode) {
+                                    SelectionCircleButton(
+                                        checked = isSelected,
+                                        onCheckedChange = { viewModel.onEvent(InventoryEvent.ToggleItemSelection(item.id)) },
+                                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                        enabled = !state.isBulkOperating
+                                    )
                                 }
                             }
                         }
+
+                        item { Spacer(Modifier.height(80.dp)) }
                     }
                 }
             }

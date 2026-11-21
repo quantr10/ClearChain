@@ -287,7 +287,8 @@ fun NavGraph(
             InventoryScreen(
                 onNavigateToItemDetail = { itemId ->
                     navController.navigate(Screen.InventoryDetail.createRoute(itemId))
-                }
+                },
+                onBrowseFood = { navController.navigateToTab(Screen.BrowseListings.route) }
             )
         }
 

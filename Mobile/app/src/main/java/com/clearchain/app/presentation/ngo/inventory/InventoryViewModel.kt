@@ -195,7 +195,6 @@ class InventoryViewModel @Inject constructor(
                         )
                     }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_inventory_refreshed)))
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isRefreshing = false) }
