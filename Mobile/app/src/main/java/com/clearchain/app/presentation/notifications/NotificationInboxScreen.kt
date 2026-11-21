@@ -26,12 +26,14 @@ import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.presentation.components.ClearChainSnackbarHost
 import com.clearchain.app.presentation.components.EmptyState
 import com.clearchain.app.presentation.components.ScreenTitleRow
+import com.clearchain.app.ui.theme.ListGap
 import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NotificationInboxScreen(
     onNavigateBack: () -> Unit,
@@ -68,9 +70,11 @@ fun NotificationInboxScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                 )
             } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                // Wraps rather than running off the edge in Vietnamese or at large text sizes.
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHPadding),
+                    horizontalArrangement = Arrangement.spacedBy(ListGap, Alignment.End),
+                    verticalArrangement = Arrangement.spacedBy(ListGap)
                 ) {
                     ClearChainOutlinedButton(
                         text = stringResource(R.string.mark_all_read),
