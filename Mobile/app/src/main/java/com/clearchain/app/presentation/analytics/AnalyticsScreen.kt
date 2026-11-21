@@ -73,9 +73,8 @@ class AnalyticsViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            val ok = loadAll()
+            loadAll()
             _state.update { it.copy(isRefreshing = false) }
-            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_stats_refreshed)))
         }
     }
 
@@ -175,7 +174,7 @@ fun AnalyticsScreen(
                                     icon = Icons.Default.BarChart,
                                     title = stringResource(R.string.error_load_statistics),
                                     subtitle = state.error ?: stringResource(R.string.error_generic),
-                                    actionLabel = stringResource(R.string.action_retry),
+                                    actionLabel = stringResource(R.string.retry),
                                     onAction = viewModel::refresh
                                 )
                             }
