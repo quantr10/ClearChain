@@ -96,7 +96,7 @@ empty because the box has already removed them.
 
 - **Impact:** coordinates are optional for organizations, and the browse screen sends a radius
   whenever the NGO has set a location
-  ([`BrowseListingsViewModel.kt:287`](Mobile/app/src/main/java/com/clearchain/app/presentation/ngo/browselistings/BrowseListingsViewModel.kt#L287)).
+  ([`BrowseListingsViewModel.kt:288`](Mobile/app/src/main/java/com/clearchain/app/presentation/ngo/browselistings/BrowseListingsViewModel.kt#L288)).
   Those NGOs never see listings from a grocery that hasn't set its location.
 - **Decision:** should those listings appear in radius results, after the nearby ones?
   - **Yes:** let the bounding box also pass groceries with no coordinates.
@@ -175,15 +175,15 @@ handled. Dispute resolutions are covered in their own entry above.
 
 On the NGO and grocery dashboards, `loadActivity` fetches the week's activity itself and only then
 hands it to the pager with `refreshFrom`
-([`NgoDashboardViewModel.kt:196`](Mobile/app/src/main/java/com/clearchain/app/presentation/ngo/NgoDashboardViewModel.kt#L196),
-[`GroceryDashboardViewModel.kt:161`](Mobile/app/src/main/java/com/clearchain/app/presentation/grocery/GroceryDashboardViewModel.kt#L161)).
+([`NgoDashboardViewModel.kt:195`](Mobile/app/src/main/java/com/clearchain/app/presentation/ngo/NgoDashboardViewModel.kt#L195),
+[`GroceryDashboardViewModel.kt:160`](Mobile/app/src/main/java/com/clearchain/app/presentation/grocery/GroceryDashboardViewModel.kt#L160)).
 That fetch runs outside `FeedPager`'s lock, so when two loads overlap, a slow older response can
 land after a newer one, in both the sparkline and the activity list. `refresh()` avoided this by
 fetching inside the lock.
 
-- **When:** two `loadAll` calls at once, the first load and a pull-to-refresh. The review judged
-  this unlikely, on the grounds that a pull can't start while the first load's spinner is up.
-  Nobody has checked that, and the pull-to-refresh box is active during the first load.
+- **When:** two `loadAll` calls at once. The one known trigger, a pull-to-refresh during the first
+  load, is gone: since `6d64d60` and `2da4773` both dashboards turn pull off until the first load
+  lands. The race comes back if anything else starts a second `loadAll`.
 - **In the same code:**
   - Once the sheet has been read past 200 items, `refreshFrom` falls back to `reload()`, which
     downloads again the first page the caller has just fetched
@@ -263,7 +263,7 @@ feed. The alert feed holds only open disputes, which neither event changes.
 
 ### Dispute outcomes: bar or donut
 
-`ShareBar` ([`AdminAnalyticsScreen.kt:344`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsScreen.kt#L344))
+`ShareBar` ([`AdminAnalyticsScreen.kt:332`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsScreen.kt#L332))
 rebuilds the split bar and legend that `DonutChart` in `components/AnalyticsCharts.kt` already
 provides, and the Organizations card below it uses a donut.
 
@@ -279,8 +279,8 @@ provides, and the Organizations card below it uses a donut.
   which lets the request through rather than giving an answer.
 - **Dispute reason labels.** `NgoDisputeReason.fromKey(key)?.let { label } ?: key` is written out
   in four places, and one helper on `NgoDisputeReason` could serve all of them:
-  - [`AdminAnalyticsScreen.kt:331`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsScreen.kt#L331)
-  - [`AdminAnalyticsViewModel.kt:264`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsViewModel.kt#L264)
+  - [`AdminAnalyticsScreen.kt:319`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsScreen.kt#L319)
+  - [`AdminAnalyticsViewModel.kt:261`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/analytics/AdminAnalyticsViewModel.kt#L261)
   - [`AdminDashboardViewModel.kt:82`](Mobile/app/src/main/java/com/clearchain/app/presentation/admin/dashboard/AdminDashboardViewModel.kt#L82)
   - [`AdminDisputeSection.kt:83`](Mobile/app/src/main/java/com/clearchain/app/presentation/shared/requestdetail/AdminDisputeSection.kt#L83)
 

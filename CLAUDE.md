@@ -96,11 +96,24 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
   `XEvent` is a sealed class handled by `onEvent()`. One-shot effects go through
   `Channel<UiEvent>` (`util/UiEvent.kt`: snackbar, navigate, navigate up, share file). Server-paged feeds
   use `util/FeedPager.kt`.
-- **List screens.** A list screen's states go through `ListArea`/`ListAreaState`, which keeps loading,
-  error and empty states inside the pull area. Pull is off during the first load and on errors.
-  Snackbars go through `ClearChainSnackbarHost`.
-- **Bottom bar.** Five tabs for every role; NGOs reach Cart from Browse. `NavController.navigateToTab` (`navigation/BottomNavBar.kt`)
-  opens a tab the way the bar does.
+- **Shell pieces.**
+  - **Bottom bar.** Five tabs for every role; NGOs reach Cart from Browse. All labels share one size:
+    the user's text size, unless a label wouldn't fit in two lines. `NavController.navigateToTab`
+    (`navigation/BottomNavBar.kt`) opens a tab the way the bar does.
+  - **Titles.** Tab screens have no visible title: the search row is the header, and the root sets
+    `semantics { paneTitle = … }` to its `nav_*` label so screen readers name the screen. Stats and
+    every screen opened from a tab start with `ScreenTitleRow`, padded by `ScreenHPadding`. Its title
+    wraps and is a heading.
+  - **List states.** A list screen's states go through `ListArea`/`ListAreaState`, which keeps loading,
+    error and empty states inside the pull area. Pull is off during the first load and on errors;
+    `HapticPullToRefreshBox(enabled = …)` and `BrandScaffold(refreshEnabled = …)` do the same elsewhere.
+  - **Loading and empty.** `LoadingIndicators.kt` holds the three kinds of waiting. The area spinner
+    stays invisible for its first 300ms, so a load from the cache doesn't flash it. `EmptyState`
+    scrolls in an area of bounded height and keeps its natural height inside a parent that scrolls.
+  - **Snackbars** go through `ClearChainSnackbarHost`. A successful refresh doesn't get one, because
+    the pull indicator already shows it's done. Failures and the results of user actions do.
+  - **Avatars.** A clickable `AvatarImage` takes `clickLabel`, so it's announced by what it opens
+    ("Open account details") rather than as a picture.
 - **Realtime.** `data/remote/signalr/SignalRService.kt` is a singleton that holds connections to all five
   hubs and exposes one `SharedFlow` per server event. ViewModels collect those flows.
   `RealtimeLifecycleObserver` connects when the app comes to the foreground and disconnects when it goes
@@ -130,12 +143,13 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
   (`presentation/components`). It takes either `BrandHeader.Hero(content)` or `BrandHeader.Compact`: a
   title, an optional back circle and onboarding's step bars. The hero holds Login's `LogoHero`, a
   dashboard's `DashboardGreeting` or Profile's avatar block; it scrolls away with the content, can pull
-  to refresh, and keeps a teal strip pinned behind the status bar. Content sits on a sheet with rounded
-  top corners, and there's an optional fixed `bottomBar`. While a brand screen is shown,
-  `LightStatusBarIcons` keeps the status-bar icons light. It counts its callers, and through
-  `LocalDestinationTransition` it switches at a crossfade's midpoint, so the icons change once between
-  a brand screen and a plain one and never between two brand screens. Splash uses `BrandGradient` and
-  `LightStatusBarIcons` directly.
+  to refresh, and keeps a teal strip pinned behind the status bar. Only text that passes contrast on
+  the gradient sits there: a dashboard's role eyebrow and subtitle go on the sheet in `DashboardIntro`.
+  Content sits on a sheet with rounded top corners, and there's an optional fixed `bottomBar`. While a
+  brand screen is shown, `LightStatusBarIcons` keeps the status-bar icons light. It counts its callers,
+  and through `LocalDestinationTransition` it switches at a crossfade's midpoint, so the icons change
+  once between a brand screen and a plain one and never between two brand screens. Splash uses
+  `BrandGradient` and `LightStatusBarIcons` directly.
 - **Form pieces.**
   - **Clear buttons.** `ClearChainTextField`, `TimePickerField` and `DatePickerField` name their clear
     button "Clear <label>". The label comes from `clearLabel`, then the field's own `label`, then the
