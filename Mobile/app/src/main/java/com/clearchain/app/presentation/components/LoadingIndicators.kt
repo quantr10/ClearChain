@@ -1,26 +1,26 @@
 package com.clearchain.app.presentation.components
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import com.clearchain.app.R
+import com.clearchain.app.ui.theme.*
+import kotlinx.coroutines.delay
 
-/**
+/*
  * The app has exactly three ways to show that it is waiting. Pick by asking
  * "what is waiting?" — the indicator always sits where the result will appear.
  *
@@ -36,16 +36,9 @@ import androidx.compose.ui.unit.dp
  * Pull-to-refresh keeps its own system indicator. Images use a static placeholder,
  * never a spinner.
  */
-object LoadingDefaults {
-    /** The one spinner size inside controls (buttons, icon buttons, rows, overlays). */
-    val InlineSize = 16.dp
-    val InlineStroke = 2.dp
 
-    /** The one spinner size for an area with nothing to show yet. */
-    val AreaSize = 40.dp
-
-    val BarHeight = 2.dp
-}
+/** How long [LoadingState] stays invisible before its spinner draws. */
+private const val AREA_SPINNER_DELAY_MS = 300L
 
 /** Kind A: the spinner that replaces a control's icon or content while its action runs. */
 @Composable
@@ -54,28 +47,45 @@ fun InlineSpinner(
     color: Color = MaterialTheme.colorScheme.primary
 ) {
     CircularProgressIndicator(
-        modifier = modifier.size(LoadingDefaults.InlineSize),
+        modifier = modifier.size(SpinnerInlineSize),
         color = color,
-        strokeWidth = LoadingDefaults.InlineStroke
+        strokeWidth = SpinnerInlineStroke
     )
 }
 
 /**
  * Kind B: an area (screen or section) with nothing to show yet. The spinner is centred in
  * whatever [modifier] sizes it to; pass `Modifier.fillMaxSize()` for a whole screen.
+ *
+ * It stays invisible for its first [AREA_SPINNER_DELAY_MS], so a load answered from the cache
+ * doesn't flash it, but it takes its space from the start, so nothing moves when it appears.
  */
 @Composable
 fun LoadingState(
     modifier: Modifier = Modifier,
     message: String? = null
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(AREA_SPINNER_DELAY_MS)
+        visible = true
+    }
+    val loadingLabel = stringResource(R.string.cd_loading)
+
     Box(modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(16.dp)
+            verticalArrangement = Arrangement.spacedBy(CardPadding),
+            modifier = Modifier
+                .padding(ScreenHPadding)
+                .alpha(if (visible) 1f else 0f)
+                .then(if (visible) Modifier else Modifier.clearAndSetSemantics {})
         ) {
-            CircularProgressIndicator(Modifier.size(LoadingDefaults.AreaSize))
+            CircularProgressIndicator(
+                Modifier
+                    .size(SpinnerAreaSize)
+                    .semantics { contentDescription = loadingLabel }
+            )
             if (message != null) {
                 Text(
                     text = message,
@@ -95,7 +105,7 @@ fun LoadingState(
  */
 @Composable
 fun UpdatingBar(visible: Boolean, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(LoadingDefaults.BarHeight)) {
+    Box(modifier.fillMaxWidth().height(UpdatingBarHeight)) {
         if (visible) LinearProgressIndicator(Modifier.fillMaxSize())
     }
 }

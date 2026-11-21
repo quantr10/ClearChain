@@ -80,6 +80,7 @@
     <string name="mark_all_read">Đánh dấu tất cả đã đọc</string>
     <string name="no_notifications">Chưa có thông báo</string>
     <string name="cd_open_notifications">Mở thông báo</string>
+    <string name="cd_loading">Đang tải</string>
     <plurals name="no_notifications_subtitle">
         <item quantity="other">Mọi thông báo gửi cho bạn trong %1$d ngày qua sẽ xuất hiện ở đây.</item>
     </plurals>

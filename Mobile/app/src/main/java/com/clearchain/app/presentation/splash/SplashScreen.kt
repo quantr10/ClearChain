@@ -23,7 +23,6 @@ import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.BrandGradient
 import com.clearchain.app.presentation.components.LightStatusBarIcons
-import com.clearchain.app.presentation.components.LoadingDefaults
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.HeaderPadding
@@ -32,6 +31,7 @@ import com.clearchain.app.ui.theme.LogoDiscSplashSize
 import com.clearchain.app.ui.theme.LogoMarkSplashSize
 import com.clearchain.app.ui.theme.OnBrandGradient
 import com.clearchain.app.ui.theme.ScreenHPadding
+import com.clearchain.app.ui.theme.SpinnerAreaSize
 import com.clearchain.app.ui.theme.WordmarkStyle
 import kotlinx.coroutines.delay
 
@@ -180,7 +180,7 @@ fun SplashScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = HeaderPadding)
-                .size(LoadingDefaults.AreaSize),
+                .size(SpinnerAreaSize),
             color = OnBrandGradient
         )
     }

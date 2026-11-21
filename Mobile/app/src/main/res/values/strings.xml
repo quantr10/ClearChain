@@ -80,6 +80,7 @@
     <string name="mark_all_read">Mark all as read</string>
     <string name="no_notifications">No notifications yet</string>
     <string name="cd_open_notifications">Open notifications</string>
+    <string name="cd_loading">Loading</string>
     <plurals name="no_notifications_subtitle">
         <item quantity="one">Anything sent to you in the last %1$d day shows up here.</item>
         <item quantity="other">Anything sent to you in the last %1$d days shows up here.</item>

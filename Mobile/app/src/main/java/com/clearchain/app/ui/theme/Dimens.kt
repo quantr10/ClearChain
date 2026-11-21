@@ -63,3 +63,17 @@ val TileIconSize = 24.dp
 
 /** Design system `detail-icon`: the icon in a card detail row. */
 val DetailIconSize = 14.dp
+
+// ── Loading indicators ───────────────────────────────────────────────────────
+
+/** Design system `spinner-inline`: the spinner inside a control whose action is running. */
+val SpinnerInlineSize = 16.dp
+
+/** Design system `spinner-inline-stroke`: the stroke of the inline spinner. */
+val SpinnerInlineStroke = 2.dp
+
+/** Design system `spinner-area`: the spinner filling an area that has nothing to show yet. */
+val SpinnerAreaSize = 40.dp
+
+/** Design system `updating-bar`: the bar along the top of content that is being updated. */
+val UpdatingBarHeight = 2.dp
