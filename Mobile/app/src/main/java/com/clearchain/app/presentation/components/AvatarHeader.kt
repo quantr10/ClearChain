@@ -17,6 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -25,6 +30,7 @@ import coil.request.ImageRequest
 import com.clearchain.app.R
 import com.clearchain.app.presentation.notifications.NotificationBell
 import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.AvatarRingWidth
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
 import com.clearchain.app.ui.theme.EyebrowStyle
@@ -101,6 +107,7 @@ fun DashboardWelcomeHeader(
     }
 }
 
+/** [AvatarImage] with its size in whole dp, for the callers that pass a number. */
 @Composable
 fun AvatarImage(
     imageUrl: String?,
@@ -110,13 +117,58 @@ fun AvatarImage(
     backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
     textColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     borderColor: Color? = null,
-    borderWidth: Dp = 2.dp,
-    onClick: (() -> Unit)? = null
+    borderWidth: Dp = AvatarRingWidth,
+    onClick: (() -> Unit)? = null,
+    clickLabel: String? = null
+) = AvatarImage(
+    imageUrl = imageUrl,
+    name = name,
+    size = size.dp,
+    modifier = modifier,
+    backgroundColor = backgroundColor,
+    textColor = textColor,
+    borderColor = borderColor,
+    borderWidth = borderWidth,
+    onClick = onClick,
+    clickLabel = clickLabel
+)
+
+/**
+ * An organization's round avatar: its picture, or its initial on [backgroundColor] when it has
+ * none. With [onClick] and [clickLabel] it is a button named by what it opens ("Open account
+ * details"), and the picture's own description and the initial are not read.
+ */
+@Composable
+fun AvatarImage(
+    imageUrl: String?,
+    name: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    textColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    borderColor: Color? = null,
+    borderWidth: Dp = AvatarRingWidth,
+    onClick: (() -> Unit)? = null,
+    clickLabel: String? = null
 ) {
     val avatarMod = modifier
-        .size(size.dp)
+        .size(size)
         .clip(CircleShape)
         .let { if (borderColor != null) it.border(borderWidth, borderColor, CircleShape) else it }
+        .let {
+            if (onClick != null && clickLabel != null) {
+                it.clearAndSetSemantics {
+                    contentDescription = clickLabel
+                    role = Role.Button
+                    onClick {
+                        onClick()
+                        true
+                    }
+                }
+            } else {
+                it
+            }
+        }
         .let { if (onClick != null) it.clickable(onClick = onClick) else it }
 
     if (!imageUrl.isNullOrBlank()) {

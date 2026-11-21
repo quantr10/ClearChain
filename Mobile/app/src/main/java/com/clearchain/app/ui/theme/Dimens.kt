@@ -37,6 +37,9 @@ val NavIndicatorHeight = 26.dp
 /** Design system `nav-tab-gap`: between a bottom-bar tab's indicator and its label, and at its sides. */
 val NavTabGap = 4.dp
 
+/** Design system `avatar-ring`: the white ring around an avatar on the gradient or on a photo. */
+val AvatarRingWidth = 2.dp
+
 /** Design system `icon-tile`: the rounded icon tile on dashboard action cards and Profile rows. */
 val IconTileSize = 48.dp
 
