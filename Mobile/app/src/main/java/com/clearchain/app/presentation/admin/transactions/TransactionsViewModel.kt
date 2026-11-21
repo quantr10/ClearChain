@@ -210,7 +210,6 @@ class TransactionsViewModel @Inject constructor(
                     )
                 }
                 applyFilters()
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_transactions_refreshed)))
             } catch (e: Exception) {
                 _state.update { it.copy(isRefreshing = false) }
                 _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_refresh_transactions)))

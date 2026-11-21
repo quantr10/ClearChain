@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,7 +56,23 @@ fun TransactionsScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        val paneName = stringResource(R.string.nav_history)
+        Column(modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }) {
+            val listAreaState = when {
+                state.isLoading && state.allTransactions.isEmpty() -> ListAreaState.Loading
+                state.allTransactions.isEmpty() -> ListAreaState.Empty(
+                    icon = Icons.Default.Receipt,
+                    title = stringResource(R.string.admin_transactions_empty),
+                    subtitle = stringResource(R.string.transactions_empty_subtitle)
+                )
+                state.filteredTransactions.isEmpty() -> ListAreaState.Empty(
+                    icon = Icons.Default.FilterAlt,
+                    title = stringResource(R.string.empty_no_transactions_filter),
+                    subtitle = stringResource(R.string.empty_try_filters)
+                )
+                else -> ListAreaState.Content
+            }
+
             ListScreenHeader {
                 ListHeaderSearchRow(
                     query = state.searchQuery,
@@ -90,51 +108,36 @@ fun TransactionsScreen(
                     selectedFilter = state.selectedStatus,
                     onFilterSelected = { viewModel.onEvent(TransactionsEvent.StatusFilterChanged(it)) }
                 )
+
+                if (listAreaState is ListAreaState.Content) {
+                    ResultsCountAndSort(
+                        count = state.filteredTransactions.size,
+                        itemName = "transaction",
+                        selectedSort = state.selectedSort,
+                        onSortSelected = { viewModel.onEvent(TransactionsEvent.SortOptionChanged(it)) },
+                        sortOptions = state.availableSortOptions
+                    )
+                }
             }
 
-            ResultsCountAndSort(
-                count = state.filteredTransactions.size,
-                itemName = "transaction",
-                selectedSort = state.selectedSort,
-                onSortSelected = { viewModel.onEvent(TransactionsEvent.SortOptionChanged(it)) },
-                sortOptions = state.availableSortOptions
-            )
-
-            when {
-                state.isLoading && state.allTransactions.isEmpty() -> LoadingState(Modifier.fillMaxSize())
-                state.allTransactions.isEmpty() -> {
-                    EmptyState(
-                        icon = Icons.Default.Receipt,
-                        title = stringResource(R.string.admin_transactions_empty),
-                        subtitle = stringResource(R.string.transactions_empty_subtitle)
-                    )
-                }
-                state.filteredTransactions.isEmpty() -> {
-                    EmptyState(
-                        icon = Icons.Default.FilterAlt,
-                        title = stringResource(R.string.empty_no_transactions_filter),
-                        subtitle = stringResource(R.string.empty_try_filters)
-                    )
-                }
-                else -> {
-                    HapticPullToRefreshBox(
-                        isRefreshing = state.isRefreshing,
-                        onRefresh = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) }
-                    ) {
-                        LazyColumn(
-                            contentPadding = ScreenPadding,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(state.filteredTransactions, key = { it.id }) { transaction ->
-                                TransactionCard(
-                                    transaction = transaction,
-                                    isFlagged = transaction.id in state.flaggedIds,
-                                    onViewDetail = { onNavigateToRequestDetail(transaction.id) }
-                                )
-                            }
-                            item { Spacer(Modifier.height(16.dp)) }
-                        }
+            ListArea(
+                state = listAreaState,
+                isRefreshing = state.isRefreshing,
+                onRefresh = { viewModel.onEvent(TransactionsEvent.RefreshTransactions) },
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            ) {
+                LazyColumn(
+                    contentPadding = ScreenPadding,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.filteredTransactions, key = { it.id }) { transaction ->
+                        TransactionCard(
+                            transaction = transaction,
+                            isFlagged = transaction.id in state.flaggedIds,
+                            onViewDetail = { onNavigateToRequestDetail(transaction.id) }
+                        )
                     }
+                    item { Spacer(Modifier.height(16.dp)) }
                 }
             }
         }
