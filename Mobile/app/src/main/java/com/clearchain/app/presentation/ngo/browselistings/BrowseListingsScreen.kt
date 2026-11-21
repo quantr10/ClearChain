@@ -16,15 +16,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavController
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
@@ -43,6 +49,9 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
+
+/** The most listings the cart badge counts before it shows "99+". */
+private const val CART_BADGE_MAX = 99
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -70,6 +79,18 @@ fun BrowseListingsScreen(
                 is UiEvent.Navigate -> navController.navigate(event.route)
                 else -> Unit
             }
+        }
+    }
+
+    // Back from Cart, from a listing or from another tab, the cart may have changed. The first
+    // resume of a new screen is skipped: the view model has only just loaded the cart. Saved with
+    // the tab's state, as the view model is, so returning to the tab still reloads.
+    var skipNextResume by rememberSaveable { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (skipNextResume) {
+            skipNextResume = false
+        } else {
+            viewModel.onEvent(BrowseListingsEvent.ReloadCart)
         }
     }
 
@@ -112,13 +133,58 @@ fun BrowseListingsScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val paneName = stringResource(R.string.nav_browse)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .trackGlobalTouch(touchTracker)
+                .semantics { paneTitle = paneName }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val listAreaState = when {
+                    state.isLoading && state.allListings.isEmpty() -> ListAreaState.Loading
+                    state.error != null && state.allListings.isEmpty() -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }
+                    )
+                    state.filteredListings.isEmpty() -> {
+                        val nothingNearby = !state.showFavoritesOnly && state.allListings.isEmpty()
+                        ListAreaState.Empty(
+                            icon = if (state.showFavoritesOnly) {
+                                Icons.Default.FavoriteBorder
+                            } else if (state.allListings.isEmpty()) {
+                                Icons.Default.SearchOff
+                            } else {
+                                Icons.Default.FilterAlt
+                            },
+                            title = if (state.showFavoritesOnly) {
+                                stringResource(R.string.empty_no_saved_listings)
+                            } else if (state.allListings.isEmpty()) {
+                                stringResource(R.string.empty_no_nearby_listings)
+                            } else {
+                                stringResource(R.string.empty_no_listings_browse_filter)
+                            },
+                            subtitle = if (state.showFavoritesOnly) {
+                                stringResource(R.string.empty_no_saved_subtitle)
+                            } else if (state.allListings.isEmpty()) {
+                                stringResource(R.string.empty_no_nearby_subtitle)
+                            } else {
+                                stringResource(R.string.empty_try_filters)
+                            },
+                            // Nothing nearby: the way forward is a wider area or another place.
+                            actionLabel = if (nothingNearby) stringResource(R.string.empty_action_change_location) else null,
+                            onAction = if (nothingNearby) {
+                                { showLocationSheet = true }
+                            } else {
+                                null
+                            }
+                        )
+                    }
+                    else -> ListAreaState.Content
+                }
+
                 // ── Static header ────────────────────────────────────────────
                 ListScreenHeader {
                     // Row 1: Search + location pin + filter
@@ -135,14 +201,23 @@ fun BrowseListingsScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
+                        val cartCount = state.cartItemsByListingId.size
                         BadgedBox(
                             badge = {
-                                if (state.cartItemCount > 0) Badge { Text(state.cartItemCount.toString()) }
+                                if (cartCount > 0) {
+                                    Badge(Modifier.clearAndSetSemantics {}) {
+                                        Text(if (cartCount > CART_BADGE_MAX) "$CART_BADGE_MAX+" else cartCount.toString())
+                                    }
+                                }
                             }
                         ) {
                             ClearChainActionIconButton(
                                 icon = Icons.Default.ShoppingCart,
-                                contentDescription = "Cart",
+                                contentDescription = if (cartCount > 0) {
+                                    pluralStringResource(R.plurals.cd_open_cart_items, cartCount, cartCount)
+                                } else {
+                                    stringResource(R.string.cd_open_cart)
+                                },
                                 onClick = { viewModel.onEvent(BrowseListingsEvent.OpenCart) },
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -173,7 +248,7 @@ fun BrowseListingsScreen(
                     )
 
                     // Row 3: Sort (list mode only)
-                    if (!state.showMapView) {
+                    if (!state.showMapView && listAreaState is ListAreaState.Content) {
                         ResultsCountAndSort(
                             count = state.filteredListings.size,
                             itemName = "listing",
@@ -186,24 +261,26 @@ fun BrowseListingsScreen(
 
                 // ── Content ──────────────────────────────────────────────────
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.isLoading && state.allListings.isEmpty() ->
-                            LoadingState(Modifier.fillMaxSize())
-
-                        state.error != null && state.allListings.isEmpty() ->
-                            EmptyState(
+                    if (state.showMapView) {
+                        when (listAreaState) {
+                            ListAreaState.Loading -> LoadingState(Modifier.fillMaxSize())
+                            is ListAreaState.Error -> EmptyState(
                                 icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
+                                title = listAreaState.title,
+                                subtitle = listAreaState.message,
                                 actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(BrowseListingsEvent.LoadListings) }
+                                onAction = listAreaState.onRetry
                             )
-
-                        state.showMapView ->
-                            GroceryMapView(state = state, viewModel = viewModel, navController = navController, globalTouch = globalTouch)
-
-                        else ->
-                            ListingsListView(state = state, viewModel = viewModel, navController = navController, globalTouch = globalTouch)
+                            else -> GroceryMapView(state = state, viewModel = viewModel, navController = navController, globalTouch = globalTouch)
+                        }
+                    } else {
+                        ListingsListView(
+                            state = state,
+                            areaState = listAreaState,
+                            viewModel = viewModel,
+                            navController = navController,
+                            globalTouch = globalTouch
+                        )
                     }
                 }
             }
@@ -216,85 +293,61 @@ fun BrowseListingsScreen(
 @Composable
 private fun ListingsListView(
     state: BrowseListingsState,
+    areaState: ListAreaState,
     viewModel: BrowseListingsViewModel,
     navController: NavController,
     globalTouch: GlobalTouch
 ) {
-    when {
-        state.filteredListings.isEmpty() -> EmptyState(
-            icon = if (state.showFavoritesOnly) {
-                Icons.Default.FavoriteBorder
-            } else if (state.allListings.isEmpty()) {
-                Icons.Default.SearchOff
-            } else {
-                Icons.Default.FilterAlt
-            },
-            title = if (state.showFavoritesOnly) {
-                stringResource(R.string.empty_no_saved_listings)
-            } else if (state.allListings.isEmpty()) {
-                stringResource(R.string.empty_no_nearby_listings)
-            } else {
-                stringResource(R.string.empty_no_listings_browse_filter)
-            },
-            subtitle = if (state.showFavoritesOnly) {
-                stringResource(R.string.empty_no_saved_subtitle)
-            } else if (state.allListings.isEmpty()) {
-                stringResource(R.string.empty_no_nearby_subtitle)
-            } else {
-                stringResource(R.string.empty_try_filters)
-            }
-        )
-
-        else -> HapticPullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = { viewModel.onEvent(BrowseListingsEvent.RefreshListings) }
+    ListArea(
+        state = areaState,
+        isRefreshing = state.isRefreshing,
+        onRefresh = { viewModel.onEvent(BrowseListingsEvent.RefreshListings) }
+    ) {
+        LazyColumn(
+            contentPadding = ScreenPadding,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            LazyColumn(
-                contentPadding = ScreenPadding,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(items = state.filteredListings, key = { it.id }) { listing ->
-                    val isFavorited = listing.id in state.favoritedIds
-                    val cartItem = state.cartItemsByListingId[listing.id]
-                    ListingCard(
-                        listing = listing,
-                        showGroceryInfo = true,
-                        modifier = Modifier.clickable {
-                            navController.navigate(Screen.ListingDetail.createRoute(listing.id))
-                        },
-                        topRightAction = {
-                            IconButton(
-                                onClick = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(listing.id)) },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = if (isFavorited) stringResource(R.string.cd_remove_from_saved) else stringResource(R.string.cd_save_listing),
-                                    tint = if (isFavorited) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        },
-                        onGroceryAvatarClick = {
-                            navController.navigate(Screen.PublicProfile.createRoute(listing.groceryId))
-                        },
-                        cartAction = {
-                            ListingCartAction(
-                                listing = listing,
-                                cartItem = cartItem,
-                                enabled = !state.isUpdatingCart,
-                                loading = state.updatingCartListingId == listing.id,
-                                globalTouch = globalTouch,
-                                onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
-                                onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
-                                onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
-                                onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) }
+            items(items = state.filteredListings, key = { it.id }) { listing ->
+                val isFavorited = listing.id in state.favoritedIds
+                val cartItem = state.cartItemsByListingId[listing.id]
+                ListingCard(
+                    listing = listing,
+                    showGroceryInfo = true,
+                    modifier = Modifier.clickable {
+                        navController.navigate(Screen.ListingDetail.createRoute(listing.id))
+                    },
+                    topRightAction = {
+                        IconButton(
+                            onClick = { viewModel.onEvent(BrowseListingsEvent.ToggleFavorite(listing.id)) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isFavorited) stringResource(R.string.cd_remove_from_saved) else stringResource(R.string.cd_save_listing),
+                                tint = if (isFavorited) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                    )
-                }
-                item { Spacer(Modifier.height(16.dp)) }
+                    },
+                    onGroceryAvatarClick = {
+                        navController.navigate(Screen.PublicProfile.createRoute(listing.groceryId))
+                    },
+                    cartAction = {
+                        ListingCartAction(
+                            listing = listing,
+                            cartItem = cartItem,
+                            enabled = !state.isUpdatingCart,
+                            loading = state.updatingCartListingId == listing.id,
+                            globalTouch = globalTouch,
+                            onAddToCart = { viewModel.onEvent(BrowseListingsEvent.AddToCart(it)) },
+                            onIncrementCartItem = { viewModel.onEvent(BrowseListingsEvent.IncrementCartItem(it)) },
+                            onDecrementCartItem = { viewModel.onEvent(BrowseListingsEvent.DecrementCartItem(it)) },
+                            onRemoveFromCart = { viewModel.onEvent(BrowseListingsEvent.RemoveCartItem(it)) }
+                        )
+                    }
+                )
             }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }

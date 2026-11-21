@@ -16,6 +16,9 @@ sealed class BrowseListingsEvent {
     data class RemoveCartItem(val listingId: String) : BrowseListingsEvent()
     object OpenCart : BrowseListingsEvent()
 
+    /** The screen is back on top: the cart may have changed while it was away. */
+    object ReloadCart : BrowseListingsEvent()
+
     // Favorites
     data class ToggleFavorite(val listingId: String) : BrowseListingsEvent()
     object ToggleFavoritesOnly : BrowseListingsEvent()

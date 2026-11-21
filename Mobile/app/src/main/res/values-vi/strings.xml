@@ -82,6 +82,11 @@
     <string name="cd_open_notifications">Mở thông báo</string>
     <string name="cd_loading">Đang tải</string>
     <string name="cd_open_account_details">Mở chi tiết tài khoản</string>
+    <string name="cd_open_cart">Mở giỏ hàng</string>
+    <plurals name="cd_open_cart_items">
+        <item quantity="other">Mở giỏ hàng, %d mặt hàng</item>
+    </plurals>
+    <string name="empty_action_change_location">Thay đổi vị trí</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="other">Mở thông báo, %d chưa đọc</item>
     </plurals>
@@ -695,7 +700,6 @@
     <string name="snack_new_request_from">Yêu cầu lấy hàng mới từ %1$s</string>
     <string name="snack_request_cancelled_by">Yêu cầu bị hủy bởi %1$s</string>
     <string name="snack_new_listing">Có danh sách mới: %1$s</string>
-    <string name="snack_listings_refreshed">Đã làm mới danh sách</string>
     <string name="snack_listing_deleted">Đã xóa danh sách</string>
     <string name="snack_listing_archived">Đã lưu trữ danh sách</string>
     <string name="snack_listing_restored">Đã khôi phục danh sách</string>

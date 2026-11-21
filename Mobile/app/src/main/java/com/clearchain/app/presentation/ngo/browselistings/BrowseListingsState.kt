@@ -61,5 +61,4 @@ data class BrowseListingsState(
         (if (selectedCategory != null) 1 else 0) +
             (if (filterExpiresBy != null) 1 else 0) +
             (if (showFavoritesOnly) 1 else 0)
-    val cartItemCount: Int get() = cartItemsByListingId.values.sumOf { it.requestedQuantity }
 }

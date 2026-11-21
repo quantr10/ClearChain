@@ -138,6 +138,7 @@ class BrowseListingsViewModel @Inject constructor(
             BrowseListingsEvent.OpenCart -> viewModelScope.launch {
                 _uiEvent.send(UiEvent.Navigate(Screen.Cart.route))
             }
+            BrowseListingsEvent.ReloadCart -> loadCart()
 
             // Favorites
             is BrowseListingsEvent.ToggleFavorite -> toggleFavorite(event.listingId)
@@ -315,7 +316,6 @@ class BrowseListingsViewModel @Inject constructor(
                 onSuccess = { listings ->
                     _state.update { it.copy(allListings = listings, isRefreshing = false) }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_listings_refreshed)))
                 },
                 onFailure = { e ->
                     _state.update { it.copy(isRefreshing = false) }

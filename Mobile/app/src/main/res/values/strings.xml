@@ -82,6 +82,12 @@
     <string name="cd_open_notifications">Open notifications</string>
     <string name="cd_loading">Loading</string>
     <string name="cd_open_account_details">Open account details</string>
+    <string name="cd_open_cart">Open cart</string>
+    <plurals name="cd_open_cart_items">
+        <item quantity="one">Open cart, %d item</item>
+        <item quantity="other">Open cart, %d items</item>
+    </plurals>
+    <string name="empty_action_change_location">Change location</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="one">Open notifications, %d unread</item>
         <item quantity="other">Open notifications, %d unread</item>
@@ -735,7 +741,6 @@
     <string name="snack_new_request_from">New pickup request from %1$s</string>
     <string name="snack_request_cancelled_by">Request cancelled by %1$s</string>
     <string name="snack_new_listing">New listing available: %1$s</string>
-    <string name="snack_listings_refreshed">Listings refreshed</string>
     <string name="snack_listing_deleted">Listing deleted</string>
     <string name="snack_listing_archived">Listing archived</string>
     <string name="snack_listing_restored">Listing restored</string>
