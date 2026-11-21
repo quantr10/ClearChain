@@ -817,7 +817,6 @@
     <string name="snack_email_verified">Email verified! Welcome to ClearChain.</string>
     <string name="snack_code_resent">Verification code resent to %1$s</string>
     <string name="snack_request_cancelled">Request cancelled</string>
-    <string name="snack_requests_refreshed">Requests refreshed</string>
     <string name="snack_pickup_confirmed_photo">Pickup confirmed with photo!</string>
     <string name="snack_receipt_failed">Failed to generate receipt</string>
     <string name="snack_review_submitted">Thank you for your review!</string>

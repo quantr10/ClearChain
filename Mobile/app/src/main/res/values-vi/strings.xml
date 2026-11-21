@@ -768,7 +768,6 @@
     <string name="snack_email_verified">Email đã xác minh! Chào mừng đến ClearChain.</string>
     <string name="snack_code_resent">Đã gửi lại mã xác minh đến %1$s</string>
     <string name="snack_request_cancelled">Đã hủy yêu cầu</string>
-    <string name="snack_requests_refreshed">Đã làm mới yêu cầu</string>
     <string name="snack_pickup_confirmed_photo">Đã xác nhận lấy hàng với ảnh!</string>
     <string name="snack_receipt_failed">Không thể tạo biên lai</string>
     <string name="snack_review_submitted">Cảm ơn bạn đã đánh giá!</string>

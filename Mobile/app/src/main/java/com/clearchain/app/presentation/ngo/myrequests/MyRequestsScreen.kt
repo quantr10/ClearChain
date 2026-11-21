@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -32,6 +34,7 @@ import com.clearchain.app.util.UiEvent
 fun MyRequestsScreen(
     onNavigateToRequestDetail: (String) -> Unit = {},
     onNavigateToRoute: (String) -> Unit = {},
+    onBrowseFood: () -> Unit = {},
     viewModel: MyRequestsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -71,8 +74,9 @@ fun MyRequestsScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val paneName = stringResource(R.string.nav_requests)
         Box(
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // Upload error banner with retry
@@ -102,6 +106,31 @@ fun MyRequestsScreen(
                             }
                         }
                     }
+                }
+
+                val listAreaState = when {
+                    state.isLoading && state.allRequests.isEmpty() -> ListAreaState.Loading
+                    state.error != null && state.allRequests.isEmpty() -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
+                    )
+                    state.filteredRequests.isEmpty() -> if (state.allRequests.isEmpty()) {
+                        ListAreaState.Empty(
+                            icon = Icons.Default.Inbox,
+                            title = stringResource(R.string.empty_no_pickup_requests),
+                            subtitle = stringResource(R.string.empty_requests_ngo_subtitle),
+                            actionLabel = stringResource(R.string.empty_action_browse_food),
+                            onAction = onBrowseFood
+                        )
+                    } else {
+                        ListAreaState.Empty(
+                            icon = Icons.Default.FilterAlt,
+                            title = stringResource(R.string.empty_no_requests_filter),
+                            subtitle = stringResource(R.string.empty_try_filters)
+                        )
+                    }
+                    else -> ListAreaState.Content
                 }
 
                 ListScreenHeader {
@@ -134,70 +163,38 @@ fun MyRequestsScreen(
                         onFilterSelected = { viewModel.onEvent(MyRequestsEvent.StatusFilterChanged(it)) }
                     )
 
-                    ResultsCountAndSort(
-                        count = state.filteredRequests.size,
-                        itemName = "request",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions
-                    )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = state.filteredRequests.size,
+                            itemName = "request",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(MyRequestsEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.isLoading && state.allRequests.isEmpty() -> {
-                            LoadingState(Modifier.fillMaxSize())
-                        }
-
-                        state.error != null && state.allRequests.isEmpty() -> {
-                            EmptyState(
-                                icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
-                                actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(MyRequestsEvent.LoadRequests) }
+                ListArea(
+                    state = listAreaState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    LazyColumn(
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.filteredRequests, key = { it.id }) { request ->
+                            RequestCardWithExtras(
+                                request = request,
+                                onCardClick = { onNavigateToRequestDetail(request.id) },
+                                onCancel = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
+                                onConfirmPickup = { showChecklistForId = it },
+                                pendingAction = state.pendingActions[request.id]
                             )
                         }
 
-                        state.filteredRequests.isEmpty() -> {
-                            EmptyState(
-                                icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
-                                title = if (state.allRequests.isEmpty()) {
-                                    stringResource(R.string.empty_no_pickup_requests)
-                                } else {
-                                    stringResource(R.string.empty_no_requests_filter)
-                                },
-                                subtitle = if (state.allRequests.isEmpty()) {
-                                    stringResource(R.string.empty_requests_ngo_subtitle)
-                                } else {
-                                    stringResource(R.string.empty_try_filters)
-                                }
-                            )
-                        }
-
-                        else -> {
-                            HapticPullToRefreshBox(
-                                isRefreshing = state.isRefreshing,
-                                onRefresh = { viewModel.onEvent(MyRequestsEvent.RefreshRequests) }
-                            ) {
-                                LazyColumn(
-                                    contentPadding = ScreenPadding,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(state.filteredRequests, key = { it.id }) { request ->
-                                        RequestCardWithExtras(
-                                            request = request,
-                                            onCardClick = { onNavigateToRequestDetail(request.id) },
-                                            onCancel = { viewModel.onEvent(MyRequestsEvent.CancelRequest(it)) },
-                                            onConfirmPickup = { showChecklistForId = it },
-                                            pendingAction = state.pendingActions[request.id]
-                                        )
-                                    }
-
-                                    item { Spacer(Modifier.height(16.dp)) }
-                                }
-                            }
-                        }
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }

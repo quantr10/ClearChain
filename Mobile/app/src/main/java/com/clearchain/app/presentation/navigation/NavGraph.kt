@@ -274,7 +274,8 @@ fun NavGraph(
                 onNavigateToRequestDetail = { requestId ->
                     navController.navigate(Screen.RequestDetail.createRoute(requestId))
                 },
-                onNavigateToRoute = { route -> navController.navigate(route) }
+                onNavigateToRoute = { route -> navController.navigate(route) },
+                onBrowseFood = { navController.navigateToTab(Screen.BrowseListings.route) }
             )
         }
 
