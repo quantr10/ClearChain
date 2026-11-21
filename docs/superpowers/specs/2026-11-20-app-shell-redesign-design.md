@@ -548,9 +548,9 @@ Also fixed, found while exploring:
 
 ## Verification
 
-The implementation plan leaves verification out, at the user's request. The user runs these checks
-and captures the after set. The plan's tasks stop at a clean build, `spotlessCheck` and `lint`, and
-never sign in to the live database.
+The implementation plan leaves verification out, at the user's request. It has no test, build, lint,
+screenshot or review steps, and no task signs in to the live database. The user runs the build,
+`spotlessCheck`, `lint` and the checks below, and captures the after set.
 
 - **Build and lint.**
   - From `Mobile/`, `./gradlew assembleDebug spotlessCheck lint`, with no new lint warnings.
