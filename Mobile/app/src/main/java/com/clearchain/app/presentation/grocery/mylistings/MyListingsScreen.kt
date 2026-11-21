@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -164,8 +166,24 @@ fun MyListingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        val paneName = stringResource(R.string.nav_listings)
+        Box(modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val listAreaState = when {
+                    state.isLoading && state.allListings.isEmpty() -> ListAreaState.Loading
+                    state.error != null && state.allListings.isEmpty() -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(MyListingsEvent.LoadListings) }
+                    )
+                    state.filteredListings.isEmpty() -> ListAreaState.Empty(
+                        icon = if (state.allListings.isEmpty()) Icons.Default.PostAdd else Icons.Default.FilterAlt,
+                        title = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings) else stringResource(R.string.empty_no_listings_filter),
+                        subtitle = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings_subtitle) else stringResource(R.string.empty_try_filters)
+                    )
+                    else -> ListAreaState.Content
+                }
+
                 ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
@@ -203,171 +221,147 @@ fun MyListingsScreen(
                         onTabSelected = { viewModel.onEvent(MyListingsEvent.TabChanged(it)) }
                     )
 
-                    ResultsCountAndSort(
-                        count = state.filteredListings.size,
-                        itemName = "listing",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions,
-                        countText = if (state.isSelectionMode) {
-                            "${state.selectedCount} ${if (state.selectedCount == 1) "listing" else "listings"} selected"
-                        } else {
-                            null
-                        },
-                        leadingContent = if (state.isSelectionMode) {
-                            {
-                                SelectionCircleButton(
-                                    checked = state.allSelected,
-                                    onCheckedChange = {
-                                        if (state.allSelected) {
-                                            viewModel.onEvent(MyListingsEvent.DeselectAll)
-                                        } else {
-                                            viewModel.onEvent(MyListingsEvent.SelectAll)
-                                        }
-                                    },
-                                    enabled = !state.isBulkOperating
-                                )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = state.filteredListings.size,
+                            itemName = "listing",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(MyListingsEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions,
+                            countText = if (state.isSelectionMode) {
+                                "${state.selectedCount} ${if (state.selectedCount == 1) "listing" else "listings"} selected"
+                            } else {
+                                null
+                            },
+                            leadingContent = if (state.isSelectionMode) {
+                                {
+                                    SelectionCircleButton(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) {
+                                                viewModel.onEvent(MyListingsEvent.DeselectAll)
+                                            } else {
+                                                viewModel.onEvent(MyListingsEvent.SelectAll)
+                                            }
+                                        },
+                                        enabled = !state.isBulkOperating
+                                    )
+                                }
+                            } else {
+                                null
                             }
-                        } else {
-                            null
-                        }
-                    )
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.isLoading && state.allListings.isEmpty() -> {
-                            LoadingState(Modifier.fillMaxSize())
-                        }
+                ListArea(
+                    state = listAreaState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { viewModel.onEvent(MyListingsEvent.RefreshListings) },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    LazyColumn(
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.filteredListings, key = { it.id }) { listing ->
+                            var showEditQty by remember { mutableStateOf(false) }
+                            val isSelected = listing.id in state.selectedIds
 
-                        state.error != null && state.allListings.isEmpty() -> {
-                            EmptyState(
-                                icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
-                                actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(MyListingsEvent.LoadListings) }
-                            )
-                        }
-
-                        state.filteredListings.isEmpty() -> {
-                            EmptyState(
-                                icon = if (state.allListings.isEmpty()) Icons.Default.PostAdd else Icons.Default.FilterAlt,
-                                title = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings) else stringResource(R.string.empty_no_listings_filter),
-                                subtitle = if (state.allListings.isEmpty()) stringResource(R.string.empty_no_listings_subtitle) else stringResource(R.string.empty_try_filters)
-                            )
-                        }
-
-                        else -> {
-                            HapticPullToRefreshBox(
-                                isRefreshing = state.isRefreshing,
-                                onRefresh = { viewModel.onEvent(MyListingsEvent.RefreshListings) }
-                            ) {
-                                LazyColumn(
-                                    contentPadding = ScreenPadding,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(state.filteredListings, key = { it.id }) { listing ->
-                                        var showEditQty by remember { mutableStateOf(false) }
-                                        val isSelected = listing.id in state.selectedIds
-
-                                        Box {
-                                            ListingCard(
-                                                listing = listing,
-                                                modifier = Modifier.combinedClickable(
-                                                    onClick = {
-                                                        if (state.isSelectionMode) {
-                                                            viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
-                                                        } else {
-                                                            navController.navigate(Screen.ListingDetail.createRoute(listing.id))
-                                                        }
-                                                    },
-                                                    onLongClick = {
-                                                        if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED, MyListingsTab.EXPIRED)) {
-                                                            if (!state.isSelectionMode) {
-                                                                viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
-                                                            }
-                                                            viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
-                                                        }
-                                                    }
-                                                ),
-                                                showGroceryInfo = false,
-                                                showPickupTime = false,
-                                                topRightAction = if (!state.isSelectionMode &&
-                                                    listing.status in setOf(ListingStatus.AVAILABLE, ListingStatus.ARCHIVED)
-                                                ) {
-                                                    {
-                                                        IconButton(
-                                                            onClick = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
-                                                            modifier = Modifier.size(24.dp)
-                                                        ) {
-                                                            Icon(
-                                                                Icons.Default.Edit,
-                                                                contentDescription = stringResource(R.string.action_edit_qty),
-                                                                modifier = Modifier.size(18.dp),
-                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                            )
-                                                        }
-                                                    }
-                                                } else {
-                                                    null
-                                                },
-                                                secondaryActions = if (!state.isSelectionMode && (listing.viewCount > 0 || listing.requestCount > 0)) {
-                                                    {
-                                                        Row(
-                                                            modifier = Modifier.weight(1f),
-                                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            if (listing.viewCount > 0) {
-                                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                                                    Icon(Icons.Default.Visibility, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                                    Text("${listing.viewCount}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                                }
-                                                            }
-                                                            if (listing.requestCount > 0) {
-                                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                                                    Icon(Icons.Default.Inventory, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
-                                                                    Text(stringResource(R.string.label_request_count_short, listing.requestCount), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } else {
-                                                    null
-                                                }
-                                            )
-
-                                            // Selection circle overlay (top-left)
+                            Box {
+                                ListingCard(
+                                    listing = listing,
+                                    modifier = Modifier.combinedClickable(
+                                        onClick = {
                                             if (state.isSelectionMode) {
-                                                SelectionCircleButton(
-                                                    checked = isSelected,
-                                                    onCheckedChange = { viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id)) },
-                                                    modifier = Modifier
-                                                        .align(Alignment.TopStart)
-                                                        .padding(8.dp),
-                                                    enabled = !state.isBulkOperating
+                                                viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
+                                            } else {
+                                                navController.navigate(Screen.ListingDetail.createRoute(listing.id))
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (state.activeTab in setOf(MyListingsTab.AVAILABLE, MyListingsTab.ARCHIVED, MyListingsTab.EXPIRED)) {
+                                                if (!state.isSelectionMode) {
+                                                    viewModel.onEvent(MyListingsEvent.ToggleSelectionMode)
+                                                }
+                                                viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id))
+                                            }
+                                        }
+                                    ),
+                                    showGroceryInfo = false,
+                                    showPickupTime = false,
+                                    topRightAction = if (!state.isSelectionMode &&
+                                        listing.status in setOf(ListingStatus.AVAILABLE, ListingStatus.ARCHIVED)
+                                    ) {
+                                        {
+                                            IconButton(
+                                                onClick = { navController.navigate(Screen.EditListing.createRoute(listing.id)) },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Edit,
+                                                    contentDescription = stringResource(R.string.action_edit_qty),
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                         }
-
-                                        if (showEditQty) {
-                                            EditQuantityDialog(
-                                                currentQuantity = listing.quantity,
-                                                unit = listing.unit,
-                                                onDismiss = { showEditQty = false },
-                                                onConfirm = { newQty ->
-                                                    showEditQty = false
-                                                    viewModel.onEvent(MyListingsEvent.UpdateListingQuantity(listing.id, newQty))
+                                    } else {
+                                        null
+                                    },
+                                    secondaryActions = if (!state.isSelectionMode && (listing.viewCount > 0 || listing.requestCount > 0)) {
+                                        {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                if (listing.viewCount > 0) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                        Icon(Icons.Default.Visibility, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text("${listing.viewCount}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
                                                 }
-                                            )
+                                                if (listing.requestCount > 0) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                        Icon(Icons.Default.Inventory, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                                        Text(stringResource(R.string.label_request_count_short, listing.requestCount), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
+                                            }
                                         }
+                                    } else {
+                                        null
                                     }
+                                )
 
-                                    item { Spacer(Modifier.height(16.dp)) }
+                                // Selection circle overlay (top-left)
+                                if (state.isSelectionMode) {
+                                    SelectionCircleButton(
+                                        checked = isSelected,
+                                        onCheckedChange = { viewModel.onEvent(MyListingsEvent.ToggleItemSelection(listing.id)) },
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(8.dp),
+                                        enabled = !state.isBulkOperating
+                                    )
                                 }
                             }
+
+                            if (showEditQty) {
+                                EditQuantityDialog(
+                                    currentQuantity = listing.quantity,
+                                    unit = listing.unit,
+                                    onDismiss = { showEditQty = false },
+                                    onConfirm = { newQty ->
+                                        showEditQty = false
+                                        viewModel.onEvent(MyListingsEvent.UpdateListingQuantity(listing.id, newQty))
+                                    }
+                                )
+                            }
                         }
+
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
