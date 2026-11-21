@@ -31,4 +31,7 @@ object Alpha {
 
     /** `ring-inner`: the status picture's inner ring, as primary at this alpha. */
     val RingInner = 0.12f
+
+    /** `scrim`: the dark wash over a picture while it uploads, as the theme's scrim at this alpha. */
+    val Scrim = 0.35f
 }

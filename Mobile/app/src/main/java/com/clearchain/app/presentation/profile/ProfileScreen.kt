@@ -3,10 +3,7 @@ package com.clearchain.app.presentation.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -16,14 +13,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -33,9 +31,7 @@ import com.clearchain.app.domain.model.Organization
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.model.VerificationStatus
 import com.clearchain.app.presentation.components.*
-import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
-import com.clearchain.app.ui.theme.ScreenPadding
+import com.clearchain.app.ui.theme.*
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,37 +65,44 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.user == null ->
-                    LoadingState(Modifier.fillMaxSize())
-
-                state.user != null ->
-                    ProfileViewContent(
-                        state = state,
-                        onChangeAvatar = { showAvatarPickerDialog = true },
-                        onChangePassword = { showChangePasswordDialog = true },
-                        onLogout = { showLogoutDialog = true },
-                        onDeleteAccount = { showDeleteAccountDialog = true },
-                        onNavigateToAnalytics = onNavigateToAnalytics,
-                        onNavigateToHelp = onNavigateToHelp,
-                        onNavigateToAccountDetail = onNavigateToAccountDetail,
-                        onNavigateToSettings = onNavigateToSettings
-                    )
-
-                else ->
-                    EmptyState(
-                        icon = Icons.Default.ErrorOutline,
-                        title = stringResource(R.string.error_generic),
-                        subtitle = state.error,
-                        actionLabel = stringResource(R.string.retry),
-                        onAction = { viewModel.onEvent(ProfileEvent.Refresh) }
-                    )
+    val profileTitle = stringResource(R.string.nav_profile)
+    BrandScaffold(
+        header = BrandHeader.Hero {
+            state.user?.let { user ->
+                ProfileHero(
+                    user = user,
+                    isUploadingAvatar = state.isUploadingAvatar,
+                    onChangeAvatar = { showAvatarPickerDialog = true }
+                )
             }
+        },
+        modifier = Modifier.semantics { paneTitle = profileTitle },
+        snackbarHostState = snackbarHostState
+    ) {
+        when {
+            state.isLoading && state.user == null ->
+                LoadingState(Modifier.fillMaxWidth())
+
+            state.user != null ->
+                ProfileViewContent(
+                    state = state,
+                    onChangePassword = { showChangePasswordDialog = true },
+                    onLogout = { showLogoutDialog = true },
+                    onDeleteAccount = { showDeleteAccountDialog = true },
+                    onNavigateToAnalytics = onNavigateToAnalytics,
+                    onNavigateToHelp = onNavigateToHelp,
+                    onNavigateToAccountDetail = onNavigateToAccountDetail,
+                    onNavigateToSettings = onNavigateToSettings
+                )
+
+            else ->
+                EmptyState(
+                    icon = Icons.Default.ErrorOutline,
+                    title = stringResource(R.string.error_generic),
+                    subtitle = state.error,
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = { viewModel.onEvent(ProfileEvent.Refresh) }
+                )
         }
     }
 
@@ -146,10 +149,10 @@ fun ProfileScreen(
     }
 }
 
+/** Profile's rows, straight onto the brand sheet: account, analytics, help, settings and the account actions. */
 @Composable
 private fun ProfileViewContent(
     state: ProfileState,
-    onChangeAvatar: () -> Unit,
     onChangePassword: () -> Unit,
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
@@ -160,74 +163,58 @@ private fun ProfileViewContent(
 ) {
     val user = state.user!!
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        ProfileHero(
-            user = user,
-            isUploadingAvatar = state.isUploadingAvatar,
-            onChangeAvatar = onChangeAvatar
+    DashboardActionCard(
+        icon = Icons.Default.Info,
+        title = stringResource(R.string.account_detail),
+        onClick = onNavigateToAccountDetail
+    )
+    // Admins have their own Statistics tab; the analytics screen reports
+    // reputation and pickup figures that only apply to an NGO or grocery.
+    if (user.type != OrganizationType.ADMIN) {
+        DashboardActionCard(
+            icon = Icons.Default.BarChart,
+            title = stringResource(R.string.label_analytics),
+            onClick = onNavigateToAnalytics
         )
-
-        Column(
-            modifier = Modifier.padding(ScreenPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DashboardActionCard(
-                    icon = Icons.Default.Info,
-                    title = stringResource(R.string.account_detail),
-                    onClick = onNavigateToAccountDetail
-                )
-                // Admins have their own Statistics tab; the analytics screen reports
-                // reputation and pickup figures that only apply to an NGO or grocery.
-                if (user.type != OrganizationType.ADMIN) {
-                    DashboardActionCard(
-                        icon = Icons.Default.BarChart,
-                        title = stringResource(R.string.label_analytics),
-                        onClick = onNavigateToAnalytics
-                    )
-                }
-                DashboardActionCard(
-                    icon = Icons.AutoMirrored.Filled.HelpOutline,
-                    title = stringResource(R.string.label_help_faq),
-                    onClick = onNavigateToHelp
-                )
-                DashboardActionCard(
-                    icon = Icons.Default.Settings,
-                    title = stringResource(R.string.settings),
-                    onClick = onNavigateToSettings
-                )
-                DashboardActionCard(
-                    icon = Icons.Default.Lock,
-                    title = stringResource(R.string.label_change_password),
-                    onClick = onChangePassword
-                )
-                DashboardActionCard(
-                    icon = Icons.AutoMirrored.Filled.Logout,
-                    title = stringResource(R.string.logout),
-                    iconContainerColor = MaterialTheme.colorScheme.errorContainer,
-                    iconTint = MaterialTheme.colorScheme.error,
-                    titleColor = MaterialTheme.colorScheme.error,
-                    onClick = onLogout
-                )
-                DashboardActionCard(
-                    icon = Icons.Default.DeleteForever,
-                    title = stringResource(R.string.label_delete_account),
-                    iconContainerColor = MaterialTheme.colorScheme.errorContainer,
-                    iconTint = MaterialTheme.colorScheme.error,
-                    titleColor = MaterialTheme.colorScheme.error,
-                    onClick = onDeleteAccount
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-        }
     }
+    DashboardActionCard(
+        icon = Icons.AutoMirrored.Filled.HelpOutline,
+        title = stringResource(R.string.label_help_faq),
+        onClick = onNavigateToHelp
+    )
+    DashboardActionCard(
+        icon = Icons.Default.Settings,
+        title = stringResource(R.string.settings),
+        onClick = onNavigateToSettings
+    )
+    DashboardActionCard(
+        icon = Icons.Default.Lock,
+        title = stringResource(R.string.label_change_password),
+        onClick = onChangePassword
+    )
+    DashboardActionCard(
+        icon = Icons.AutoMirrored.Filled.Logout,
+        title = stringResource(R.string.logout),
+        iconContainerColor = MaterialTheme.colorScheme.errorContainer,
+        iconTint = MaterialTheme.colorScheme.error,
+        titleColor = MaterialTheme.colorScheme.error,
+        onClick = onLogout
+    )
+    DashboardActionCard(
+        icon = Icons.Default.DeleteForever,
+        title = stringResource(R.string.label_delete_account),
+        iconContainerColor = MaterialTheme.colorScheme.errorContainer,
+        iconTint = MaterialTheme.colorScheme.error,
+        titleColor = MaterialTheme.colorScheme.error,
+        onClick = onDeleteAccount
+    )
 }
 
+/**
+ * Profile's gradient header: the avatar tile (the picture, or the role icon standing in for it),
+ * the organization's name and its type and verification badges. It wraps its content, so it
+ * grows with large text instead of clipping.
+ */
 @Composable
 private fun ProfileHero(
     user: Organization,
@@ -236,132 +223,129 @@ private fun ProfileHero(
 ) {
     val context = LocalContext.current
     val changeAvatarLabel = stringResource(R.string.cd_change_avatar)
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(248.dp)
-            .background(Brush.verticalGradient(listOf(BrandTeal, BrandGreen)))
+            .padding(horizontal = ScreenHPadding)
+            .padding(top = ScreenVPadding, bottom = ScreenHPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(ListGap)
     ) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(top = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Tapping the avatar (or the role icon standing in for it) opens the
-            // photo picker; every role owns a profile picture, so it is always enabled.
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Box(
-                    modifier = Modifier
-                        .size(84.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.2f))
-                        .clickable(
-                            enabled = !isUploadingAvatar,
-                            onClickLabel = changeAvatarLabel,
-                            onClick = onChangeAvatar
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!user.profilePictureUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(user.profilePictureUrl).crossfade(true).build(),
-                            contentDescription = stringResource(R.string.cd_profile_photo_of, user.name),
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = when (user.type) {
-                                OrganizationType.GROCERY -> Icons.Default.Store
-                                OrganizationType.NGO -> Icons.Default.VolunteerActivism
-                                OrganizationType.ADMIN -> Icons.Default.AdminPanelSettings
-                            },
-                            contentDescription = stringResource(R.string.cd_org_type, user.type.name.lowercase()),
-                            modifier = Modifier.size(44.dp),
-                            tint = Color.White
-                        )
-                    }
-
-                    if (isUploadingAvatar) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.35f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            InlineSpinner(color = Color.White)
-                        }
-                    }
+        // Tapping the avatar (or the role icon standing in for it) opens the
+        // photo picker; every role owns a profile picture, so it is always enabled.
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Box(
+                modifier = Modifier
+                    .size(ProfileAvatarSize)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(OnBrandGradient.copy(alpha = Alpha.LogoDisc))
+                    .clickable(
+                        enabled = !isUploadingAvatar,
+                        onClickLabel = changeAvatarLabel,
+                        onClick = onChangeAvatar
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!user.profilePictureUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(user.profilePictureUrl).crossfade(true).build(),
+                        contentDescription = stringResource(R.string.cd_profile_photo_of, user.name),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = when (user.type) {
+                            OrganizationType.GROCERY -> Icons.Default.Store
+                            OrganizationType.NGO -> Icons.Default.VolunteerActivism
+                            OrganizationType.ADMIN -> Icons.Default.AdminPanelSettings
+                        },
+                        contentDescription = stringResource(R.string.cd_org_type, user.type.name.lowercase()),
+                        modifier = Modifier.size(ProfileAvatarIconSize),
+                        tint = OnBrandGradient
+                    )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .offset(x = 4.dp, y = 4.dp)
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable(
-                            enabled = !isUploadingAvatar,
-                            onClickLabel = changeAvatarLabel,
-                            onClick = onChangeAvatar
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PhotoCamera,
-                        contentDescription = changeAvatarLabel,
-                        modifier = Modifier.size(16.dp),
-                        tint = BrandTeal
-                    )
+                if (isUploadingAvatar) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = Alpha.Scrim)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        InlineSpinner(color = OnBrandGradient)
+                    }
                 }
             }
 
-            Text(
-                text = user.name,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Hangs half a gap past the tile's corner, as a badge does.
+            Box(
+                modifier = Modifier
+                    .offset(x = ListGap / 2, y = ListGap / 2)
+                    .size(ActionIconButtonSize)
+                    .clip(CircleShape)
+                    .background(OnBrandGradient)
+                    .clickable(
+                        enabled = !isUploadingAvatar,
+                        onClickLabel = changeAvatarLabel,
+                        onClick = onChangeAvatar
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                StatusBadge(
-                    label = when (user.type) {
-                        OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
-                        OrganizationType.NGO -> stringResource(R.string.role_ngo)
-                        OrganizationType.ADMIN -> stringResource(R.string.role_admin)
-                    },
-                    backgroundColor = Color.White.copy(alpha = 0.22f),
-                    contentColor = Color.White
+                Icon(
+                    imageVector = Icons.Default.PhotoCamera,
+                    contentDescription = changeAvatarLabel,
+                    modifier = Modifier.size(DetailIconSize),
+                    // Brand teal rather than the theme's primary: the disc is white in both themes.
+                    tint = BrandTeal
                 )
-                when (user.verificationStatus) {
-                    VerificationStatus.APPROVED ->
-                        StatusBadge(
-                            label = stringResource(R.string.label_verified_badge),
-                            backgroundColor = Color.White.copy(alpha = 0.22f),
-                            contentColor = Color.White,
-                            icon = Icons.Default.CheckCircle
-                        )
-                    VerificationStatus.PENDING ->
-                        StatusBadge(
-                            label = stringResource(R.string.label_pending_review_badge),
-                            backgroundColor = Color(0xFFD97706).copy(alpha = 0.85f),
-                            contentColor = Color.White,
-                            icon = Icons.Default.Schedule
-                        )
-                    VerificationStatus.REJECTED ->
-                        StatusBadge(
-                            label = stringResource(R.string.label_rejected_badge),
-                            backgroundColor = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
-                            contentColor = Color.White,
-                            icon = Icons.Default.Cancel
-                        )
-                }
+            }
+        }
+
+        Text(
+            text = user.name,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = OnBrandGradient,
+            textAlign = TextAlign.Center
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(ListGap),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusBadge(
+                label = when (user.type) {
+                    OrganizationType.GROCERY -> stringResource(R.string.role_grocery)
+                    OrganizationType.NGO -> stringResource(R.string.role_ngo)
+                    OrganizationType.ADMIN -> stringResource(R.string.role_admin)
+                },
+                backgroundColor = OnBrandGradient.copy(alpha = Alpha.LogoDisc),
+                contentColor = OnBrandGradient
+            )
+            when (user.verificationStatus) {
+                VerificationStatus.APPROVED ->
+                    StatusBadge(
+                        label = stringResource(R.string.label_verified_badge),
+                        backgroundColor = OnBrandGradient.copy(alpha = Alpha.LogoDisc),
+                        contentColor = OnBrandGradient,
+                        icon = Icons.Default.CheckCircle
+                    )
+                VerificationStatus.PENDING ->
+                    StatusBadge(
+                        label = stringResource(R.string.label_pending_review_badge),
+                        backgroundColor = StatusColors.PendingBg,
+                        contentColor = StatusColors.PendingOnBg,
+                        icon = Icons.Default.Schedule
+                    )
+                VerificationStatus.REJECTED ->
+                    StatusBadge(
+                        label = stringResource(R.string.label_rejected_badge),
+                        backgroundColor = StatusColors.RejectedBg,
+                        contentColor = StatusColors.RejectedOnBg,
+                        icon = Icons.Default.Cancel
+                    )
             }
         }
     }

@@ -40,6 +40,12 @@ val NavTabGap = 4.dp
 /** Design system `header-avatar`: the organization's avatar on the dashboard greeting. */
 val HeaderAvatarSize = 40.dp
 
+/** Design system `profile-avatar`: the avatar tile in Profile's gradient header. */
+val ProfileAvatarSize = 64.dp
+
+/** Design system `profile-avatar-icon`: the role icon standing in for a missing picture on Profile. */
+val ProfileAvatarIconSize = 32.dp
+
 /** Design system `avatar-ring`: the white ring around an avatar on the gradient or on a photo. */
 val AvatarRingWidth = 2.dp
 
