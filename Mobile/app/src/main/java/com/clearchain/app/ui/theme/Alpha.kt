@@ -8,7 +8,7 @@ object Alpha {
     /** `placeholder`: placeholder text, as on-surface-variant at this alpha. */
     val Placeholder = 0.5f
 
-    /** `tile-tint`: the stat-tile fill, as primary at this alpha. */
+    /** `tile-tint`: the stat-tile fill, and the selected tab's indicator, as primary at this alpha. */
     val TileTint = 0.10f
 
     /** `category-tint`: a category badge's fill, as the category colour at this alpha. */

@@ -22,6 +22,18 @@ val BackButtonSize = 36.dp
 /** Design system `title-icon`: icons in screen titles, such as the back arrow, and in stat tiles. */
 val TitleIconSize = 20.dp
 
+/** Design system `bottom-bar-height`: the bottom bar's smallest height; it grows when labels wrap. */
+val BottomBarHeight = 64.dp
+
+/** Design system `nav-indicator-width`: the width of the pill behind a bottom-bar tab's icon. */
+val NavIndicatorWidth = 48.dp
+
+/** Design system `nav-indicator-height`: the height of the pill behind a bottom-bar tab's icon. */
+val NavIndicatorHeight = 26.dp
+
+/** Design system `nav-tab-gap`: between a bottom-bar tab's indicator and its label, and at its sides. */
+val NavTabGap = 4.dp
+
 /** Design system `icon-tile`: the rounded icon tile on dashboard action cards and Profile rows. */
 val IconTileSize = 48.dp
 

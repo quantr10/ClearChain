@@ -99,6 +99,8 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
 - **List screens.** A list screen's states go through `ListArea`/`ListAreaState`, which keeps loading,
   error and empty states inside the pull area. Pull is off during the first load and on errors.
   Snackbars go through `ClearChainSnackbarHost`.
+- **Bottom bar.** Five tabs for every role; NGOs reach Cart from Browse. `NavController.navigateToTab` (`navigation/BottomNavBar.kt`)
+  opens a tab the way the bar does.
 - **Realtime.** `data/remote/signalr/SignalRService.kt` is a singleton that holds connections to all five
   hubs and exposes one `SharedFlow` per server event. ViewModels collect those flows.
   `RealtimeLifecycleObserver` connects when the app comes to the foreground and disconnects when it goes
