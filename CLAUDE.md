@@ -120,10 +120,12 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
   `Dimens.kt` (component sizes) and `Alpha.kt` (opacities). Each declaration's KDoc names its design
   system token. Shared components use these names rather than repeating dp, alpha or colour literals,
   so a change to a token is one edit.
-- **System bars.** `MainActivity`'s outer `Scaffold` applies no system-bar insets. In `NavGraph`, ordinary
-  routes use `insetComposable`, which pads for the status and navigation bars. The seven sign-in and
+- **System bars.** `MainActivity`'s outer `Scaffold` applies no system-bar insets. `NavGraph` registers
+  every route through `destination(…)` with a `SystemBarInsets`: `None` for the seven sign-in and
   first-run routes (Splash, Login, Register, ForgotPassword, EmailVerification, Onboarding,
-  PendingReview) use plain `composable` and draw behind both bars.
+  PendingReview), which draw behind both bars; `NavigationBar` for the three dashboards and Profile,
+  whose gradient runs behind the status bar; `Both` for everything else. It also provides each
+  destination's transition as `LocalDestinationTransition`.
 - **Brand screens** (sign-in, first run, the three dashboards and Profile) are built on `BrandScaffold`
   (`presentation/components`). It takes either `BrandHeader.Hero(content)` or `BrandHeader.Compact`: a
   title, an optional back circle and onboarding's step bars. The hero holds Login's `LogoHero`, a
