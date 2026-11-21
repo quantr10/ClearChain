@@ -81,6 +81,7 @@
     <string name="no_notifications">Chưa có thông báo</string>
     <string name="cd_open_notifications">Mở thông báo</string>
     <string name="cd_loading">Đang tải</string>
+    <string name="cd_open_account_details">Mở chi tiết tài khoản</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="other">Mở thông báo, %d chưa đọc</item>
     </plurals>

@@ -81,6 +81,7 @@
     <string name="no_notifications">No notifications yet</string>
     <string name="cd_open_notifications">Open notifications</string>
     <string name="cd_loading">Loading</string>
+    <string name="cd_open_account_details">Open account details</string>
     <plurals name="cd_open_notifications_unread">
         <item quantity="one">Open notifications, %d unread</item>
         <item quantity="other">Open notifications, %d unread</item>
