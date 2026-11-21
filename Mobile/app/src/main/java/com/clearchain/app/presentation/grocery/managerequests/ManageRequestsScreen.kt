@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -52,8 +54,32 @@ fun ManageRequestsScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        val paneName = stringResource(R.string.nav_requests)
+        Box(modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val listAreaState = when {
+                    state.isLoading && state.allRequests.isEmpty() -> ListAreaState.Loading
+                    state.error != null && state.allRequests.isEmpty() -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
+                    )
+                    state.filteredRequests.isEmpty() -> ListAreaState.Empty(
+                        icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
+                        title = if (state.allRequests.isEmpty()) {
+                            stringResource(R.string.empty_no_pickup_requests)
+                        } else {
+                            stringResource(R.string.empty_no_requests_filter)
+                        },
+                        subtitle = if (state.allRequests.isEmpty()) {
+                            stringResource(R.string.empty_requests_grocery_subtitle)
+                        } else {
+                            stringResource(R.string.empty_try_filters)
+                        }
+                    )
+                    else -> ListAreaState.Content
+                }
+
                 ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
@@ -84,74 +110,42 @@ fun ManageRequestsScreen(
                         onFilterSelected = { viewModel.onEvent(ManageRequestsEvent.StatusFilterChanged(it)) }
                     )
 
-                    ResultsCountAndSort(
-                        count = state.filteredRequests.size,
-                        itemName = "request",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions
-                    )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = state.filteredRequests.size,
+                            itemName = "request",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(ManageRequestsEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.isLoading && state.allRequests.isEmpty() -> {
-                            LoadingState(Modifier.fillMaxSize())
-                        }
-
-                        state.error != null && state.allRequests.isEmpty() -> {
-                            EmptyState(
-                                icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
-                                actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(ManageRequestsEvent.LoadRequests) }
-                            )
-                        }
-
-                        state.filteredRequests.isEmpty() -> {
-                            EmptyState(
-                                icon = if (state.allRequests.isEmpty()) Icons.Default.Inbox else Icons.Default.FilterAlt,
-                                title = if (state.allRequests.isEmpty()) {
-                                    stringResource(R.string.empty_no_pickup_requests)
-                                } else {
-                                    stringResource(R.string.empty_no_requests_filter)
-                                },
-                                subtitle = if (state.allRequests.isEmpty()) {
-                                    stringResource(R.string.empty_requests_grocery_subtitle)
-                                } else {
-                                    stringResource(R.string.empty_try_filters)
-                                }
-                            )
-                        }
-
-                        else -> {
-                            HapticPullToRefreshBox(
-                                isRefreshing = state.isRefreshing,
-                                onRefresh = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) }
-                            ) {
-                                LazyColumn(
-                                    contentPadding = ScreenPadding,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(state.filteredRequests, key = { it.id }) { request ->
-                                        Box {
-                                            RequestCard(
-                                                request = request,
-                                                modifier = Modifier.clickable { onNavigateToRequestDetail(request.id) },
-                                                viewMode = RequestViewMode.GROCERY,
-                                                onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
-                                                onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
-                                                onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) },
-                                                pendingAction = state.pendingActions[request.id]
-                                            )
-                                        }
-                                    }
-
-                                    item { Spacer(Modifier.height(16.dp)) }
-                                }
+                ListArea(
+                    state = listAreaState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { viewModel.onEvent(ManageRequestsEvent.RefreshRequests) },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    LazyColumn(
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(state.filteredRequests, key = { it.id }) { request ->
+                            Box {
+                                RequestCard(
+                                    request = request,
+                                    modifier = Modifier.clickable { onNavigateToRequestDetail(request.id) },
+                                    viewMode = RequestViewMode.GROCERY,
+                                    onApprove = { viewModel.onEvent(ManageRequestsEvent.ApproveRequest(it)) },
+                                    onReject = { viewModel.onEvent(ManageRequestsEvent.RejectRequest(it)) },
+                                    onMarkReady = { viewModel.onEvent(ManageRequestsEvent.MarkReady(it)) },
+                                    pendingAction = state.pendingActions[request.id]
+                                )
                             }
                         }
+
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }

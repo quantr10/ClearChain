@@ -132,7 +132,6 @@ class ManageRequestsViewModel @Inject constructor(
                 onSuccess = { requests ->
                     _state.update { it.copy(allRequests = requests, isRefreshing = false) }
                     applyFilters()
-                    _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_requests_refreshed)))
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isRefreshing = false) }
