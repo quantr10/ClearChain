@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,8 +32,6 @@ import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.presentation.ngo.ActivityFeedItem
 import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
-import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.PagedFeed
 import com.clearchain.app.util.UiEvent
@@ -77,212 +77,196 @@ fun AdminDashboardScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        HapticPullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = { viewModel.onEvent(AdminDashboardEvent.RefreshStats) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                DashboardWelcomeHeader(
-                    userName = userName,
-                    subtitle = stringResource(R.string.system_health),
-                    roleLabel = stringResource(R.string.role_admin),
-                    profilePictureUrl = profilePictureUrl,
-                    gradientColors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        BrandTeal
-                    ),
-                    onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
-                    onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
-                )
+    val homeTitle = stringResource(R.string.nav_home)
+    BrandScaffold(
+        header = BrandHeader.Hero {
+            DashboardGreeting(
+                userName = userName,
+                profilePictureUrl = profilePictureUrl,
+                onAvatarClick = { navController.navigate(Screen.AccountDetail.route) },
+                onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
+            )
+        },
+        modifier = Modifier.semantics { paneTitle = homeTitle },
+        snackbarHostState = snackbarHostState,
+        isRefreshing = state.isRefreshing,
+        onRefresh = { viewModel.onEvent(AdminDashboardEvent.RefreshStats) },
+        // Nothing to refresh until the first load lands; a pull meanwhile would start a second load.
+        refreshEnabled = !(state.isLoading && state.stats == null)
+    ) {
+        DashboardIntro(
+            role = stringResource(R.string.role_admin),
+            subtitle = stringResource(R.string.system_health)
+        )
 
-                Column(
-                    modifier = Modifier.padding(ScreenPadding),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (state.isLoading && state.stats == null) {
-                        LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
-                    } else {
-                        // ── Platform stats ───────────────────────────────────
-                        state.stats?.let { stats ->
-                            // Listing supply only. Request counts live in the status breakdown
-                            // and the completion meter below, so they are not repeated here.
-                            // Live counts with no card of their own in the statistics, so the
-                            // tile doesn't drill down anywhere.
-                            DashboardSection(title = stringResource(R.string.section_listings)) {
-                                StatOverview(
-                                    hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), stats.activeListings),
-                                    secondary = listOf(
-                                        StatTile(Icons.Default.Bookmark, stringResource(R.string.stat_reserved), stats.reservedListings),
-                                        StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), stats.expiredListings)
-                                    )
-                                )
-                            }
+        if (state.isLoading && state.stats == null) {
+            LoadingState(Modifier.fillMaxWidth())
+        } else {
+            // ── Platform stats ───────────────────────────────────────────────
+            state.stats?.let { stats ->
+                // Listing supply only. Request counts live in the status breakdown
+                // and the completion meter below, so they are not repeated here.
+                // Live counts with no card of their own in the statistics, so the
+                // tile doesn't drill down anywhere.
+                DashboardSection(title = stringResource(R.string.section_listings)) {
+                    StatOverview(
+                        hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), stats.activeListings),
+                        secondary = listOf(
+                            StatTile(Icons.Default.Bookmark, stringResource(R.string.stat_reserved), stats.reservedListings),
+                            StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), stats.expiredListings)
+                        )
+                    )
+                }
 
-                            // Completion rate meter
-                            if (stats.totalPickupRequests > 0) {
-                                val rate = (stats.completedRequests.toFloat() / stats.totalPickupRequests * 100).toInt()
-                                DrillDownSection(
-                                    // The meter inside already names itself, next to the figure
-                                    // it belongs to; a section title above would say it twice.
-                                    title = "",
-                                    section = AnalyticsSection.REQUESTS,
-                                    navController = navController
-                                ) {
-                                    // Same layout as the NGO dashboard's weekly goal card.
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                                Text(
-                                                    text = stringResource(R.string.stat_completion_rate),
-                                                    style = MaterialTheme.typography.titleSmall,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontSize = 14.sp
-                                                )
-                                            }
-                                            Text(
-                                                text = "$rate%",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 14.sp
-                                            )
-                                        }
-                                        LinearProgressIndicator(
-                                            progress = { rate / 100f },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(8.dp)
-                                                .clip(RoundedCornerShape(4.dp)),
-                                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                            color = if (rate >= 100) BrandGreen else MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = pluralStringResource(R.plurals.admin_completion_detail, stats.totalPickupRequests, stats.completedRequests, stats.totalPickupRequests),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // ── Request status bar chart ─────────────────────────
-                        state.stats?.let { stats ->
-                            val barData = listOf(
-                                BarData(stringResource(R.string.status_pending), stats.pendingRequests, StatusColors.Pending),
-                                BarData(stringResource(R.string.status_approved), stats.approvedRequests, StatusColors.Approved),
-                                BarData(stringResource(R.string.status_ready), stats.readyRequests, StatusColors.Ready),
-                                BarData(stringResource(R.string.status_completed), stats.completedRequests, StatusColors.Completed),
-                                BarData(stringResource(R.string.status_cancelled), stats.cancelledRequests, StatusColors.Expired)
-                            )
-                            if (barData.any { it.value > 0 }) {
-                                DrillDownSection(
-                                    title = stringResource(R.string.section_request_status_breakdown),
-                                    section = AnalyticsSection.REQUESTS,
-                                    navController = navController
-                                ) {
-                                    ColumnBarChart(bars = barData)
-                                }
-                            }
-
-                            // ── Org type donut chart ─────────────────────────
-                            if (stats.totalOrganizations > 0) {
-                                DrillDownSection(
-                                    title = stringResource(R.string.section_organizations),
-                                    section = AnalyticsSection.ORGANIZATIONS,
-                                    navController = navController
-                                ) {
-                                    // Same split as the stats screen: an applicant still in the
-                                    // queue is counted as awaiting, not under its type as well.
-                                    DonutChart(
-                                        slices = listOf(
-                                            BarData(stringResource(R.string.org_type_groceries), stats.totalGroceries - stats.pendingGroceries, StatusColors.Available),
-                                            BarData(stringResource(R.string.org_type_ngos), stats.totalNgos - stats.pendingNgos, StatusColors.Approved),
-                                            BarData(stringResource(R.string.stat_awaiting_verification), stats.pendingGroceries + stats.pendingNgos, StatusColors.Pending)
-                                        ),
-                                        centerValue = stats.totalOrganizations.toString(),
-                                        centerLabel = stringResource(R.string.stat_total),
-                                        legendFirst = true
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // ── Alert feed ───────────────────────────────────────────
-                    // Above the quick actions: open disputes are the one thing here that
-                    // waits on the admin.
-                    if (alertFeed.items.isNotEmpty()) {
-                        DashboardSection(
-                            title = stringResource(R.string.section_alert_feed),
-                            action = { AlertCountPill(alertFeed.total) }
+                // Completion rate meter
+                if (stats.totalPickupRequests > 0) {
+                    val rate = (stats.completedRequests.toFloat() / stats.totalPickupRequests * 100).toInt()
+                    DrillDownSection(
+                        // The meter inside already names itself, next to the figure
+                        // it belongs to; a section title above would say it twice.
+                        title = "",
+                        section = AnalyticsSection.REQUESTS,
+                        navController = navController
+                    ) {
+                        // Same layout as the NGO dashboard's weekly goal card.
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Same pattern as the NGO and grocery activity feeds: five here, the
-                            // rest in a sheet.
-                            AlertList(alerts = alertFeed.items.take(5), onOpenRequest = openRequest)
-                            if (alertFeed.total > 5) {
-                                Spacer(Modifier.height(8.dp))
-                                ClearChainOutlinedButton(
-                                    text = stringResource(R.string.action_view_more),
-                                    onClick = { showAlertSheet = true },
-                                    modifier = Modifier.fillMaxWidth()
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.stat_completion_rate),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Text(
+                                    text = "$rate%",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp
                                 )
                             }
+                            LinearProgressIndicator(
+                                progress = { rate / 100f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                color = if (rate >= 100) BrandGreen else MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = pluralStringResource(R.plurals.admin_completion_detail, stats.totalPickupRequests, stats.completedRequests, stats.totalPickupRequests),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
-
-                    // ── Quick actions ────────────────────────────────────────
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DashboardActionCard(
-                            icon = Icons.Default.VerifiedUser,
-                            title = stringResource(R.string.verification_queue),
-                            subtitle = stringResource(R.string.admin_review_organizations),
-                            onClick = { navController.navigate(Screen.Verification.route) }
-                        )
-                        DashboardActionCard(
-                            icon = Icons.Default.History,
-                            title = stringResource(R.string.transactions),
-                            subtitle = stringResource(R.string.admin_view_transactions),
-                            onClick = { navController.navigate(Screen.Transactions.route) }
-                        )
-                        DashboardActionCard(
-                            icon = Icons.Default.BarChart,
-                            title = stringResource(R.string.statistics),
-                            subtitle = stringResource(R.string.system_health),
-                            onClick = { navController.navigate(Screen.AdminStatistics.route) }
-                        )
-                    }
-
-                    Spacer(Modifier.height(8.dp))
                 }
             }
+
+            // ── Request status bar chart ─────────────────────────────────────
+            state.stats?.let { stats ->
+                val barData = listOf(
+                    BarData(stringResource(R.string.status_pending), stats.pendingRequests, StatusColors.Pending),
+                    BarData(stringResource(R.string.status_approved), stats.approvedRequests, StatusColors.Approved),
+                    BarData(stringResource(R.string.status_ready), stats.readyRequests, StatusColors.Ready),
+                    BarData(stringResource(R.string.status_completed), stats.completedRequests, StatusColors.Completed),
+                    BarData(stringResource(R.string.status_cancelled), stats.cancelledRequests, StatusColors.Expired)
+                )
+                if (barData.any { it.value > 0 }) {
+                    DrillDownSection(
+                        title = stringResource(R.string.section_request_status_breakdown),
+                        section = AnalyticsSection.REQUESTS,
+                        navController = navController
+                    ) {
+                        ColumnBarChart(bars = barData)
+                    }
+                }
+
+                // ── Org type donut chart ─────────────────────────────────────
+                if (stats.totalOrganizations > 0) {
+                    DrillDownSection(
+                        title = stringResource(R.string.section_organizations),
+                        section = AnalyticsSection.ORGANIZATIONS,
+                        navController = navController
+                    ) {
+                        // Same split as the stats screen: an applicant still in the
+                        // queue is counted as awaiting, not under its type as well.
+                        DonutChart(
+                            slices = listOf(
+                                BarData(stringResource(R.string.org_type_groceries), stats.totalGroceries - stats.pendingGroceries, StatusColors.Available),
+                                BarData(stringResource(R.string.org_type_ngos), stats.totalNgos - stats.pendingNgos, StatusColors.Approved),
+                                BarData(stringResource(R.string.stat_awaiting_verification), stats.pendingGroceries + stats.pendingNgos, StatusColors.Pending)
+                            ),
+                            centerValue = stats.totalOrganizations.toString(),
+                            centerLabel = stringResource(R.string.stat_total),
+                            legendFirst = true
+                        )
+                    }
+                }
+            }
+        }
+
+        // ── Alert feed ───────────────────────────────────────────────────────
+        // Above the quick actions: open disputes are the one thing here that
+        // waits on the admin.
+        if (alertFeed.items.isNotEmpty()) {
+            DashboardSection(
+                title = stringResource(R.string.section_alert_feed),
+                action = { AlertCountPill(alertFeed.total) }
+            ) {
+                // Same pattern as the NGO and grocery activity feeds: five here, the
+                // rest in a sheet.
+                AlertList(alerts = alertFeed.items.take(5), onOpenRequest = openRequest)
+                if (alertFeed.total > 5) {
+                    Spacer(Modifier.height(8.dp))
+                    ClearChainOutlinedButton(
+                        text = stringResource(R.string.action_view_more),
+                        onClick = { showAlertSheet = true },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        // ── Quick actions ────────────────────────────────────────────────────
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            DashboardActionCard(
+                icon = Icons.Default.VerifiedUser,
+                title = stringResource(R.string.verification_queue),
+                subtitle = stringResource(R.string.admin_review_organizations),
+                onClick = { navController.navigate(Screen.Verification.route) }
+            )
+            DashboardActionCard(
+                icon = Icons.Default.History,
+                title = stringResource(R.string.transactions),
+                subtitle = stringResource(R.string.admin_view_transactions),
+                onClick = { navController.navigate(Screen.Transactions.route) }
+            )
+            DashboardActionCard(
+                icon = Icons.Default.BarChart,
+                title = stringResource(R.string.statistics),
+                subtitle = stringResource(R.string.system_health),
+                onClick = { navController.navigate(Screen.AdminStatistics.route) }
+            )
         }
     }
 

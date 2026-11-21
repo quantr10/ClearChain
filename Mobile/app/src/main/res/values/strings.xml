@@ -799,7 +799,6 @@
     <string name="snack_new_transaction">Transaction: %1$s</string>
     <string name="snack_new_dispute">New dispute: %1$s from %2$s</string>
     <string name="snack_stats_refreshed">Statistics refreshed</string>
-    <string name="snack_dashboard_refreshed">Dashboard refreshed</string>
     <string name="snack_profile_refreshed">Profile refreshed</string>
     <string name="snack_new_registration">New %1$s registered: %2$s</string>
     <string name="snack_org_approved">Organization approved</string>

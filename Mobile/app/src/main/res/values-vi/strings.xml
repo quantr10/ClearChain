@@ -751,7 +751,6 @@
     <string name="snack_new_transaction">Giao dịch: %1$s</string>
     <string name="snack_new_dispute">Khiếu nại mới: %1$s từ %2$s</string>
     <string name="snack_stats_refreshed">Đã làm mới thống kê</string>
-    <string name="snack_dashboard_refreshed">Đã làm mới bảng điều khiển</string>
     <string name="snack_profile_refreshed">Đã làm mới hồ sơ</string>
     <string name="snack_new_registration">%1$s mới đăng ký: %2$s</string>
     <string name="snack_org_approved">Đã duyệt tổ chức</string>

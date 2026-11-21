@@ -367,7 +367,7 @@ fun NavGraph(
         // ── Admin ────────────────────────────────────────────────────────────
         destination(
             route = Screen.AdminDashboard.route,
-            insets = SystemBarInsets.Both,
+            insets = SystemBarInsets.NavigationBar,
             deepLinks = listOf(navDeepLink { uriPattern = "clearchain://admin" })
         ) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.ADMIN) }

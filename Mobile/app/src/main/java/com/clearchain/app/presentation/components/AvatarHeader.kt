@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,84 +27,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.clearchain.app.R
-import com.clearchain.app.presentation.notifications.NotificationBell
-import com.clearchain.app.ui.theme.Alpha
 import com.clearchain.app.ui.theme.AvatarRingWidth
-import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
-import com.clearchain.app.ui.theme.EyebrowStyle
-import com.clearchain.app.ui.theme.HeaderPadding
-import com.clearchain.app.ui.theme.OnBrandGradient
-import com.clearchain.app.ui.theme.ScreenHPadding
-
-/** Gradient welcome header used at the top of dashboards. */
-@Composable
-fun DashboardWelcomeHeader(
-    userName: String,
-    modifier: Modifier = Modifier,
-    subtitle: String = "",
-    roleLabel: String = "",
-    profilePictureUrl: String? = null,
-    onProfileClick: () -> Unit = {},
-    onNotificationsClick: (() -> Unit)? = null,
-    gradientColors: List<Color> = listOf(BrandTeal, BrandGreen),
-    trailingContent: @Composable (() -> Unit)? = null
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                brush = Brush.linearGradient(colors = gradientColors)
-            )
-            .padding(horizontal = ScreenHPadding, vertical = HeaderPadding)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (roleLabel.isNotBlank()) {
-                    Text(
-                        text = roleLabel.uppercase(),
-                        style = EyebrowStyle,
-                        color = OnBrandGradient.copy(alpha = Alpha.Eyebrow)
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.greeting_hi, userName),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = OnBrandGradient
-                )
-                if (subtitle.isNotBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OnBrandGradient.copy(alpha = Alpha.Subtitle)
-                    )
-                }
-            }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Sits above the avatar rather than beside it: the greeting column on the left
-                // is the widest thing in this header, and a second element on the same row
-                // squeezes it into wrapping on narrow screens.
-                onNotificationsClick?.let { NotificationBell(onClick = it) }
-                AvatarImage(
-                    imageUrl = profilePictureUrl,
-                    name = userName,
-                    size = 48,
-                    borderColor = OnBrandGradient,
-                    onClick = onProfileClick
-                )
-                trailingContent?.invoke()
-            }
-        }
-    }
-}
 
 /** [AvatarImage] with its size in whole dp, for the callers that pass a number. */
 @Composable
