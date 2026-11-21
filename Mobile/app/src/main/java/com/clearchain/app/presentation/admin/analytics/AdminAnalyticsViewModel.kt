@@ -104,9 +104,6 @@ class AdminAnalyticsViewModel @Inject constructor(
                     isRefreshing = false
                 )
             }
-            if (isRefresh) {
-                _uiEvent.send(UiEvent.ShowSnackbar(string(R.string.snack_stats_refreshed)))
-            }
         } catch (e: Exception) {
             val msg = e.message ?: string(R.string.error_load_statistics)
             if (_state.value.data == null) {

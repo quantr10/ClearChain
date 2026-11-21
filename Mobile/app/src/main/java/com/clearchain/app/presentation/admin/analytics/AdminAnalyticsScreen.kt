@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import com.clearchain.app.data.remote.dto.*
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.UiEvent
@@ -46,8 +48,8 @@ import kotlinx.coroutines.delay
 // Every figure covers the platform's whole history; the organization register is the
 // platform as it stands now.
 
-/** Item 0 is the header, so the first section sits one below it. */
-private const val FIRST_SECTION_INDEX = 1
+/** The sections are the list's only items, so the first sits at index 0. */
+private const val FIRST_SECTION_INDEX = 0
 
 @Composable
 fun AdminAnalyticsScreen(
@@ -88,75 +90,61 @@ fun AdminAnalyticsScreen(
         }
     }
 
+    val paneName = stringResource(R.string.nav_stats)
     Scaffold(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when {
-                state.isLoading && state.data == null -> LoadingState(Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }) {
+            // Above every state, so the screen keeps its title while loading and on an error.
+            ScreenTitleRow(
+                title = stringResource(R.string.stats_analytics_title),
+                onBack = null,
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
+            ) {
+                ClearChainActionIconButton(
+                    icon = Icons.Default.FileDownload,
+                    contentDescription = stringResource(R.string.cd_export_pdf),
+                    onClick = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) },
+                    enabled = !state.isExporting && state.data != null
+                )
+            }
+            Box(Modifier.weight(1f)) {
+                when {
+                    state.isLoading && state.data == null -> LoadingState(Modifier.fillMaxSize())
 
-                state.data == null ->
-                    EmptyState(
-                        icon = Icons.Default.BarChart,
-                        title = stringResource(R.string.stats_unavailable),
-                        subtitle = state.error ?: stringResource(R.string.stats_unavailable_subtitle),
-                        actionLabel = stringResource(R.string.action_retry),
-                        onAction = { viewModel.onEvent(AdminAnalyticsEvent.Load) }
-                    )
+                    state.data == null ->
+                        EmptyState(
+                            icon = Icons.Default.BarChart,
+                            title = stringResource(R.string.stats_unavailable),
+                            subtitle = state.error ?: stringResource(R.string.stats_unavailable_subtitle),
+                            actionLabel = stringResource(R.string.retry),
+                            onAction = { viewModel.onEvent(AdminAnalyticsEvent.Load) }
+                        )
 
-                else -> {
-                    val data = state.data!!
-                    HapticPullToRefreshBox(
-                        isRefreshing = state.isRefreshing,
-                        onRefresh = { viewModel.onEvent(AdminAnalyticsEvent.Refresh) }
-                    ) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = ScreenPadding,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    else -> {
+                        val data = state.data!!
+                        HapticPullToRefreshBox(
+                            isRefreshing = state.isRefreshing,
+                            onRefresh = { viewModel.onEvent(AdminAnalyticsEvent.Refresh) }
                         ) {
-                            item {
-                                AnalyticsHeader(
-                                    isExporting = state.isExporting,
-                                    onExportPdf = { viewModel.onEvent(AdminAnalyticsEvent.ExportPdf) }
-                                )
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = ScreenPadding,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // One item per section, in enum order: see FIRST_SECTION_INDEX.
+                                item { RequestStatusCard(data, highlighted) }
+                                item { LeaderboardCard(data, highlighted, onOpenOrganization) }
+                                item { QualityCard(data, highlighted) }
+                                item { OrganizationsCard(data, highlighted) }
                             }
-
-                            // One item per section, in enum order: see FIRST_SECTION_INDEX.
-                            item { RequestStatusCard(data, highlighted) }
-                            item { LeaderboardCard(data, highlighted, onOpenOrganization) }
-                            item { QualityCard(data, highlighted) }
-                            item { OrganizationsCard(data, highlighted) }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-// ── Header ───────────────────────────────────────────────────────────────────
-
-@Composable
-private fun AnalyticsHeader(isExporting: Boolean, onExportPdf: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            stringResource(R.string.stats_analytics_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)
-        )
-        ClearChainActionIconButton(
-            icon = Icons.Default.FileDownload,
-            contentDescription = stringResource(R.string.cd_export_pdf),
-            onClick = onExportPdf,
-            enabled = !isExporting
-        )
     }
 }
 
