@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,7 +46,7 @@ fun FabScaffold(
         }
 
         // Placed after the Scaffold so it draws on top of the FAB.
-        SnackbarHost(
+        ClearChainSnackbarHost(
             snackbarHostState,
             Modifier
                 .align(Alignment.BottomCenter)

@@ -191,7 +191,7 @@ private fun CompactLayout(
                     content = content
                 )
                 snackbarHostState?.let {
-                    SnackbarHost(it, Modifier.align(Alignment.BottomCenter))
+                    ClearChainSnackbarHost(it, Modifier.align(Alignment.BottomCenter))
                 }
             }
             bottomBar?.let {
@@ -307,7 +307,7 @@ private fun HeroLayout(
                 .background(BrandTeal)
         )
         snackbarHostState?.let {
-            SnackbarHost(
+            ClearChainSnackbarHost(
                 hostState = it,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

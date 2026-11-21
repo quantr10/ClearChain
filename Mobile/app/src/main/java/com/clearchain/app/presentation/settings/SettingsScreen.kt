@@ -28,6 +28,7 @@ import com.clearchain.app.BuildConfig
 import com.clearchain.app.R
 import com.clearchain.app.data.local.SettingsStore
 import com.clearchain.app.domain.model.OrganizationType
+import com.clearchain.app.presentation.components.ClearChainSnackbarHost
 import com.clearchain.app.presentation.components.DashboardSection
 import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.ui.theme.ButtonShape
@@ -72,7 +73,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(

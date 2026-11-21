@@ -23,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.AppNotification
 import com.clearchain.app.presentation.components.ClearChainOutlinedButton
+import com.clearchain.app.presentation.components.ClearChainSnackbarHost
 import com.clearchain.app.presentation.components.EmptyState
 import com.clearchain.app.presentation.components.ScreenTitleRow
 import com.clearchain.app.ui.theme.ScreenPadding
@@ -45,7 +46,7 @@ fun NotificationInboxScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
