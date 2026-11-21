@@ -77,3 +77,11 @@ val SpinnerAreaSize = 40.dp
 
 /** Design system `updating-bar`: the bar along the top of content that is being updated. */
 val UpdatingBarHeight = 2.dp
+
+// ── Empty states ─────────────────────────────────────────────────────────────
+
+/** Design system `empty-state-padding`: the inset around an empty state's picture and text. */
+val EmptyStatePadding = 40.dp
+
+/** Design system `empty-action-min-width`: the smallest width of an empty state's button. */
+val EmptyActionMinWidth = 160.dp
