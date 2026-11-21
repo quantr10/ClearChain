@@ -78,7 +78,7 @@ fun LoginScreen(
     }
 
     BrandScaffold(
-        header = BrandHeader.Hero,
+        header = BrandHeader.Hero { LogoHero() },
         snackbarHostState = snackbarHostState
     ) {
         AnimatedVisibility(

@@ -1,7 +1,9 @@
 package com.clearchain.app.presentation.components
 
 import android.app.Activity
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -36,6 +38,12 @@ import com.clearchain.app.ui.theme.*
 /** Design system brand gradient: `brand-teal` at the top into `brand-green`. */
 val BrandGradient: Brush = Brush.verticalGradient(listOf(BrandTeal, BrandGreen))
 
+/**
+ * The enter/exit transition of the navigation destination being composed, or null outside one.
+ * `NavGraph` provides it for every destination, so [LightStatusBarIcons] can follow a crossfade.
+ */
+val LocalDestinationTransition = staticCompositionLocalOf<Transition<EnterExitState>?> { null }
+
 /** How many composed screens currently want light status-bar icons. Main thread only. */
 private var lightStatusBarRequests = 0
 
@@ -45,10 +53,19 @@ private const val STEP_FILL_MS = 500
 /** Below this background luminance the theme is treated as dark. */
 private const val DARK_LUMINANCE = 0.5f
 
+/** The point of a crossfade where the incoming screen becomes the more visible of the two. */
+private const val CROSSFADE_MIDPOINT = 0.5f
+
 /**
- * Keeps the status-bar icons light while composed. Two brand screens overlap during a navigation
- * crossfade, so this counts its callers and restores the theme's choice only when the last one
- * leaves. It reapplies after every composition, because `ClearChainTheme` sets the icons too.
+ * Keeps the status-bar icons light while this screen is shown. Two screens overlap during a
+ * navigation crossfade, so this counts its callers and restores the theme's choice only when the
+ * last one leaves. It reapplies after every composition, because `ClearChainTheme` sets the icons
+ * too.
+ *
+ * Inside a navigation destination it follows [LocalDestinationTransition]: the screen claims the
+ * light icons only while it is the more visible one, so between a gradient screen and a plain one
+ * the icons switch once, at the crossfade's midpoint. Between two gradient screens the release and
+ * the claim fall in the same frame, and the icons stay light.
  */
 @Composable
 fun LightStatusBarIcons() {
@@ -56,25 +73,51 @@ fun LightStatusBarIcons() {
     if (view.isInEditMode) return
     val isDark by rememberUpdatedState(MaterialTheme.colorScheme.background.luminance() < DARK_LUMINANCE)
     val window = (view.context as Activity).window
+    val transition = LocalDestinationTransition.current
+    // Derived, so a running crossfade recomposes this only when the claim actually flips.
+    val claiming by remember(transition) {
+        derivedStateOf { transition?.isMoreVisible() ?: true }
+    }
 
-    DisposableEffect(view) {
-        lightStatusBarRequests++
+    DisposableEffect(view, claiming) {
+        if (claiming) lightStatusBarRequests++
         onDispose {
-            lightStatusBarRequests--
-            if (lightStatusBarRequests == 0) {
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
+            if (claiming) {
+                lightStatusBarRequests--
+                if (lightStatusBarRequests == 0) {
+                    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
+                }
             }
         }
     }
     SideEffect {
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        if (claiming) WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+    }
+}
+
+/**
+ * Whether this destination is the more visible of the two in a crossfade: settled and shown, at
+ * least halfway into entering, or less than halfway out of leaving.
+ */
+private fun Transition<EnterExitState>.isMoreVisible(): Boolean {
+    if (currentState == targetState) return currentState == EnterExitState.Visible
+    val total = totalDurationNanos
+    val fraction = if (total > 0) playTimeNanos.toFloat() / total else 1f
+    return if (targetState == EnterExitState.Visible) {
+        fraction >= CROSSFADE_MIDPOINT
+    } else {
+        fraction < CROSSFADE_MIDPOINT
     }
 }
 
 /** What the gradient header of a [BrandScaffold] shows. */
 sealed interface BrandHeader {
-    /** Login's logo hero, which scrolls away with the content. */
-    data object Hero : BrandHeader
+    /**
+     * A gradient header that scrolls away with the content: Login's [LogoHero], a dashboard's
+     * greeting, Profile's avatar. [content] brings its own padding and alignment; the scaffold
+     * supplies the gradient, the status-bar inset and the sheet's overlap.
+     */
+    data class Hero(val content: @Composable ColumnScope.() -> Unit) : BrandHeader
 
     /**
      * A fixed header with a [title]. [onBack] adds a back circle announced as [backLabel], and
@@ -91,16 +134,20 @@ sealed interface BrandHeader {
 }
 
 /**
- * The frame of the sign-in and first-run screens: a brand-gradient header that runs behind the
- * status bar, and a sheet with rounded top corners that rises over it and holds [content]. A
- * [BrandHeader.Compact] header stays put while the sheet scrolls; the [BrandHeader.Hero] scrolls
- * away with the content. [bottomBar] sits fixed at the bottom of the sheet, above the keyboard.
+ * The brand frame: a brand-gradient header that runs behind the status bar, and a sheet with
+ * rounded top corners that rises over it and holds [content]. A [BrandHeader.Compact] header
+ * stays put while the sheet scrolls; a [BrandHeader.Hero] scrolls away with the content and can
+ * pull to refresh through [onRefresh], switched off by [refreshEnabled]. [bottomBar] sits fixed at
+ * the bottom of the sheet, above the keyboard.
  */
 @Composable
 fun BrandScaffold(
     header: BrandHeader,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState? = null,
+    isRefreshing: Boolean = false,
+    onRefresh: (() -> Unit)? = null,
+    refreshEnabled: Boolean = true,
     bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -111,7 +158,15 @@ fun BrandScaffold(
             .background(MaterialTheme.colorScheme.background)
     ) {
         when (header) {
-            BrandHeader.Hero -> HeroLayout(snackbarHostState, bottomBar, content)
+            is BrandHeader.Hero -> HeroLayout(
+                header = header,
+                snackbarHostState = snackbarHostState,
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                refreshEnabled = refreshEnabled,
+                bottomBar = bottomBar,
+                content = content
+            )
             is BrandHeader.Compact -> CompactLayout(header, snackbarHostState, bottomBar, content)
         }
     }
@@ -236,9 +291,45 @@ private fun StepBars(step: Int, totalSteps: Int) {
 
 // ── Hero header ──────────────────────────────────────────────────────────────
 
+/** Login's hero: the logo disc with the leaf, and the wordmark under it, centred. */
+@Composable
+fun LogoHero() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = HeaderPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(ListGap)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(LogoDiscHeroSize)
+                .clip(CircleShape)
+                .background(OnBrandGradient.copy(alpha = Alpha.LogoDisc)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Eco,
+                contentDescription = null,
+                modifier = Modifier.size(LogoMarkHeroSize),
+                tint = OnBrandGradient
+            )
+        }
+        Text(
+            text = stringResource(R.string.app_name),
+            style = WordmarkHeaderStyle,
+            color = OnBrandGradient
+        )
+    }
+}
+
 @Composable
 private fun HeroLayout(
+    header: BrandHeader.Hero,
     snackbarHostState: SnackbarHostState?,
+    isRefreshing: Boolean,
+    onRefresh: (() -> Unit)?,
+    refreshEnabled: Boolean,
     bottomBar: (@Composable () -> Unit)?,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -247,57 +338,50 @@ private fun HeroLayout(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val viewport = maxHeight
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(KeyboardOrNavigationBar)
-                .verticalScroll(rememberScrollState())
-        ) {
+        val scrollingContent: @Composable () -> Unit = {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .onSizeChanged { heroHeight = with(density) { it.height.toDp() } }
-                    .background(BrandGradient)
-                    .statusBarsPadding()
-                    .padding(top = HeaderPadding, bottom = HeaderPadding + SheetOverlap),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(ListGap)
+                    .fillMaxSize()
+                    .windowInsetsPadding(KeyboardOrNavigationBar)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .size(LogoDiscHeroSize)
-                        .clip(CircleShape)
-                        .background(OnBrandGradient.copy(alpha = Alpha.LogoDisc)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Eco,
-                        contentDescription = null,
-                        modifier = Modifier.size(LogoMarkHeroSize),
-                        tint = OnBrandGradient
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = WordmarkHeaderStyle,
-                    color = OnBrandGradient
+                        .fillMaxWidth()
+                        .onSizeChanged { heroHeight = with(density) { it.height.toDp() } }
+                        .background(BrandGradient)
+                        .statusBarsPadding()
+                        .padding(bottom = SheetOverlap),
+                    content = header.content
                 )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // At least the space under the hero, so short content never shows gradient below.
+                        .heightIn(min = (viewport - heroHeight).coerceAtLeast(Dp.Hairline))
+                        .overlapAbove(SheetOverlap)
+                        .clip(sheetShape())
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = ScreenHPadding)
+                        .padding(top = ScreenHPadding, bottom = ScreenVPadding),
+                    verticalArrangement = Arrangement.spacedBy(ListGap)
+                ) {
+                    content()
+                    bottomBar?.invoke()
+                }
             }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // At least the space under the hero, so short content never shows gradient below.
-                    .heightIn(min = (viewport - heroHeight).coerceAtLeast(Dp.Hairline))
-                    .overlapAbove(SheetOverlap)
-                    .clip(sheetShape())
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(horizontal = ScreenHPadding)
-                    .padding(top = ScreenHPadding, bottom = ScreenVPadding),
-                verticalArrangement = Arrangement.spacedBy(ListGap)
+        }
+        if (onRefresh != null) {
+            HapticPullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                enabled = refreshEnabled,
+                indicatorPadding = WindowInsets.statusBars.asPaddingValues()
             ) {
-                content()
-                bottomBar?.invoke()
+                scrollingContent()
             }
+        } else {
+            scrollingContent()
         }
         // Keeps the white status-bar icons readable once the hero has scrolled away.
         Box(

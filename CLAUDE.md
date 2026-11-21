@@ -124,12 +124,16 @@ The package is `com.clearchain.app`, split into `data` / `domain` / `presentatio
   routes use `insetComposable`, which pads for the status and navigation bars. The seven sign-in and
   first-run routes (Splash, Login, Register, ForgotPassword, EmailVerification, Onboarding,
   PendingReview) use plain `composable` and draw behind both bars.
-- **Sign-in and first-run screens** are built on `BrandScaffold` (`presentation/components`). It takes
-  either `BrandHeader.Hero`, the logo hero (Login only), or `BrandHeader.Compact`: a title, an optional
-  back circle and onboarding's step bars. Content sits on a sheet with rounded top corners, and there's
-  an optional fixed `bottomBar`. While a brand screen is shown, `LightStatusBarIcons` keeps the
-  status-bar icons light. It counts its callers, so two brand screens overlapping in a crossfade don't
-  fight over the icons. Splash uses `BrandGradient` and `LightStatusBarIcons` directly.
+- **Brand screens** (sign-in, first run, the three dashboards and Profile) are built on `BrandScaffold`
+  (`presentation/components`). It takes either `BrandHeader.Hero(content)` or `BrandHeader.Compact`: a
+  title, an optional back circle and onboarding's step bars. The hero holds Login's `LogoHero`, a
+  dashboard's `DashboardGreeting` or Profile's avatar block; it scrolls away with the content, can pull
+  to refresh, and keeps a teal strip pinned behind the status bar. Content sits on a sheet with rounded
+  top corners, and there's an optional fixed `bottomBar`. While a brand screen is shown,
+  `LightStatusBarIcons` keeps the status-bar icons light. It counts its callers, and through
+  `LocalDestinationTransition` it switches at a crossfade's midpoint, so the icons change once between
+  a brand screen and a plain one and never between two brand screens. Splash uses `BrandGradient` and
+  `LightStatusBarIcons` directly.
 - **Form pieces.**
   - **Clear buttons.** `ClearChainTextField`, `TimePickerField` and `DatePickerField` name their clear
     button "Clear <label>". The label comes from `clearLabel`, then the field's own `label`, then the
