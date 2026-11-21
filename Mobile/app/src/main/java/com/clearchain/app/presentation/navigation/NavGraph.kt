@@ -228,7 +228,7 @@ fun NavGraph(
         }
 
         // ── NGO ──────────────────────────────────────────────────────────────
-        destination(Screen.NgoDashboard.route, SystemBarInsets.Both) {
+        destination(Screen.NgoDashboard.route, SystemBarInsets.NavigationBar) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
             VerificationGate(navController)
             NgoDashboardScreen(navController = navController)
