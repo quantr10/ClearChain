@@ -25,6 +25,7 @@ import coil.compose.AsyncImage
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.FoodCategory
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
@@ -60,7 +61,7 @@ fun EditListingScreen(
                 title = stringResource(R.string.edit_listing),
                 backEnabled = !state.isSaving,
                 onBack = { navController.navigateUp() },
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             when {
                 state.isLoading -> LoadingState(Modifier.weight(1f).fillMaxWidth())

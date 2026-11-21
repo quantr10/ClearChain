@@ -40,6 +40,7 @@ import com.clearchain.app.domain.model.Listing
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
 import com.clearchain.app.ui.theme.BrandTeal
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
@@ -160,7 +161,7 @@ fun PublicProfileScreen(
             ScreenTitleRow(
                 title = stringResource(R.string.title_organization_profile),
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {

@@ -24,6 +24,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import com.clearchain.app.util.dialPhone
@@ -69,7 +70,7 @@ fun AccountDetailScreen(
                 onBack = {
                     if (state.isEditing) viewModel.onEvent(ProfileEvent.CancelEdit) else onNavigateBack()
                 },
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {

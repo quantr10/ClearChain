@@ -32,6 +32,7 @@ import com.clearchain.app.R
 import com.clearchain.app.domain.model.ListingStatus
 import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
@@ -170,7 +171,7 @@ fun ListingDetailScreen(
                 title = stringResource(R.string.title_listing_details),
                 backEnabled = !(state.isDeleting || state.isArchiving || state.isRestoring || state.isUpdatingCart),
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(
                 modifier = Modifier

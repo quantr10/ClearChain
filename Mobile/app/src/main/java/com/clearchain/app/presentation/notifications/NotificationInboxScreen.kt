@@ -26,6 +26,7 @@ import com.clearchain.app.presentation.components.ClearChainOutlinedButton
 import com.clearchain.app.presentation.components.ClearChainSnackbarHost
 import com.clearchain.app.presentation.components.EmptyState
 import com.clearchain.app.presentation.components.ScreenTitleRow
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import java.text.SimpleDateFormat
@@ -53,7 +54,7 @@ fun NotificationInboxScreen(
             ScreenTitleRow(
                 title = stringResource(R.string.notifications),
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             if (state.notifications.isEmpty()) {
                 EmptyState(

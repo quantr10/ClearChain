@@ -20,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
 import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.UiEvent
@@ -62,7 +63,7 @@ fun CartPickupScreen(
                 title = stringResource(R.string.title_request_pickup),
                 backEnabled = !state.isSubmitting,
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val group = state.groups.firstOrNull { it.groceryId == groceryId }

@@ -62,6 +62,7 @@ import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.domain.usecase.pickuprequest.ConfirmPickupUseCase
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.dispute.NgoDisputeReason
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.ShapeMedium
 import com.clearchain.app.util.DateTimeUtils
@@ -708,7 +709,7 @@ fun RequestDetailScreen(
                 title = stringResource(R.string.title_request_details),
                 backEnabled = state.pendingAction == null && !state.isSendingMessage,
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {

@@ -29,6 +29,7 @@ import com.clearchain.app.data.local.LocationPreferenceStore
 import com.clearchain.app.domain.model.LocationPreference
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.components.*
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -402,7 +403,7 @@ fun LocationPickerScreen(
                     title = stringResource(R.string.location_picker_title),
                     backEnabled = !state.isSavingLocation,
                     onBack = onDismiss,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = ScreenHPadding)
                 )
             }
 

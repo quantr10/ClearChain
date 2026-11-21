@@ -19,6 +19,9 @@ val ActionIconButtonSize = 24.dp
 /** Design system `back-button`: the circular back button beside a screen title. */
 val BackButtonSize = 36.dp
 
+/** Design system `title-icon`: icons in screen titles, such as the back arrow, and in stat tiles. */
+val TitleIconSize = 20.dp
+
 /** Design system `icon-tile`: the rounded icon tile on dashboard action cards and Profile rows. */
 val IconTileSize = 48.dp
 

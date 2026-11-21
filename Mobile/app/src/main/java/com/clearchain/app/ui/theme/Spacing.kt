@@ -39,3 +39,6 @@ val CardPadding = 12.dp
 
 /** Design system `header-padding`: the top and bottom padding of the dashboard greeting. */
 val HeaderPadding = 24.dp
+
+/** Design system `title-row-v-padding`: above and below a screen's title row. */
+val TitleRowVPadding = 6.dp

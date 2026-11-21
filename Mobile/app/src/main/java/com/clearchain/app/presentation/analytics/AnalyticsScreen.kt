@@ -30,6 +30,7 @@ import com.clearchain.app.domain.model.OrganizationType
 import com.clearchain.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.ui.theme.BrandGreen
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.ui.theme.StatusColors
 import com.clearchain.app.util.UiEvent
@@ -143,7 +144,7 @@ fun AnalyticsScreen(
             ScreenTitleRow(
                 title = stringResource(R.string.label_analytics),
                 onBack = onNavigateBack,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = ScreenHPadding)
             )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 if (state.isLoading && state.stats == null) {
