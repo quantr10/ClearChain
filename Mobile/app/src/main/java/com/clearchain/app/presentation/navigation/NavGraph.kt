@@ -244,9 +244,11 @@ fun NavGraph(
         }
 
         destination(Screen.Cart.route, SystemBarInsets.Both) {
-            LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.NGO) }
+            // Opened from Browse, so it hides the bar like the other screens opened from a tab.
+            LaunchedEffect(Unit) { onShowBottomBar(false, OrganizationType.NGO) }
             CartScreen(
-                onNavigate = { route -> navController.navigate(route) }
+                onNavigate = { route -> navController.navigate(route) },
+                onNavigateBack = { navController.navigateUp() }
             )
         }
 

@@ -21,6 +21,7 @@ import com.clearchain.app.data.remote.dto.CartGroupData
 import com.clearchain.app.data.remote.dto.CartItemData
 import com.clearchain.app.presentation.components.*
 import com.clearchain.app.presentation.navigation.Screen
+import com.clearchain.app.ui.theme.ScreenHPadding
 import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.DateTimeUtils
 import com.clearchain.app.util.UiEvent
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun CartScreen(
     onNavigate: (String) -> Unit = {},
+    onNavigateBack: () -> Unit = {},
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -60,6 +62,28 @@ fun CartScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             Column(Modifier.fillMaxSize()) {
+                ScreenTitleRow(
+                    title = stringResource(R.string.nav_cart),
+                    onBack = onNavigateBack,
+                    modifier = Modifier.padding(horizontal = ScreenHPadding),
+                    backEnabled = state.updatingItemId == null && state.removingItemId == null
+                )
+
+                val listAreaState = when {
+                    state.error != null && state.groups.all { it.items.isEmpty() } -> ListAreaState.Error(
+                        title = stringResource(R.string.error_generic),
+                        message = state.error,
+                        onRetry = { viewModel.onEvent(CartEvent.LoadCart) }
+                    )
+                    state.isLoading -> ListAreaState.Loading
+                    visibleGroups.isEmpty() -> ListAreaState.Empty(
+                        icon = Icons.Default.ShoppingCart,
+                        title = stringResource(R.string.cart_empty_title),
+                        subtitle = stringResource(R.string.cart_empty_subtitle)
+                    )
+                    else -> ListAreaState.Content
+                }
+
                 ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
@@ -67,53 +91,39 @@ fun CartScreen(
                         placeholder = stringResource(R.string.hint_search_cart)
                     )
 
-                    ResultsCountAndSort(
-                        count = visibleItemCount,
-                        itemName = "listing",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(CartEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions
-                    )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = visibleItemCount,
+                            itemName = "listing",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(CartEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    when {
-                        state.error != null && state.groups.all { it.items.isEmpty() } -> {
-                            EmptyState(
-                                icon = Icons.Default.ErrorOutline,
-                                title = stringResource(R.string.error_generic),
-                                subtitle = state.error,
-                                actionLabel = stringResource(R.string.retry),
-                                onAction = { viewModel.onEvent(CartEvent.LoadCart) }
+                ListArea(
+                    state = listAreaState,
+                    isRefreshing = false,
+                    onRefresh = null,
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = ScreenPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(visibleGroups, key = { it.groceryId }) { group ->
+                            CartGroupCard(
+                                group = group,
+                                state = state,
+                                onEvent = viewModel::onEvent,
+                                onListingClick = { listingId -> onNavigate(Screen.ListingDetail.createRoute(listingId)) },
+                                onGroceryClick = { groceryId -> onNavigate(Screen.PublicProfile.createRoute(groceryId)) },
+                                onRequestPickup = { onNavigate(Screen.CartPickup.createRoute(group.groceryId)) }
                             )
                         }
-                        state.isLoading -> LoadingState(Modifier.fillMaxSize())
-                        visibleGroups.isEmpty() -> {
-                            EmptyState(
-                                icon = Icons.Default.ShoppingCart,
-                                title = stringResource(R.string.cart_empty_title),
-                                subtitle = stringResource(R.string.cart_empty_subtitle)
-                            )
-                        }
-                        else -> {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = ScreenPadding,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(visibleGroups, key = { it.groceryId }) { group ->
-                                    CartGroupCard(
-                                        group = group,
-                                        state = state,
-                                        onEvent = viewModel::onEvent,
-                                        onListingClick = { listingId -> onNavigate(Screen.ListingDetail.createRoute(listingId)) },
-                                        onGroceryClick = { groceryId -> onNavigate(Screen.PublicProfile.createRoute(groceryId)) },
-                                        onRequestPickup = { onNavigate(Screen.CartPickup.createRoute(group.groceryId)) }
-                                    )
-                                }
-                                item { Spacer(Modifier.height(16.dp)) }
-                            }
-                        }
+                        item { Spacer(Modifier.height(16.dp)) }
                     }
                 }
             }
