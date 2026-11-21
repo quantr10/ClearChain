@@ -2,10 +2,8 @@ package com.clearchain.app.presentation.grocery
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
@@ -16,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,8 +27,6 @@ import com.clearchain.app.presentation.navigation.Screen
 import com.clearchain.app.presentation.ngo.ActivityFeedList
 import com.clearchain.app.presentation.ngo.ActivityHistorySheet
 import com.clearchain.app.ui.theme.BrandGreen
-import com.clearchain.app.ui.theme.BrandTeal
-import com.clearchain.app.ui.theme.ScreenPadding
 import com.clearchain.app.util.UiEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,133 +45,120 @@ fun GroceryDashboardScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        HapticPullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                DashboardWelcomeHeader(
-                    userName = state.userName,
-                    subtitle = stringResource(R.string.grocery_dashboard_subtitle),
-                    roleLabel = stringResource(R.string.role_grocery),
-                    profilePictureUrl = state.profilePictureUrl,
-                    gradientColors = listOf(BrandTeal, BrandGreen),
-                    onProfileClick = { navController.navigate(Screen.AccountDetail.route) },
-                    onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
+    val homeTitle = stringResource(R.string.nav_home)
+    BrandScaffold(
+        header = BrandHeader.Hero {
+            DashboardGreeting(
+                userName = state.userName,
+                profilePictureUrl = state.profilePictureUrl,
+                onAvatarClick = { navController.navigate(Screen.AccountDetail.route) },
+                onNotificationsClick = { navController.navigate(Screen.NotificationInbox.route) }
+            )
+        },
+        modifier = Modifier.semantics { paneTitle = homeTitle },
+        snackbarHostState = snackbarHostState,
+        isRefreshing = state.isRefreshing,
+        onRefresh = viewModel::refresh,
+        // Nothing to refresh until the first load lands; a pull meanwhile would start a second load.
+        refreshEnabled = !state.isLoading
+    ) {
+        DashboardIntro(
+            role = stringResource(R.string.role_grocery),
+            subtitle = stringResource(R.string.grocery_dashboard_subtitle)
+        )
+
+        if (state.isLoading) {
+            LoadingState(Modifier.fillMaxWidth())
+        } else {
+            // ── Impact ───────────────────────────────────────────────────────
+            // First card on the page: what the store has actually rescued leads,
+            // before today's workload.
+            state.stats?.let { stats ->
+                DashboardSection(title = stringResource(R.string.analytics_impact)) {
+                    ImpactSummaryRow(
+                        kgSaved = stats.foodSaved,
+                        mealsEstimate = stats.mealsEstimate,
+                        co2EstimateKg = stats.co2EstimateKg
+                    )
+                }
+
+                // ── Listings ─────────────────────────────────────────────────
+                // The store's own listings, laid out like the admin home's.
+                val listings = stats.listingStatus
+                DashboardSection(title = stringResource(R.string.section_listings)) {
+                    StatOverview(
+                        hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), listings.open),
+                        secondary = listOf(
+                            StatTile(Icons.Default.Bookmark, stringResource(R.string.stat_reserved), listings.reserved),
+                            StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), listings.expired)
+                        )
+                    )
+                }
+            }
+
+            // ── Weekly pickups ───────────────────────────────────────────────
+            // The same card the NGO home shows: both sides of a hand-over count
+            // the same completed pickup.
+            DashboardSection(title = "") {
+                WeeklyGoalCard(
+                    completed = state.weeklyCompleted,
+                    goal = state.weeklyGoal,
+                    progress = state.weeklyProgress
                 )
+            }
 
-                if (state.isLoading) {
-                    LoadingState(Modifier.fillMaxWidth().padding(vertical = 64.dp))
-                } else {
-                    Column(
-                        modifier = Modifier.padding(ScreenPadding),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // ── Impact ───────────────────────────────────────────
-                        // First card on the page: what the store has actually rescued leads,
-                        // before today's workload.
-                        state.stats?.let { stats ->
-                            DashboardSection(title = stringResource(R.string.analytics_impact)) {
-                                ImpactSummaryRow(
-                                    kgSaved = stats.foodSaved,
-                                    mealsEstimate = stats.mealsEstimate,
-                                    co2EstimateKg = stats.co2EstimateKg
-                                )
-                            }
+            // ── Today's pickups ──────────────────────────────────────────────
+            val upcomingPickups = state.todaySummary?.upcomingPickups.orEmpty()
+            if (upcomingPickups.isNotEmpty()) {
+                DashboardSection(title = "") {
+                    GroceryUpcomingPickupsTimeline(
+                        pickups = upcomingPickups,
+                        onViewAll = { navController.navigate(Screen.PickupRequests.route) }
+                    )
+                }
+            }
 
-                            // ── Listings ─────────────────────────────────────
-                            // The store's own listings, laid out like the admin home's.
-                            val listings = stats.listingStatus
-                            DashboardSection(title = stringResource(R.string.section_listings)) {
-                                StatOverview(
-                                    hero = StatTile(Icons.Default.Inventory2, stringResource(R.string.status_active), listings.open),
-                                    secondary = listOf(
-                                        StatTile(Icons.Default.Bookmark, stringResource(R.string.stat_reserved), listings.reserved),
-                                        StatTile(Icons.Default.EventBusy, stringResource(R.string.status_expired), listings.expired)
-                                    )
-                                )
-                            }
-                        }
-
-                        // ── Weekly pickups ───────────────────────────────────
-                        // The same card the NGO home shows: both sides of a hand-over count
-                        // the same completed pickup.
-                        DashboardSection(title = "") {
-                            WeeklyGoalCard(
-                                completed = state.weeklyCompleted,
-                                goal = state.weeklyGoal,
-                                progress = state.weeklyProgress
-                            )
-                        }
-
-                        // ── Today's pickups ──────────────────────────────────
-                        val upcomingPickups = state.todaySummary?.upcomingPickups.orEmpty()
-                        if (upcomingPickups.isNotEmpty()) {
-                            DashboardSection(title = "") {
-                                GroceryUpcomingPickupsTimeline(
-                                    pickups = upcomingPickups,
-                                    onViewAll = { navController.navigate(Screen.PickupRequests.route) }
-                                )
-                            }
-                        }
-
-                        // ── Activity trend and recent activity ───────────────
-                        val sparklineData = buildDailyActivityCounts(state.activities)
-                        DashboardSection(title = "") {
-                            ActivitySparklineCard(
-                                title = stringResource(R.string.label_actions_this_week),
-                                data = sparklineData
-                            )
-                            if (activityFeed.items.isNotEmpty()) {
-                                Spacer(Modifier.height(12.dp))
-                                ActivityFeedList(activities = activityFeed.items.take(5))
-                                if (activityFeed.total > 5) {
-                                    Spacer(Modifier.height(8.dp))
-                                    ClearChainOutlinedButton(
-                                        text = stringResource(R.string.action_view_more),
-                                        onClick = { showActivitySheet = true },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-
-                        // ── Quick actions ────────────────────────────────────
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            DashboardActionCard(
-                                icon = Icons.Default.AddCircle,
-                                title = stringResource(R.string.action_create_listing),
-                                subtitle = stringResource(R.string.action_create_listing_subtitle),
-                                onClick = { navController.navigate(Screen.CreateListing.route) }
-                            )
-                            DashboardActionCard(
-                                icon = Icons.AutoMirrored.Filled.List,
-                                title = stringResource(R.string.action_my_listings),
-                                subtitle = stringResource(R.string.action_my_listings_subtitle),
-                                onClick = { navController.navigate(Screen.MyListings.route) }
-                            )
-                            DashboardActionCard(
-                                icon = Icons.Default.LocalShipping,
-                                title = stringResource(R.string.action_pickup_requests),
-                                subtitle = stringResource(R.string.action_pickup_requests_subtitle),
-                                onClick = { navController.navigate(Screen.PickupRequests.route) }
-                            )
-                        }
-
+            // ── Activity trend and recent activity ───────────────────────────
+            val sparklineData = buildDailyActivityCounts(state.activities)
+            DashboardSection(title = "") {
+                ActivitySparklineCard(
+                    title = stringResource(R.string.label_actions_this_week),
+                    data = sparklineData
+                )
+                if (activityFeed.items.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    ActivityFeedList(activities = activityFeed.items.take(5))
+                    if (activityFeed.total > 5) {
                         Spacer(Modifier.height(8.dp))
+                        ClearChainOutlinedButton(
+                            text = stringResource(R.string.action_view_more),
+                            onClick = { showActivitySheet = true },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
+            }
+
+            // ── Quick actions ────────────────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DashboardActionCard(
+                    icon = Icons.Default.AddCircle,
+                    title = stringResource(R.string.action_create_listing),
+                    subtitle = stringResource(R.string.action_create_listing_subtitle),
+                    onClick = { navController.navigate(Screen.CreateListing.route) }
+                )
+                DashboardActionCard(
+                    icon = Icons.AutoMirrored.Filled.List,
+                    title = stringResource(R.string.action_my_listings),
+                    subtitle = stringResource(R.string.action_my_listings_subtitle),
+                    onClick = { navController.navigate(Screen.MyListings.route) }
+                )
+                DashboardActionCard(
+                    icon = Icons.Default.LocalShipping,
+                    title = stringResource(R.string.action_pickup_requests),
+                    subtitle = stringResource(R.string.action_pickup_requests_subtitle),
+                    onClick = { navController.navigate(Screen.PickupRequests.route) }
+                )
             }
         }
     }

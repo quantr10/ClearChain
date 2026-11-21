@@ -79,9 +79,8 @@ class GroceryDashboardViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
-            val ok = loadAll()
+            loadAll()
             _state.update { it.copy(isRefreshing = false) }
-            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_dashboard_refreshed)))
         }
     }
 

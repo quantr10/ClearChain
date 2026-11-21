@@ -192,7 +192,7 @@ fun NavGraph(
         }
 
         // ── Grocery ──────────────────────────────────────────────────────────
-        destination(Screen.GroceryDashboard.route, SystemBarInsets.Both) {
+        destination(Screen.GroceryDashboard.route, SystemBarInsets.NavigationBar) {
             LaunchedEffect(Unit) { onShowBottomBar(true, OrganizationType.GROCERY) }
             VerificationGate(navController)
             GroceryDashboardScreen(navController = navController)
