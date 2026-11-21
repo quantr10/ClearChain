@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -123,8 +125,24 @@ fun VerificationQueueScreen(
         snackbarHost = { ClearChainSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        val paneName = stringResource(R.string.nav_verify)
+        Box(modifier = Modifier.fillMaxSize().padding(padding).semantics { paneTitle = paneName }) {
             Column(modifier = Modifier.fillMaxSize()) {
+                val listAreaState = when {
+                    state.isLoading && state.organizations.isEmpty() -> ListAreaState.Loading
+                    state.organizations.isEmpty() -> ListAreaState.Empty(
+                        icon = Icons.Default.Business,
+                        title = stringResource(R.string.empty_no_organizations),
+                        subtitle = stringResource(R.string.empty_no_organizations_subtitle)
+                    )
+                    state.filteredOrgs.isEmpty() -> ListAreaState.Empty(
+                        icon = Icons.Default.FilterAlt,
+                        title = stringResource(R.string.empty_no_org_category),
+                        subtitle = stringResource(R.string.empty_no_org_category_subtitle)
+                    )
+                    else -> ListAreaState.Content
+                }
+
                 ListScreenHeader {
                     ListHeaderSearchRow(
                         query = state.searchQuery,
@@ -161,86 +179,66 @@ fun VerificationQueueScreen(
                         onTabSelected = { viewModel.onEvent(VerificationQueueEvent.StatusFilterChanged(it)) }
                     )
 
-                    ResultsCountAndSort(
-                        count = state.filteredOrgs.size,
-                        itemName = "organization",
-                        selectedSort = state.selectedSort,
-                        onSortSelected = { viewModel.onEvent(VerificationQueueEvent.SortOptionChanged(it)) },
-                        sortOptions = state.availableSortOptions,
-                        countText = if (state.isBatchMode) {
-                            "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected"
-                        } else {
-                            null
-                        },
-                        leadingContent = if (state.isBatchMode) {
-                            {
-                                SelectionCircleButton(
-                                    checked = state.allSelected,
-                                    onCheckedChange = {
-                                        if (state.allSelected) {
-                                            viewModel.onEvent(VerificationQueueEvent.ClearSelection)
-                                        } else {
-                                            viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
-                                        }
-                                    },
-                                    enabled = !state.isProcessing
-                                )
+                    if (listAreaState is ListAreaState.Content) {
+                        ResultsCountAndSort(
+                            count = state.filteredOrgs.size,
+                            itemName = "organization",
+                            selectedSort = state.selectedSort,
+                            onSortSelected = { viewModel.onEvent(VerificationQueueEvent.SortOptionChanged(it)) },
+                            sortOptions = state.availableSortOptions,
+                            countText = if (state.isBatchMode) {
+                                "${state.selectedOrgIds.size} ${if (state.selectedOrgIds.size == 1) "org" else "orgs"} selected"
+                            } else {
+                                null
+                            },
+                            leadingContent = if (state.isBatchMode) {
+                                {
+                                    SelectionCircleButton(
+                                        checked = state.allSelected,
+                                        onCheckedChange = {
+                                            if (state.allSelected) {
+                                                viewModel.onEvent(VerificationQueueEvent.ClearSelection)
+                                            } else {
+                                                viewModel.onEvent(VerificationQueueEvent.SelectAllVisible)
+                                            }
+                                        },
+                                        enabled = !state.isProcessing
+                                    )
+                                }
+                            } else {
+                                null
                             }
-                        } else {
-                            null
-                        }
-                    )
+                        )
+                    }
                 }
 
-                HapticPullToRefreshBox(
+                ListArea(
+                    state = listAreaState,
                     isRefreshing = state.isRefreshing,
-                    onRefresh = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) }
+                    onRefresh = { viewModel.onEvent(VerificationQueueEvent.RefreshOrganizations) },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
                 ) {
                     LazyColumn(
                         contentPadding = ScreenPadding,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (state.isLoading && state.organizations.isEmpty()) {
-                            item {
-                                LoadingState(Modifier.fillParentMaxSize())
-                            }
-                        } else if (state.organizations.isEmpty()) {
-                            item {
-                                EmptyState(
-                                    icon = Icons.Default.Business,
-                                    title = stringResource(R.string.empty_no_organizations),
-                                    subtitle = stringResource(R.string.empty_no_organizations_subtitle),
-                                    modifier = Modifier.fillParentMaxSize()
-                                )
-                            }
-                        } else if (state.filteredOrgs.isEmpty()) {
-                            item {
-                                EmptyState(
-                                    icon = Icons.Default.FilterAlt,
-                                    title = stringResource(R.string.empty_no_org_category),
-                                    subtitle = stringResource(R.string.empty_no_org_category_subtitle),
-                                    modifier = Modifier.fillParentMaxSize()
-                                )
-                            }
-                        } else {
-                            items(state.filteredOrgs, key = { it.id }) { org ->
-                                OrganizationCard(
-                                    organization = org,
-                                    isProcessing = state.isProcessing,
-                                    onApprove = { viewModel.onEvent(VerificationQueueEvent.ShowChecklist(org.id)) },
-                                    onReject = { viewModel.onEvent(VerificationQueueEvent.ShowRejectDialog(org.id)) },
-                                    onViewProfile = { onNavigateToPublicProfile(org.id) },
-                                    isBatchMode = state.isBatchMode,
-                                    isSelected = org.id in state.selectedOrgIds,
-                                    onToggleSelect = { viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id)) },
-                                    onLongClick = {
-                                        if (!state.isBatchMode) {
-                                            viewModel.onEvent(VerificationQueueEvent.ToggleBatchMode)
-                                            viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id))
-                                        }
+                        items(state.filteredOrgs, key = { it.id }) { org ->
+                            OrganizationCard(
+                                organization = org,
+                                isProcessing = state.isProcessing,
+                                onApprove = { viewModel.onEvent(VerificationQueueEvent.ShowChecklist(org.id)) },
+                                onReject = { viewModel.onEvent(VerificationQueueEvent.ShowRejectDialog(org.id)) },
+                                onViewProfile = { onNavigateToPublicProfile(org.id) },
+                                isBatchMode = state.isBatchMode,
+                                isSelected = org.id in state.selectedOrgIds,
+                                onToggleSelect = { viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id)) },
+                                onLongClick = {
+                                    if (!state.isBatchMode) {
+                                        viewModel.onEvent(VerificationQueueEvent.ToggleBatchMode)
+                                        viewModel.onEvent(VerificationQueueEvent.ToggleOrgSelection(org.id))
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
 
                         item { Spacer(Modifier.height(16.dp)) }

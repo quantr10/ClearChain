@@ -246,7 +246,6 @@ class VerificationQueueViewModel @Inject constructor(
                     .map { dto -> dto.toDomain() }
                     .filter { it.type != OrganizationType.ADMIN }
                 _state.update { it.copy(organizations = organizations, isRefreshing = false) }
-                _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_orgs_refreshed)))
             } catch (e: Exception) {
                 _state.update { it.copy(isRefreshing = false) }
                 _uiEvent.send(UiEvent.ShowSnackbar(e.message ?: context.getString(R.string.error_refresh_failed)))

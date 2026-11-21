@@ -803,7 +803,6 @@
     <string name="snack_new_registration">New %1$s registered: %2$s</string>
     <string name="snack_org_approved">Organization approved</string>
     <string name="snack_org_rejected">Organization rejected</string>
-    <string name="snack_orgs_refreshed">Organizations refreshed</string>
     <string name="snack_no_data_export">No data to export</string>
     <string name="snack_pdf_saved">PDF saved to Downloads</string>
     <string name="snack_pdf_failed">Failed to save PDF</string>

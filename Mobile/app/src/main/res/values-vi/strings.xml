@@ -755,7 +755,6 @@
     <string name="snack_new_registration">%1$s mới đăng ký: %2$s</string>
     <string name="snack_org_approved">Đã duyệt tổ chức</string>
     <string name="snack_org_rejected">Đã từ chối tổ chức</string>
-    <string name="snack_orgs_refreshed">Đã làm mới tổ chức</string>
     <string name="snack_no_data_export">Không có dữ liệu để xuất</string>
     <string name="snack_pdf_saved">PDF đã lưu vào Tải xuống</string>
     <string name="snack_pdf_failed">Lưu PDF thất bại</string>
