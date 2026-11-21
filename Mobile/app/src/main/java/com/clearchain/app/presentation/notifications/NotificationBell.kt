@@ -1,26 +1,35 @@
 package com.clearchain.app.presentation.notifications
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.clearchain.app.R
-import com.clearchain.app.presentation.components.ClearChainActionIconButton
+import com.clearchain.app.ui.theme.Alpha
+import com.clearchain.app.ui.theme.BackButtonSize
+import com.clearchain.app.ui.theme.OnBrandGradient
+
+/** The most unread notifications the badge counts before it shows "99+". */
+private const val BADGE_MAX = 99
 
 /**
- * Bell that opens the notification inbox, with the unread count on it.
- *
- * Built from [ClearChainActionIconButton] and Material's [Badge] rather than its own sized Box,
- * so it stays the same size as every other counted icon button in the app — the filter button
- * it sits nearest to, above all — instead of drifting the next time those defaults change.
+ * Bell on the dashboard's gradient header that opens the notification inbox, with the unread
+ * count on it. It's the header back circle's style: a [BackButtonSize] disc of white at
+ * [Alpha.LogoDisc]. Its spoken name carries the count ("Open notifications, 5 unread"), so the
+ * badge itself is silent.
  *
  * Reads its own count from Room through [NotificationBellViewModel] rather than taking it as a
  * parameter, so the three dashboards that show it don't each have to thread inbox state through
@@ -33,23 +42,31 @@ fun NotificationBell(
     viewModel: NotificationBellViewModel = hiltViewModel()
 ) {
     val unreadCount by viewModel.unreadCount.collectAsState()
+    val label = if (unreadCount > 0) {
+        pluralStringResource(R.plurals.cd_open_notifications_unread, unreadCount, unreadCount)
+    } else {
+        stringResource(R.string.cd_open_notifications)
+    }
 
     BadgedBox(
         modifier = modifier,
         badge = {
             if (unreadCount > 0) {
-                Badge { Text(if (unreadCount > 99) "99+" else unreadCount.toString()) }
+                Badge(Modifier.clearAndSetSemantics {}) {
+                    Text(if (unreadCount > BADGE_MAX) "$BADGE_MAX+" else unreadCount.toString())
+                }
             }
         }
     ) {
-        ClearChainActionIconButton(
-            icon = Icons.Default.Notifications,
-            contentDescription = stringResource(R.string.cd_open_notifications),
+        IconButton(
             onClick = onClick,
-            // The header is a green gradient, so the button's surface colours would disappear
-            // into it; white-on-translucent is the same treatment the avatar's border uses.
-            tint = Color.White,
-            containerColor = Color.White.copy(alpha = 0.18f)
-        )
+            modifier = Modifier.size(BackButtonSize),
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = OnBrandGradient.copy(alpha = Alpha.LogoDisc),
+                contentColor = OnBrandGradient
+            )
+        ) {
+            Icon(imageVector = Icons.Default.Notifications, contentDescription = label)
+        }
     }
 }

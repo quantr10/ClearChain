@@ -16,7 +16,10 @@ val ControlIconSize = 18.dp
 /** Design system `action-icon-button`: the small circular action buttons in list headers. */
 val ActionIconButtonSize = 24.dp
 
-/** Design system `back-button`: the circular back button beside a screen title. */
+/**
+ * Design system `back-button`: the circular back button beside a screen title, and the bell disc
+ * on the gradient header.
+ */
 val BackButtonSize = 36.dp
 
 /** Design system `title-icon`: icons in screen titles, such as the back arrow, and in stat tiles. */

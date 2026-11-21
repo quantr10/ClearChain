@@ -16,7 +16,7 @@ object Alpha {
 
     /**
      * `logo-disc`: white at this alpha on the brand gradient: the logo disc, the header back
-     * circle and the step-bar track.
+     * circle, the step-bar track, the bell disc and the Profile avatar tile.
      */
     val LogoDisc = 0.2f
 
