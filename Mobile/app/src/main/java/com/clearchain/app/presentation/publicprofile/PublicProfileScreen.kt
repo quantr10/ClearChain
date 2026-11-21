@@ -91,9 +91,8 @@ class PublicProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true) }
             // Awaited, so the pull-to-refresh spinner stays until the profile is back.
-            val ok = fetch()
+            fetch()
             _state.update { it.copy(isRefreshing = false) }
-            if (ok) _uiEvent.send(UiEvent.ShowSnackbar(context.getString(R.string.snack_profile_refreshed)))
         }
     }
 
